@@ -1,0 +1,1557 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🏨 Hotel Management System — Architecture & System Diagrams Viewer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-light: #eff6ff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --bg-page: #f8fafc;
+      --bg-card: #ffffff;
+      --border: #e2e8f0;
+      --border-focus: #94a3b8;
+      --sidebar-width: 330px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Prompt', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+      line-height: 1.5;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: var(--sidebar-width);
+      background-color: #ffffff;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      z-index: 20;
+    }
+
+    .sidebar-header {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+      color: white;
+    }
+
+    .sidebar-header h1 {
+      font-size: 15px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: -0.01em;
+    }
+
+    .sidebar-header p {
+      font-size: 11px;
+      opacity: 0.85;
+      margin-top: 4px;
+    }
+
+    .nav-sections {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 10px;
+    }
+
+    .nav-group-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      padding: 12px 12px 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: #334155;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      margin-bottom: 2px;
+    }
+
+    .nav-item:hover {
+      background-color: #f1f5f9;
+      color: var(--primary);
+    }
+
+    .nav-item.active {
+      background-color: var(--primary-light);
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .nav-item .icon {
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .nav-item .badge {
+      margin-left: auto;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 10px;
+      background: #e2e8f0;
+      color: #475569;
+      flex-shrink: 0;
+    }
+
+    .nav-item.active .badge {
+      background: #bfdbfe;
+      color: #1e40af;
+    }
+
+    /* Main Content Area */
+    .main-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Topbar */
+    .topbar {
+      height: 60px;
+      background: white;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+
+    .topbar-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .topbar-title-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .topbar-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .topbar-category-badge {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: #e0f2fe;
+      color: #0369a1;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .topbar-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .topbar-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: white;
+      color: #334155;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: inherit;
+    }
+
+    .btn:hover {
+      background: #f8fafc;
+      border-color: var(--border-focus);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-group {
+      display: inline-flex;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .btn-group .btn {
+      border: none;
+      border-radius: 0;
+      border-right: 1px solid var(--border);
+      padding: 6px 10px;
+    }
+
+    .btn-group .btn:last-child {
+      border-right: none;
+    }
+
+    /* Diagram Canvas Container */
+    .viewport-container {
+      flex: 1;
+      position: relative;
+      background-color: #f8fafc;
+      background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+      background-size: 24px 24px;
+      overflow: hidden;
+      display: flex;
+    }
+
+    .diagram-viewport {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .diagram-viewport svg {
+      width: 100% !important;
+      height: 100% !important;
+      max-width: none !important;
+      max-height: none !important;
+    }
+
+    /* Floating Zoom Controls */
+    .floating-controls {
+      position: absolute;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(8px);
+      padding: 6px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      border: 1px solid var(--border);
+      z-index: 30;
+    }
+
+    .ctrl-btn {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: font-size: 14px;
+      color: #334155;
+      transition: all 0.15s;
+    }
+
+    .ctrl-btn:hover {
+      background: #f1f5f9;
+      color: var(--primary);
+    }
+
+    /* Source Code Drawer */
+    .source-drawer {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 280px;
+      background: #0f172a;
+      color: #f8fafc;
+      border-top: 1px solid #334155;
+      display: none;
+      flex-direction: column;
+      z-index: 40;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+    }
+
+    .source-drawer.open {
+      display: flex;
+    }
+
+    .source-header {
+      padding: 10px 18px;
+      background: #1e293b;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #334155;
+    }
+
+    .source-title {
+      font-size: 12px;
+      font-family: 'Fira Code', monospace;
+      color: #94a3b8;
+    }
+
+    .source-body {
+      flex: 1;
+      padding: 14px 18px;
+      overflow: auto;
+      font-family: 'Fira Code', monospace;
+      font-size: 12px;
+      white-space: pre;
+      line-height: 1.5;
+      color: #38bdf8;
+    }
+
+    /* Loading Spinner */
+    .spinner-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(248, 250, 252, 0.85);
+      backdrop-filter: blur(2px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      z-index: 50;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+
+    .spinner-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid #e2e8f0;
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #0f172a;
+      color: white;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-size: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h1><span>🏨</span> Hotel System Diagrams</h1>
+      <p>Interactive Mermaid Diagram Viewer (Pan, Zoom, Export)</p>
+    </div>
+
+    <nav class="nav-sections">
+      <div class="nav-group-title">
+        <span>🏗️ สถาปัตยกรรมระบบ</span>
+        <span style="font-size: 10px;">1</span>
+      </div>
+      <a class="nav-item active" onclick="switchDiagram('arch')">
+        <span class="icon">🏛️</span>
+        <span>System Architecture</span>
+        <span class="badge">CF + Upstash</span>
+      </a>
+
+      <div class="nav-group-title">
+        <span>🔄 State Machines</span>
+        <span style="font-size: 10px;">2</span>
+      </div>
+      <a class="nav-item" onclick="switchDiagram('state-flow')">
+        <span class="icon">📊</span>
+        <span>Room Lifecycle (Flowchart)</span>
+        <span class="badge">7 States</span>
+      </a>
+      <a class="nav-item" onclick="switchDiagram('state-std')">
+        <span class="icon">🔀</span>
+        <span>Room Lifecycle (State Diagram)</span>
+        <span class="badge">Standard</span>
+      </a>
+
+      <div class="nav-group-title">
+        <span>⏱️ Sequence Diagrams (5 Flows)</span>
+        <span style="font-size: 10px;">5</span>
+      </div>
+      <a class="nav-item" onclick="switchDiagram('flow1')">
+        <span class="icon">1️⃣</span>
+        <span>Flow 1: Advance Booking</span>
+        <span class="badge">Cron Audit</span>
+      </a>
+      <a class="nav-item" onclick="switchDiagram('flow2')">
+        <span class="icon">2️⃣</span>
+        <span>Flow 2: Guest Check-in</span>
+        <span class="badge">Check-in</span>
+      </a>
+      <a class="nav-item" onclick="switchDiagram('flow3')">
+        <span class="icon">3️⃣</span>
+        <span>Flow 3: Check-out Fan-out</span>
+        <span class="badge">Fan-out 1:4</span>
+      </a>
+      <a class="nav-item" onclick="switchDiagram('flow4')">
+        <span class="icon">4️⃣</span>
+        <span>Flow 4: Housekeeping Complete</span>
+        <span class="badge">Housekeeping</span>
+      </a>
+      <a class="nav-item" onclick="switchDiagram('flow5')">
+        <span class="icon">5️⃣</span>
+        <span>Flow 5: Billing & Payment</span>
+        <span class="badge">Front Desk</span>
+      </a>
+
+      <div class="nav-group-title">
+        <span>🗄️ Database ERDs (6 Services)</span>
+        <span style="font-size: 10px;">6</span>
+      </div>
+      <a class="nav-item" onclick="switchDiagram('er-auth')">
+        <span class="icon">🔐</span>
+        <span>Service 1: Auth & User DB</span>
+        <span class="badge">D1: auth</span>
+      </a>
+      <a class="nav-item" onclick="switchDiagram('er-room')">
+        <span class="icon">🛏️</span>
+        <span>Service 2: Room Inventory DB</span>
+        <span class="badge">D1: room</span>
+      </a>
+      <a class="nav-item" onclick="switchDiagram('er-res')">
+        <span class="icon">📅</span>
+        <span>Service 3: Reservation DB</span>
+        <span class="badge">D1: reserve</span>
+      </a>
+      <a class="nav-item" onclick="switchDiagram('er-hk')">
+        <span class="icon">🧹</span>
+        <span>Service 4: Housekeeping DB</span>
+        <span class="badge">D1: house</span>
+      </a>
+      <a class="nav-item" onclick="switchDiagram('er-bill')">
+        <span class="icon">🧾</span>
+        <span>Service 5: Billing DB</span>
+        <span class="badge">D1: bill</span>
+      </a>
+      <a class="nav-item" onclick="switchDiagram('er-rpt')">
+        <span class="icon">📈</span>
+        <span>Service 6: Report & Analytics DB</span>
+        <span class="badge">D1: report</span>
+      </a>
+    </nav>
+  </aside>
+
+  <!-- Main Viewport -->
+  <main class="main-wrapper">
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-info">
+        <div class="topbar-title-row">
+          <span class="topbar-title" id="current-title">System Architecture</span>
+          <span class="topbar-category-badge" id="current-category">Architecture</span>
+        </div>
+        <span class="topbar-desc" id="current-desc">ภาพรวมสถาปัตยกรรม Microservices 6 Services บน Cloudflare Workers, D1, Upstash QStash, KV</span>
+      </div>
+
+      <div class="topbar-actions">
+        <div class="btn-group">
+          <button class="btn" title="Previous Diagram" onclick="navigateDiagram(-1)">◀ ก่อนหน้า</button>
+          <button class="btn" title="Next Diagram" onclick="navigateDiagram(1)">ถัดไป ▶</button>
+        </div>
+
+        <button class="btn" onclick="toggleSourceDrawer()">
+          <span>📝</span> ดูโค้ด Mermaid
+        </button>
+
+        <button class="btn btn-primary" onclick="copyCurrentCode()">
+          <span>📋</span> คัดลอกโค้ด
+        </button>
+      </div>
+    </header>
+
+    <!-- Diagram Viewport -->
+    <div class="viewport-container">
+      <div class="diagram-viewport" id="viewport">
+        <!-- SVG will be injected here -->
+      </div>
+
+      <!-- Floating Zoom Controls -->
+      <div class="floating-controls">
+        <button class="ctrl-btn" title="ซูมเข้า (Zoom In)" onclick="zoomIn()">➕</button>
+        <button class="ctrl-btn" title="ซูมออก (Zoom Out)" onclick="zoomOut()">➖</button>
+        <button class="ctrl-btn" title="รีเซ็ตขนาด (Reset Zoom & Center)" onclick="resetZoom()">↺</button>
+        <button class="ctrl-btn" title="ขยายเต็มจอ (Fit Screen)" onclick="fitDiagram()">⛶</button>
+      </div>
+
+      <!-- Loading Spinner -->
+      <div class="spinner-overlay" id="spinner">
+        <div class="spinner"></div>
+        <div style="font-size: 13px; font-weight: 500; color: #475569;">กำลังประมวลผลและเรนเดอร์ Diagram...</div>
+      </div>
+
+      <!-- Source Code Drawer -->
+      <div class="source-drawer" id="source-drawer">
+        <div class="source-header">
+          <span class="source-title" id="source-title">mermaid-source.mmd</span>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-sm" onclick="copyCurrentCode()">📋 คัดลอก</button>
+            <button class="btn btn-sm" onclick="toggleSourceDrawer()">✕ ปิด</button>
+          </div>
+        </div>
+        <div class="source-body" id="source-code"></div>
+      </div>
+    </div>
+  </main>
+
+  <div class="toast" id="toast">คัดลอกโค้ด Mermaid เรียบร้อยแล้ว</div>
+
+  <script>
+    const DIAGRAM_METADATA = {
+      'arch': {
+        title: 'System Architecture (Cloudflare + Upstash QStash)',
+        category: 'Architecture',
+        desc: 'ภาพรวมระบบ Microservices 6 เซอร์วิส บน Cloudflare Workers เชื่อมต่อผ่าน Upstash QStash Pub/Sub (Fan-out 1:4) และ 6 D1 Databases แยกอิสระ',
+        code: `flowchart TB
+    CLIENT["<b>Client — React + Tailwind CSS</b><br/>Front Desk (รวม Cashier/Billing) · Housekeeping Staff<br/>Manager / Admin"]
+    KV[("<b>Cloudflare KV</b><br/>Session Cache · Permissions · Config")]
+    GW["<b>API Gateway — Cloudflare Worker</b><br/>Reverse Proxy · JWT Verify · Rate Limit · CORS · Route → Service"]
+    subgraph SERVICES["Microservices Layer — Cloudflare Workers · 6 Services · 100 APIs"]
+        AUTH["<b>#1 Auth / User Service</b><br/>12 APIs · คน A (PM)<br/>users · sessions<br/>permissions (4 roles)"]
+        ROOM["<b>#2 Room Inventory Service</b><br/>18 APIs · คน B (SA)<br/>rooms · room_types · floors<br/>status (today only)"]
+        RES["<b>#3 Reservation Service</b><br/>24 APIs · คน C (QA)<br/>guests · reservations<br/>Date Range Check"]
+        HK["<b>#4 Housekeeping Service</b><br/>16 APIs · คน B (SA)<br/>tasks · staff · issues<br/>schedules"]
+        BILL["<b>#5 Billing Service</b><br/>16 APIs · คน A (PM)<br/>bills · bill_items · payments<br/>deposit deduction · receipts"]
+        RPT["<b>#6 Report / Analytics Service</b><br/>14 APIs · คน C (QA)<br/>daily_stats · revenue_records<br/>monthly_summary · KPI"]
+    end
+    subgraph DATABASES["Cloudflare D1 — Database-per-Service (Atomic db.batch Outbox)"]
+        DB1[("D1: auth")]
+        DB2[("D1: room")]
+        DB3[("D1: reserve")]
+        DB4[("D1: house")]
+        DB5[("D1: bill")]
+        DB6[("D1: report")]
+    end
+    subgraph BUS["Upstash QStash — Serverless Pub/Sub Event Bus · Fan-out 1:4 · Auto-Retry · DLQ"]
+        TOPIC_CHECKIN{{"<b>hotel.reservation.checkin</b><br/>Topic"}}
+        TOPIC_CHECKOUT{{"<b>hotel.reservation.checkout</b><br/>Topic (FAN-OUT 1:4)"}}
+        TOPIC_HK{{"<b>hotel.housekeeping.completed</b><br/>Topic"}}
+        TOPIC_BILL{{"<b>hotel.billing.paid</b><br/>Topic"}}
+    end
+    CRON["<b>Night Audit Cron Worker</b><br/>⏰ ทุกวัน 02:00 AM<br/>• ตรวจสอบ No-show<br/>• ปรับห้องถึงวันเช็คอิน → set reserved<br/>• Rollup daily stats"]
+    CLIENT --> GW
+    KV <--> GW
+    GW --> AUTH
+    GW --> ROOM
+    GW --> RES
+    GW --> HK
+    GW --> BILL
+    GW --> RPT
+    AUTH --- DB1
+    ROOM --- DB2
+    RES --- DB3
+    HK --- DB4
+    BILL --- DB5
+    RPT --- DB6
+    RES -. "Publish (Check-in)" .-> TOPIC_CHECKIN
+    TOPIC_CHECKIN -. "Webhook POST → occupied" .-> ROOM
+    RES -. "Publish (Check-out)" .-> TOPIC_CHECKOUT
+    TOPIC_CHECKOUT -. "Webhook (1) → checked_out" .-> ROOM
+    TOPIC_CHECKOUT -. "Webhook (2) → create task" .-> HK
+    TOPIC_CHECKOUT -. "Webhook (3) → create bill" .-> BILL
+    TOPIC_CHECKOUT -. "Webhook (4) → stats log" .-> RPT
+    HK -. "Publish (Task Done)" .-> TOPIC_HK
+    TOPIC_HK -. "Webhook POST → available" .-> ROOM
+    BILL -. "Publish (Bill Paid)" .-> TOPIC_BILL
+    TOPIC_BILL -. "Webhook POST → revenue" .-> RPT
+    CRON --> RES
+    CRON --> ROOM
+    CRON --> RPT
+    classDef client fill:#e0f2fe,stroke:#7dd3fc,color:#0369a1,stroke-width:1.5px
+    classDef gateway fill:#0f172a,stroke:#0f172a,color:#f8fafc
+    classDef kv fill:#fefce8,stroke:#fbbf24,color:#92400e
+    classDef auth fill:#e0e7ff,stroke:#6366f1,color:#3730a3,stroke-width:1.5px
+    classDef room fill:#e0f2fe,stroke:#0ea5e9,color:#075985,stroke-width:1.5px
+    classDef resv fill:#d1fae5,stroke:#10b981,color:#065f46,stroke-width:1.5px
+    classDef hk fill:#fef3c7,stroke:#f59e0b,color:#92400e,stroke-width:1.5px
+    classDef bill fill:#fce7f3,stroke:#ec4899,color:#9d174d,stroke-width:1.5px
+    classDef rpt fill:#ede9fe,stroke:#8b5cf6,color:#5b21b6,stroke-width:1.5px
+    classDef db fill:#f1f5f9,stroke:#cbd5e1,color:#475569
+    classDef topic fill:#fef3c7,stroke:#f59e0b,color:#92400e,stroke-width:1.5px
+    classDef fanout fill:#fee2e2,stroke:#ef4444,color:#b91c1c,stroke-width:1.5px
+    classDef cron fill:#f0fdf4,stroke:#22c55e,color:#15803d,stroke-width:1.5px
+    class CLIENT client
+    class GW gateway
+    class KV kv
+    class AUTH auth
+    class ROOM room
+    class RES resv
+    class HK hk
+    class BILL bill
+    class RPT rpt
+    class DB1,DB2,DB3,DB4,DB5,DB6 db
+    class TOPIC_CHECKIN,TOPIC_HK,TOPIC_BILL topic
+    class TOPIC_CHECKOUT fanout
+    class CRON cron`
+      },
+
+      'state-flow': {
+        title: 'Room Lifecycle (Flowchart View)',
+        category: 'State Machine',
+        desc: 'วงจรชีวิตของห้องพักทั้ง 7 สถานะ ควบคุมการเปลี่ยนผ่านอย่างเข้มงวด ป้องกันสถานะชนกัน',
+        code: `flowchart TD
+    START([● ห้องถูกสร้างในระบบ]) --> available
+
+    subgraph ROOM_STATES ["วงจรสถานะห้องพัก (Room States)"]
+        available["<b>available (ว่าง)</b><br/>พร้อมให้บริการ"]
+        reserved["<b>reserved (จองแล้ว)</b><br/>มีผู้จองล่วงหน้า / Walk-in"]
+        occupied["<b>occupied (เข้าพัก)</b><br/>ลูกค้าเช็คอินแล้ว"]
+        checked_out["<b>checked_out (เช็คเอาท์)</b><br/>ลูกค้าคืนห้องแล้ว"]
+        cleaning["<b>cleaning (ทำความสะอาด)</b><br/>แม่บ้านกำลังทำงาน"]
+        maintenance["<b>maintenance (ซ่อมบำรุง)</b><br/>ช่างกำลังตรวจซ่อม"]
+        out_of_order["<b>out_of_order (ระงับใช้)</b><br/>ห้องชำรุด / ปิดปรับปรุง"]
+    end
+
+    available -->|"1. Walk-in หรือ Night Audit 02:00 น.<br/>(Advance Booking ไม่เปลี่ยนสถานะทันที)"| reserved
+    reserved -->|"2. ReservationCheckedIn<br/>POST /reservations/{id}/check-in"| occupied
+    occupied -->|"3. ReservationCheckedOut<br/>POST /reservations/{id}/check-out"| checked_out
+    checked_out -->|"4. Auto-create Task<br/>(Fan-out Webhook)"| cleaning
+    cleaning -->|"5. HousekeepingTaskCompleted<br/>PUT /tasks/{id}/complete"| available
+
+    reserved -->|"ReservationCancelled<br/>POST /reservations/{id}/cancel"| available
+    available -->|"แจ้งซ่อม<br/>PUT /rooms/{id}/maintenance"| maintenance
+    maintenance -->|"ซ่อมเสร็จ<br/>PUT /rooms/{id}/maintenance"| available
+    cleaning -->|"พบปัญหาห้องพัก<br/>report-issue"| maintenance
+    occupied -->|"ขยายเวลาพัก<br/>POST /reservations/{id}/extend-stay"| occupied
+    available -->|"ฉุกเฉิน / ชำรุดหนัก"| out_of_order
+    out_of_order -->|"ส่งซ่อม"| maintenance
+    maintenance -->|"ซ่อมไม่เสร็จ / รออะไหล่"| out_of_order
+
+    classDef avail fill:#dcfce7,stroke:#16a34a,color:#14532d,stroke-width:2px
+    classDef resv fill:#e0f2fe,stroke:#0284c7,color:#075985,stroke-width:2px
+    classDef occ fill:#fef3c7,stroke:#d97706,color:#78350f,stroke-width:2px
+    classDef chk fill:#f1f5f9,stroke:#64748b,color:#1e293b,stroke-width:2px
+    classDef cln fill:#fae8ff,stroke:#c026d3,color:#701a75,stroke-width:2px
+    classDef mnt fill:#ffedd5,stroke:#ea580c,color:#7c2d12,stroke-width:2px
+    classDef ooo fill:#fee2e2,stroke:#dc2626,color:#7f1d1d,stroke-width:2px
+
+    class available avail
+    class reserved resv
+    class occupied occ
+    class checked_out chk
+    class cleaning cln
+    class maintenance mnt
+    class out_of_order ooo`
+      },
+
+      'state-std': {
+        title: 'Room Lifecycle (State Diagram View)',
+        category: 'State Machine',
+        desc: 'UML State Diagram แสดงทรานซิชันและ Event triggers ที่ทำให้สถานะห้องเปลี่ยนผ่าน',
+        code: `stateDiagram-v2
+    direction TB
+    [*] --> available: ห้องถูกสร้างในระบบ
+    available --> reserved: Walk-in หรือ Night Audit ปรับสถานะในวันเช็คอิน
+    reserved --> occupied: ReservationCheckedIn (POST /reservations/{id}/check-in)
+    occupied --> checked_out: ReservationCheckedOut (POST /reservations/{id}/check-out)
+    checked_out --> cleaning: Auto-create Housekeeping Task (Fan-out Webhook)
+    cleaning --> available: HousekeepingTaskCompleted (PUT /tasks/{id}/complete)
+    reserved --> available: ReservationCancelled (POST /reservations/{id}/cancel)
+    available --> maintenance: แจ้งซ่อม (PUT /rooms/{id}/maintenance)
+    maintenance --> available: ซ่อมเสร็จ (PUT /rooms/{id}/maintenance)
+    cleaning --> maintenance: พบปัญหาระหว่างทำความสะอาด (report-issue)
+    occupied --> occupied: ขยายเวลาพัก (POST /reservations/{id}/extend-stay)
+    available --> out_of_order: ฉุกเฉิน - ห้องใช้งานไม่ได้ชั่วคราว
+    out_of_order --> maintenance: ส่งซ่อม
+    maintenance --> out_of_order: ซ่อมไม่เสร็จ หรือรอชิ้นส่วน`
+      },
+
+      'flow1': {
+        title: 'Flow 1: Advance Booking (การจองห้องพักล่วงหน้า)',
+        category: 'Sequence Diagram',
+        desc: 'การจองล่วงหน้า: ตรวจสอบห้องว่างด้วย Date Range Overlap (ไม่แก้ rooms.status ทันทีและไม่ส่งเข้า QStash) บันทึก Atomic db.batch() — Night Audit Cron จะปรับเป็น reserved ในวันเช็คอินจริง',
+        code: `sequenceDiagram
+    autonumber
+    actor FD as Front Desk Staff
+    participant GW as API Gateway
+    participant RS as Reservation Service
+    participant DB_R as D1: Reservation DB
+
+    FD->>GW: POST /reservations<br/>{guest_id, room_id, dates, ...}
+    GW->>RS: Route to Reservation Service<br/>(role=front_desk)
+
+    RS->>DB_R: SELECT reservations<br/>WHERE room_id=? AND dates overlap
+    Note over DB_R: ตรวจช่วงวันที่ทับซ้อน (Date Range check)<br/>ไม่เช็คจาก rooms.status
+
+    alt ห้องว่าง
+        RS->>DB_R: BEGIN TRANSACTION
+        RS->>DB_R: INSERT INTO reservations<br/>(status = 'confirmed')
+        RS->>DB_R: INSERT INTO outbox_events<br/>(event_type = 'ReservationCreated')
+        RS->>DB_R: INSERT INTO reservation_history<br/>(action = 'created')
+        RS->>DB_R: COMMIT
+        RS-->>GW: 201 Created {reservation}
+        GW-->>FD: ✅ จองสำเร็จ (rooms.status ยังไม่เปลี่ยน)
+    else ห้องไม่ว่าง
+        RS-->>GW: 409 Conflict
+        GW-->>FD: ❌ ห้องถูกจองแล้วในช่วงวันที่นั้น
+    end
+
+    Note over RS,DB_R: Night Audit 02:00 AM (วันเช็คอินถึง)<br/>→ UPDATE rooms SET status='reserved'<br/>(ไม่ผ่าน Upstash QStash — เป็น Scheduled Cron Job)`
+      },
+
+      'flow2': {
+        title: 'Flow 2: Guest Check-in (การเช็คอินเข้าพัก)',
+        category: 'Sequence Diagram',
+        desc: 'การเช็คอินเข้าพัก: บันทึกเงินมัดจำ depositAmount, db.batch() บันทึกสถานะและ Outbox, ส่ง Event เข้า QStash Topic เพื่อยิง Webhook ปรับห้องเป็น occupied',
+        code: `sequenceDiagram
+    autonumber
+    actor FD as Front Desk Staff
+    participant GW as API Gateway
+    participant RS as Reservation Service
+    participant DB_R as D1: Reservation DB
+    participant QSTASH as Upstash QStash
+    participant RI as Room Inventory Service
+    participant DB_RM as D1: Room DB
+
+    FD->>GW: POST /reservations/:id/check-in<br/>{depositAmount}
+    GW->>RS: Route to Reservation Service<br/>(role=front_desk)
+
+    RS->>DB_R: Validate reservation<br/>(status = 'confirmed'?)
+    alt reservation not found or invalid status
+        RS-->>GW: 400 Bad Request
+        GW-->>FD: Error: ไม่สามารถเช็คอินได้
+    else valid reservation
+        RS->>DB_R: BEGIN TRANSACTION
+        RS->>DB_R: UPDATE reservations<br/>SET status = 'checked_in',<br/>actual_check_in = NOW()
+        RS->>DB_R: INSERT INTO outbox_events<br/>(ReservationCheckedIn)
+        RS->>DB_R: INSERT INTO reservation_history<br/>(action = 'checked_in')
+        RS->>DB_R: UPDATE guests<br/>SET total_stays = total_stays + 1
+        RS->>DB_R: COMMIT
+        RS-->>GW: 200 OK {reservation}
+        GW-->>FD: เช็คอินสำเร็จ (บันทึกยอดมัดจำ depositAmount)
+
+        RS-)QSTASH: POST /v2/topics/hotel.reservation.checkin<br/>{reservation_id, room_id}
+
+        QSTASH-)RI: Webhook POST /webhooks/checkin
+        RI->>DB_RM: BEGIN TRANSACTION
+        RI->>DB_RM: UPDATE rooms SET status = 'occupied'
+        RI->>DB_RM: INSERT INTO room_status_history<br/>(reserved → occupied)
+        RI->>DB_RM: COMMIT
+    end`
+      },
+
+      'flow3': {
+        title: 'Flow 3: Check-out Fan-out 1:4 (การเช็คเอาท์และกระจายงาน)',
+        category: 'Sequence Diagram',
+        desc: 'การเช็คเอาท์: ส่ง Event เข้า QStash Topic กระจาย Webhook 1:4 พร้อมกันไปยัง Room Inventory (checked_out), Housekeeping (สร้างงาน), Billing (สร้างบิล), และ Report (บันทึกสถิติ)',
+        code: `sequenceDiagram
+    autonumber
+    actor FD as Front Desk Staff
+    participant GW as API Gateway
+    participant RS as Reservation Service
+    participant DB_R as D1: Reservation DB
+    participant QSTASH as Upstash QStash
+    participant RI as Room Inventory Service
+    participant DB_RM as D1: Room DB
+    participant HK as Housekeeping Service
+    participant DB_H as D1: Housekeeping DB
+    participant BL as Billing Service
+    participant DB_B as D1: Billing DB
+    participant RP as Report Service
+    participant DB_RP as D1: Report DB
+
+    FD->>GW: POST /reservations/:id/check-out
+    GW->>RS: Route to Reservation Service<br/>(role=front_desk)
+
+    RS->>DB_R: Validate reservation<br/>(status = 'checked_in'?)
+
+    RS->>DB_R: BEGIN TRANSACTION
+    RS->>DB_R: UPDATE reservations<br/>SET status = 'checked_out',<br/>actual_check_out = NOW()
+    RS->>DB_R: INSERT INTO outbox_events<br/>(ReservationCheckedOut)
+    RS->>DB_R: INSERT INTO reservation_history
+    RS->>DB_R: COMMIT
+    RS-->>GW: 200 OK
+    GW-->>FD: เช็คเอาท์สำเร็จ
+
+    RS-)QSTASH: POST /v2/topics/hotel.reservation.checkout<br/>{reservation_id, room_id, guest_name, dates, amounts}
+
+    par Webhook (1): Room Inventory
+        QSTASH-)RI: Webhook POST /webhooks/checkout
+        RI->>DB_RM: UPDATE rooms<br/>SET status='checked_out'
+        Note over RI,DB_RM: ห้องพร้อมเข้าคิวทำความสะอาด
+    and Webhook (2): Housekeeping
+        QSTASH-)HK: Webhook POST /webhooks/checkout
+        HK->>DB_H: INSERT INTO housekeeping_tasks<br/>(type='checkout_clean', status='pending')
+        Note over HK,DB_H: สร้างงานทำความสะอาดอัตโนมัติ
+    and Webhook (3): Billing
+        QSTASH-)BL: Webhook POST /webhooks/checkout
+        BL->>DB_B: INSERT INTO bills<br/>(status='pending')
+        BL->>DB_B: INSERT INTO bill_items<br/>(room_charge ตามจำนวนคืน)
+        Note over BL,DB_B: สร้างบิลรอรวมยอดมินิบาร์<br/>รอ Front Desk Cashier มาคิดเงิน (ดู Diagram #5)
+    and Webhook (4): Report
+        QSTASH-)RP: Webhook POST /webhooks/checkout
+        RP->>DB_RP: UPDATE daily_stats<br/>SET total_checkouts++
+        Note over RP,DB_RP: บันทึกสถิติ checkout ประจำวัน
+    end
+
+    Note over QSTASH: หาก Subscriber ตัวใดล้มเหลว<br/>QStash Retry แบบ Exponential Backoff<br/>(สูงสุด 3 ครั้ง) → ไม่สำเร็จเข้า Dead-Letter Queue (DLQ)`
+      },
+
+      'flow4': {
+        title: 'Flow 4: Housekeeping Complete (งานทำความสะอาดเสร็จสิ้น)',
+        category: 'Sequence Diagram',
+        desc: 'แม่บ้านบันทึกงานเสร็จสิ้น ส่ง Event ผ่าน QStash Topic hotel.housekeeping.completed ยิง Webhook ปรับสถานะห้องจาก cleaning กลับเป็น available พร้อมเปิดรับการจองใหม่',
+        code: `sequenceDiagram
+    autonumber
+    actor HKS as Housekeeping Staff
+    participant GW as API Gateway
+    participant HK as Housekeeping Service
+    participant DB_H as D1: Housekeeping DB
+    participant QSTASH as Upstash QStash
+    participant RI as Room Inventory Service
+    participant DB_RM as D1: Room DB
+
+    HKS->>GW: PUT /housekeeping/tasks/:id/complete
+    GW->>HK: Route to Housekeeping Service
+
+    HK->>DB_H: Validate task<br/>(status = 'in_progress'?)
+
+    HK->>DB_H: BEGIN TRANSACTION
+    HK->>DB_H: UPDATE housekeeping_tasks<br/>SET status = 'completed',<br/>completed_at = NOW()
+    HK->>DB_H: INSERT INTO outbox_events<br/>(HousekeepingTaskCompleted)
+    HK->>DB_H: COMMIT
+    HK-->>GW: 200 OK
+    GW-->>HKS: งานทำความสะอาดเสร็จสิ้น
+
+    HK-)QSTASH: POST /v2/topics/hotel.housekeeping.completed<br/>{task_id, room_id, room_number}
+
+    QSTASH-)RI: Webhook POST /webhooks/housekeeping-completed
+    RI->>DB_RM: BEGIN TRANSACTION
+    RI->>DB_RM: UPDATE rooms<br/>SET status = 'available'
+    RI->>DB_RM: INSERT INTO room_status_history<br/>(cleaning → available)
+    RI->>DB_RM: COMMIT
+
+    Note over HKS,RI: ✅ ห้องพร้อมให้จองรอบต่อไป<br/>Room Lifecycle ครบวงจร`
+      },
+
+      'flow5': {
+        title: 'Flow 5: Billing & Payment (การชำระเงินและออกใบเสร็จ)',
+        category: 'Sequence Diagram',
+        desc: 'Front Desk Cashier (role=front_desk) สรุปยอดบิล หักเงินมัดจำ ชำระเงินด้วย db.batch() และส่ง Event ผ่าน QStash เพื่อให้ Report Service อัปเดตรายได้',
+        code: `sequenceDiagram
+    autonumber
+    actor FD as Front Desk Staff (Cashier)
+    participant GW as API Gateway
+    participant BL as Billing Service
+    participant DB_B as D1: Billing DB
+    participant QSTASH as Upstash QStash
+    participant RP as Report Service
+    participant DB_RP as D1: Report DB
+
+    Note over FD: ตรวจสอบบิล: ค่าห้อง + มินิบาร์ - เงินมัดจำ (role=front_desk)
+    FD->>GW: POST /bills/:id/pay<br/>{paymentMethod, amount, depositDeducted}
+    GW->>BL: Route to Billing Service<br/>(role=front_desk)
+    BL->>DB_B: Validate bill (status = 'pending')
+    BL->>DB_B: BEGIN TRANSACTION
+    BL->>DB_B: INSERT INTO payments (method, amount)
+    BL->>DB_B: UPDATE bills SET status='paid', deposit_deducted=depositDeducted
+    BL->>DB_B: INSERT INTO outbox_events (BillPaid)
+    BL->>DB_B: COMMIT
+    BL-->>GW: 200 OK {billId, receiptUrl}
+    GW-->>FD: ✅ ชำระเงินสำเร็จ ออกใบเสร็จได้
+
+    BL-)QSTASH: POST /v2/topics/hotel.billing.paid<br/>{bill_id, amount, method}
+    QSTASH-)RP: Webhook POST /webhooks/bill-paid
+    RP->>DB_RP: BEGIN TRANSACTION
+    RP->>DB_RP: INSERT INTO revenue_records (amount, method)
+    RP->>DB_RP: UPDATE monthly_summary SET total_revenue += amount
+    RP->>DB_RP: COMMIT
+    Note over RP,DB_RP: ชำระเงินทำโดย Front Desk (role=front_desk)<br/>ไม่มี Role Billing แยกต่างหาก`
+      },
+
+      'er-auth': {
+        title: 'Service 1: Auth & User Service ERD',
+        category: 'Database ERD',
+        desc: 'ฐานข้อมูล D1: auth: จัดการบัญชีผู้ใช้, Session, Permissions (RBAC 4 Roles: admin, manager, front_desk, housekeeping), และ Password Reset Tokens',
+        code: `erDiagram
+    users {
+        text id PK "UUID v4"
+        text email UK "อีเมล login"
+        text password_hash "bcrypt hash"
+        text first_name
+        text last_name
+        text role "admin|manager|front_desk|housekeeping"
+        boolean is_active "soft delete"
+        text last_login_at
+        text created_at
+        text updated_at
+    }
+    sessions {
+        text id PK "UUID v4"
+        text user_id FK "→ users.id"
+        text refresh_token UK
+        text expires_at
+        boolean is_revoked
+        text created_at
+    }
+    permissions {
+        text id PK "UUID v4"
+        text role "ตรงกับ users.role"
+        text resource "rooms|reservations|bills|..."
+        text action "create|read|update|delete"
+        text created_at
+    }
+    password_reset_tokens {
+        text id PK "UUID v4"
+        text user_id FK "→ users.id"
+        text token UK
+        text expires_at
+        boolean is_used
+        text created_at
+    }
+    outbox_events {
+        text id PK "UUID v4"
+        text event_type "UserCreated|RoleChanged"
+        text aggregate_id "user_id"
+        text aggregate_type "User"
+        text payload "JSON"
+        text status "pending|published|failed"
+        text published_at
+        text created_at
+    }
+    users ||--o{ sessions : "has active sessions"
+    users ||--o{ password_reset_tokens : "requests password reset"`
+      },
+
+      'er-room': {
+        title: 'Service 2: Room Inventory Service ERD',
+        category: 'Database ERD',
+        desc: 'ฐานข้อมูล D1: room: จัดการห้องพัก, ประเภทห้อง, ชั้น, สิ่งอำนวยความสะดวก และประวัติการเปลี่ยนสถานะ',
+        code: `erDiagram
+    room_types {
+        text id PK "UUID v4"
+        text name UK "Standard|Deluxe|Suite|Presidential"
+        text description
+        real base_price "ราคาฐานต่อคืน (บาท)"
+        integer max_occupancy "จำนวนผู้เข้าพักสูงสุด"
+        text bed_type "single|double|twin|king"
+        real size_sqm "ขนาด ตร.ม."
+        text created_at
+        text updated_at
+    }
+    floors {
+        text id PK "UUID v4"
+        integer floor_number UK "หมายเลขชั้น"
+        text name "Lobby|Executive Floor"
+        integer total_rooms
+        text created_at
+    }
+    rooms {
+        text id PK "UUID v4"
+        text room_number UK "101|205"
+        text room_type_id FK "→ room_types.id"
+        text floor_id FK "→ floors.id"
+        text status "available|reserved|occupied|checked_out|cleaning|maintenance|out_of_order"
+        boolean is_active
+        text notes
+        text created_at
+        text updated_at
+    }
+    room_amenities {
+        text id PK "UUID v4"
+        text room_id FK "→ rooms.id"
+        text amenity_name "WiFi|Mini Bar|Bathtub|Balcony"
+        text description
+        text created_at
+    }
+    room_status_history {
+        text id PK "UUID v4"
+        text room_id FK "→ rooms.id"
+        text previous_status
+        text new_status
+        text changed_by "User ID (cross-service)"
+        text change_reason
+        text event_source "manual|event:ReservationCheckedIn"
+        text created_at
+    }
+    outbox_events {
+        text id PK "UUID v4"
+        text event_type "RoomStatusChanged"
+        text aggregate_id "room_id"
+        text aggregate_type "Room"
+        text payload "JSON"
+        text status "pending|published|failed"
+        text published_at
+        text created_at
+    }
+    room_types ||--o{ rooms : "defines type of"
+    floors ||--o{ rooms : "contains"
+    rooms ||--o{ room_amenities : "has amenities"
+    rooms ||--o{ room_status_history : "tracks status changes"`
+      },
+
+      'er-res': {
+        title: 'Service 3: Reservation Service ERD',
+        category: 'Database ERD',
+        desc: 'ฐานข้อมูล D1: reserve: จัดการข้อมูลแขก, รายการจอง, และ Audit Trail ประวัติการแก้ไข',
+        code: `erDiagram
+    guests {
+        text id PK "UUID v4"
+        text first_name
+        text last_name
+        text email
+        text phone
+        text id_card_number "บัตร ปชช./พาสปอร์ต"
+        text nationality "Thai"
+        text address
+        text notes "คำขอพิเศษ"
+        integer total_stays "จำนวนครั้งที่พัก"
+        text created_at
+        text updated_at
+    }
+    reservations {
+        text id PK "UUID v4"
+        text reservation_code UK "RES-20260918-001"
+        text guest_id FK "→ guests.id"
+        text room_id "cross-service → Room"
+        text room_number "denormalized"
+        text room_type_name "denormalized"
+        text status "confirmed|checked_in|checked_out|cancelled|no_show|extended"
+        text booking_type "advance|walk_in"
+        text check_in_date "YYYY-MM-DD"
+        text check_out_date "YYYY-MM-DD"
+        text actual_check_in "ISO 8601"
+        text actual_check_out "ISO 8601"
+        integer num_guests
+        real nightly_rate "ราคาต่อคืน"
+        integer total_nights
+        real subtotal
+        real discount_amount
+        text discount_reason
+        real tax_rate "0.07"
+        real tax_amount
+        real total_amount
+        text special_requests
+        text created_by "User ID (cross-service)"
+        text created_at
+        text updated_at
+    }
+    reservation_history {
+        text id PK "UUID v4"
+        text reservation_id FK "→ reservations.id"
+        text action "created|modified|checked_in|checked_out|cancelled|extended|upgraded|discount_applied"
+        text previous_data "JSON snapshot"
+        text new_data "JSON snapshot"
+        text performed_by "User ID"
+        text created_at
+    }
+    outbox_events {
+        text id PK "UUID v4"
+        text event_type "ReservationCreated|ReservationCheckedIn|ReservationCheckedOut|ReservationCancelled"
+        text aggregate_id "reservation_id"
+        text aggregate_type "Reservation"
+        text payload "JSON"
+        text status "pending|published|failed"
+        text published_at
+        text created_at
+    }
+    guests ||--o{ reservations : "makes reservations"
+    reservations ||--o{ reservation_history : "has audit trail"`
+      },
+
+      'er-hk': {
+        title: 'Service 4: Housekeeping Service ERD',
+        category: 'Database ERD',
+        desc: 'ฐานข้อมูล D1: house: จัดการพนักงานแม่บ้าน, งานทำความสะอาด, รายการแจ้งชำรุด และตารางกะ',
+        code: `erDiagram
+    housekeeping_staff {
+        text id PK "UUID v4"
+        text user_id "cross-service → Auth"
+        text first_name
+        text last_name
+        text phone
+        text zone "Floor 1-3|Floor 4-6"
+        text shift "day|night|flexible"
+        boolean is_active
+        integer max_tasks_per_day "10"
+        text created_at
+        text updated_at
+    }
+    housekeeping_tasks {
+        text id PK "UUID v4"
+        text room_id "cross-service → Room"
+        text room_number "denormalized"
+        text assigned_to FK "→ housekeeping_staff.id"
+        text task_type "checkout_clean|daily_clean|deep_clean|inspection|turndown"
+        text priority "urgent|high|normal|low"
+        text status "pending|assigned|in_progress|completed|verified|cancelled"
+        text notes
+        text scheduled_date "YYYY-MM-DD"
+        text started_at
+        text completed_at
+        text event_source "manual|event:ReservationCheckedOut"
+        text source_event_id
+        text created_at
+        text updated_at
+    }
+    room_issues {
+        text id PK "UUID v4"
+        text task_id FK "→ housekeeping_tasks.id"
+        text room_id "cross-service → Room"
+        text reported_by FK "→ housekeeping_staff.id"
+        text issue_type "damage|missing_item|malfunction|hygiene|other"
+        text description
+        text severity "low|medium|high|critical"
+        text status "open|acknowledged|resolved"
+        text resolved_at
+        text created_at
+    }
+    housekeeping_schedule {
+        text id PK "UUID v4"
+        text staff_id FK "→ housekeeping_staff.id"
+        text schedule_date "YYYY-MM-DD"
+        text shift "day|night"
+        text zone_assigned
+        boolean is_day_off
+        text created_at
+    }
+    outbox_events {
+        text id PK "UUID v4"
+        text event_type "HousekeepingTaskCompleted"
+        text aggregate_id "task_id"
+        text aggregate_type "HousekeepingTask"
+        text payload "JSON"
+        text status "pending|published|failed"
+        text published_at
+        text created_at
+    }
+    housekeeping_staff ||--o{ housekeeping_tasks : "assigned to"
+    housekeeping_staff ||--o{ room_issues : "reports issues"
+    housekeeping_staff ||--o{ housekeeping_schedule : "has schedule"
+    housekeeping_tasks ||--o{ room_issues : "discovers issues"`
+      },
+
+      'er-bill': {
+        title: 'Service 5: Billing Service ERD',
+        category: 'Database ERD',
+        desc: 'ฐานข้อมูล D1: bill: จัดการใบแจ้งหนี้, รายการค่าบริการ, การชำระเงิน, วิธีชำระเงิน และการออกใบเสร็จ',
+        code: `erDiagram
+    bills {
+        text id PK "UUID v4"
+        text bill_number UK "BILL-20260918-001"
+        text reservation_id "cross-service → Reservation"
+        text guest_name "denormalized"
+        text room_number "denormalized"
+        text check_in_date "denormalized"
+        text check_out_date "denormalized"
+        real subtotal
+        real discount_amount
+        text discount_reason
+        real tax_rate "0.07"
+        real tax_amount
+        real service_charge "10%"
+        real total_amount
+        real amount_paid
+        real amount_due
+        text status "pending|partially_paid|paid|refunded|void"
+        text event_source
+        text source_event_id
+        text created_at
+        text updated_at
+    }
+    bill_items {
+        text id PK "UUID v4"
+        text bill_id FK "→ bills.id"
+        text item_type "room_charge|minibar|laundry|room_service|extra_bed|late_checkout|damage|other"
+        text description
+        integer quantity
+        real unit_price
+        real total_price "qty x unit_price"
+        text date "YYYY-MM-DD"
+        text created_at
+    }
+    payments {
+        text id PK "UUID v4"
+        text bill_id FK "→ bills.id"
+        text payment_method_id FK "→ payment_methods.id"
+        real amount
+        text reference_number
+        text status "completed|failed|refunded"
+        text paid_at
+        text created_at
+    }
+    payment_methods {
+        text id PK "UUID v4"
+        text name UK "Cash|Credit Card|Bank Transfer|QR Payment"
+        text code UK "CASH|CC|BANK|QR"
+        boolean is_active
+        text created_at
+    }
+    invoices {
+        text id PK "UUID v4"
+        text invoice_number UK "INV-20260918-001"
+        text bill_id FK "→ bills.id"
+        text issued_to_name
+        text issued_to_email
+        text issued_to_address
+        text tax_id
+        real total_amount
+        text status "draft|issued|sent|void"
+        text sent_at
+        text created_at
+    }
+    refunds {
+        text id PK "UUID v4"
+        text bill_id FK "→ bills.id"
+        text payment_id FK "→ payments.id"
+        real amount
+        text reason
+        text status "pending|completed|failed"
+        text refunded_by "User ID (cross-service)"
+        text created_at
+    }
+    outbox_events {
+        text id PK "UUID v4"
+        text event_type "BillPaid"
+        text aggregate_id "bill_id"
+        text aggregate_type "Bill"
+        text payload "JSON"
+        text status "pending|published|failed"
+        text published_at
+        text created_at
+    }
+    bills ||--o{ bill_items : "contains line items"
+    bills ||--o{ payments : "receives payments"
+    bills ||--o| invoices : "generates invoice"
+    bills ||--o{ refunds : "may have refunds"
+    payments ||--o{ refunds : "refunded from"
+    payment_methods ||--o{ payments : "used for payment"`
+      },
+
+      'er-rpt': {
+        title: 'Service 6: Report & Analytics Service ERD',
+        category: 'Database ERD',
+        desc: 'ฐานข้อมูล D1: report: จัดการสถิติรายวัน, รายได้รายเดือน, อัตราเข้าพัก (Occupancy Rate) และ Audit Event Log',
+        code: `erDiagram
+    daily_stats {
+        text id PK "UUID v4"
+        text date UK "YYYY-MM-DD (1 record/day)"
+        integer total_rooms
+        integer occupied_rooms
+        integer available_rooms
+        integer reserved_rooms
+        integer maintenance_rooms
+        real occupancy_rate "occupied/total x 100"
+        integer total_checkins
+        integer total_checkouts
+        integer total_cancellations
+        integer total_walk_ins
+        text created_at
+        text updated_at
+    }
+    revenue_records {
+        text id PK "UUID v4"
+        text date "YYYY-MM-DD"
+        text reservation_id "cross-service → Reservation"
+        text bill_id "cross-service → Billing"
+        text room_type_name "denormalized"
+        text room_number
+        text revenue_type "room_charge|additional_service|refund"
+        real amount
+        text payment_method
+        text event_source
+        text source_event_id
+        text created_at
+    }
+    monthly_summary {
+        text id PK "UUID v4"
+        text year_month UK "YYYY-MM"
+        real total_revenue
+        real total_refunds
+        real net_revenue
+        real avg_occupancy_rate
+        integer total_reservations
+        integer total_cancellations
+        real cancellation_rate
+        real avg_stay_duration "จำนวนคืนเฉลี่ย"
+        integer total_guests
+        text created_at
+        text updated_at
+    }
+    room_performance {
+        text id PK "UUID v4"
+        text room_id "cross-service → Room"
+        text room_number
+        text room_type_name
+        text year_month "YYYY-MM"
+        integer total_bookings
+        integer total_nights_sold
+        real total_revenue
+        real avg_rating
+        text created_at
+        text updated_at
+    }
+    guest_demographics {
+        text id PK "UUID v4"
+        text year_month "YYYY-MM"
+        text nationality
+        integer guest_count
+        real total_revenue
+        real avg_stay_nights
+        text created_at
+        text updated_at
+    }
+    housekeeping_performance {
+        text id PK "UUID v4"
+        text staff_id "cross-service → Housekeeping"
+        text staff_name "denormalized"
+        text year_month
+        integer tasks_completed
+        integer tasks_assigned
+        real avg_completion_minutes
+        integer issues_reported
+        text created_at
+        text updated_at
+    }
+    event_log {
+        text id PK "UUID v4"
+        text event_type
+        text source_service "Reservation|Billing|RoomInventory|Housekeeping"
+        text payload "JSON"
+        boolean processed
+        text processed_at
+        text error_message
+        text created_at
+    }`
+      }
+    };
+
+    const DIAGRAM_KEYS = Object.keys(DIAGRAM_METADATA);
+    let currentKey = 'arch';
+    let panZoomInstance = null;
+
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'default',
+      securityLevel: 'loose',
+      fontFamily: 'Prompt, Inter, sans-serif',
+      flowchart: { useMaxWidth: false, htmlLabels: true, curve: 'basis' },
+      sequence: { useMaxWidth: false, showSequenceNumbers: true, actorMargin: 40, messageMargin: 30 },
+      er: { useMaxWidth: false }
+    });
+
+    async function renderCurrentDiagram() {
+      const spinner = document.getElementById('spinner');
+      const viewport = document.getElementById('viewport');
+      const meta = DIAGRAM_METADATA[currentKey];
+
+      spinner.classList.add('active');
+
+      document.getElementById('current-title').textContent = meta.title;
+      document.getElementById('current-category').textContent = meta.category;
+      document.getElementById('current-desc').textContent = meta.desc;
+
+      document.getElementById('source-title').textContent = `${currentKey}.mmd`;
+      document.getElementById('source-code').textContent = meta.code;
+
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+        const onclickAttr = item.getAttribute('onclick') || '';
+        if (onclickAttr.includes(`'${currentKey}'`)) {
+          item.classList.add('active');
+        }
+      });
+
+      if (panZoomInstance) {
+        try {
+          panZoomInstance.destroy();
+        } catch (e) {}
+        panZoomInstance = null;
+      }
+
+      viewport.innerHTML = '';
+
+      try {
+        const renderId = 'svg-' + currentKey + '-' + Math.random().toString(36).substring(2, 7);
+        const { svg } = await mermaid.render(renderId, meta.code);
+
+        viewport.innerHTML = svg;
+
+        const svgElement = viewport.querySelector('svg');
+        if (svgElement) {
+          svgElement.style.width = '100%';
+          svgElement.style.height = '100%';
+
+          panZoomInstance = svgPanZoom(svgElement, {
+            zoomEnabled: true,
+            controlIconsEnabled: false,
+            fit: true,
+            center: true,
+            minZoom: 0.1,
+            maxZoom: 8,
+            zoomScaleSensitivity: 0.25
+          });
+        }
+      } catch (err) {
+        console.error('Mermaid render error:', err);
+        viewport.innerHTML = `
+          <div style="padding: 32px; color: #b91c1c; text-align: center; max-width: 600px;">
+            <div style="font-size: 32px; margin-bottom: 8px;">⚠️</div>
+            <div style="font-weight: 600; font-size: 16px;">ไม่สามารถแสดงผล Diagram ได้</div>
+            <div style="font-size: 13px; color: #475569; margin-top: 6px;">${err.message || err}</div>
+            <pre style="text-align: left; background: #fef2f2; border: 1px solid #fecaca; padding: 12px; border-radius: 6px; font-size: 11px; margin-top: 14px; overflow-x: auto; max-height: 200px;">${meta.code.replace(/</g, '&lt;')}</pre>
+          </div>
+        `;
+      } finally {
+        spinner.classList.remove('active');
+      }
+    }
+
+    function switchDiagram(key) {
+      if (DIAGRAM_METADATA[key]) {
+        currentKey = key;
+        renderCurrentDiagram();
+      }
+    }
+
+    function navigateDiagram(direction) {
+      const idx = DIAGRAM_KEYS.indexOf(currentKey);
+      let nextIdx = idx + direction;
+      if (nextIdx < 0) nextIdx = DIAGRAM_KEYS.length - 1;
+      if (nextIdx >= DIAGRAM_KEYS.length) nextIdx = 0;
+      switchDiagram(DIAGRAM_KEYS[nextIdx]);
+    }
+
+    function zoomIn() {
+      if (panZoomInstance) panZoomInstance.zoomIn();
+    }
+
+    function zoomOut() {
+      if (panZoomInstance) panZoomInstance.zoomOut();
+    }
+
+    function resetZoom() {
+      if (panZoomInstance) {
+        panZoomInstance.resetZoom();
+        panZoomInstance.center();
+      }
+    }
+
+    function fitDiagram() {
+      if (panZoomInstance) {
+        panZoomInstance.fit();
+        panZoomInstance.center();
+      }
+    }
+
+    function toggleSourceDrawer() {
+      const drawer = document.getElementById('source-drawer');
+      drawer.classList.toggle('open');
+    }
+
+    function copyCurrentCode() {
+      const code = DIAGRAM_METADATA[currentKey]?.code || '';
+      navigator.clipboard.writeText(code).then(() => {
+        showToast('คัดลอกโค้ด Mermaid เรียบร้อยแล้ว');
+      }).catch(err => {
+        console.error('Clipboard error:', err);
+      });
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2500);
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight') navigateDiagram(1);
+      if (e.key === 'ArrowLeft') navigateDiagram(-1);
+      if (e.key === '+' || e.key === '=') zoomIn();
+      if (e.key === '-' || e.key === '_') zoomOut();
+      if (e.key === '0') resetZoom();
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderCurrentDiagram();
+    });
+  </script>
+</body>
+</html>
