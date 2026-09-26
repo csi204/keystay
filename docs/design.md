@@ -135,3 +135,49 @@ Cloudflare Queues เป็นคิวแบบ Point-to-Point (Competing Consu
 เมื่อมีผู้ใช้งานจองห้องพักในเสี้ยววินาทีเดียวกัน:
 - ในระดับแอปพลิเคชัน: ตรวจสอบความว่างของห้องในตาราง `reservations` ภายใน Atomic Batch Statement
 - ในระดับฐานข้อมูล: ทำ Partial Unique Index บน `reservations` สำหรับห้องและวันที่จอง
+
+---
+
+## 8. ปรัชญาการออกแบบหน้าจอแบบ Minimalist (ไม่ใช่ AI Template)
+
+การออกแบบระบบบริหารจัดการโรงแรม (Hospitality ERP) มีผู้ใช้งานที่ต้องจ้องหน้าจอนาน 8–10 ชั่วโมงต่อวัน ดีไซน์จึงต้อง**เน้นประสิทธิภาพการทำงาน (Operational Efficiency) ไม่ใช่ลูกเล่นแฟนซีที่ดูเป็น AI-Generated ทั่วไป**:
+
+### 8.1 ทำไมต้องแบนความสวยงามแบบ AI ทั่วไป?
+- **AI Templates มักมีข้อเสีย:** ไล่สีม่วง-ฟ้าสดเกินไป (Neon Gradients), การ์ดโค้งมนหนาเตอะ (`rounded-3xl`), พื้นหลังฝ้าฟุ้งกระจาย (Glassmorphism), และความหนาแน่นของข้อมูลต่ำ (Low Density) ทำให้พนักงานต้องเลื่อนเมาส์ค้นหาข้อมูลตลอดเวลา
+- **สไตล์ของ KEYSTAY คือ Swiss / Linear Minimalist:**
+  - เน้น **High Information Density:** หน้าจอ Room Matrix ต้องแสดง 22 ห้องครบโดยไม่ต้องเลื่อนจอ
+  - **โทนสี Monochrome & Slate:** สีพื้นหลังขาว-เทาอ่อน (`#F8FAFC`) ตัวหนังสือดำสนิท (`#0F172A`)
+  - **สีสดมีไว้เพื่อสถานะเท่านั้น:** แดง (ซ่อม), เขียว (ว่าง), น้ำเงิน (จอง), มรกต (พักอยู่), เหลือง (ทำความสะอาด)
+  - **เส้นขอบ Hairline 1px แทนเงาฟุ้ง:** คมชัด อ่านตัวเลขทางการเงินง่ายและรวดเร็ว
+
+### 8.2 กลไก Partial Refresh เฉพาะส่วน (No-WebSocket Architecture)
+- เนื่องจากระบบรันบน Cloudflare Workers ซึ่งมีลักษณะเป็น Stateless Serverless การเปิด WebSocket ค้างไว้อาจสิ้นเปลืองและซับซ้อนเกินจำเป็น
+- เราใช้ **Selective Section Refresh (`POST /api/reports/refresh?section=...`)**:
+  - บนการ์ดข้อมูลสำคัญ (เช่น ยอดขาย, สถานะห้อง, งานแม่บ้าน) จะมีปุ่มไอคอน Refresh เล็กๆ คมๆ
+  - เมื่อพนักงานกด จะส่ง Request ไปยัง API Gateway เพื่อดึงเฉพาะข้อมูลส่วนนั้นจาก D1 ทันที
+  - อัปเดตเฉพาะ Component นั้นในหน้าจอโดยไม่ต้องโหลดหน้าเว็บใหม่ และไม่กระทบส่วนอื่น
+
+---
+
+## 9. สถาปัตยกรรมและวงจรรับ-ส่ง Payload (Payload Lifecycle: Gateway, Auth, Report)
+
+### 9.1 API Gateway (`apps/api-gateway`)
+- **การรับ Payload (Receiving):** รับ Request HTTP ทั้งหมดที่ `/api/*` ตรวจสอบ JWT Bearer Token, ถอดรหัส HMAC SHA-256 Claims, และเช็คสิทธิ์ RBAC
+- **การส่ง Payload (Forwarding):** ทำหน้าที่เป็น Reverse Proxy แนบ Header ข้อมูลผู้เรียก (`x-user-id`, `x-user-role`, `x-user-email`) แล้วส่ง Body Payload ผ่าน **Cloudflare Worker Service Bindings** ตรงเข้าหน่วยความจำของ Service ปลายทางในระดับเสี้ยววินาที
+
+### 9.2 Auth/User Service (`apps/services/auth-user`)
+- **การรับ Payload (Receiving):** รับ Payload ลงทะเบียนผู้ใช้ (`POST /register`), ล็อกอิน (`POST /login`), รีเฟรชโทเค็น (`POST /refresh-token`), และแก้ไขบทบาท (`PUT /users/:id/role`)
+- **การส่ง Payload (Publishing / Outbox):** ใช้ **Transactional Outbox Pattern** ผ่านคำสั่ง `db.batch()`:
+  - เมื่อสร้างผู้ใช้: บันทึก `users` พร้อมแทรก Event `UserCreated` ลงตาราง `outbox_events` (Payload: `{ userId, email, role, createdAt }`)
+  - เมื่อเปลี่ยนบทบาท: บันทึกบทบาทใหม่พร้อมแทรก Event `RoleChanged` ลงตาราง `outbox_events` เพื่อให้ระบบ Audit และแคช KV ซิงค์ข้อมูลอัตโนมัติ
+
+### 9.3 Report/Analytics Service (`apps/services/report-analytics`)
+- **การรับ Payload (Receiving / Webhooks):**
+  - `POST /webhooks/checkout`: รับ Event `ReservationCheckedOut` บันทึกยอด Check-out ลง `daily_stats` และเก็บสำเนาลง `audit_events`
+  - `POST /webhooks/bill-paid`: รับ Event `BillPaid` บันทึกรายได้ลง `revenue_records` และปรับยอด `daily_stats.total_revenue`
+  - `POST /webhooks/housekeeping-completed`: รับ Event `HousekeepingTaskCompleted` บันทึกลง `audit_events`
+- **การส่ง Payload (Output / Export):**
+  - ส่งออกข้อมูล JSON Analytics 14 APIs
+  - สตรีมไฟล์ **CSV** ตามมาตรฐาน RFC 4180 (`/reports/export/csv`)
+  - ส่งออกเอกสารสรุปทางการ **Printable PDF / HTML** สไตล์ Swiss Typography สะอาดตา (`/reports/export/pdf`)
+  - ส่งกลับข้อมูลสดใหม่เฉพาะส่วนเมื่อมีคำขอ `POST /reports/refresh?section=...`
