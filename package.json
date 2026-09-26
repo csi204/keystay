@@ -13,7 +13,9 @@
     "lint": "pnpm dlx turbo run lint",
     "typecheck": "pnpm dlx turbo run typecheck",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
-    "setup:r2": "powershell -ExecutionPolicy Bypass -File ./scripts/setup-r2.ps1"
+    "setup:r2": "powershell -ExecutionPolicy Bypass -File ./scripts/setup-r2.ps1",
+    "d1:migrate:local": "node ./scripts/migrate-d1.js",
+    "d1:migrate:remote": "node ./scripts/migrate-d1.js --remote"
   },
   "devDependencies": {
     "@types/node": "^22.13.9",

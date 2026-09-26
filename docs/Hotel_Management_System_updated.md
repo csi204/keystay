@@ -69,8 +69,7 @@
 *   **ผู้จัดการ (Manager — `role=manager`):** ตรวจสอบภาพรวมการดำเนินงาน, จัดการประเภทห้องพักและอัตราค่าบริการ, ติดตาม Occupancy Rate และรายงานรายได้[cite: 7]
 *   **ผู้ดูแลระบบ (Admin — `role=admin`):** กำหนดสิทธิ์และบัญชีผู้ใช้งาน, ตั้งค่าระบบความปลอดภัย, ดูแลภาพรวมของระบบทั้งหมด[cite: 7]
 
-### ความสามารถหลักของระบบ (Core System Requirements)
-1.  **ระบบสิทธิ์และการยืนยันตัวตน (Auth & User Management):** สมัครสมาชิก, ล็อกอินด้วย JWT, รีเฟรชโทเค็น, รีเซ็ตรหัสผ่าน, และกำหนดสิทธิ์แบบ Role-Based Access Control (4 Roles) แคชผ่าน Cloudflare KV[cite: 1, 6, 7]
+1.  **ระบบสิทธิ์และการยืนยันตัวตน (Auth & User Management):** ระบบเข้าสู่ระบบจุดเดียว (Single Portal `/login` for all roles) พร้อมฟังก์ชัน **Remember Me (จำฉันไว้ในระบบ)** ที่จดจำ Email/Username และขยายอายุ Refresh Token เป็น 30 วัน, ล็อกอินด้วย JWT, รีเฟรชโทเค็น, รีเซ็ตรหัสผ่าน, นำทางผู้ใช้ไปยัง Portal ตามบทบาทอัตโนมัติ (Role-Based Redirection: Admin/Manager ➡️ `/admin`, Front Desk ➡️ `/front-desk`, Housekeeping ➡️ `/housekeeping`) และกำหนดสิทธิ์แบบ Role-Based Access Control (4 Roles) แคชผ่าน Cloudflare KV[cite: 1, 6, 7]
 2.  **ระบบห้องพักและสิ่งอำนวยความสะดวก (Room Inventory Management):** จัดการห้องพัก, ประเภทห้อง (Standard, Deluxe, Suite, Presidential), ชั้น, สิ่งอำนวยความสะดวก และประวัติการเปลี่ยนแปลง[cite: 1, 7]
 3.  **ระบบวงจรชีวิตสถานะห้องพัก (Room Lifecycle State Machine):** จัดการและควบคุมการเปลี่ยนสถานะของห้องพักทั้ง 7 สถานะอย่างเป็นระบบตามเงื่อนไขทางธุรกิจ[cite: 7]
 4.  **ระบบการจองห้องพัก (Reservation Management):** สร้างการจองล่วงหน้า (ตรวจสอบ Date Range Overlap โดยยังไม่เปลี่ยน `rooms.status` ทันที), บันทึกประวัติแขก (Guest Profiles) และรองรับการ Walk-in[cite: 3, 7]

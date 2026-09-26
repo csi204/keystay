@@ -1,4 +1,5 @@
 export * from './r2';
+export * from './crypto';
 
 /**
  * Formats a currency amount into standard 2-decimal string

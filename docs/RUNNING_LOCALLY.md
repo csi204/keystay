@@ -16,8 +16,8 @@
 
 ### 1. Clone + checkout branch
 ```bash
-git clone <repo-url>
-cd hotel-management-system
+git clone https://github.com/csi204/keystay.git
+cd keystay
 git checkout dev
 ```
 
@@ -26,26 +26,23 @@ git checkout dev
 pnpm install
 ```
 
-### 3. Login Cloudflare (ครั้งแรกครั้งเดียว)
+### 3. Login Cloudflare (หากต้องการดูรีซอร์สหรือรันคำสั่ง wrangler)
 ```bash
-wrangler login
+pnpm dlx wrangler login
 ```
 
-### 4. วางไฟล์ `.dev.vars`
-วางไว้ที่ `apps/services/<ชื่อ-service>/.dev.vars` เช่น
-```
-JWT_SECRET=your-secret-here
-CLOUDFLARE_ACCOUNT_ID=xxxx
-DB_NAME=db_reservation
-```
-> ⚠️ ห้าม commit ไฟล์นี้ขึ้น Git
+### 4. วางไฟล์ `.env` ที่ root และ `.dev.vars` ในแต่ละ service
+- คัดลอกค่าจาก `OnlyMe/SECRETS_HANDBOOK.md` หรือถามค่าจากเขต (`@hazeco`)
+- ที่ root: สร้างไฟล์ `.env` (ดูตัวอย่างใน `.env.example`)
+- ที่แต่ละ service: สร้างไฟล์ `.dev.vars` เช่น `apps/services/auth-user/.dev.vars`
+> ⚠️ ห้าม commit ไฟล์ `.env` และ `*.dev.vars` ขึ้น Git เด็ดขาด (อยู่ใน `.gitignore` แล้ว)
 
-### 5. สร้าง D1 local + รัน Migration
+### 5. สร้าง D1 Local SQLite + รัน Migration ครบทั้ง 6 Services ในคำสั่งเดียว
 ```bash
-pnpm db:migrate:local          # ทั้ง 6 databases พร้อมกัน
-# หรือเฉพาะ service เดียว:
-pnpm --filter @hotel/service-reservation db:migrate:local
+pnpm d1:migrate:local
 ```
+> คำสั่งนี้จะสร้างตารางฐานข้อมูล SQLite จำลองลงใน `.wrangler/state/v3/d1/` ของแต่ละ service ให้อัตโนมัติ โดยไม่ต้องกังวลว่าจะกระทบกับฐานข้อมูลจริงบน Cloudflare!
+
 
 ### 6. เติม Mock Data
 ```bash
