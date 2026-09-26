@@ -1,0 +1,56 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+.pnp/
+.pnp.js
+
+# Environment variables & secrets (CRITICAL: Never commit these!)
+.env
+.env.local
+.env.*.local
+.env.development
+.env.test
+.env.production
+!.env.example
+*.dev.vars
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+*.pem
+
+# Turborepo cache
+.turbo/
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+*.tsbuildinfo
+
+# Cloudflare Wrangler state & logs
+.wrangler/
+wrangler.log
+tail.log
+
+# D1 local databases
+.wrangler/state/v3/d1/
+
+# Test & coverage
+coverage/
+.nyc_output/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+*.bak
+scratch/
+OnlyMe/
+onlyMe/

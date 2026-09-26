@@ -1,0 +1,26 @@
+{
+  "name": "keystay",
+  "version": "1.0.0",
+  "private": true,
+  "description": "KEYSTAY — Hotel Management System Monorepo",
+  "packageManager": "pnpm@11.11.0",
+  "scripts": {
+    "dev": "pnpm dlx turbo dev --concurrency=15",
+    "dev:frontend": "pnpm dlx turbo dev --filter=@keystay/web",
+    "dev:backend": "pnpm dlx turbo dev --filter=@keystay/api-gateway --filter=@keystay/service-*",
+    "build": "pnpm dlx turbo run build",
+    "deploy": "pnpm dlx turbo run deploy",
+    "lint": "pnpm dlx turbo run lint",
+    "typecheck": "pnpm dlx turbo run typecheck",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
+    "setup:r2": "powershell -ExecutionPolicy Bypass -File ./scripts/setup-r2.ps1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.9",
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.2"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

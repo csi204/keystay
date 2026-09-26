@@ -1,0 +1,26 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "keystay-room-inventory",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-06-21",
+  "compatibility_flags": ["nodejs_compat"],
+  "dev": {
+    "port": 8789
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "db_room",
+      "database_id": "e977121a-c66c-4455-a5e9-ae0830b2bc55"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "KEYSTAY_ASSETS",
+      "bucket_name": "keystay"
+    }
+  ],
+  "vars": {
+    "ENVIRONMENT": "production"
+  }
+}

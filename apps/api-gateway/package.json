@@ -1,0 +1,22 @@
+{
+  "name": "@keystay/api-gateway",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm dlx wrangler dev --port 8787",
+    "deploy": "pnpm dlx wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "lint": "echo '@keystay/api-gateway lint ok'"
+  },
+  "dependencies": {
+    "@keystay/types": "workspace:*",
+    "@keystay/utils": "workspace:*",
+    "hono": "^4.7.2",
+    "jose": "^5.10.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250224.0",
+    "typescript": "^5.8.2"
+  }
+}

@@ -58,8 +58,17 @@ pnpm dev                # ทุก service + frontend พร้อมกัน
 # หรือแยกรัน:
 pnpm dev:backend         # เฉพาะ api-gateway + services/*
 pnpm dev:frontend        # เฉพาะ apps/web
-pnpm --filter @hotel/service-reservation dev   # เฉพาะ service เดียว
+pnpm --filter @keystay/service-reservation dev   # เฉพาะ service เดียว
 ```
+
+### 💡 โหมดการรัน: Local Mode vs Remote Mode (สำคัญมาก)
+
+* **โหมด Local (ค่าเริ่มต้นเวลาพิมพ์ `pnpm dev` หรือ `wrangler dev`):**
+  * แม้เราจะระบุ `database_id` หรือชื่อ Bucket ไว้ใน `wrangler.jsonc` แล้ว แต่เมื่อเรารันในโหมดปกติ Wrangler จะ **จำลอง D1 (SQLite), KV และ R2 ไว้บนเครื่องคอมพิวเตอร์ของเราเอง** (เก็บไว้ในโฟลเดอร์ `.wrangler/state/v3/`)
+  * **ข้อดีมาก:** เพื่อนๆ ทั้ง 3 คน (เขต, บุญ, เดียร์) สามารถกดรัน สร้างข้อมูล ทดสอบ ลบตาราง หรืออัปโหลดรูปภาพได้อย่างอิสระ ข้อมูลไม่ปนกัน และไม่มีทางกระทบกับ Cloudflare ของจริง
+* **โหมด Remote (`wrangler dev --remote`):**
+  * จะเชื่อมต่อไปยัง Cloudflare ของจริง (D1, KV, R2 บน Cloud) ก็ต่อเมื่อเราสั่ง flag `--remote` เท่านั้น
+  * เหมาะสำหรับตอนทำฟีเจอร์เสร็จแล้วอยากเทสร่วมกับระบบ Cloud จริง หรือทดสอบ Webhook ของ Upstash ก่อนที่จะ Merge เข้า `main`
 
 ### 8. ทดสอบด้วย Postman
 1. Import `tests/postman/Hotel_System_100_APIs.json`

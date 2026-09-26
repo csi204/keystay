@@ -1,0 +1,20 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "keystay-reservation",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-06-21",
+  "compatibility_flags": ["nodejs_compat"],
+  "dev": {
+    "port": 8790
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "db_reservation",
+      "database_id": "9a44e64f-bf82-479b-b9f9-7d9eaa5aafdb"
+    }
+  ],
+  "vars": {
+    "ENVIRONMENT": "production"
+  }
+}

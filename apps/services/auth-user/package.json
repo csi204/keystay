@@ -1,0 +1,27 @@
+{
+  "name": "@keystay/service-auth-user",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm dlx wrangler dev --port 8788",
+    "deploy": "pnpm dlx wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "lint": "echo 'auth-user lint ok'"
+  },
+  "dependencies": {
+    "@keystay/types": "workspace:*",
+    "@keystay/utils": "workspace:*",
+    "bcryptjs": "^3.0.2",
+    "drizzle-orm": "^0.39.3",
+    "hono": "^4.7.2",
+    "jose": "^5.10.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250224.0",
+    "@types/bcryptjs": "^2.4.6",
+    "drizzle-kit": "^0.30.4",
+    "typescript": "^5.8.2"
+  }
+}

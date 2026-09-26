@@ -1,0 +1,26 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "keystay-auth-user",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-06-21",
+  "compatibility_flags": ["nodejs_compat"],
+  "dev": {
+    "port": 8788
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "db_auth_user",
+      "database_id": "0eea1478-aec4-4ab8-9226-226617063c55"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "KV",
+      "id": "cc1dbfa0b0f64bae9bbed3b90bdfebee"
+    }
+  ],
+  "vars": {
+    "ENVIRONMENT": "production"
+  }
+}

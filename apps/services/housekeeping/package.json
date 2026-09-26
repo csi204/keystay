@@ -1,0 +1,26 @@
+{
+  "name": "@keystay/service-housekeeping",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm dlx wrangler dev --port 8791",
+    "deploy": "pnpm dlx wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "lint": "echo 'housekeeping lint ok'"
+  },
+  "dependencies": {
+    "@keystay/events": "workspace:*",
+    "@keystay/types": "workspace:*",
+    "@keystay/utils": "workspace:*",
+    "@upstash/qstash": "^2.7.23",
+    "drizzle-orm": "^0.39.3",
+    "hono": "^4.7.2",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250224.0",
+    "drizzle-kit": "^0.30.4",
+    "typescript": "^5.8.2"
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "keystay-api-gateway",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-06-21",
+  "compatibility_flags": ["nodejs_compat"],
+  "dev": {
+    "port": 8787
+  },
+  "services": [
+    {
+      "binding": "AUTH_USER_SERVICE",
+      "service": "keystay-auth-user"
+    },
+    {
+      "binding": "ROOM_INVENTORY_SERVICE",
+      "service": "keystay-room-inventory"
+    },
+    {
+      "binding": "RESERVATION_SERVICE",
+      "service": "keystay-reservation"
+    },
+    {
+      "binding": "HOUSEKEEPING_SERVICE",
+      "service": "keystay-housekeeping"
+    },
+    {
+      "binding": "BILLING_SERVICE",
+      "service": "keystay-billing"
+    },
+    {
+      "binding": "REPORT_ANALYTICS_SERVICE",
+      "service": "keystay-report-analytics"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "KV",
+      "id": "cc1dbfa0b0f64bae9bbed3b90bdfebee"
+    }
+  ],
+  "vars": {
+    "ENVIRONMENT": "production"
+  }
+}
