@@ -15,7 +15,13 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
     "setup:r2": "powershell -ExecutionPolicy Bypass -File ./scripts/setup-r2.ps1",
     "d1:migrate:local": "node ./scripts/migrate-d1.js",
-    "d1:migrate:remote": "node ./scripts/migrate-d1.js --remote"
+    "d1:migrate:remote": "node ./scripts/migrate-d1.js --remote",
+    "d1:seed:local": "node ./scripts/seed-d1.js",
+    "d1:seed:remote": "node ./scripts/seed-d1.js --remote",
+    "db:migrate:local": "node ./scripts/migrate-d1.js",
+    "db:migrate:prod": "node ./scripts/migrate-d1.js --remote",
+    "db:seed:local": "node ./scripts/seed-d1.js",
+    "db:seed:prod": "node ./scripts/seed-d1.js --remote"
   },
   "devDependencies": {
     "@types/node": "^22.13.9",

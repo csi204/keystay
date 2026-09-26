@@ -1,166 +1,189 @@
-# 🚀 Onboarding Guide — Hotel Management System
+# 🚀 Onboarding Guide — KEYSTAY Hotel Management System
 
-คู่มือ setup โปรเจกต์ครั้งแรก สำหรับสมาชิกทีมทุกคน
+คู่มือติดตั้งและรันโปรเจกต์ฉบับสมบูรณ์ สำหรับสมาชิกทีม KEYSTAY ทุกคน (เขต, เดียร์, บุญ)
 
 ---
 
-## 1️⃣ ติดตั้งเครื่องมือพื้นฐาน
+## 👥 ข้อมูลสมาชิกและบทบาทหน้าที่ (Team Matrix)
+
+| สมาชิก | GitHub | บทบาทหลัก | ดูแล Frontend | ดูแล Backend |
+|---|---|---|---|---|
+| **เขต (เขตโสภณ)** | `@hazeco` | **Project Lead**, Infra, DevOps, CI/CD, Gateway, Security | Manager & Admin Portal (`/admin`) | `api-gateway`<br>`auth-user`<br>`report-analytics` |
+| **เดียร์ (ธีรภัทร)** | `@allmusgus` | **SA Lead**, System Analyst, Schemas, State Machine, Outbox Patterns | Front Desk & Cashier Portal (`/front-desk`) | `reservation`<br>`billing` |
+| **บุญ (ปวริศ)** | `@Legxcy77` | **QA Lead**, UAT Scenarios, Postman Automation, QA Quality Gates | Housekeeping Portal (`/housekeeping`) | `room-inventory`<br>`housekeeping` |
+
+📌 **ติดตามงานและ Kanban Board ได้ที่:** [KEYSTAY GitHub Projects](https://github.com/orgs/csi204/projects/1)  
+🛡️ **นโยบายความปลอดภัยและข้อควรระวัง:** [docs/SECURITY.md](file:///d:/code/keystay/docs/SECURITY.md)  
+🤝 **คู่มือและ Event Contracts:** [docs/อ่านก่อนทำงาน.md](file:///d:/code/keystay/docs/อ่านก่อนทำงาน.md)
+
+---
+
+## 1️⃣ ติดตั้งเครื่องมือพื้นฐาน (Prerequisites)
 
 ```bash
-# ติดตั้งและสลับไปใช้ Node.js v22 (ต้องเป็น v22+ เท่านั้น)
+# 1. ติดตั้ง Node.js v22 (ต้องเป็น v22.x เท่านั้น)
 nvm install 22
 nvm use 22
 
-# ติดตั้ง pnpm แบบ global
-npm install -g pnpm
+# 2. ติดตั้ง pnpm v11 (ระบบใช้ pnpm@11.11.0)
+npm install -g pnpm@11.11.0
 
-# ติดตั้ง Wrangler CLI (Cloudflare Workers toolchain)
+# 3. ติดตั้ง Cloudflare Wrangler CLI (เวอร์ชันล่าสุด 4.x+)
 npm install -g wrangler
 
-# ตรวจสอบ version
-node --version    # v22.x.x
-pnpm --version    # 9.x.x
-wrangler --version # 3.70.x+
+# ตรวจสอบเวอร์ชัน
+node --version       # v22.x.x
+pnpm --version       # 11.11.0
+wrangler --version    # 4.140.x+
 ```
 
-## 2️⃣ Clone โปรเจกต์
+---
+
+## 2️⃣ Clone โปรเจกต์ & เช็คเอาท์ Branch `dev`
 
 ```bash
-git clone <repo-url>
-cd hotel-management-system
+# Clone repository
+git clone https://github.com/csi204/keystay.git
+cd keystay
+
+# สลับไปยัง branch dev (ทุกคนทำงานบน dev แตก branch ออกไป)
 git checkout dev
 ```
+
+---
 
 ## 3️⃣ ติดตั้ง Dependencies
 
 ```bash
-# รันที่ root ของ monorepo เท่านั้น — ติดตั้งทุก workspace พร้อมกัน
+# ติดตั้ง dependencies ทุก workspace พร้อมกันที่ root
 pnpm install
 ```
 
-## 4️⃣ ล็อกอิน Cloudflare
+---
+
+## 4️⃣ เข้าสู่ระบบ Cloudflare (ทำครั้งแรกครั้งเดียว)
 
 ```bash
-# ทำครั้งแรกเท่านั้น — browser จะเปิดขึ้นมาให้ authorize
+# รันคำสั่งนี้ แล้วเบราว์เซอร์จะเปิดขึ้นมาให้กดยืนยัน Authorize
 wrangler login
 ```
 
-## 5️⃣ ตั้งค่า Environment Variables
+---
 
-นำไฟล์ `.dev.vars` ของ service ที่ได้รับมอบหมาย (ขอจากเขตผ่าน Discord/LINE) มาวางไว้ใน folder ของ service นั้น:
+## 5️⃣ การตั้งค่า Secrets & Environment Variables
 
-```
-apps/services/<ชื่อ-service>/.dev.vars
-```
+- สำหรับ **Local Development**: มีค่า Default ที่พร้อมรันได้ทันทีโดยไม่ต้องแก้ไข `.env`
+- สำหรับ **Remote Cloudflare**: ทุก Service ได้รับการ Bind D1, KV, R2 และใส่ Secrets (`JWT_SECRET`, `QSTASH_TOKEN`, `CLOUDFLARE_API_TOKEN`) ไว้บน Cloudflare Dashboard ครบถ้วนแล้ว
+- หากต้องการดูคู่มือ Secrets เจาะลึก: อ่านได้ที่ `OnlyMe/secrets/SECRETS_HANDBOOK.md`
 
-ตัวอย่าง `.dev.vars` สำหรับ `reservation`:
-```
-JWT_SECRET=your-secret-here
-CLOUDFLARE_ACCOUNT_ID=xxxx
-DB_NAME=db_reservation
-```
+---
 
-> ⚠️ ห้าม commit ไฟล์ `.dev.vars` หรือ `.env` ขึ้น Git เด็ดขาด — มี `.gitignore` ครอบไว้แล้ว แต่ระวังด้วย
+## 6️⃣ สร้าง Database และเติม Mock Data (Seed)
 
-## 6️⃣ สร้าง D1 Database Local + รัน Migration
+ระบบเตรียมคำสั่งรันอัตโนมัติทั้ง 6 ฐานข้อมูลไว้ให้แล้ว:
 
 ```bash
-# รัน Migration ทั้ง 6 databases พร้อมกัน (local mode)
-pnpm db:migrate:local
+# 1. รันสร้าง Table ลงฐานข้อมูล Local SQLite ทั้ง 6 เซอร์วิส
+pnpm d1:migrate:local
 
-# หรือรัน migration เฉพาะ service เดียว
-pnpm --filter @hotel/service-reservation db:migrate:local
+# 2. เติมข้อมูลจำลอง (Users, Rooms, Reservations, Tasks, Bills, Reports) ลง Local
+pnpm d1:seed:local
 
-# เติม Mock Data สำหรับทดสอบ (Room Types, Users, Rooms ตัวอย่าง)
-pnpm db:seed:local
+# (ทางเลือก) สำหรับเขต: อัปเดต Schema และ Seed ขึ้น Cloudflare Remote D1 จริง
+pnpm d1:migrate:remote
+pnpm d1:seed:remote
 ```
 
-## 7️⃣ อ่านเอกสารก่อนเริ่มงาน
+> 💡 **หมายเหตุ:** สามารถใช้คำสั่ง `pnpm db:migrate:local` และ `pnpm db:seed:local` แทนได้เช่นกัน (เป็น alias)
 
-อ่านตามลำดับนี้:
+---
 
-1. งานที่ได้รับมอบหมาย → ดูจาก `docs/อ่านก่อนทำงาน.md` (Phase ของตัวเอง)
-2. `docs/skill.md` — กฎเหล็ก 5 ข้อ + Naming Convention
-3. `docs/structure.md` — หา path ไฟล์ว่าวางตรงไหน
-4. `docs/design.md` — ทำไมถึงออกแบบแบบนี้ (อ่านก่อนเขียน business logic)
-5. `docs/designsystem.md` — เวลาทำ UI (สี, spacing, component)
-6. `docs/systemdesign.md` — สถาปัตยกรรมระดับระบบ + 100 APIs + Sequence Diagrams
-
-## 8️⃣ เริ่มทำงาน
+## 7️⃣ รันระบบเพื่อเริ่มพัฒนา (Local Development)
 
 ```bash
-# PR feature เข้า dev เท่านั้น — ห้าม push ตรงเข้า main
+# รันทุกแอปและทุกเซอร์วิสพร้อมกัน (Turborepo Concurrency)
+pnpm dev
 
-# สร้าง branch ใหม่จากชื่องาน/feature ของตัวเอง
-git checkout -b feat/<service-name>-<feature>
+# หรือรันเฉพาะ Frontend อย่างเดียว (Vite SPA พอร์ต 5173)
+pnpm dev:frontend
+
+# หรือรันเฉพาะ Backend อย่างเดียว (API Gateway พอร์ต 8787 + เซอร์วิส 8788-8793)
+pnpm dev:backend
+
+# หรือรันเฉพาะเซอร์วิสของตัวเอง (เช่น เซอร์วิส reservation)
+pnpm --filter @keystay/reservation dev
+```
+
+### 🌐 Ports ประจำแต่ละเซอร์วิส:
+| แอป / เซอร์วิส | Local Port | หน้าที่ |
+|---|---|---|
+| `apps/web` | `5173` | Frontend Single Page Application (React + Vite) |
+| `apps/api-gateway` | `8787` | Central API Gateway, Reverse Proxy, JWT Guard, Rate Limiter |
+| `auth-user` | `8788` | Authentication, Users, Roles & Permissions |
+| `room-inventory` | `8789` | Rooms, Room Types, Floors, Status History |
+| `reservation` | `8790` | Bookings, Guests, Check-in / Check-out, Walk-in |
+| `housekeeping` | `8791` | Cleaning Kanban, Task Assignment, Room Issues |
+| `billing` | `8792` | Folio Bills, Minibar Items, Payments & Invoices |
+| `report-analytics` | `8793` | KPIs, Daily Stats, Occupancy %, CSV/PDF Export |
+
+---
+
+## 🔑 บัญชีเข้าสู่ระบบเริ่มต้น (Default Seed Users)
+
+พนักงานทุกแผนกล็อกอินผ่านหน้าจอเดียวที่ `/login`:
+
+| Email | Password | Role | สิทธิ์ / หน้าจอที่เปิดได้ |
+|---|---|---|---|
+| `admin@keystay.com` | `Keystay@2026` | `admin` | Manager & Admin Portal (`/admin`) — สิทธิ์เต็ม |
+| `manager@keystay.com` | `Keystay@2026` | `manager` | Manager & Admin Portal (`/admin`) — ดู KPI, คุมราคา |
+| `frontdesk@keystay.com` | `Keystay@2026` | `front_desk` | Front Desk & Cashier Portal (`/front-desk`) |
+| `housekeeping@keystay.com` | `Keystay@2026` | `housekeeping` | Housekeeping Portal (`/housekeeping`) |
+
+---
+
+## 8️⃣ Git Workflow & กฎการส่งงาน
+
+```bash
+# 1. แตก branch ใหม่จาก dev เสมอ (ห้าม push ตรงเข้า main หรือ dev)
+git checkout dev
+git pull origin dev
+git checkout -b feat/ชื่อฟีเจอร์-หรือ-issue
+
 # เช่น
-git checkout -b feat/reservation-check-in
-git checkout -b feat/housekeeping-assign-task
-git checkout -b fix/billing-tax-calculation
-```
+git checkout -b feat/room-inventory-state-machine
+git checkout -b feat/reservation-checkin-flow
+git checkout -b test/housekeeping-uat-scenario
 
-เริ่มทำตาม Phase ที่ระบุไว้ใน `docs/อ่านก่อนทำงาน.md`
+# 2. คอมมิตโค้ดตาม Conventional Commits
+git commit -m "feat(reservation): implement advance booking validation"
 
----
-
-## ▶️ คำสั่งรันโปรเจกต์
-
-| คำสั่ง | ใช้เมื่อ |
-|---|---|
-| `pnpm dev` | รันทุก service + frontend พร้อมกันทั้งหมด |
-| `pnpm dev:frontend` | รันเฉพาะ Frontend SPA (apps/web) |
-| `pnpm dev:backend` | รันเฉพาะ backend (api-gateway + services/*) |
-| `pnpm --filter @hotel/service-reservation dev` | รันเฉพาะ service ตัวเดียว |
-| `pnpm --filter @hotel/web dev` | รันเฉพาะ Frontend |
-| `pnpm typecheck` | ตรวจ TypeScript errors ทุก workspace |
-| `pnpm lint` | รัน ESLint ทุก workspace |
-| `pnpm build` | Build ทุก app/service สำหรับ production |
-
-## 🗄️ คำสั่ง Database (Drizzle + D1)
-
-| คำสั่ง | ใช้เมื่อ |
-|---|---|
-| `pnpm db:generate` | สร้าง Migration SQL จาก Drizzle schema ที่แก้ไข |
-| `pnpm db:migrate:local` | รัน Migration ลงใน D1 local ทุกตัว |
-| `pnpm db:migrate:prod` | รัน Migration ขึ้น Cloudflare D1 Production (เขตเท่านั้น) |
-| `pnpm db:seed:local` | เติม Mock Data (Room Types, Users ตัวอย่าง) |
-| `pnpm db:studio` | เปิด Drizzle Studio GUI ดู/แก้ข้อมูลใน browser |
-
-## 🚢 คำสั่ง Deploy (Wrangler)
-
-| คำสั่ง | ใช้เมื่อ |
-|---|---|
-| `wrangler deploy` | Deploy Worker ตัวเดียว (รันใน folder ของ service นั้น) |
-| `pnpm deploy:all` | Deploy ทุก service + frontend ขึ้น Cloudflare (CI/CD เท่านั้น) |
-| `wrangler tail` | ดู real-time logs ของ Worker ที่ deploy แล้ว |
-| `wrangler d1 execute <db-name> --command "SELECT * FROM rooms LIMIT 5"` | Query D1 Production ตรงๆ เพื่อ debug |
-
-## 🧪 คำสั่ง Test (Postman)
-
-```bash
-# Import Postman Collection
-# 1. เปิด Postman
-# 2. Import → File → เลือก tests/postman/Hotel_System_100_APIs.json
-# 3. เลือก Environment: Local (http://localhost:8787)
-# 4. ยิง POST /login ก่อนเพื่อรับ JWT Token (Postman จะ set Bearer อัตโนมัติ)
-# 5. ทดสอบตาม Flow: จอง → เช็คอิน → เช็คเอาท์ → ตรวจแม่บ้าน → บิล → รายงาน
+# 3. Push ขึ้น GitHub แล้วเปิด Pull Request เข้าหา 'dev'
+git push origin feat/ชื่อฟีเจอร์
+# ใน PR Description ให้พิมพ์ "Closes #IssueNumber" เช่น "Closes #3" เพื่อปิดงานอัตโนมัติ
 ```
 
 ---
 
-## ❓ Troubleshooting ที่พบบ่อย
+## 🚢 คำสั่ง Deploy ขึ้น Cloudflare
 
-**Q: รัน `pnpm dev` แล้วขึ้น "D1 Database binding not found"**
-→ ให้รัน `pnpm db:migrate:local` ก่อน — Wrangler ต้องสร้างไฟล์ `.wrangler/state/v3/d1/` ในเครื่องก่อน
+- **อัตโนมัติ (CI/CD):** เมื่อ PR ถูก Merge เข้า `main` GitHub Actions (`.github/workflows/deploy.yml`) จะ Build และ Deploy ทุกเซอร์วิสขึ้น Cloudflare Workers & Pages อัตโนมัติ
+- **Manual Deploy รายเซอร์วิส:**
+  ```bash
+  cd apps/services/report-analytics
+  pnpm dlx wrangler deploy
+  ```
 
-**Q: ได้รับ `401 Unauthorized` ตลอด**
-→ ตรวจว่า Header มี `Authorization: Bearer <token>` หรือยัง Access Token อายุ 15 นาที ให้ยิง `POST /refresh-token` เพื่อขอชุดใหม่
+---
 
-**Q: Queue Consumer ไม่ทำงานในเครื่อง**
-→ Cloudflare Queues ไม่รองรับ local emulation เต็มรูปแบบ ให้ใช้ `wrangler dev --remote` หรือ test consumer โดยตรงผ่าน Postman ยิง HTTP ตรงไปที่ consumer endpoint
+## ❓ FAQ & Troubleshooting
 
-**Q: Drizzle generate แล้วไม่มีไฟล์ migration ออกมา**
-→ ตรวจว่า `schema.ts` มี export ตารางออกมาหรือยัง และ `drizzle.config.ts` ชี้ path ถูกต้อง
+**Q: ทำไมรัน `pnpm dev` แล้วขึ้น Error เกี่ยวกับ D1 Database binding?**  
+👉 ให้รัน `pnpm d1:migrate:local` และ `pnpm d1:seed:local` ก่อน เพื่อให้ Wrangler จำลอง SQLite ไฟล์ในโฟลเดอร์ `.wrangler/state/` ในเครื่อง
 
-**Q: `wrangler deploy` ล้มเหลว "Script startup exceeded CPU time limit"**
-→ มักเกิดจาก import package ที่หนักเกิน เช่น Prisma — ตรวจสอบว่าใช้แค่ Drizzle ORM และไม่มี Native Binding ใดๆ
+**Q: ได้รับ HTTP `401 Unauthorized` เวลาเรียก API?**  
+👉 API ส่วนใหญ่ (ยกเว้น `/health` และ `/api/auth/login`) ต้องแนบ Header:  
+`Authorization: Bearer <jwt-access-token>`  
+Access Token มีอายุ 15 นาที หากหมดอายุ ให้เรียก `POST /api/auth/refresh-token` เพื่อขอ Token ใหม่
+
+**Q: ทดสอบ Webhook หรือ Event ระหว่างเครื่องอย่างไร?**  
+👉 ให้ยิง HTTP POST ตรงไปยัง Webhook endpoint ของเซอร์วิสนั้นๆ (เช่น `http://localhost:8789/webhooks/checkout`) โดยแนบ Body JSON ตามโครงสร้าง Zod ใน `packages/events/src/index.ts`

@@ -73,3 +73,29 @@ export const HousekeepingTaskCompletedEventSchema = z.object({
   nextRoomStatus: z.literal('available'),
 });
 export type HousekeepingTaskCompletedEvent = z.infer<typeof HousekeepingTaskCompletedEventSchema>;
+
+// ========================================================
+// 4. Bill Paid Event -> Upstash Topic: hotel.billing.paid
+// ========================================================
+export const BillPaidEventSchema = z.object({
+  eventId: z.string().uuid(),
+  eventType: z.literal('BillPaid'),
+  timestamp: z.string().datetime(),
+  billId: z.string().uuid(),
+  billNumber: z.string(),
+  reservationId: z.string().uuid(),
+  guestName: z.string(),
+  roomNumber: z.string(),
+  roomTypeName: z.string().optional(),
+  subtotal: z.number(),
+  taxAmount: z.number(),
+  serviceCharge: z.number().default(0),
+  discountAmount: z.number().default(0),
+  totalAmount: z.number(),
+  depositDeducted: z.number().default(0),
+  amountPaid: z.number(),
+  paymentMethod: z.string(),
+  referenceNumber: z.string().optional(),
+  performedBy: z.string().uuid().optional(),
+});
+export type BillPaidEvent = z.infer<typeof BillPaidEventSchema>;
