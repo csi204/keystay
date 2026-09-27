@@ -54,3 +54,5 @@ desktop.ini
 scratch/
 OnlyMe/
 onlyMe/
+.vscode/
+PR_*.md
