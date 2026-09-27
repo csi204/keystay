@@ -1,5 +1,16 @@
 import { z } from 'zod';
 
+export const validDateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format')
+  .refine(
+    (val) => {
+      const d = new Date(val + 'T00:00:00Z');
+      return !isNaN(d.getTime()) && d.toISOString().slice(0, 10) === val;
+    },
+    { message: 'Invalid calendar date (e.g. non-existent day like Feb 31 or invalid leap year)' }
+  );
+
 export const createReservationSchema = z
   .object({
     guestId: z.string().optional(),
@@ -11,11 +22,10 @@ export const createReservationSchema = z
     roomId: z.string().min(1, 'Room ID is required'),
     roomNumber: z.string().optional(),
     roomTypeName: z.string().optional(),
-    checkInDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'checkInDate must be in YYYY-MM-DD format'),
-    checkOutDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'checkOutDate must be in YYYY-MM-DD format'),
+    checkInDate: validDateSchema,
+    checkOutDate: validDateSchema,
     numGuests: z.coerce.number().int().min(1).default(1),
     nightlyRate: z.coerce.number().min(0, 'Nightly rate must be positive'),
-    totalNights: z.coerce.number().int().min(1).optional(),
     depositAmount: z.coerce.number().min(0).default(0),
     discountAmount: z.coerce.number().min(0).default(0),
     specialRequests: z.string().optional().nullable(),
@@ -34,14 +44,14 @@ export const updateReservationSchema = z.object({
   roomId: z.string().optional(),
   roomNumber: z.string().optional(),
   roomTypeName: z.string().optional(),
-  checkInDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  checkOutDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  checkInDate: validDateSchema.optional(),
+  checkOutDate: validDateSchema.optional(),
   numGuests: z.coerce.number().int().min(1).optional(),
   nightlyRate: z.coerce.number().min(0).optional(),
   depositAmount: z.coerce.number().min(0).optional(),
   discountAmount: z.coerce.number().min(0).optional(),
   specialRequests: z.string().optional().nullable(),
-  status: z.enum(['confirmed', 'checked_in', 'checked_out', 'cancelled', 'extended']).optional(),
+  status: z.enum(['confirmed', 'checked_in', 'checked_out', 'extended']).optional(),
 });
 
 export type CreateReservationInput = z.infer<typeof createReservationSchema>;

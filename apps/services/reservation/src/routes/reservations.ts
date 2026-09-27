@@ -4,9 +4,26 @@ import { createReservationSchema, updateReservationSchema } from '../validators/
 
 const reservations = new Hono<{ Bindings: Env }>();
 
-// Helper to get today's date in YYYY-MM-DD
+// 5.1 Helper to get today's date in YYYY-MM-DD formatted in Bangkok timezone
 function getTodayString(): string {
-  return new Date().toISOString().split('T')[0];
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Bangkok',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+}
+
+// 1.1 Helper to split date range into an array of individual dates [startDate, endDate)
+function getDateRangeArray(startDate: string, endDate: string): string[] {
+  const dates: string[] = [];
+  const current = new Date(startDate + 'T00:00:00Z');
+  const end = new Date(endDate + 'T00:00:00Z');
+  while (current < end) {
+    dates.push(current.toISOString().slice(0, 10));
+    current.setUTCDate(current.getUTCDate() + 1);
+  }
+  return dates;
 }
 
 // ==========================================
@@ -195,8 +212,13 @@ reservations.get('/', async (c) => {
     const checkInDate = c.req.query('checkInDate');
     const checkOutDate = c.req.query('checkOutDate');
     const search = c.req.query('search')?.trim();
-    const limit = Math.min(parseInt(c.req.query('limit') || '50', 10), 100);
-    const offset = Math.max(parseInt(c.req.query('offset') || '0', 10), 0);
+
+    // 2.1 Clamp limit and offset
+    const rawLimit = parseInt(c.req.query('limit') || '50', 10);
+    const limit = Number.isNaN(rawLimit) || rawLimit < 1 ? 50 : Math.min(rawLimit, 100);
+
+    const rawOffset = parseInt(c.req.query('offset') || '0', 10);
+    const offset = Number.isNaN(rawOffset) || rawOffset < 0 ? 0 : rawOffset;
 
     let whereClauses: string[] = [];
     let params: any[] = [];
@@ -327,46 +349,52 @@ reservations.post('/', async (c) => {
     const now = new Date().toISOString();
     const callerId = c.req.header('x-user-id') || 'system';
 
-    // 1. Resolve or Create Guest
+    // 1. Resolve or Prepare Guest Creation Statement (Atomic 3.2: No Orphaned Guest)
     let guestId = data.guestId;
     let guestRecord: any = null;
+    let stmtInsertGuest: any = null;
+    let guestNameForOutbox = data.guestName;
+    let guestEmailForOutbox = data.guestEmail;
+    let guestPhoneForOutbox = data.guestPhone;
 
     if (guestId) {
       guestRecord = await c.env.DB.prepare('SELECT * FROM guests WHERE id = ?').bind(guestId).first();
       if (!guestRecord) {
         return c.json({ success: false, error: { code: 'GUEST_NOT_FOUND', message: `Guest with ID ${guestId} not found` } }, 404);
       }
+      guestNameForOutbox = `${guestRecord.first_name} ${guestRecord.last_name}`.trim();
+      guestEmailForOutbox = guestRecord.email;
+      guestPhoneForOutbox = guestRecord.phone;
     } else {
-      // Find by phone or email if provided
+      // Find existing by phone or email
       if (data.guestPhone) {
-        guestRecord = await c.env.DB.prepare('SELECT * FROM guests WHERE phone = ?').bind(data.guestPhone).first();
+        guestRecord = await c.env.DB.prepare('SELECT * FROM guests WHERE phone = ?').bind(data.guestPhone.trim()).first();
       }
       if (!guestRecord && data.guestEmail) {
-        guestRecord = await c.env.DB.prepare('SELECT * FROM guests WHERE email = ?').bind(data.guestEmail).first();
+        guestRecord = await c.env.DB.prepare('SELECT * FROM guests WHERE email = ?').bind(data.guestEmail.trim()).first();
       }
 
       if (guestRecord) {
         guestId = guestRecord.id;
+        guestNameForOutbox = `${guestRecord.first_name} ${guestRecord.last_name}`.trim();
+        guestEmailForOutbox = guestRecord.email;
+        guestPhoneForOutbox = guestRecord.phone;
       } else {
-        // Auto-create guest
+        // Prepare atomic guest insertion statement (will execute in batch, no orphans on error)
         guestId = `gst-${crypto.randomUUID()}`;
         const nameParts = (data.guestName || '').trim().split(' ');
-        const firstName = data.firstName || nameParts[0] || 'Guest';
-        const lastName = data.lastName || nameParts.slice(1).join(' ') || 'Customer';
+        const firstName = (data.firstName || nameParts[0] || 'Guest').trim();
+        const lastName = (data.lastName || nameParts.slice(1).join(' ') || 'Customer').trim();
+        guestNameForOutbox = `${firstName} ${lastName}`.trim();
 
-        await c.env.DB.prepare(
+        stmtInsertGuest = c.env.DB.prepare(
           `INSERT INTO guests (id, first_name, last_name, email, phone, nationality, total_stays, created_at, updated_at)
            VALUES (?, ?, ?, ?, ?, 'Thai', 0, ?, ?)`
-        )
-          .bind(guestId, firstName, lastName, data.guestEmail || null, data.guestPhone || null, now, now)
-          .run();
-
-        guestRecord = await c.env.DB.prepare('SELECT * FROM guests WHERE id = ?').bind(guestId).first();
+        ).bind(guestId, firstName, lastName, data.guestEmail?.trim() || null, data.guestPhone?.trim() || null, now, now);
       }
     }
 
-    // 2. Room Overlap Check (Date Range Overlap Prevention)
-    // Overlap condition: check_in_date < newCheckOutDate AND check_out_date > newCheckInDate
+    // 2. Fast Overlap Check (First-line defense)
     const overlapQuery = `
       SELECT id, reservation_code, check_in_date, check_out_date, status
       FROM reservations
@@ -393,11 +421,10 @@ reservations.post('/', async (c) => {
       );
     }
 
-    // 3. Compute Dates, Nights and Financial Totals
+    // 3. 3.1 Strict Server Calculation for Duration & Financials
     const checkInTime = new Date(data.checkInDate).getTime();
     const checkOutTime = new Date(data.checkOutDate).getTime();
-    const calculatedNights = Math.max(1, Math.round((checkOutTime - checkInTime) / (1000 * 3600 * 24)));
-    const totalNights = data.totalNights || calculatedNights;
+    const totalNights = Math.max(1, Math.round((checkOutTime - checkInTime) / (1000 * 3600 * 24)));
 
     const nightlyRate = Number(data.nightlyRate);
     const subtotal = Number((nightlyRate * totalNights).toFixed(2));
@@ -407,9 +434,10 @@ reservations.post('/', async (c) => {
     const totalAmount = Number((taxableAmount + taxAmount).toFixed(2));
     const depositAmount = Number(data.depositAmount || 0);
 
+    // 3.3 High Entropy Reservation Code (8-character alphanumeric slice)
     const reservationId = `res-${crypto.randomUUID()}`;
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    const reservationCode = `RES-${new Date().getFullYear()}-${randomSuffix}`;
+    const codeSuffix = crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase();
+    const reservationCode = `RES-${new Date().getFullYear()}-${codeSuffix}`;
     const roomNumber = data.roomNumber || data.roomId.replace('rm-', '');
     const roomTypeName = data.roomTypeName || 'Standard Room';
 
@@ -421,9 +449,9 @@ reservations.post('/', async (c) => {
       reservationId,
       reservationCode,
       guestId,
-      guestName: guestRecord ? `${guestRecord.first_name} ${guestRecord.last_name}`.trim() : data.guestName,
-      guestEmail: guestRecord?.email || data.guestEmail,
-      guestPhone: guestRecord?.phone || data.guestPhone,
+      guestName: guestNameForOutbox,
+      guestEmail: guestEmailForOutbox,
+      guestPhone: guestPhoneForOutbox,
       roomId: data.roomId,
       roomNumber,
       roomTypeName,
@@ -437,55 +465,80 @@ reservations.post('/', async (c) => {
       performedBy: callerId,
     };
 
-    // 5. Atomic Batch Execution (Reservation + History + Outbox Event + Increment Guest Stays)
-    const stmtInsertReservation = c.env.DB.prepare(
-      `INSERT INTO reservations (
-        id, reservation_code, guest_id, room_id, room_number, room_type_name,
-        status, booking_type, check_in_date, check_out_date,
-        num_guests, nightly_rate, total_nights, subtotal, discount_amount, tax_amount, deposit_amount,
-        total_amount, special_requests, created_by, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, 'confirmed', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).bind(
-      reservationId,
-      reservationCode,
-      guestId,
-      data.roomId,
-      roomNumber,
-      roomTypeName,
-      data.bookingType,
-      data.checkInDate,
-      data.checkOutDate,
-      data.numGuests,
-      nightlyRate,
-      totalNights,
-      subtotal,
-      discountAmount,
-      taxAmount,
-      depositAmount,
-      totalAmount,
-      data.specialRequests || null,
-      callerId,
-      now,
-      now
+    // 5. 1.1 Break down into individual dates for room_booked_dates
+    const bookedDates = getDateRangeArray(data.checkInDate, data.checkOutDate);
+
+    // 6. Build Atomic D1 Batch Statements
+    const batchStatements: any[] = [];
+
+    // Prepend guest insert if newly created
+    if (stmtInsertGuest) {
+      batchStatements.push(stmtInsertGuest);
+    }
+
+    // Insert reservation
+    batchStatements.push(
+      c.env.DB.prepare(
+        `INSERT INTO reservations (
+          id, reservation_code, guest_id, room_id, room_number, room_type_name,
+          status, booking_type, check_in_date, check_out_date,
+          num_guests, nightly_rate, total_nights, subtotal, discount_amount, tax_amount, deposit_amount,
+          total_amount, special_requests, created_by, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, 'confirmed', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).bind(
+        reservationId,
+        reservationCode,
+        guestId,
+        data.roomId,
+        roomNumber,
+        roomTypeName,
+        data.bookingType,
+        data.checkInDate,
+        data.checkOutDate,
+        data.numGuests,
+        nightlyRate,
+        totalNights,
+        subtotal,
+        discountAmount,
+        taxAmount,
+        depositAmount,
+        totalAmount,
+        data.specialRequests || null,
+        callerId,
+        now,
+        now
+      )
     );
 
-    const stmtInsertHistory = c.env.DB.prepare(
-      `INSERT INTO reservation_history (id, reservation_id, action, previous_data, new_data, performed_by, created_at)
-       VALUES (?, ?, 'created', NULL, ?, ?, ?)`
-    ).bind(`rh-${crypto.randomUUID()}`, reservationId, JSON.stringify(outboxPayload), callerId, now);
+    // 1.1 Insert individual booked dates for hard DB-level uniqueness constraint
+    for (const d of bookedDates) {
+      batchStatements.push(
+        c.env.DB.prepare(
+          'INSERT INTO room_booked_dates (room_id, booked_date, reservation_id) VALUES (?, ?, ?)'
+        ).bind(data.roomId, d, reservationId)
+      );
+    }
 
-    const stmtInsertOutbox = c.env.DB.prepare(
-      `INSERT INTO outbox_events (id, event_type, aggregate_id, aggregate_type, payload, status, created_at)
-       VALUES (?, 'ReservationCreated', ?, 'Reservation', ?, 'pending', ?)`
-    ).bind(`evt-${crypto.randomUUID()}`, reservationId, JSON.stringify(outboxPayload), now);
+    // Insert history
+    batchStatements.push(
+      c.env.DB.prepare(
+        `INSERT INTO reservation_history (id, reservation_id, action, previous_data, new_data, performed_by, created_at)
+         VALUES (?, ?, 'created', NULL, ?, ?, ?)`
+      ).bind(`rh-${crypto.randomUUID()}`, reservationId, JSON.stringify(outboxPayload), callerId, now)
+    );
 
-    const stmtIncrementGuestStays = c.env.DB.prepare(
-      'UPDATE guests SET total_stays = total_stays + 1, updated_at = ? WHERE id = ?'
-    ).bind(now, guestId);
+    // Insert outbox event
+    batchStatements.push(
+      c.env.DB.prepare(
+        `INSERT INTO outbox_events (id, event_type, aggregate_id, aggregate_type, payload, status, created_at)
+         VALUES (?, 'ReservationCreated', ?, 'Reservation', ?, 'pending', ?)`
+      ).bind(`evt-${crypto.randomUUID()}`, reservationId, JSON.stringify(outboxPayload), now)
+    );
 
-    await c.env.DB.batch([stmtInsertReservation, stmtInsertHistory, stmtInsertOutbox, stmtIncrementGuestStays]);
+    // Execute atomic batch
+    await c.env.DB.batch(batchStatements);
 
-    // Fetch and return the newly created reservation with full joins
+    // Fetch and return created reservation with joined guest
     const created = await c.env.DB.prepare(
       `SELECT r.*, g.first_name, g.last_name, g.email as guest_email, g.phone as guest_phone, g.id_card_number, g.nationality
        FROM reservations r
@@ -504,6 +557,18 @@ reservations.post('/', async (c) => {
       201
     );
   } catch (error: any) {
+    if (error.message && (error.message.includes('room_booked_dates') || error.message.includes('UNIQUE constraint failed'))) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: 'ROOM_OVERBOOKING_CONFLICT',
+            message: 'Room has already been booked for one or more dates in this selected period (concurrency lock)',
+          },
+        },
+        409
+      );
+    }
     return c.json({ success: false, error: { message: error.message || 'Failed to create reservation' } }, 500);
   }
 });
@@ -526,6 +591,10 @@ reservations.put('/:id', async (c) => {
       return c.json({ success: false, error: { code: 'INVALID_STATUS', message: 'Cannot modify a cancelled reservation' } }, 400);
     }
 
+    if (existing.status === 'checked_out') {
+      return c.json({ success: false, error: { code: 'INVALID_STATUS', message: 'Cannot modify a completed/checked-out reservation' } }, 400);
+    }
+
     const body = await c.req.json();
     const parsed = updateReservationSchema.safeParse(body);
 
@@ -546,8 +615,13 @@ reservations.put('/:id', async (c) => {
       return c.json({ success: false, error: { message: 'checkOutDate must be after checkInDate' } }, 400);
     }
 
-    // Overlap check if room or dates were changed
-    if (data.roomId || data.checkInDate || data.checkOutDate) {
+    const isRoomOrDatesChanged =
+      newRoomId !== existing.room_id ||
+      newCheckInDate !== existing.check_in_date ||
+      newCheckOutDate !== existing.check_out_date;
+
+    // Fast overlap check if room or dates were changed
+    if (isRoomOrDatesChanged) {
       const conflict = await c.env.DB.prepare(
         `SELECT id, reservation_code, check_in_date, check_out_date
          FROM reservations
@@ -575,7 +649,7 @@ reservations.put('/:id', async (c) => {
       }
     }
 
-    // Recalculate financial amounts
+    // 3.1 Strict Server Recalculation
     const checkInTime = new Date(newCheckInDate).getTime();
     const checkOutTime = new Date(newCheckOutDate).getTime();
     const totalNights = Math.max(1, Math.round((checkOutTime - checkInTime) / (1000 * 3600 * 24)));
@@ -594,59 +668,113 @@ reservations.put('/:id', async (c) => {
     const specialRequests = data.specialRequests !== undefined ? data.specialRequests : existing.special_requests;
     const newStatus = data.status || existing.status;
 
-    const stmtUpdate = c.env.DB.prepare(
-      `UPDATE reservations SET
-        room_id = ?, room_number = ?, room_type_name = ?,
-        check_in_date = ?, check_out_date = ?, num_guests = ?,
-        nightly_rate = ?, total_nights = ?, subtotal = ?, discount_amount = ?,
-        tax_amount = ?, deposit_amount = ?, total_amount = ?,
-        special_requests = ?, status = ?, updated_at = ?
-       WHERE id = ?`
-    ).bind(
-      newRoomId,
-      roomNumber,
-      roomTypeName,
-      newCheckInDate,
-      newCheckOutDate,
-      numGuests,
-      nightlyRate,
-      totalNights,
-      subtotal,
-      discountAmount,
-      taxAmount,
-      depositAmount,
-      totalAmount,
-      specialRequests,
-      newStatus,
-      now,
-      existing.id
-    );
+    const batchStatements: any[] = [];
 
-    const stmtHistory = c.env.DB.prepare(
-      `INSERT INTO reservation_history (id, reservation_id, action, previous_data, new_data, performed_by, created_at)
-       VALUES (?, ?, 'updated', ?, ?, ?, ?)`
-    ).bind(
-      `rh-${crypto.randomUUID()}`,
-      existing.id,
-      JSON.stringify({
-        status: existing.status,
-        checkInDate: existing.check_in_date,
-        checkOutDate: existing.check_out_date,
-        roomId: existing.room_id,
-        totalAmount: existing.total_amount,
-      }),
-      JSON.stringify({
-        status: newStatus,
-        checkInDate: newCheckInDate,
-        checkOutDate: newCheckOutDate,
-        roomId: newRoomId,
+    // Statement: Update reservation record
+    batchStatements.push(
+      c.env.DB.prepare(
+        `UPDATE reservations SET
+          room_id = ?, room_number = ?, room_type_name = ?,
+          check_in_date = ?, check_out_date = ?, num_guests = ?,
+          nightly_rate = ?, total_nights = ?, subtotal = ?, discount_amount = ?,
+          tax_amount = ?, deposit_amount = ?, total_amount = ?,
+          special_requests = ?, status = ?, updated_at = ?
+         WHERE id = ?`
+      ).bind(
+        newRoomId,
+        roomNumber,
+        roomTypeName,
+        newCheckInDate,
+        newCheckOutDate,
+        numGuests,
+        nightlyRate,
+        totalNights,
+        subtotal,
+        discountAmount,
+        taxAmount,
+        depositAmount,
         totalAmount,
-      }),
-      callerId,
-      now
+        specialRequests,
+        newStatus,
+        now,
+        existing.id
+      )
     );
 
-    await c.env.DB.batch([stmtUpdate, stmtHistory]);
+    // 1.1 Update room_booked_dates if room, dates, or status changed
+    if (newStatus === 'cancelled') {
+      batchStatements.push(
+        c.env.DB.prepare('DELETE FROM room_booked_dates WHERE reservation_id = ?').bind(existing.id)
+      );
+    } else if (isRoomOrDatesChanged) {
+      batchStatements.push(
+        c.env.DB.prepare('DELETE FROM room_booked_dates WHERE reservation_id = ?').bind(existing.id)
+      );
+      const newBookedDates = getDateRangeArray(newCheckInDate, newCheckOutDate);
+      for (const d of newBookedDates) {
+        batchStatements.push(
+          c.env.DB.prepare(
+            'INSERT INTO room_booked_dates (room_id, booked_date, reservation_id) VALUES (?, ?, ?)'
+          ).bind(newRoomId, d, existing.id)
+        );
+      }
+    }
+
+    // Statement: Insert audit history
+    batchStatements.push(
+      c.env.DB.prepare(
+        `INSERT INTO reservation_history (id, reservation_id, action, previous_data, new_data, performed_by, created_at)
+         VALUES (?, ?, 'updated', ?, ?, ?, ?)`
+      ).bind(
+        `rh-${crypto.randomUUID()}`,
+        existing.id,
+        JSON.stringify({
+          status: existing.status,
+          checkInDate: existing.check_in_date,
+          checkOutDate: existing.check_out_date,
+          roomId: existing.room_id,
+          totalAmount: existing.total_amount,
+        }),
+        JSON.stringify({
+          status: newStatus,
+          checkInDate: newCheckInDate,
+          checkOutDate: newCheckOutDate,
+          roomId: newRoomId,
+          totalAmount,
+        }),
+        callerId,
+        now
+      )
+    );
+
+    // 4.1 Statement: Insert Outbox Event on PUT
+    const eventType = newStatus === 'cancelled' ? 'ReservationCancelled' : 'ReservationUpdated';
+    batchStatements.push(
+      c.env.DB.prepare(
+        `INSERT INTO outbox_events (id, event_type, aggregate_id, aggregate_type, payload, status, created_at)
+         VALUES (?, ?, ?, 'Reservation', ?, 'pending', ?)`
+      ).bind(
+        `evt-${crypto.randomUUID()}`,
+        eventType,
+        existing.id,
+        JSON.stringify({
+          eventId: crypto.randomUUID(),
+          eventType,
+          reservationId: existing.id,
+          reservationCode: existing.reservation_code,
+          roomId: newRoomId,
+          checkInDate: newCheckInDate,
+          checkOutDate: newCheckOutDate,
+          totalAmount: String(totalAmount),
+          status: newStatus,
+          timestamp: now,
+          performedBy: callerId,
+        }),
+        now
+      )
+    );
+
+    await c.env.DB.batch(batchStatements);
 
     const updated = await c.env.DB.prepare(
       `SELECT r.*, g.first_name, g.last_name, g.email as guest_email, g.phone as guest_phone, g.id_card_number, g.nationality
@@ -663,6 +791,18 @@ reservations.put('/:id', async (c) => {
       message: 'Reservation updated successfully',
     });
   } catch (error: any) {
+    if (error.message && (error.message.includes('room_booked_dates') || error.message.includes('UNIQUE constraint failed'))) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: 'ROOM_OVERBOOKING_CONFLICT',
+            message: 'Room has already been booked for one or more dates in this period (concurrency lock)',
+          },
+        },
+        409
+      );
+    }
     return c.json({ success: false, error: { message: error.message || 'Failed to update reservation' } }, 500);
   }
 });
@@ -681,13 +821,40 @@ reservations.delete('/:id', async (c) => {
       return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Reservation not found' } }, 404);
     }
 
+    // 6.3 Lifecycle guards
     if (existing.status === 'checked_in') {
       return c.json(
         {
           success: false,
           error: {
             code: 'CANNOT_DELETE_CHECKED_IN',
-            message: 'Cannot delete an active checked-in reservation. Please perform check-out first.',
+            message: 'Cannot cancel an active checked-in reservation. Please perform check-out first.',
+          },
+        },
+        400
+      );
+    }
+
+    if (existing.status === 'checked_out') {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: 'CANNOT_CANCEL_CHECKED_OUT',
+            message: 'Cannot cancel a reservation that has already checked out.',
+          },
+        },
+        400
+      );
+    }
+
+    if (existing.status === 'cancelled') {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: 'ALREADY_CANCELLED',
+            message: 'Reservation is already cancelled.',
           },
         },
         400
@@ -697,10 +864,15 @@ reservations.delete('/:id', async (c) => {
     const now = new Date().toISOString();
     const callerId = c.req.header('x-user-id') || 'system';
 
-    // Mark as cancelled and record in history and outbox
+    // Atomic Batch: Mark as cancelled, release room_booked_dates, record history, and publish outbox event
     const stmtCancel = c.env.DB.prepare(
       `UPDATE reservations SET status = 'cancelled', updated_at = ? WHERE id = ?`
     ).bind(now, existing.id);
+
+    // 1.1 Free up room_booked_dates for this cancelled reservation
+    const stmtFreeBookedDates = c.env.DB.prepare(
+      'DELETE FROM room_booked_dates WHERE reservation_id = ?'
+    ).bind(existing.id);
 
     const stmtHistory = c.env.DB.prepare(
       `INSERT INTO reservation_history (id, reservation_id, action, previous_data, new_data, performed_by, created_at)
@@ -720,11 +892,12 @@ reservations.delete('/:id', async (c) => {
         reservationCode: existing.reservation_code,
         roomId: existing.room_id,
         timestamp: now,
+        performedBy: callerId,
       }),
       now
     );
 
-    await c.env.DB.batch([stmtCancel, stmtHistory, stmtOutbox]);
+    await c.env.DB.batch([stmtCancel, stmtFreeBookedDates, stmtHistory, stmtOutbox]);
 
     return c.json({
       success: true,

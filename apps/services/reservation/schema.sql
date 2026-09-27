@@ -43,6 +43,13 @@ CREATE TABLE IF NOT EXISTS reservations (
     updated_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS room_booked_dates (
+    room_id TEXT NOT NULL,
+    booked_date TEXT NOT NULL,
+    reservation_id TEXT NOT NULL REFERENCES reservations(id) ON DELETE CASCADE,
+    PRIMARY KEY (room_id, booked_date)
+);
+
 CREATE TABLE IF NOT EXISTS reservation_history (
     id TEXT PRIMARY KEY,
     reservation_id TEXT NOT NULL REFERENCES reservations(id) ON DELETE CASCADE,
@@ -70,5 +77,6 @@ CREATE INDEX IF NOT EXISTS idx_reservations_guest ON reservations(guest_id);
 CREATE INDEX IF NOT EXISTS idx_reservations_room ON reservations(room_id);
 CREATE INDEX IF NOT EXISTS idx_reservations_status ON reservations(status);
 CREATE INDEX IF NOT EXISTS idx_reservations_dates ON reservations(check_in_date, check_out_date);
-CREATE INDEX IF NOT EXISTS idx_guests_phone ON guests(phone);
-CREATE INDEX IF NOT EXISTS idx_guests_id_card ON guests(id_card_number);
+CREATE INDEX IF NOT EXISTS idx_room_booked_dates_res ON room_booked_dates(reservation_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_guests_phone_unique ON guests(phone) WHERE phone IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_guests_id_card_unique ON guests(id_card_number) WHERE id_card_number IS NOT NULL;

@@ -8,8 +8,12 @@ const guests = new Hono<{ Bindings: Env }>();
 guests.get('/', async (c) => {
   try {
     const search = c.req.query('search')?.trim();
-    const limit = Math.min(parseInt(c.req.query('limit') || '50', 10), 100);
-    const offset = Math.max(parseInt(c.req.query('offset') || '0', 10), 0);
+    // 2.1 Clamp limit and offset to prevent bypass like ?limit=-1
+    const rawLimit = parseInt(c.req.query('limit') || '50', 10);
+    const limit = Number.isNaN(rawLimit) || rawLimit < 1 ? 50 : Math.min(rawLimit, 100);
+
+    const rawOffset = parseInt(c.req.query('offset') || '0', 10);
+    const offset = Number.isNaN(rawOffset) || rawOffset < 0 ? 0 : rawOffset;
 
     let query = 'SELECT * FROM guests';
     const params: any[] = [];
@@ -95,9 +99,9 @@ guests.post('/', async (c) => {
     const now = new Date().toISOString();
     const guestId = `gst-${crypto.randomUUID()}`;
 
-    // Check duplicate phone or idCardNumber if provided
+    // 1.2 Check duplicate phone or idCardNumber if provided
     if (data.phone) {
-      const existingPhone = await c.env.DB.prepare('SELECT id FROM guests WHERE phone = ?').bind(data.phone).first();
+      const existingPhone = await c.env.DB.prepare('SELECT id FROM guests WHERE phone = ?').bind(data.phone.trim()).first();
       if (existingPhone) {
         return c.json(
           { success: false, error: { code: 'DUPLICATE_PHONE', message: 'A guest with this phone number already exists' } },
@@ -108,7 +112,7 @@ guests.post('/', async (c) => {
 
     if (data.idCardNumber) {
       const existingIdCard = await c.env.DB.prepare('SELECT id FROM guests WHERE id_card_number = ?')
-        .bind(data.idCardNumber)
+        .bind(data.idCardNumber.trim())
         .first();
       if (existingIdCard) {
         return c.json(
@@ -148,6 +152,12 @@ guests.post('/', async (c) => {
       201
     );
   } catch (error: any) {
+    if (error.message && error.message.includes('UNIQUE constraint failed')) {
+      return c.json(
+        { success: false, error: { code: 'DUPLICATE_GUEST', message: 'A guest with this phone or ID card already exists' } },
+        409
+      );
+    }
     return c.json({ success: false, error: { message: error.message || 'Failed to create guest' } }, 500);
   }
 });
@@ -171,6 +181,31 @@ guests.put('/:id', async (c) => {
 
     const data = parsed.data;
     const now = new Date().toISOString();
+
+    // 2.2 Check duplicate phone or idCardNumber against OTHER guests
+    if (data.phone) {
+      const dupPhone = await c.env.DB.prepare('SELECT id FROM guests WHERE phone = ? AND id != ?')
+        .bind(data.phone.trim(), id)
+        .first();
+      if (dupPhone) {
+        return c.json(
+          { success: false, error: { code: 'DUPLICATE_PHONE', message: 'A guest with this phone number already exists' } },
+          409
+        );
+      }
+    }
+
+    if (data.idCardNumber) {
+      const dupIdCard = await c.env.DB.prepare('SELECT id FROM guests WHERE id_card_number = ? AND id != ?')
+        .bind(data.idCardNumber.trim(), id)
+        .first();
+      if (dupIdCard) {
+        return c.json(
+          { success: false, error: { code: 'DUPLICATE_ID_CARD', message: 'A guest with this ID Card / Passport already exists' } },
+          409
+        );
+      }
+    }
 
     const fields: string[] = [];
     const values: any[] = [];
@@ -226,6 +261,12 @@ guests.put('/:id', async (c) => {
       message: 'Guest profile updated successfully',
     });
   } catch (error: any) {
+    if (error.message && error.message.includes('UNIQUE constraint failed')) {
+      return c.json(
+        { success: false, error: { code: 'DUPLICATE_GUEST', message: 'A guest with this phone or ID card already exists' } },
+        409
+      );
+    }
     return c.json({ success: false, error: { message: error.message || 'Failed to update guest' } }, 500);
   }
 });
@@ -240,20 +281,20 @@ guests.delete('/:id', async (c) => {
       return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Guest not found' } }, 404);
     }
 
-    // Check if guest has active or past reservations
-    const activeRes = await c.env.DB.prepare(
-      `SELECT id, reservation_code, status FROM reservations WHERE guest_id = ? AND status IN ('confirmed', 'checked_in', 'extended') LIMIT 1`
+    // 6.2 Check if ANY reservation exists for this guest to protect foreign key and audit integrity
+    const anyRes = await c.env.DB.prepare(
+      `SELECT id, reservation_code, status FROM reservations WHERE guest_id = ? LIMIT 1`
     )
       .bind(id)
-      .first();
+      .first<any>();
 
-    if (activeRes) {
+    if (anyRes) {
       return c.json(
         {
           success: false,
           error: {
-            code: 'ACTIVE_RESERVATIONS',
-            message: 'Cannot delete guest with active reservations. Please cancel or complete them first.',
+            code: 'GUEST_HAS_RESERVATIONS',
+            message: `Cannot delete guest with reservation history (${anyRes.reservation_code}). Guest record is referenced by bookings.`,
           },
         },
         400
