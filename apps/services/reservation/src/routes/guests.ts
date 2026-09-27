@@ -66,7 +66,7 @@ guests.get('/:id', async (c) => {
       return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Guest not found' } }, 404);
     }
 
-    // Fetch recent reservations for this guest
+    // Fetch recent reservations for this guest (mapped to camelCase DTOs)
     const reservations = await c.env.DB.prepare(
       'SELECT id, reservation_code, room_number, room_type_name, status, check_in_date, check_out_date, total_amount FROM reservations WHERE guest_id = ? ORDER BY check_in_date DESC LIMIT 5'
     )
@@ -77,7 +77,16 @@ guests.get('/:id', async (c) => {
       success: true,
       data: {
         ...mapGuest(guest),
-        recentReservations: reservations.results || [],
+        recentReservations: (reservations.results || []).map((r: any) => ({
+          id: r.id,
+          reservationCode: r.reservation_code,
+          roomNumber: r.room_number,
+          roomTypeName: r.room_type_name,
+          status: r.status,
+          checkInDate: r.check_in_date,
+          checkOutDate: r.check_out_date,
+          totalAmount: Number(r.total_amount || 0).toFixed(2),
+        })),
       },
     });
   } catch (error: any) {
@@ -152,7 +161,19 @@ guests.post('/', async (c) => {
       201
     );
   } catch (error: any) {
-    if (error.message && error.message.includes('UNIQUE constraint failed')) {
+    if (error.message && (error.message.includes('UNIQUE constraint failed') || error.message.includes('idx_guests_'))) {
+      if (error.message.includes('phone')) {
+        return c.json(
+          { success: false, error: { code: 'DUPLICATE_PHONE', message: 'A guest with this phone number already exists' } },
+          409
+        );
+      }
+      if (error.message.includes('id_card')) {
+        return c.json(
+          { success: false, error: { code: 'DUPLICATE_ID_CARD', message: 'A guest with this ID Card / Passport already exists' } },
+          409
+        );
+      }
       return c.json(
         { success: false, error: { code: 'DUPLICATE_GUEST', message: 'A guest with this phone or ID card already exists' } },
         409
@@ -261,7 +282,19 @@ guests.put('/:id', async (c) => {
       message: 'Guest profile updated successfully',
     });
   } catch (error: any) {
-    if (error.message && error.message.includes('UNIQUE constraint failed')) {
+    if (error.message && (error.message.includes('UNIQUE constraint failed') || error.message.includes('idx_guests_'))) {
+      if (error.message.includes('phone')) {
+        return c.json(
+          { success: false, error: { code: 'DUPLICATE_PHONE', message: 'A guest with this phone number already exists' } },
+          409
+        );
+      }
+      if (error.message.includes('id_card')) {
+        return c.json(
+          { success: false, error: { code: 'DUPLICATE_ID_CARD', message: 'A guest with this ID Card / Passport already exists' } },
+          409
+        );
+      }
       return c.json(
         { success: false, error: { code: 'DUPLICATE_GUEST', message: 'A guest with this phone or ID card already exists' } },
         409

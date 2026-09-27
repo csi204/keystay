@@ -61,7 +61,7 @@ export function mapGuest(row: any) {
     nationality: row.nationality || null,
     address: row.address || null,
     notes: row.notes || null,
-    totalStays: Number(row.total_stays || 0),
+    totalStays: String(row.total_stays ?? 0),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -71,7 +71,7 @@ export function mapReservation(row: any) {
   if (!row) return null;
   const numGuests = Number(row.num_guests || 1);
   const nightlyRate = Number(row.nightly_rate || 0).toFixed(2);
-  const totalNights = Number(row.total_nights || 0);
+  const totalNights = String(row.total_nights ?? 0);
   const subtotal = Number(row.subtotal || 0).toFixed(2);
   const discountAmount = Number(row.discount_amount || 0).toFixed(2);
   const taxAmount = Number(row.tax_amount || 0).toFixed(2);

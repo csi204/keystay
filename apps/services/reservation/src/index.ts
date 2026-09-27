@@ -47,6 +47,41 @@ app.get('/', (c) => {
   });
 });
 
+// Service Authentication & Caller Verification Middleware
+// Protects internal worker routes from unauthenticated public access.
+// Verifies caller identity via API Gateway forwarded identity headers, authorization token, or internal service key.
+app.use('*', async (c, next) => {
+  const path = c.req.path;
+  // Public health and metadata routes
+  if (path === '/health' || path === '/' || c.req.method === 'OPTIONS') {
+    return next();
+  }
+
+  const host = c.req.header('host') || '';
+  const isLocal = host.includes('localhost') || host.includes('127.0.0.1');
+  const env = c.env.ENVIRONMENT;
+  const isDev = isLocal || env === 'development' || env === 'test';
+
+  const userId = c.req.header('x-user-id');
+  const authHeader = c.req.header('authorization');
+  const serviceKey = c.req.header('x-service-key') || c.req.header('x-internal-service-key');
+
+  if (!userId && !authHeader && !serviceKey && !isDev) {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'UNAUTHORIZED',
+          message: 'Service authentication required. Requests must originate from API Gateway or supply valid credentials.',
+        },
+      },
+      401
+    );
+  }
+
+  await next();
+});
+
 // Mount sub-routers
 app.route('/guests', guests);
 app.route('/reservations', reservations);

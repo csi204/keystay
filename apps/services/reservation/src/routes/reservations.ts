@@ -441,6 +441,10 @@ reservations.post('/', async (c) => {
     const roomNumber = data.roomNumber || data.roomId.replace('rm-', '');
     const roomTypeName = data.roomTypeName || 'Standard Room';
 
+    // Walk-in reservations are immediately checked-in per UAT spec
+    const reservationStatus = data.bookingType === 'walk_in' ? 'checked_in' : 'confirmed';
+    const actualCheckIn = data.bookingType === 'walk_in' ? now : null;
+
     // 4. Outbox Event & Audit Trail Payload
     const outboxPayload = {
       eventId: crypto.randomUUID(),
@@ -448,6 +452,7 @@ reservations.post('/', async (c) => {
       timestamp: now,
       reservationId,
       reservationCode,
+      status: reservationStatus,
       guestId,
       guestName: guestNameForOutbox,
       guestEmail: guestEmailForOutbox,
@@ -457,6 +462,7 @@ reservations.post('/', async (c) => {
       roomTypeName,
       checkInDate: data.checkInDate,
       checkOutDate: data.checkOutDate,
+      actualCheckIn,
       totalNights,
       nightlyRate: String(nightlyRate),
       totalAmount: String(totalAmount),
@@ -481,10 +487,10 @@ reservations.post('/', async (c) => {
       c.env.DB.prepare(
         `INSERT INTO reservations (
           id, reservation_code, guest_id, room_id, room_number, room_type_name,
-          status, booking_type, check_in_date, check_out_date,
+          status, booking_type, check_in_date, check_out_date, actual_check_in,
           num_guests, nightly_rate, total_nights, subtotal, discount_amount, tax_amount, deposit_amount,
           total_amount, special_requests, created_by, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, 'confirmed', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).bind(
         reservationId,
         reservationCode,
@@ -492,9 +498,11 @@ reservations.post('/', async (c) => {
         data.roomId,
         roomNumber,
         roomTypeName,
+        reservationStatus,
         data.bookingType,
         data.checkInDate,
         data.checkOutDate,
+        actualCheckIn,
         data.numGuests,
         nightlyRate,
         totalNights,
@@ -557,13 +565,61 @@ reservations.post('/', async (c) => {
       201
     );
   } catch (error: any) {
-    if (error.message && (error.message.includes('room_booked_dates') || error.message.includes('UNIQUE constraint failed'))) {
+    if (error.message && (error.message.includes('room_booked_dates') || error.message.includes('UNIQUE constraint failed') || error.message.includes('idx_'))) {
+      if (error.message.includes('room_booked_dates')) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: 'ROOM_OVERBOOKING_CONFLICT',
+              message: 'Room has already been booked for one or more dates in this selected period (concurrency lock)',
+            },
+          },
+          409
+        );
+      }
+      if (error.message.includes('phone') || error.message.includes('idx_guests_phone_unique')) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: 'DUPLICATE_PHONE',
+              message: 'A guest with this phone number already exists',
+            },
+          },
+          409
+        );
+      }
+      if (error.message.includes('id_card') || error.message.includes('idx_guests_id_card_unique')) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: 'DUPLICATE_ID_CARD',
+              message: 'A guest with this ID card already exists',
+            },
+          },
+          409
+        );
+      }
+      if (error.message.includes('reservation_code') || error.message.includes('idx_reservations_code')) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: 'RESERVATION_CODE_CONFLICT',
+              message: 'Reservation code collision detected, please retry',
+            },
+          },
+          409
+        );
+      }
       return c.json(
         {
           success: false,
           error: {
-            code: 'ROOM_OVERBOOKING_CONFLICT',
-            message: 'Room has already been booked for one or more dates in this selected period (concurrency lock)',
+            code: 'CONFLICT',
+            message: error.message || 'Database unique constraint violation',
           },
         },
         409
@@ -701,8 +757,8 @@ reservations.put('/:id', async (c) => {
       )
     );
 
-    // 1.1 Update room_booked_dates if room, dates, or status changed
-    if (newStatus === 'cancelled') {
+    // 1.1 Update room_booked_dates if room, dates, or status changed (Release locks on cancelled or checked_out)
+    if (newStatus === 'cancelled' || newStatus === 'checked_out') {
       batchStatements.push(
         c.env.DB.prepare('DELETE FROM room_booked_dates WHERE reservation_id = ?').bind(existing.id)
       );
@@ -791,13 +847,25 @@ reservations.put('/:id', async (c) => {
       message: 'Reservation updated successfully',
     });
   } catch (error: any) {
-    if (error.message && (error.message.includes('room_booked_dates') || error.message.includes('UNIQUE constraint failed'))) {
+    if (error.message && (error.message.includes('room_booked_dates') || error.message.includes('UNIQUE constraint failed') || error.message.includes('idx_'))) {
+      if (error.message.includes('room_booked_dates')) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: 'ROOM_OVERBOOKING_CONFLICT',
+              message: 'Room has already been booked for one or more dates in this period (concurrency lock)',
+            },
+          },
+          409
+        );
+      }
       return c.json(
         {
           success: false,
           error: {
-            code: 'ROOM_OVERBOOKING_CONFLICT',
-            message: 'Room has already been booked for one or more dates in this period (concurrency lock)',
+            code: 'CONFLICT',
+            message: error.message || 'Database conflict on update',
           },
         },
         409

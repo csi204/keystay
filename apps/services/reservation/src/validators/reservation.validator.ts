@@ -18,7 +18,7 @@ export const createReservationSchema = z
     firstName: z.string().optional(),
     lastName: z.string().optional(),
     guestPhone: z.string().optional().nullable(),
-    guestEmail: z.string().optional().nullable(),
+    guestEmail: z.string().email('Invalid email format').optional().nullable().or(z.literal('')),
     roomId: z.string().min(1, 'Room ID is required'),
     roomNumber: z.string().optional(),
     roomTypeName: z.string().optional(),
