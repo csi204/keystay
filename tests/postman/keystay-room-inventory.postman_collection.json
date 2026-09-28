@@ -1,0 +1,387 @@
+{
+  "info": {
+    "_postman_id": "b6a8f192-3c82-4df9-87a2-keystay-room-inventory",
+    "name": "KEYSTAY — Room Inventory Service (18 APIs)",
+    "description": "Collection of all 18 APIs for Room Inventory Service (Issue #2 & Issue #8)\nHost: http://localhost:8789",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8789",
+      "type": "string"
+    },
+    {
+      "key": "roomId",
+      "value": "rm-101",
+      "type": "string"
+    },
+    {
+      "key": "roomTypeId",
+      "value": "rt-std",
+      "type": "string"
+    },
+    {
+      "key": "floorId",
+      "value": "fl-1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Floors",
+      "item": [
+        {
+          "name": "API #25: GET /floors",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/floors",
+              "host": ["{{baseUrl}}"],
+              "path": ["floors"]
+            },
+            "description": "ดึงรายชื่อชั้นทั้งหมดในโรงแรม"
+          }
+        },
+        {
+          "name": "API #26: GET /floors/:id/rooms",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/floors/{{floorId}}/rooms",
+              "host": ["{{baseUrl}}"],
+              "path": ["floors", "{{floorId}}", "rooms"]
+            },
+            "description": "ดึงรายการห้องพักประจำชั้นที่ระบุ"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Room Types",
+      "item": [
+        {
+          "name": "API #20: GET /room-types",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/room-types",
+              "host": ["{{baseUrl}}"],
+              "path": ["room-types"]
+            },
+            "description": "รายการประเภทห้องพักทั้งหมด (Standard, Deluxe, Suite, Presidential)"
+          }
+        },
+        {
+          "name": "API #21: POST /room-types (Create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Family Ocean Pool Villa\",\n  \"description\": \"2-bedroom villa with private infinity pool and sea view\",\n  \"basePrice\": \"8500\",\n  \"maxOccupancy\": \"5\",\n  \"bedType\": \"1 King + 2 Singles\",\n  \"sizeSqm\": \"95\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/room-types",
+              "host": ["{{baseUrl}}"],
+              "path": ["room-types"]
+            },
+            "description": "เพิ่มประเภทห้องพักใหม่ (รับค่าตัวเลขเป็น string ตามกฎ DTO)"
+          }
+        },
+        {
+          "name": "API #22: PUT /room-types/:id (Update)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"basePrice\": \"2400\",\n  \"description\": \"Standard room with newly renovated modern bathroom\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/room-types/{{roomTypeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["room-types", "{{roomTypeId}}"]
+            },
+            "description": "แก้ไขข้อมูลประเภทห้องพักและราคาฐาน"
+          }
+        },
+        {
+          "name": "API #23: DELETE /room-types/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/room-types/non-existing-id",
+              "host": ["{{baseUrl}}"],
+              "path": ["room-types", "non-existing-id"]
+            },
+            "description": "ลบประเภทห้องพัก (มีระบบป้องกันหากมีห้องพักเชื่อมโยงอยู่)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Rooms & Availability",
+      "item": [
+        {
+          "name": "API #13: GET /rooms (All & Filters)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/rooms?status=available",
+              "host": ["{{baseUrl}}"],
+              "path": ["rooms"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "available",
+                  "description": "available | reserved | occupied | checked_out | cleaning | maintenance | out_of_order"
+                },
+                {
+                  "key": "floor_id",
+                  "value": "fl-1",
+                  "disabled": true
+                },
+                {
+                  "key": "room_type_id",
+                  "value": "rt-std",
+                  "disabled": true
+                },
+                {
+                  "key": "is_active",
+                  "value": "1",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "ดึงรายการห้องพักทั้งหมด รองรับ Query Filters"
+          }
+        },
+        {
+          "name": "API #24: GET /rooms/available",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/rooms/available?room_type_id=rt-std",
+              "host": ["{{baseUrl}}"],
+              "path": ["rooms", "available"],
+              "query": [
+                {
+                  "key": "room_type_id",
+                  "value": "rt-std"
+                },
+                {
+                  "key": "floor_id",
+                  "value": "fl-1",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "ค้นหาห้องว่างพร้อมใช้งาน (Real-time Available Status)"
+          }
+        },
+        {
+          "name": "API #14: GET /rooms/:id (Details)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/rooms/{{roomId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["rooms", "{{roomId}}"]
+            },
+            "description": "ข้อมูลห้องพักรายห้องพร้อม Amenities, Room Type, Floor"
+          }
+        },
+        {
+          "name": "API #15: POST /rooms (Create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomNumber\": \"106\",\n  \"roomTypeId\": \"rt-std\",\n  \"floorId\": \"fl-1\",\n  \"notes\": \"Poolside room with disabled access\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/rooms",
+              "host": ["{{baseUrl}}"],
+              "path": ["rooms"]
+            },
+            "description": "เพิ่มห้องพักใหม่ ตรวจสอบเลขห้องซ้ำ"
+          }
+        },
+        {
+          "name": "API #16: PUT /rooms/:id (Update)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Updated: Garden view, renovated bathroom, fast WiFi\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/rooms/{{roomId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["rooms", "{{roomId}}"]
+            },
+            "description": "แก้ไขรายละเอียดห้องพัก"
+          }
+        },
+        {
+          "name": "API #17: DELETE /rooms/:id (Soft Delete)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/rooms/{{roomId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["rooms", "{{roomId}}"]
+            },
+            "description": "ระงับการใช้งานห้องพัก (Soft delete: isActive = 0)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Status, Maintenance & History",
+      "item": [
+        {
+          "name": "API #18: GET /rooms/:id/status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/rooms/{{roomId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["rooms", "{{roomId}}", "status"]
+            },
+            "description": "ดึงสถานะปัจจุบันของห้องพัก"
+          }
+        },
+        {
+          "name": "API #19: PUT /rooms/:id/status (State Machine)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"cleaning\",\n  \"changedBy\": \"usr-housekeeping-001\",\n  \"changeReason\": \"Daily morning cleanup scheduled\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/rooms/{{roomId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["rooms", "{{roomId}}", "status"]
+            },
+            "description": "ปรับปรุงสถานะห้องพักตาม State Machine บันทึก History + Outbox Event แบบ Atomic db.batch()"
+          }
+        },
+        {
+          "name": "API #27: PUT /rooms/:id/maintenance (Mode)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"inMaintenance\": \"true\",\n  \"reason\": \"Air conditioner filter replacement and deep cleaning\",\n  \"changedBy\": \"usr-manager-002\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/rooms/{{roomId}}/maintenance",
+              "host": ["{{baseUrl}}"],
+              "path": ["rooms", "{{roomId}}", "maintenance"]
+            },
+            "description": "ปรับห้องเข้าโหมดซ่อมบำรุง หรือปลดจากการซ่อมบำรุงกลับมาใช้งาน"
+          }
+        },
+        {
+          "name": "API #28: GET /rooms/:id/history",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/rooms/{{roomId}}/history",
+              "host": ["{{baseUrl}}"],
+              "path": ["rooms", "{{roomId}}", "history"]
+            },
+            "description": "ดูประวัติการเปลี่ยนสถานะห้องย้อนหลัง"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Amenities",
+      "item": [
+        {
+          "name": "API #29: POST /rooms/:id/amenities",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amenityName\": \"High-Speed Fibre WiFi 1Gbps\",\n  \"description\": \"Dedicated in-room access point\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/rooms/{{roomId}}/amenities",
+              "host": ["{{baseUrl}}"],
+              "path": ["rooms", "{{roomId}}", "amenities"]
+            },
+            "description": "เพิ่มสิ่งอำนวยความสะดวกในห้อง"
+          }
+        },
+        {
+          "name": "API #30: DELETE /rooms/:id/amenities/:amenityId",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/rooms/rm-101/amenities/am-01",
+              "host": ["{{baseUrl}}"],
+              "path": ["rooms", "rm-101", "amenities", "am-01"]
+            },
+            "description": "ลบสิ่งอำนวยความสะดวกออกจากห้อง"
+          }
+        }
+      ]
+    }
+  ]
+}
