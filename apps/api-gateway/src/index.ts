@@ -21,7 +21,10 @@ type Variables = {
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
 const getJwtSecret = (env: Env): string => {
-  return env.JWT_SECRET || 'keystay_jwt_secret_dev_32char_key_long!';
+  if (!env.JWT_SECRET) {
+    throw new Error('FATAL SECURITY ERROR: JWT_SECRET environment variable is missing. Configure it in Cloudflare Secrets or .dev.vars');
+  }
+  return env.JWT_SECRET;
 };
 
 // ==========================================
