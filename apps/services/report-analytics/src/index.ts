@@ -1,12 +1,29 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
+import { Receiver } from '@upstash/qstash';
 
 export interface Env {
   DB: D1Database;
   ENVIRONMENT?: string;
+  QSTASH_CURRENT_SIGNING_KEY?: string;
+  QSTASH_NEXT_SIGNING_KEY?: string;
 }
 
 const app = new Hono<{ Bindings: Env }>();
+
+// Timezone helpers for Thailand (Asia/Bangkok) to prevent UTC date shift bugs
+function getBangkokDate(): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Bangkok',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+}
+
+function getBangkokMonth(): string {
+  return getBangkokDate().slice(0, 7);
+}
 
 // ==========================================
 // 1. HEALTH & INFO
@@ -34,7 +51,7 @@ app.get('/', (c) => {
 // ==========================================
 app.get('/dashboard/summary', async (c) => {
   try {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getBangkokDate();
 
     // 1. Fetch today's stats from daily_stats
     const dailyStmt = c.env.DB.prepare(
@@ -119,7 +136,8 @@ app.get('/dashboard/summary', async (c) => {
 // ==========================================
 app.get('/reports/revenue-daily', async (c) => {
   try {
-    const limit = Number(c.req.query('limit')) || 14;
+    const rawLimit = Number(c.req.query('limit')) || 14;
+    const limit = Math.max(1, Math.min(rawLimit, 100));
     const stmt = c.env.DB.prepare(
       'SELECT stat_date, total_revenue, room_revenue, minibar_revenue, total_checkouts FROM daily_stats ORDER BY stat_date DESC LIMIT ?'
     ).bind(limit);
@@ -173,7 +191,8 @@ app.get('/reports/revenue-monthly', async (c) => {
 // ==========================================
 app.get('/reports/occupancy-rate', async (c) => {
   try {
-    const limit = Number(c.req.query('days')) || 14;
+    const rawDays = Number(c.req.query('days')) || 14;
+    const limit = Math.max(1, Math.min(rawDays, 100));
     const stmt = c.env.DB.prepare(
       'SELECT stat_date, occupancy_rate, occupied_rooms, available_rooms, maintenance_rooms, total_rooms FROM daily_stats ORDER BY stat_date DESC LIMIT ?'
     ).bind(limit);
@@ -212,7 +231,7 @@ app.get('/reports/occupancy-rate', async (c) => {
 // ==========================================
 app.get('/reports/revenue-by-room-type', async (c) => {
   try {
-    const currentMonth = c.req.query('month') || new Date().toISOString().slice(0, 7);
+    const currentMonth = c.req.query('month') || getBangkokMonth();
     const stmt = c.env.DB.prepare(
       'SELECT room_type_name, SUM(total_revenue) as revenue, SUM(total_nights_sold) as nights_sold, SUM(total_bookings) as total_bookings FROM room_performance WHERE year_month = ? GROUP BY room_type_name ORDER BY revenue DESC'
     ).bind(currentMonth);
@@ -243,8 +262,9 @@ app.get('/reports/revenue-by-room-type', async (c) => {
 
 app.get('/reports/top-rooms', async (c) => {
   try {
-    const limit = Number(c.req.query('limit')) || 5;
-    const month = c.req.query('month') || new Date().toISOString().slice(0, 7);
+    const rawLimit = Number(c.req.query('limit')) || 5;
+    const limit = Math.max(1, Math.min(rawLimit, 100));
+    const month = c.req.query('month') || getBangkokMonth();
     const stmt = c.env.DB.prepare(
       'SELECT room_id, room_number, room_type_name, total_bookings, total_nights_sold, total_revenue FROM room_performance WHERE year_month = ? ORDER BY total_revenue DESC LIMIT ?'
     ).bind(month, limit);
@@ -318,7 +338,7 @@ app.get('/reports/cancellation-rate', async (c) => {
 // ==========================================
 app.get('/reports/housekeeping-performance', async (c) => {
   try {
-    const date = c.req.query('date') || new Date().toISOString().slice(0, 10);
+    const date = c.req.query('date') || getBangkokDate();
     const stmt = c.env.DB.prepare(
       'SELECT staff_id, staff_name, tasks_completed, avg_duration_minutes, issues_reported FROM housekeeping_performance WHERE record_date = ?'
     ).bind(date);
@@ -346,7 +366,8 @@ app.get('/reports/housekeeping-performance', async (c) => {
 
 app.get('/reports/checkin-checkout-stats', async (c) => {
   try {
-    const limit = Number(c.req.query('days')) || 7;
+    const rawDays = Number(c.req.query('days')) || 7;
+    const limit = Math.max(1, Math.min(rawDays, 100));
     const stmt = c.env.DB.prepare(
       'SELECT stat_date, total_checkins, total_checkouts, total_walk_ins FROM daily_stats ORDER BY stat_date DESC LIMIT ?'
     ).bind(limit);
@@ -369,7 +390,7 @@ app.get('/reports/checkin-checkout-stats', async (c) => {
 // ==========================================
 app.get('/reports/guest-demographics', async (c) => {
   try {
-    const month = c.req.query('month') || new Date().toISOString().slice(0, 7);
+    const month = c.req.query('month') || getBangkokMonth();
     const stmt = c.env.DB.prepare(
       'SELECT nationality, guest_count, total_revenue, avg_stay_nights FROM guest_demographics WHERE year_month = ? ORDER BY guest_count DESC'
     ).bind(month);
@@ -469,9 +490,12 @@ app.post('/reports/refresh', async (c) => {
 // ==========================================
 app.get('/reports/export/csv', async (c) => {
   try {
-    const reportType = c.req.query('type') || 'daily_stats';
+    const today = getBangkokDate();
+    const ALLOWED_REPORT_TYPES = ['daily_stats', 'room_performance', 'monthly_summary'];
+    const rawType = c.req.query('type') || 'daily_stats';
+    const reportType = ALLOWED_REPORT_TYPES.includes(rawType) ? rawType : 'daily_stats';
     let csvContent = '';
-    let filename = `keystay_${reportType}_${new Date().toISOString().slice(0, 10)}.csv`;
+    let filename = `keystay_${reportType}_${today}.csv`;
 
     if (reportType === 'daily_stats') {
       const stmt = c.env.DB.prepare(
@@ -519,7 +543,7 @@ app.get('/reports/export/csv', async (c) => {
 // ==========================================
 app.get('/reports/export/pdf', async (c) => {
   try {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getBangkokDate();
     const month = today.slice(0, 7);
 
     const statsStmt = c.env.DB.prepare(
@@ -686,7 +710,8 @@ app.get('/reports/export/pdf', async (c) => {
 app.get('/reports/custom', async (c) => {
   try {
     const groupBy = c.req.query('groupBy') || 'day';
-    const limit = Number(c.req.query('limit')) || 30;
+    const rawLimit = Number(c.req.query('limit')) || 30;
+    const limit = Math.max(1, Math.min(rawLimit, 100));
 
     if (groupBy === 'room_type') {
       const stmt = c.env.DB.prepare(
@@ -718,10 +743,41 @@ app.get('/reports/custom', async (c) => {
 // ==========================================
 // 13. WEBHOOK CONSUMERS (Upstash QStash & Event Bus)
 // ==========================================
+app.use('/webhooks/*', async (c, next) => {
+  const signature = c.req.header('upstash-signature');
+  const signingKey = c.env.QSTASH_CURRENT_SIGNING_KEY;
+
+  if (signingKey) {
+    if (!signature) {
+      return c.json({ success: false, error: 'Unauthorized: Missing Upstash signature header' }, 401);
+    }
+    try {
+      const receiver = new Receiver({
+        currentSigningKey: signingKey,
+        nextSigningKey: c.env.QSTASH_NEXT_SIGNING_KEY || '',
+      });
+      const clonedReq = c.req.raw.clone();
+      const bodyText = await clonedReq.text();
+      const isValid = await receiver.verify({
+        signature,
+        body: bodyText,
+        url: c.req.url,
+      });
+      if (!isValid) {
+        return c.json({ success: false, error: 'Unauthorized: Invalid Upstash signature' }, 401);
+      }
+    } catch (e: any) {
+      return c.json({ success: false, error: 'Webhook signature verification failed' }, 401);
+    }
+  }
+
+  await next();
+});
+
 app.post('/webhooks/checkout', async (c) => {
   try {
     const payload = await c.req.json();
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getBangkokDate();
     const now = new Date().toISOString();
 
     // Record audit event
@@ -737,11 +793,15 @@ app.post('/webhooks/checkout', async (c) => {
       )
       .run();
 
-    // Increment today's checkouts in daily_stats
-    await c.env.DB.prepare(
-      'UPDATE daily_stats SET total_checkouts = total_checkouts + 1, updated_at = ? WHERE stat_date = ?'
-    )
-      .bind(now, today)
+    // Increment today's checkouts in daily_stats (UPSERT prevents missing record data loss)
+    await c.env.DB.prepare(`
+      INSERT INTO daily_stats (id, stat_date, total_checkouts, created_at, updated_at)
+      VALUES (?, ?, 1, ?, ?)
+      ON CONFLICT(stat_date) DO UPDATE SET
+        total_checkouts = total_checkouts + 1,
+        updated_at = excluded.updated_at
+    `)
+      .bind(`ds-${crypto.randomUUID()}`, today, now, now)
       .run();
 
     return c.json({
@@ -757,7 +817,7 @@ app.post('/webhooks/checkout', async (c) => {
 app.post('/webhooks/bill-paid', async (c) => {
   try {
     const payload = await c.req.json();
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getBangkokDate();
     const now = new Date().toISOString();
 
     // 1. Record in audit_events
@@ -785,11 +845,16 @@ app.post('/webhooks/bill-paid', async (c) => {
       )
       .run();
 
-    // 3. Update daily_stats revenue
-    await c.env.DB.prepare(
-      'UPDATE daily_stats SET total_revenue = total_revenue + ?, room_revenue = room_revenue + ?, updated_at = ? WHERE stat_date = ?'
-    )
-      .bind(amount, amount, now, today)
+    // 3. Update daily_stats revenue (UPSERT prevents silent revenue loss)
+    await c.env.DB.prepare(`
+      INSERT INTO daily_stats (id, stat_date, total_revenue, room_revenue, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(stat_date) DO UPDATE SET
+        total_revenue = total_revenue + excluded.total_revenue,
+        room_revenue = room_revenue + excluded.room_revenue,
+        updated_at = excluded.updated_at
+    `)
+      .bind(`ds-${crypto.randomUUID()}`, today, amount, amount, now, now)
       .run();
 
     return c.json({
@@ -805,7 +870,7 @@ app.post('/webhooks/bill-paid', async (c) => {
 app.post('/webhooks/housekeeping-completed', async (c) => {
   try {
     const payload = await c.req.json();
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getBangkokDate();
     const now = new Date().toISOString();
 
     await c.env.DB.prepare(

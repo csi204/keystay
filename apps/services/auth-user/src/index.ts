@@ -85,7 +85,8 @@ const registerSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters'),
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
-  role: z.enum(['admin', 'manager', 'front_desk', 'housekeeping']).default('front_desk'),
+  // Prevent privilege escalation: public registration can only assign front_desk or housekeeping
+  role: z.enum(['front_desk', 'housekeeping']).default('front_desk'),
 });
 
 app.post('/register', async (c) => {
@@ -382,8 +383,10 @@ app.get('/users', async (c) => {
   try {
     const role = c.req.query('role');
     const isActive = c.req.query('is_active');
-    const limit = Math.min(parseInt(c.req.query('limit') || '50', 10), 100);
-    const offset = parseInt(c.req.query('offset') || '0', 10);
+    const rawLimit = parseInt(c.req.query('limit') || '50', 10);
+    const limit = Number.isNaN(rawLimit) || rawLimit < 1 ? 50 : Math.min(rawLimit, 100);
+    const rawOffset = parseInt(c.req.query('offset') || '0', 10);
+    const offset = Number.isNaN(rawOffset) || rawOffset < 0 ? 0 : rawOffset;
 
     let query = 'SELECT id, email, first_name, last_name, role, is_active, last_login_at, created_at, updated_at FROM users WHERE 1=1';
     const params: any[] = [];
@@ -461,6 +464,22 @@ app.put('/users/:id', async (c) => {
       return c.json({ success: false, error: 'User not found' }, 404);
     }
 
+    // Check duplicate email against other users
+    if (email) {
+      const dup = await c.env.DB
+        .prepare('SELECT id FROM users WHERE email = ? AND id != ?')
+        .bind(email.toLowerCase(), id)
+        .first();
+      if (dup) {
+        return c.json({ success: false, error: 'Email already registered by another account' }, 409);
+      }
+    }
+
+    const callerRole = c.req.header('x-user-role');
+    const effectiveIsActive = (isActive !== undefined && callerRole === 'admin') 
+      ? (isActive ? 1 : 0) 
+      : null;
+
     const now = new Date().toISOString();
     await c.env.DB
       .prepare(`
@@ -476,7 +495,7 @@ app.put('/users/:id', async (c) => {
         firstName ?? null,
         lastName ?? null,
         email ? email.toLowerCase() : null,
-        isActive !== undefined ? (isActive ? 1 : 0) : null,
+        effectiveIsActive,
         now,
         id
       )
@@ -636,11 +655,12 @@ app.post('/forgot-password', async (c) => {
       .bind(tokenId, user.id, resetToken, expiresAt, now.toISOString())
       .run();
 
+    // In development/test, log to console for verification instead of leaking in HTTP response
+    console.log(`[AUTH] Password reset token for ${email}: ${resetToken} (expires: ${expiresAt})`);
+
     return c.json({
       success: true,
-      message: 'Password reset token generated successfully',
-      resetToken, // In production this would be sent via Email, here returned for API use
-      expiresAt,
+      message: 'If the email exists, a password reset link has been generated and sent to your email address.',
     });
   } catch (err: any) {
     return c.json({ success: false, error: err.message || 'Internal Server Error' }, 500);

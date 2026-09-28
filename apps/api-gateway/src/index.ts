@@ -40,7 +40,9 @@ app.use('*', cors({
   origin: (origin) => {
     if (!origin) return '*';
     if (ALLOWED_ORIGINS.includes(origin)) return origin;
-    if (origin.endsWith('.workers.dev') || origin.endsWith('.pages.dev')) return origin;
+    if (origin.endsWith('.khetsophon-ain.workers.dev') || /^https:\/\/keystay[a-z0-9-]*\.pages\.dev$/.test(origin)) {
+      return origin;
+    }
     return null;
   },
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -219,7 +221,7 @@ app.use('/api/*', async (c, next) => {
     const isAllowed =
       path.startsWith('/api/housekeeping') ||
       (path.startsWith('/api/rooms') && c.req.method === 'GET') ||
-      path.includes('/status') ||
+      (path.startsWith('/api/rooms/') && path.endsWith('/status') && c.req.method === 'PATCH') ||
       path.startsWith('/api/auth/logout') ||
       path.startsWith('/api/auth/users/' + user.sub);
     if (!isAllowed) {
@@ -240,6 +242,7 @@ app.use('/api/*', async (c, next) => {
   if (role === 'front_desk') {
     const isRestrictedAdminRoute =
       path.startsWith('/api/reports') ||
+      path.startsWith('/api/dashboard') ||
       (path.startsWith('/api/auth/users') && !path.startsWith('/api/auth/users/' + user.sub)) ||
       path.includes('/role') ||
       (path.startsWith('/api/room-types') && c.req.method !== 'GET');
@@ -249,7 +252,7 @@ app.use('/api/*', async (c, next) => {
           success: false,
           error: {
             code: 'FORBIDDEN',
-            message: 'Access denied: Front Desk role cannot access management resources',
+            message: 'Access denied: Front Desk role cannot access management or financial resources',
           },
         },
         403
