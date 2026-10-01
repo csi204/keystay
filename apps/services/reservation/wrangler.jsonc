@@ -14,6 +14,9 @@
       "database_id": "9a44e64f-bf82-479b-b9f9-7d9eaa5aafdb"
     }
   ],
+  "triggers": {
+    "crons": ["0 2 * * *"]
+  },
   "vars": {
     "ENVIRONMENT": "production"
   }

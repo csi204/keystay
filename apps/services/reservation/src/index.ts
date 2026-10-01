@@ -3,6 +3,7 @@ import { cors } from 'hono/cors';
 import { type Env } from './types';
 import guests from './routes/guests';
 import reservations from './routes/reservations';
+import { runNightAudit } from './cron/night-audit';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -14,7 +15,7 @@ app.get('/health', (c) => {
   return c.json({
     status: 'ok',
     service: 'reservation',
-    phase: 'Phase 1 Core CRUD Ready',
+    phase: 'Phase 2 Transactions & QStash Integration Ready',
     timestamp: new Date().toISOString(),
   });
 });
@@ -23,16 +24,18 @@ app.get('/health', (c) => {
 app.get('/', (c) => {
   return c.json({
     service: 'reservation',
-    version: '1.0.0',
+    version: '2.0.0',
     owner: 'เดียร์ (allmusgus) — SA Lead',
-    description: 'Reservation & Guest Management Service (Phase 1: Guests & Reservations Core CRUD)',
+    description: 'Reservation & Guest Management Service (Phase 1 CRUD + Phase 2 Transactions & QStash Integration)',
     endpoints: [
       'GET /health',
+      // Guests
       'GET /guests',
       'POST /guests',
       'GET /guests/:id',
       'PUT /guests/:id',
       'DELETE /guests/:id',
+      // Reservations Core
       'GET /reservations',
       'POST /reservations',
       'GET /reservations/today-checkins',
@@ -43,6 +46,19 @@ app.get('/', (c) => {
       'GET /reservations/:id',
       'PUT /reservations/:id',
       'DELETE /reservations/:id',
+      // Phase 2 Transactions
+      'POST /reservations/:id/check-in',
+      'POST /reservations/:id/check-out',
+      'POST /reservations/:id/cancel',
+      'PUT /reservations/:id/modify-dates',
+      'POST /reservations/:id/extend-stay',
+      'POST /reservations/:id/upgrade-room',
+      'POST /walk-in',
+      'POST /reservations/walk-in',
+      'GET /reservations/:id/invoice-preview',
+      'POST /reservations/:id/apply-discount',
+      'POST /night-audit',
+      'POST /reservations/night-audit',
     ],
   });
 });
@@ -86,6 +102,10 @@ app.use('*', async (c, next) => {
 app.route('/guests', guests);
 app.route('/reservations', reservations);
 
+// Direct root-level aliases for gateway forwarding compatibility (/api/walk-in -> /walk-in)
+app.post('/walk-in', (c) => reservations.fetch(c.req.raw, c.env, c.executionCtx));
+app.post('/night-audit', (c) => reservations.fetch(c.req.raw, c.env, c.executionCtx));
+
 // 404 handler
 app.notFound((c) => {
   return c.json(
@@ -114,4 +134,17 @@ app.onError((err, c) => {
   );
 });
 
-export default app;
+export { app };
+
+export default {
+  fetch: app.fetch.bind(app),
+  async scheduled(event: any, env: Env, ctx: any) {
+    console.log('[NightAuditCron] Scheduled trigger fired at:', new Date().toISOString(), event);
+    if (ctx && typeof ctx.waitUntil === 'function') {
+      ctx.waitUntil(runNightAudit(env));
+    } else {
+      await runNightAudit(env);
+    }
+  },
+};
+
