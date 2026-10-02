@@ -27,6 +27,29 @@
       "type": "string"
     }
   ],
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test('Response status code is valid (200, 201, 404, 409)', function () {",
+          "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 404, 409]);",
+          "});",
+          "pm.test('Response body is valid JSON', function () {",
+          "    pm.response.to.be.json;",
+          "});",
+          "pm.test('Response contains success property', function () {",
+          "    var jsonData = pm.response.json();",
+          "    pm.expect(jsonData).to.have.property('success');",
+          "});",
+          "pm.test('Response time is under 500ms', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(500);",
+          "});"
+        ]
+      }
+    }
+  ],
   "item": [
     {
       "name": "1. Floors",

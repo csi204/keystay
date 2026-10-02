@@ -59,9 +59,11 @@ roomsRoute.get('/:id', async (c) => {
     return c.json({ success: false, error: 'NOT_FOUND', message: 'Room not found' }, 404);
   }
 
-  const roomType = await db.select().from(roomTypes).where(eq(roomTypes.id, room.roomTypeId)).get();
-  const floor = await db.select().from(floors).where(eq(floors.id, room.floorId)).get();
-  const amenities = await db.select().from(roomAmenities).where(eq(roomAmenities.roomId, id)).all();
+  const [roomType, floor, amenities] = await Promise.all([
+    db.select().from(roomTypes).where(eq(roomTypes.id, room.roomTypeId)).get(),
+    db.select().from(floors).where(eq(floors.id, room.floorId)).get(),
+    db.select().from(roomAmenities).where(eq(roomAmenities.roomId, id)).all(),
+  ]);
 
   return c.json({
     success: true,
@@ -180,6 +182,30 @@ roomsRoute.put('/:id', async (c) => {
     }
   }
 
+  // If roomTypeId changed, verify it exists
+  if (parsed.data.roomTypeId) {
+    const typeExists = await db
+      .select()
+      .from(roomTypes)
+      .where(eq(roomTypes.id, parsed.data.roomTypeId))
+      .get();
+    if (!typeExists) {
+      return c.json({ success: false, error: 'NOT_FOUND', message: 'Room type not found' }, 404);
+    }
+  }
+
+  // If floorId changed, verify it exists
+  if (parsed.data.floorId) {
+    const floorExists = await db
+      .select()
+      .from(floors)
+      .where(eq(floors.id, parsed.data.floorId))
+      .get();
+    if (!floorExists) {
+      return c.json({ success: false, error: 'NOT_FOUND', message: 'Floor not found' }, 404);
+    }
+  }
+
   const now = new Date().toISOString();
   const updateData = {
     ...parsed.data,
@@ -200,6 +226,18 @@ roomsRoute.delete('/:id', async (c) => {
   const existing = await db.select().from(rooms).where(eq(rooms.id, id)).get();
   if (!existing) {
     return c.json({ success: false, error: 'NOT_FOUND', message: 'Room not found' }, 404);
+  }
+
+  // Prevent soft delete if room is occupied or reserved
+  if (existing.status === 'occupied' || existing.status === 'reserved') {
+    return c.json(
+      {
+        success: false,
+        error: 'BAD_REQUEST',
+        message: `Cannot deactivate room '${existing.roomNumber}' while status is '${existing.status}'. Room must be available, cleaning, or in maintenance.`,
+      },
+      400,
+    );
   }
 
   const now = new Date().toISOString();
@@ -229,6 +267,17 @@ roomsRoute.get('/:id/status', async (c) => {
   });
 });
 
+// State Machine Transition Matrix (docs/systemdesign.md Section 5.2)
+const ALLOWED_TRANSITIONS: Record<string, string[]> = {
+  available: ['reserved', 'maintenance', 'out_of_order'],
+  reserved: ['occupied', 'available'],
+  occupied: ['checked_out', 'occupied'],
+  checked_out: ['cleaning'],
+  cleaning: ['available', 'maintenance'],
+  maintenance: ['cleaning', 'available', 'out_of_order'],
+  out_of_order: ['maintenance', 'available'],
+};
+
 // API #19: PUT /rooms/:id/status - ปรับปรุงสถานะห้องพักตาม State Machine พร้อมบันทึกประวัติ (Atomic db.batch)
 roomsRoute.put('/:id/status', async (c) => {
   const id = c.req.param('id');
@@ -249,6 +298,22 @@ roomsRoute.put('/:id/status', async (c) => {
 
   const previousStatus = room.status;
   const newStatus = parsed.data.status;
+
+  // Enforce State Machine Transition Matrix
+  if (previousStatus !== newStatus) {
+    const allowed = ALLOWED_TRANSITIONS[previousStatus] ?? [];
+    if (!allowed.includes(newStatus)) {
+      return c.json(
+        {
+          success: false,
+          error: 'INVALID_TRANSITION',
+          message: `Cannot transition room status from '${previousStatus}' to '${newStatus}'. Allowed transitions: ${allowed.join(', ')}`,
+        },
+        400,
+      );
+    }
+  }
+
   const now = new Date().toISOString();
   const historyId = crypto.randomUUID();
   const outboxId = crypto.randomUUID();
@@ -316,8 +381,21 @@ roomsRoute.put('/:id/maintenance', async (c) => {
     return c.json({ success: false, error: 'NOT_FOUND', message: 'Room not found' }, 404);
   }
 
+  // Guard: Disallow placing an occupied room into maintenance
+  if (parsed.data.inMaintenance && room.status === 'occupied') {
+    return c.json(
+      {
+        success: false,
+        error: 'BAD_REQUEST',
+        message: 'Cannot place an occupied room into maintenance while a guest is staying',
+      },
+      400,
+    );
+  }
+
   const previousStatus = room.status;
-  const newStatus = parsed.data.inMaintenance ? 'maintenance' : 'available';
+  // If leaving maintenance, route to 'cleaning' so housekeeping inspects before releasing to 'available'
+  const newStatus = parsed.data.inMaintenance ? 'maintenance' : 'cleaning';
   const now = new Date().toISOString();
   const historyId = crypto.randomUUID();
   const outboxId = crypto.randomUUID();
@@ -330,7 +408,9 @@ roomsRoute.put('/:id/maintenance', async (c) => {
     inMaintenance: parsed.data.inMaintenance,
     reason:
       parsed.data.reason ??
-      (parsed.data.inMaintenance ? 'Entered maintenance' : 'Released from maintenance'),
+      (parsed.data.inMaintenance
+        ? 'Entered maintenance'
+        : 'Released from maintenance, queued for cleaning inspection'),
     changedBy: parsed.data.changedBy ?? 'system',
     timestamp: now,
   });

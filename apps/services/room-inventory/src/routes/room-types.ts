@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { eq } from 'drizzle-orm';
+import { eq, and, ne } from 'drizzle-orm';
 import { getDb } from '../db/client';
 import { roomTypes, rooms } from '../db/schema';
 import { CreateRoomTypeSchema, UpdateRoomTypeSchema } from '../validators/room.validator';
@@ -82,6 +82,25 @@ roomTypesRoute.put('/:id', async (c) => {
   const existing = await db.select().from(roomTypes).where(eq(roomTypes.id, id)).get();
   if (!existing) {
     return c.json({ success: false, error: 'NOT_FOUND', message: 'Room type not found' }, 404);
+  }
+
+  // If name changed, check collision with other room types
+  if (parsed.data.name && parsed.data.name !== existing.name) {
+    const conflict = await db
+      .select()
+      .from(roomTypes)
+      .where(and(eq(roomTypes.name, parsed.data.name), ne(roomTypes.id, id)))
+      .get();
+    if (conflict) {
+      return c.json(
+        {
+          success: false,
+          error: 'CONFLICT',
+          message: `Room type name '${parsed.data.name}' already in use`,
+        },
+        409,
+      );
+    }
   }
 
   const now = new Date().toISOString();
