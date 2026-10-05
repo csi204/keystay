@@ -4,17 +4,17 @@ import { z } from 'zod';
 // 1. Check-in Event -> Upstash Topic: hotel.reservation.checkin
 // ========================================================
 export const ReservationCheckedInEventSchema = z.object({
-  eventId: z.string().uuid(),
+  eventId: z.string().min(1),
   eventType: z.literal('ReservationCheckedIn'),
   timestamp: z.string().datetime(),
-  reservationId: z.string().uuid(),
-  roomId: z.string().uuid(),
+  reservationId: z.string().min(1),
+  roomId: z.string().min(1),
   roomNumber: z.string(),
-  guestId: z.string().uuid(),
+  guestId: z.string().min(1),
   guestName: z.string(),
   checkInTime: z.string().datetime(),
   expectedCheckOutDate: z.string(),
-  performedBy: z.string().uuid(),
+  performedBy: z.string().min(1),
 });
 export type ReservationCheckedInEvent = z.infer<typeof ReservationCheckedInEventSchema>;
 
@@ -22,18 +22,18 @@ export type ReservationCheckedInEvent = z.infer<typeof ReservationCheckedInEvent
 // 2. Check-out Event -> Upstash Topic: hotel.reservation.checkout (Fan-out 4 ทาง)
 // ========================================================
 export const ReservationCheckedOutEventSchema = z.object({
-  eventId: z.string().uuid(),
+  eventId: z.string().min(1),
   eventType: z.literal('ReservationCheckedOut'),
   timestamp: z.string().datetime(),
-  reservationId: z.string().uuid(),
+  reservationId: z.string().min(1),
   bookingNumber: z.string(),
   bookingType: z.enum(['standard', 'walk_in']),
-  roomId: z.string().uuid(),
+  roomId: z.string().min(1),
   roomNumber: z.string(),
-  roomTypeId: z.string().uuid(),
+  roomTypeId: z.string().min(1),
   roomTypeName: z.string(),
   floor: z.string(),
-  guestId: z.string().uuid(),
+  guestId: z.string().min(1),
   guestName: z.string(),
   guestEmail: z.string().email().optional(),
   guestPhone: z.string().optional(),
@@ -52,7 +52,7 @@ export const ReservationCheckedOutEventSchema = z.object({
   cleaningType: z.enum(['checkout_clean', 'deep_clean']).default('checkout_clean'),
   priority: z.enum(['normal', 'high', 'urgent']).default('normal'),
   specialNotes: z.string().optional(),
-  performedBy: z.string().uuid(),
+  performedBy: z.string().min(1),
 });
 export type ReservationCheckedOutEvent = z.infer<typeof ReservationCheckedOutEventSchema>;
 
@@ -60,13 +60,13 @@ export type ReservationCheckedOutEvent = z.infer<typeof ReservationCheckedOutEve
 // 3. Housekeeping Task Complete Event -> Upstash Topic: hotel.housekeeping.completed
 // ========================================================
 export const HousekeepingTaskCompletedEventSchema = z.object({
-  eventId: z.string().uuid(),
+  eventId: z.string().min(1),
   eventType: z.literal('HousekeepingTaskCompleted'),
   timestamp: z.string().datetime(),
-  taskId: z.string().uuid(),
-  roomId: z.string().uuid(),
+  taskId: z.string().min(1),
+  roomId: z.string().min(1),
   roomNumber: z.string(),
-  staffId: z.string().uuid(),
+  staffId: z.string().min(1),
   staffName: z.string(),
   completedAt: z.string().datetime(),
   inspectionStatus: z.enum(['passed', 'pending_inspection']).default('passed'),
@@ -78,12 +78,12 @@ export type HousekeepingTaskCompletedEvent = z.infer<typeof HousekeepingTaskComp
 // 4. Bill Paid Event -> Upstash Topic: hotel.billing.paid
 // ========================================================
 export const BillPaidEventSchema = z.object({
-  eventId: z.string().uuid(),
+  eventId: z.string().min(1),
   eventType: z.literal('BillPaid'),
   timestamp: z.string().datetime(),
-  billId: z.string(),
+  billId: z.string().min(1),
   billNumber: z.string(),
-  reservationId: z.string(),
+  reservationId: z.string().min(1),
   guestName: z.string(),
   roomNumber: z.string(),
   roomTypeName: z.string().optional(),
@@ -96,6 +96,6 @@ export const BillPaidEventSchema = z.object({
   amountPaid: z.number(),
   paymentMethod: z.string(),
   referenceNumber: z.string().optional(),
-  performedBy: z.string().optional(),
+  performedBy: z.string().min(1).optional(),
 });
 export type BillPaidEvent = z.infer<typeof BillPaidEventSchema>;
