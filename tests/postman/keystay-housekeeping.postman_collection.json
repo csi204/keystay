@@ -1,0 +1,516 @@
+{
+  "info": {
+    "_postman_id": "c7a9f203-4d93-5ea0-98b3-keystay-housekeeping",
+    "name": "KEYSTAY — Housekeeping Service (16 APIs)",
+    "description": "Comprehensive Postman Collection for KEYSTAY Housekeeping Service (Service #4, Issue #7)\nAPIs #55-#70 covering Tasks, Rooms to Clean, Staff Assignments, Shift Schedules, Cloudflare R2 Room Issues & QStash Fan-out Webhooks.\nHost: http://localhost:8791",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8791",
+      "type": "string"
+    },
+    {
+      "key": "taskId",
+      "value": "hkt-001",
+      "type": "string"
+    },
+    {
+      "key": "createdTaskId",
+      "value": "hkt-001",
+      "type": "string"
+    },
+    {
+      "key": "staffId",
+      "value": "hk-staff-001",
+      "type": "string"
+    },
+    {
+      "key": "createdStaffId",
+      "value": "hk-staff-001",
+      "type": "string"
+    },
+    {
+      "key": "roomId",
+      "value": "rm-203",
+      "type": "string"
+    },
+    {
+      "key": "issueId",
+      "value": "iss-001",
+      "type": "string"
+    },
+    {
+      "key": "createdScheduleId",
+      "value": "sch-001",
+      "type": "string"
+    }
+  ],
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test('Response status code is valid (200, 201, 400, 404, 409)', function () {",
+          "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 400, 404, 409]);",
+          "});",
+          "pm.test('Response body is valid JSON', function () {",
+          "    pm.response.to.be.json;",
+          "});",
+          "pm.test('Response contains success property', function () {",
+          "    var jsonData = pm.response.json();",
+          "    pm.expect(jsonData).to.have.property('success');",
+          "});",
+          "pm.test('Response time is under 500ms', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(500);",
+          "});"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Cleaning Tasks (APIs #55-#61)",
+      "item": [
+        {
+          "name": "API #55: GET /housekeeping/tasks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/housekeeping/tasks?priority=urgent",
+              "host": ["{{baseUrl}}"],
+              "path": ["housekeeping", "tasks"],
+              "query": [
+                {
+                  "key": "priority",
+                  "value": "urgent"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "API #56: GET /housekeeping/tasks/:id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/housekeeping/tasks/{{taskId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["housekeeping", "tasks", "{{taskId}}"]
+            }
+          }
+        },
+        {
+          "name": "API #57: POST /housekeeping/tasks",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var json = pm.response.json();",
+                  "    if (json.data && json.data.id) {",
+                  "        pm.collectionVariables.set('createdTaskId', json.data.id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": \"rm-102\",\n  \"roomNumber\": \"102\",\n  \"assignedTo\": \"hk-staff-001\",\n  \"taskType\": \"checkout_clean\",\n  \"priority\": \"high\",\n  \"scheduledDate\": \"2026-10-05\",\n  \"notes\": \"Guest checked out early; expedite turnover\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/housekeeping/tasks",
+              "host": ["{{baseUrl}}"],
+              "path": ["housekeeping", "tasks"]
+            }
+          }
+        },
+        {
+          "name": "API #58: PUT /housekeeping/tasks/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"priority\": \"urgent\",\n  \"status\": \"in_progress\",\n  \"notes\": \"Started scrubbing bathroom and dusting shelves\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/housekeeping/tasks/{{taskId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["housekeeping", "tasks", "{{taskId}}"]
+            }
+          }
+        },
+        {
+          "name": "API #60: PUT /housekeeping/tasks/:id/assign",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"staffId\": \"hk-staff-002\",\n  \"priority\": \"urgent\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/housekeeping/tasks/{{taskId}}/assign",
+              "host": ["{{baseUrl}}"],
+              "path": ["housekeeping", "tasks", "{{taskId}}", "assign"]
+            }
+          }
+        },
+        {
+          "name": "API #61: PUT /housekeeping/tasks/:id/complete (Outbox Event)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"inspectionStatus\": \"passed\",\n  \"notes\": \"All clean, restocked minibar, linen changed\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/housekeeping/tasks/{{taskId}}/complete",
+              "host": ["{{baseUrl}}"],
+              "path": ["housekeeping", "tasks", "{{taskId}}", "complete"]
+            }
+          }
+        },
+        {
+          "name": "API #59: DELETE /housekeeping/tasks/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/housekeeping/tasks/{{createdTaskId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["housekeeping", "tasks", "{{createdTaskId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Rooms To Clean (API #62)",
+      "item": [
+        {
+          "name": "API #62: GET /housekeeping/rooms-to-clean",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/housekeeping/rooms-to-clean",
+              "host": ["{{baseUrl}}"],
+              "path": ["housekeeping", "rooms-to-clean"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Staff Management & Workload (APIs #63-#68)",
+      "item": [
+        {
+          "name": "API #63: GET /housekeeping/staff-assignments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/housekeeping/staff-assignments",
+              "host": ["{{baseUrl}}"],
+              "path": ["housekeeping", "staff-assignments"]
+            }
+          }
+        },
+        {
+          "name": "API #64: GET /housekeeping/staff",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/housekeeping/staff?shift=day",
+              "host": ["{{baseUrl}}"],
+              "path": ["housekeeping", "staff"],
+              "query": [
+                {
+                  "key": "shift",
+                  "value": "day"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "API #65: POST /housekeeping/staff",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var json = pm.response.json();",
+                  "    if (json.data && json.data.id) {",
+                  "        pm.collectionVariables.set('createdStaffId', json.data.id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"usr-hk-008\",\n  \"firstName\": \"Manee\",\n  \"lastName\": \"Jaidee\",\n  \"phone\": \"089-888-7777\",\n  \"zone\": \"Floors 1-2\",\n  \"shift\": \"day\",\n  \"maxTasksPerDay\": 10\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/housekeeping/staff",
+              "host": ["{{baseUrl}}"],
+              "path": ["housekeeping", "staff"]
+            }
+          }
+        },
+        {
+          "name": "API #66: PUT /housekeeping/staff/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"089-000-1111\",\n  \"maxTasksPerDay\": 12\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/housekeeping/staff/{{createdStaffId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["housekeeping", "staff", "{{createdStaffId}}"]
+            }
+          }
+        },
+        {
+          "name": "API #67: GET /housekeeping/staff/:id/tasks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/housekeeping/staff/{{staffId}}/tasks",
+              "host": ["{{baseUrl}}"],
+              "path": ["housekeeping", "staff", "{{staffId}}", "tasks"]
+            }
+          }
+        },
+        {
+          "name": "API #68: PUT /housekeeping/staff/:id/zone",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"zone\": \"Floors 3-4 & Penthouse\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/housekeeping/staff/{{createdStaffId}}/zone",
+              "host": ["{{baseUrl}}"],
+              "path": ["housekeeping", "staff", "{{createdStaffId}}", "zone"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Issues & Maintenance (API #69)",
+      "item": [
+        {
+          "name": "API #69: POST /housekeeping/tasks/:id/report-issue",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reportedBy\": \"{{staffId}}\",\n  \"issueType\": \"damage\",\n  \"description\": \"Broken bedside lamp and wall socket spark\",\n  \"severity\": \"critical\",\n  \"photoR2Key\": \"photos/issues/rm203-lamp.jpg\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/housekeeping/tasks/{{taskId}}/report-issue",
+              "host": ["{{baseUrl}}"],
+              "path": ["housekeeping", "tasks", "{{taskId}}", "report-issue"]
+            }
+          }
+        },
+        {
+          "name": "GET /housekeeping/issues",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/housekeeping/issues",
+              "host": ["{{baseUrl}}"],
+              "path": ["housekeeping", "issues"]
+            }
+          }
+        },
+        {
+          "name": "PUT /housekeeping/issues/:id/status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"acknowledged\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/housekeeping/issues/{{issueId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["housekeeping", "issues", "{{issueId}}", "status"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Shift Schedules (API #70)",
+      "item": [
+        {
+          "name": "API #70: GET /housekeeping/schedule",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/housekeeping/schedule",
+              "host": ["{{baseUrl}}"],
+              "path": ["housekeeping", "schedule"]
+            }
+          }
+        },
+        {
+          "name": "API #70: POST /housekeeping/schedule",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var json = pm.response.json();",
+                  "    if (json.data && json.data.id) {",
+                  "        pm.collectionVariables.set('createdScheduleId', json.data.id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"staffId\": \"{{staffId}}\",\n  \"scheduleDate\": \"2026-10-07\",\n  \"shift\": \"day\",\n  \"zoneAssigned\": \"Floors 1-2\",\n  \"isDayOff\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/housekeeping/schedule",
+              "host": ["{{baseUrl}}"],
+              "path": ["housekeeping", "schedule"]
+            }
+          }
+        },
+        {
+          "name": "DELETE /housekeeping/schedule/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/housekeeping/schedule/{{createdScheduleId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["housekeeping", "schedule", "{{createdScheduleId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Webhook Fan-out Subscriber",
+      "item": [
+        {
+          "name": "POST /housekeeping/webhooks/checkout (ReservationCheckedOut Event)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"c1f728fa-2a62-421b-8531-ec7b6b19a001\",\n  \"eventType\": \"ReservationCheckedOut\",\n  \"timestamp\": \"2026-10-05T03:25:00.000Z\",\n  \"reservationId\": \"a1f728fa-2a62-421b-8531-ec7b6b19a002\",\n  \"bookingNumber\": \"BK-20261005-001\",\n  \"bookingType\": \"standard\",\n  \"roomId\": \"f1f728fa-2a62-421b-8531-ec7b6b19a003\",\n  \"roomNumber\": \"402\",\n  \"roomTypeId\": \"e1f728fa-2a62-421b-8531-ec7b6b19a004\",\n  \"roomTypeName\": \"Deluxe King Suite\",\n  \"floor\": \"4\",\n  \"guestId\": \"d1f728fa-2a62-421b-8531-ec7b6b19a005\",\n  \"guestName\": \"John Doe\",\n  \"checkInDate\": \"2026-10-02\",\n  \"actualCheckIn\": \"2026-10-02T14:00:00.000Z\",\n  \"checkOutDate\": \"2026-10-05\",\n  \"actualCheckOut\": \"2026-10-05T10:30:00.000Z\",\n  \"totalNights\": \"3\",\n  \"nightlyRate\": \"2500.00\",\n  \"roomTotalAmount\": \"7500.00\",\n  \"depositAmount\": \"1000.00\",\n  \"taxRate\": \"0.07\",\n  \"taxAmount\": \"525.00\",\n  \"netAmount\": \"8025.00\",\n  \"currency\": \"THB\",\n  \"cleaningType\": \"checkout_clean\",\n  \"priority\": \"high\",\n  \"performedBy\": \"b1f728fa-2a62-421b-8531-ec7b6b19a006\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/housekeeping/webhooks/checkout",
+              "host": ["{{baseUrl}}"],
+              "path": ["housekeeping", "webhooks", "checkout"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
