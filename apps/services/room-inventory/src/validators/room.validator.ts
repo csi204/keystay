@@ -53,7 +53,10 @@ export const UpdateRoomStatusSchema = z.object({
 });
 
 export const UpdateRoomMaintenanceSchema = z.object({
-  inMaintenance: z.coerce.boolean(),
+  inMaintenance: z.union([z.boolean(), z.string()]).transform((v) => {
+    if (typeof v === 'boolean') return v;
+    return v.toLowerCase() === 'true' || v === '1';
+  }),
   reason: z.string().optional(),
   changedBy: z.string().optional(),
 });
