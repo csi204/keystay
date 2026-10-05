@@ -405,6 +405,77 @@
           }
         }
       ]
+    },
+    {
+      "name": "6. QStash Webhooks (Issue #8)",
+      "item": [
+        {
+          "name": "POST /webhooks/checkin (ReservationCheckedIn Event)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"c1f728fa-2a62-421b-8531-ec7b6b19a101\",\n  \"eventType\": \"ReservationCheckedIn\",\n  \"timestamp\": \"2026-10-05T04:20:00.000Z\",\n  \"reservationId\": \"res-pm-001\",\n  \"roomId\": \"rm-101\",\n  \"roomNumber\": \"101\",\n  \"guestId\": \"gst-pm-001\",\n  \"guestName\": \"Jane Doe\",\n  \"checkInTime\": \"2026-10-05T04:20:00.000Z\",\n  \"expectedCheckOutDate\": \"2026-10-07\",\n  \"performedBy\": \"usr-frontdesk-001\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/webhooks/checkin",
+              "host": ["{{baseUrl}}"],
+              "path": ["webhooks", "checkin"]
+            },
+            "description": "รับ Event ReservationCheckedIn และเปลี่ยนสถานะห้องเป็น occupied พร้อมบันทึก room_status_history"
+          }
+        },
+        {
+          "name": "POST /webhooks/checkout (ReservationCheckedOut Event)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"c1f728fa-2a62-421b-8531-ec7b6b19a102\",\n  \"eventType\": \"ReservationCheckedOut\",\n  \"timestamp\": \"2026-10-05T04:21:00.000Z\",\n  \"reservationId\": \"res-pm-001\",\n  \"bookingNumber\": \"BK-PM-001\",\n  \"bookingType\": \"standard\",\n  \"roomId\": \"rm-101\",\n  \"roomNumber\": \"101\",\n  \"roomTypeId\": \"rt-std\",\n  \"roomTypeName\": \"Standard Room\",\n  \"floor\": \"1\",\n  \"guestId\": \"gst-pm-001\",\n  \"guestName\": \"Jane Doe\",\n  \"checkInDate\": \"2026-10-03\",\n  \"actualCheckIn\": \"2026-10-03T14:00:00.000Z\",\n  \"checkOutDate\": \"2026-10-05\",\n  \"actualCheckOut\": \"2026-10-05T11:00:00.000Z\",\n  \"totalNights\": \"2\",\n  \"nightlyRate\": \"1500.00\",\n  \"roomTotalAmount\": \"3000.00\",\n  \"depositAmount\": \"0.00\",\n  \"taxRate\": \"0.07\",\n  \"taxAmount\": \"210.00\",\n  \"netAmount\": \"3210.00\",\n  \"currency\": \"THB\",\n  \"cleaningType\": \"checkout_clean\",\n  \"priority\": \"normal\",\n  \"performedBy\": \"usr-frontdesk-001\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/webhooks/checkout",
+              "host": ["{{baseUrl}}"],
+              "path": ["webhooks", "checkout"]
+            },
+            "description": "รับ Event ReservationCheckedOut และเปลี่ยนสถานะห้องเป็น checked_out พร้อมบันทึก room_status_history"
+          }
+        },
+        {
+          "name": "POST /webhooks/housekeeping-completed (HousekeepingTaskCompleted Event)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"c1f728fa-2a62-421b-8531-ec7b6b19a103\",\n  \"eventType\": \"HousekeepingTaskCompleted\",\n  \"timestamp\": \"2026-10-05T04:22:00.000Z\",\n  \"taskId\": \"hkt-pm-001\",\n  \"roomId\": \"rm-101\",\n  \"roomNumber\": \"101\",\n  \"staffId\": \"hk-staff-001\",\n  \"staffName\": \"Somchai Clean\",\n  \"completedAt\": \"2026-10-05T04:22:00.000Z\",\n  \"inspectionStatus\": \"passed\",\n  \"nextRoomStatus\": \"available\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/webhooks/housekeeping-completed",
+              "host": ["{{baseUrl}}"],
+              "path": ["webhooks", "housekeeping-completed"]
+            },
+            "description": "รับ Event HousekeepingTaskCompleted และปลดสถานะห้องกลับเป็น available พร้อมบันทึก room_status_history"
+          }
+        }
+      ]
     }
   ]
 }
