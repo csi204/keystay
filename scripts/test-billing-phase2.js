@@ -1,5 +1,36 @@
-// scripts/test-billing-phase2.js
-// Multi-scenario integration test for Billing Service Phase 2 APIs & Edge Cases
+const fs = require('node:fs');
+const path = require('node:path');
+const crypto = require('node:crypto');
+
+// Load dev vars if present
+let QSTASH_KEY = process.env.QSTASH_CURRENT_SIGNING_KEY;
+try {
+  const devVarsPath = path.join(__dirname, '../apps/services/billing/.dev.vars');
+  if (fs.existsSync(devVarsPath)) {
+    const lines = fs.readFileSync(devVarsPath, 'utf8').split('\n');
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      const match = line.match(/^QSTASH_CURRENT_SIGNING_KEY=(.*)$/);
+      if (match) QSTASH_KEY = match[1].trim();
+    }
+  }
+} catch (_) {}
+
+function createUpstashSignature(url, body) {
+  if (!QSTASH_KEY) return null;
+  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+  const bodyHash = crypto.createHash('sha256').update(body).digest('base64url');
+  const now = Math.floor(Date.now() / 1000);
+  const claims = Buffer.from(JSON.stringify({
+    iss: 'Upstash',
+    sub: url,
+    exp: now + 300,
+    nbf: now - 300,
+    body: bodyHash,
+  })).toString('base64url');
+  const signature = crypto.createHmac('sha256', QSTASH_KEY).update(header + '.' + claims).digest('base64url');
+  return header + '.' + claims + '.' + signature;
+}
 
 const BASE_URL = 'http://127.0.0.1:8792';
 const HEADERS = {
@@ -78,10 +109,39 @@ async function runTests() {
       performedBy: crypto.randomUUID(),
     };
 
-    const res = await fetch(`${BASE_URL}/webhooks/checkout`, {
+    const checkoutUrl = `${BASE_URL}/webhooks/checkout`;
+    const bodyStr = JSON.stringify(checkoutEvent);
+
+    // Security Verification: Test missing and invalid Upstash signatures
+    if (QSTASH_KEY) {
+      const noSigRes = await fetch(checkoutUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: bodyStr,
+      });
+      assert(noSigRes.status === 401, 'Missing Upstash signature returns 401 Unauthorized');
+
+      const invalidSigRes = await fetch(checkoutUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'upstash-signature': 'invalid.signature.token',
+        },
+        body: bodyStr,
+      });
+      assert(invalidSigRes.status === 401, 'Invalid Upstash signature returns 401 Unauthorized');
+    }
+
+    const validSig = createUpstashSignature(checkoutUrl, bodyStr);
+    const webhookHeaders = {
+      'Content-Type': 'application/json',
+      ...(validSig ? { 'upstash-signature': validSig } : {}),
+    };
+
+    const res = await fetch(checkoutUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(checkoutEvent),
+      headers: webhookHeaders,
+      body: bodyStr,
     });
     const json = await res.json();
     assert(res.status === 201, `POST /webhooks/checkout returns 201 Created (got ${res.status})`);
@@ -91,13 +151,18 @@ async function runTests() {
     assert(json.data.depositDeducted === '2000.00', 'Deposit deducted recorded as 2000.00');
     assert(json.data.status === 'pending', 'Draft bill status is pending');
     assert(json.data.items.length === 1, 'Initial room charge item created');
+    assert(/^BILL-\d{4}-[A-Z0-9]{8}$/.test(json.data.billNumber), `Bill number format has 8-char hex suffix: ${json.data.billNumber}`);
     webhookBillId = json.data.id;
 
     // Idempotency: Second call with same event must return 200 OK without duplicating
-    const dupRes = await fetch(`${BASE_URL}/webhooks/checkout`, {
+    const dupSig = createUpstashSignature(checkoutUrl, bodyStr);
+    const dupRes = await fetch(checkoutUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(checkoutEvent),
+      headers: {
+        'Content-Type': 'application/json',
+        ...(dupSig ? { 'upstash-signature': dupSig } : {}),
+      },
+      body: bodyStr,
     });
     const dupJson = await dupRes.json();
     assert(dupRes.status === 200, `Duplicate webhook returns 200 OK (got ${dupRes.status})`);
@@ -258,6 +323,8 @@ async function runTests() {
     assert(refundRes.status === 200, `Refund returns 200 OK (got ${refundRes.status})`);
     assert(refundJson.data.refund.amount === '200.00', 'Refund recorded as 200.00');
     assert(refundJson.data.refund.status === 'completed', 'Refund status is completed');
+    assert(refundJson.data.bill.status === 'partially_paid', `Bill status transitions to partially_paid after partial refund (got ${refundJson.data.bill.status})`);
+    assert(Number(refundJson.data.bill.amountDue) > 0, `Amount due is > 0 after partial refund (${refundJson.data.bill.amountDue})`);
 
     // Edge Case: Refund exceeding total paid must return 400
     const excessiveRefundRes = await fetch(`${BASE_URL}/bills/${webhookBillId}/refund`, {
@@ -377,6 +444,51 @@ async function runTests() {
     assert(manualBillJson.data.subtotal === '5000.00', 'Subtotal is 5000.00');
     assert(manualBillJson.data.depositDeducted === '1000.00', 'Deposit deducted is 1000.00');
     assert(manualBillJson.data.items.length === 1, 'Item saved in bill_items');
+    assert(/^BILL-\d{4}-[A-Z0-9]{8}$/.test(manualBillJson.data.billNumber), `Manual bill number has 8-char hex suffix: ${manualBillJson.data.billNumber}`);
+  }
+
+  // Test 14: Full Refund Transitions Status to 'refunded'
+  console.log('\n[Test Suite 14: Full Refund Transitions to "refunded"]');
+  {
+    // Create a simple zero-deposit bill, pay it fully, then refund full amount
+    const quickBillRes = await fetch(`${BASE_URL}/bills`, {
+      method: 'POST',
+      headers: HEADERS,
+      body: JSON.stringify({
+        reservationId: `res-fullrefund-${runId}`,
+        guestName: 'Refund Test Guest',
+        roomNumber: '101',
+        subtotal: 1000,
+        depositDeducted: 0,
+      }),
+    });
+    const quickBillJson = await quickBillRes.json();
+    const qBillId = quickBillJson.data.id;
+    const qDue = quickBillJson.data.amountDue;
+
+    // Pay full
+    await fetch(`${BASE_URL}/bills/${qBillId}/pay`, {
+      method: 'POST',
+      headers: HEADERS,
+      body: JSON.stringify({
+        paymentMethod: 'CASH',
+        amount: qDue,
+      }),
+    });
+
+    // Refund full
+    const fullRefundRes = await fetch(`${BASE_URL}/bills/${qBillId}/refund`, {
+      method: 'POST',
+      headers: HEADERS,
+      body: JSON.stringify({
+        amount: qDue,
+        reason: 'Guest cancelled immediately, full refund',
+      }),
+    });
+    const fullRefundJson = await fullRefundRes.json();
+    assert(fullRefundRes.status === 200, 'Full refund returns 200 OK');
+    assert(fullRefundJson.data.bill.status === 'refunded', `Bill status transitions to refunded upon full refund (got ${fullRefundJson.data.bill.status})`);
+    assert(fullRefundJson.data.bill.amountPaid === '0.00', 'Amount paid is 0.00 after full refund');
   }
 
   console.log(`\n========================================`);

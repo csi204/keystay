@@ -81,9 +81,9 @@ export const BillPaidEventSchema = z.object({
   eventId: z.string().uuid(),
   eventType: z.literal('BillPaid'),
   timestamp: z.string().datetime(),
-  billId: z.string().uuid(),
+  billId: z.string(),
   billNumber: z.string(),
-  reservationId: z.string().uuid(),
+  reservationId: z.string(),
   guestName: z.string(),
   roomNumber: z.string(),
   roomTypeName: z.string().optional(),
@@ -96,6 +96,6 @@ export const BillPaidEventSchema = z.object({
   amountPaid: z.number(),
   paymentMethod: z.string(),
   referenceNumber: z.string().optional(),
-  performedBy: z.string().uuid().optional(),
+  performedBy: z.string().optional(),
 });
 export type BillPaidEvent = z.infer<typeof BillPaidEventSchema>;

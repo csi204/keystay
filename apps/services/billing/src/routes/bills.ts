@@ -248,7 +248,8 @@ bills.post('/', async (c) => {
     const data = parsed.data;
     const now = new Date().toISOString();
     const billId = `bill-${crypto.randomUUID()}`;
-    const billNumber = `BILL-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const billSuffix = crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase();
+    const billNumber = `BILL-${new Date().getFullYear()}-${billSuffix}`;
 
     const items = data.items || [];
     let itemsSubtotal = 0;
@@ -304,7 +305,8 @@ bills.post('/', async (c) => {
 
     // Also auto-generate Draft Invoice
     const invoiceId = `inv-${crypto.randomUUID()}`;
-    const invoiceNumber = `INV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const invSuffix = crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase();
+    const invoiceNumber = `INV-${new Date().getFullYear()}-${invSuffix}`;
     const insertInvoiceStmt = c.env.DB.prepare(
       `INSERT INTO invoices (id, invoice_number, bill_id, issued_to_name, total_amount, status, created_at)
        VALUES (?, ?, ?, ?, ?, 'draft', ?)`
@@ -596,19 +598,14 @@ bills.post('/:id/pay', async (c) => {
     );
 
     // 4. Outbox Event: BillPaid
-    let reservationUuid = bill.reservation_id;
-    if (!reservationUuid.includes('-') || reservationUuid.length !== 36) {
-      reservationUuid = crypto.randomUUID();
-    }
-
     const outboxId = `evt-${crypto.randomUUID()}`;
     const billPaidEvent: BillPaidEvent = {
       eventId: crypto.randomUUID(),
       eventType: 'BillPaid',
       timestamp: now,
-      billId: bill.id.includes('-') && bill.id.length === 36 ? bill.id : crypto.randomUUID(),
+      billId: bill.id,
       billNumber: bill.bill_number,
-      reservationId: reservationUuid,
+      reservationId: bill.reservation_id,
       guestName: bill.guest_name,
       roomNumber: bill.room_number,
       subtotal: Number(bill.subtotal),
@@ -620,7 +617,7 @@ bills.post('/:id/pay', async (c) => {
       amountPaid: paymentAmount,
       paymentMethod: paymentMethodName,
       referenceNumber,
-      performedBy: callerId.includes('-') && callerId.length === 36 ? callerId : crypto.randomUUID(),
+      performedBy: callerId,
     };
 
     stmts.push(
@@ -773,7 +770,15 @@ bills.post('/:id/refund', async (c) => {
 
     const newAmountPaid = Number((currentPaid - amount).toFixed(2));
     const newAmountDue = Math.max(0, Number((bill.total_amount - Number(bill.deposit_deducted || 0) - newAmountPaid).toFixed(2)));
-    const newStatus = newAmountPaid === 0 ? 'refunded' : bill.status;
+
+    let newStatus = bill.status;
+    if (newAmountPaid === 0 && Number(bill.deposit_deducted || 0) === 0) {
+      newStatus = 'refunded';
+    } else if (newAmountDue > 0) {
+      newStatus = 'partially_paid';
+    } else {
+      newStatus = 'paid';
+    }
 
     await c.env.DB.batch([
       c.env.DB.prepare(

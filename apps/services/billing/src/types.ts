@@ -4,6 +4,8 @@ export interface Env {
   JWT_SECRET?: string;
   QSTASH_URL?: string;
   QSTASH_TOKEN?: string;
+  QSTASH_CURRENT_SIGNING_KEY?: string;
+  QSTASH_NEXT_SIGNING_KEY?: string;
 }
 
 export interface BillRecord {

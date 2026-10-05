@@ -1,7 +1,39 @@
 import { Hono } from 'hono';
+import { Receiver } from '@upstash/qstash';
 import { type Env, mapBill, mapBillItem } from '../types';
 
 const webhooks = new Hono<{ Bindings: Env }>();
+
+// Upstash QStash Webhook Signature Verification Middleware
+webhooks.use('*', async (c, next) => {
+  const signature = c.req.header('upstash-signature');
+  const signingKey = c.env.QSTASH_CURRENT_SIGNING_KEY;
+
+  if (signingKey) {
+    if (!signature) {
+      return c.json({ success: false, error: 'Unauthorized: Missing Upstash signature' }, 401);
+    }
+    try {
+      const receiver = new Receiver({
+        currentSigningKey: signingKey,
+        nextSigningKey: c.env.QSTASH_NEXT_SIGNING_KEY || signingKey,
+        devMode: false,
+      });
+      const bodyText = await c.req.raw.clone().text();
+      const isValid = await receiver.verify({
+        signature,
+        body: bodyText,
+        url: c.req.url,
+      });
+      if (!isValid) {
+        return c.json({ success: false, error: 'Unauthorized: Invalid signature' }, 401);
+      }
+    } catch (err: any) {
+      return c.json({ success: false, error: 'Webhook signature verification failed' }, 401);
+    }
+  }
+  await next();
+});
 
 // ==========================================
 // 2. POST /webhooks/checkout — รับ Event ReservationCheckedOut จาก QStash
@@ -40,7 +72,8 @@ webhooks.post('/checkout', async (c) => {
 
     const now = new Date().toISOString();
     const billId = `bill-${crypto.randomUUID()}`;
-    const billNumber = `BILL-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const billSuffix = crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase();
+    const billNumber = `BILL-${new Date().getFullYear()}-${billSuffix}`;
 
     const guestName = event.guestName || 'Guest';
     const roomNumber = event.roomNumber || 'N/A';
@@ -63,7 +96,8 @@ webhooks.post('/checkout', async (c) => {
     const itemDate = event.checkInDate || now.slice(0, 10);
 
     const invoiceId = `inv-${crypto.randomUUID()}`;
-    const invoiceNumber = `INV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const invSuffix = crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase();
+    const invoiceNumber = `INV-${new Date().getFullYear()}-${invSuffix}`;
 
     // Prepare atomic statements
     const stmts = [
