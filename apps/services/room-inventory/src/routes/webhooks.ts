@@ -21,14 +21,18 @@ export const webhooksRoute = new Hono<{ Bindings: Env }>();
 
 /**
  * Helper to optionally verify QStash signature when signing keys are configured
+ * Matches report-analytics pattern: strictly verifies only when QSTASH_CURRENT_SIGNING_KEY is set
  */
 async function verifyQStashSignature(c: any): Promise<boolean> {
   const currentKey = c.env.QSTASH_CURRENT_SIGNING_KEY;
   const nextKey = c.env.QSTASH_NEXT_SIGNING_KEY;
   const signature = c.req.header('upstash-signature');
 
-  // If signature header is provided, cryptographically verify it
-  if (signature && currentKey) {
+  // Verify only if QSTASH_CURRENT_SIGNING_KEY is configured
+  if (currentKey) {
+    if (!signature) {
+      return false;
+    }
     try {
       const receiver = new Receiver({
         currentSigningKey: currentKey,
@@ -46,12 +50,7 @@ async function verifyQStashSignature(c: any): Promise<boolean> {
     }
   }
 
-  // Enforce signature strictly in production
-  if (c.env.ENVIRONMENT === 'production') {
-    return false;
-  }
-
-  // Allow in development/test environments
+  // Allow in development/test when QSTASH_CURRENT_SIGNING_KEY is not set
   return true;
 }
 
@@ -100,11 +99,12 @@ webhooksRoute.post('/checkout', async (c) => {
     );
   }
 
-  // Idempotency Guard: if room is already checked_out or cleaning, skip duplicate processing
-  if (room.status === 'checked_out' || room.status === 'cleaning') {
+  // Idempotency / State Guard: /checkout only transitions from 'occupied' -> 'checked_out'
+  // If room is in any other status (e.g. checked_out, cleaning, available, reserved), it is duplicate or outdated
+  if (room.status !== 'occupied') {
     return c.json({
       success: true,
-      message: `Room '${room.roomNumber}' is already in '${room.status}' status; skipped duplicate checkout event`,
+      message: `Room '${room.roomNumber}' is currently in '${room.status}' (not 'occupied'); skipped duplicate or outdated checkout event`,
       data: room,
     });
   }
@@ -214,11 +214,12 @@ webhooksRoute.post('/housekeeping-completed', async (c) => {
     );
   }
 
-  // Idempotency Guard: if room is already available, skip duplicate processing
-  if (room.status === 'available') {
+  // Idempotency / State Guard: only transitions room from 'cleaning' or 'checked_out' -> 'available'
+  // If room is in any other status (e.g. available, occupied, reserved, maintenance), it is duplicate or outdated
+  if (room.status !== 'cleaning' && room.status !== 'checked_out') {
     return c.json({
       success: true,
-      message: `Room '${room.roomNumber}' is already 'available'; skipped duplicate housekeeping completed event`,
+      message: `Room '${room.roomNumber}' is currently in '${room.status}' (not 'cleaning'/'checked_out'); skipped duplicate or outdated housekeeping completed event`,
       data: room,
     });
   }
@@ -333,6 +334,17 @@ webhooksRoute.post('/checkin', async (c) => {
   const newStatus = 'occupied';
   const now = new Date().toISOString();
   const historyId = crypto.randomUUID();
+  const outboxId = crypto.randomUUID();
+
+  const outboxPayload = JSON.stringify({
+    roomId: room.id,
+    roomNumber: room.roomNumber,
+    previousStatus,
+    newStatus,
+    reason: `Guest checked in: ${event.guestName}`,
+    eventSource: 'hotel.reservation.checkin',
+    timestamp: now,
+  });
 
   await db.batch([
     db
@@ -350,6 +362,15 @@ webhooksRoute.post('/checkin', async (c) => {
       changedBy: event.performedBy || 'front_desk',
       changeReason: `Guest checked in: ${event.guestName}`,
       eventSource: 'event_bus',
+      createdAt: now,
+    }),
+    db.insert(outboxEvents).values({
+      id: outboxId,
+      eventType: 'RoomStatusChanged',
+      aggregateId: room.id,
+      aggregateType: 'Room',
+      payload: outboxPayload,
+      status: 'pending',
       createdAt: now,
     }),
   ]);
