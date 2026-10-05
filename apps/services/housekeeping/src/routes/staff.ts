@@ -36,7 +36,18 @@ const getAssignmentsHandler = async (c: any) => {
   // Fetch all tasks for aggregation
   const allTasks = await db.select().from(housekeepingTasks).all();
 
-  const todayStr = new Date().toISOString().slice(0, 10);
+  // Helper to format ISO date to Asia/Bangkok YYYY-MM-DD
+  const getBangkokDateStr = (dateInput?: string | Date | null): string => {
+    try {
+      const d = dateInput ? new Date(dateInput) : new Date();
+      if (isNaN(d.getTime())) return '';
+      return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(d);
+    } catch {
+      return '';
+    }
+  };
+
+  const todayStr = getBangkokDateStr();
 
   const assignments = allStaff.map((staff) => {
     const staffTasks = allTasks.filter((t) => t.assignedTo === staff.id);
@@ -45,7 +56,7 @@ const getAssignmentsHandler = async (c: any) => {
     const inProgressTasks = staffTasks.filter((t) => t.status === 'in_progress');
     const completedTodayTasks = staffTasks.filter((t) => {
       if (t.status !== 'completed') return false;
-      const completedDate = (t.completedAt ?? t.updatedAt).slice(0, 10);
+      const completedDate = getBangkokDateStr(t.completedAt ?? t.updatedAt);
       return completedDate === todayStr;
     });
 

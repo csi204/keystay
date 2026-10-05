@@ -104,14 +104,15 @@ export const UpdateStaffZoneSchema = z.object({
 // 4. Room Issue Schemas (Cloudflare R2)
 // ==========================================
 export const ReportIssueSchema = z.object({
-  taskId: z.string().optional(),
+  taskId: z.string().optional().nullable(),
   roomId: z.string().optional(),
+  roomNumber: z.string().optional(),
   reportedBy: z.string().min(1, 'Reported by staff ID is required'),
   issueType: IssueTypeEnum,
   description: z.string().min(1, 'Description is required'),
   severity: IssueSeverityEnum.default('medium'),
-  photoR2Key: z.string().optional(),
-  notes: z.string().optional(),
+  photoR2Key: z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
 });
 
 // ==========================================

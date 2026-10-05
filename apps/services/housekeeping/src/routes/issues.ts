@@ -18,63 +18,97 @@ export interface Env {
 export const issuesRoute = new Hono<{ Bindings: Env }>();
 
 // ==========================================
-// API #69: POST /tasks/:id/report-issue - แจ้งปัญหา/สิ่งของชำรุดในห้องพัก (เชื่อมต่อ Cloudflare R2 Upload)
+// API #69: POST /tasks/:id/report-issue & POST /issues - แจ้งปัญหา/สิ่งของชำรุดในห้องพัก (Cloudflare R2)
+// รองรับทั้งแบบระบุ Task ID (API #69) และแบบระบุ Room ID โดยตรง (Scenario UAT-HK04)
 // ==========================================
 export const reportIssueHandler = async (c: any) => {
-  const taskId = c.req.param('id');
+  const paramTaskId = c.req.param('id');
   const db = getDb(c.env.DB);
 
-  // 1. Verify Task Exists
-  const task = await db
-    .select()
-    .from(housekeepingTasks)
-    .where(eq(housekeepingTasks.id, taskId))
-    .get();
-
-  if (!task) {
-    return c.json({ success: false, error: 'NOT_FOUND', message: 'Housekeeping task not found' }, 404);
-  }
-
-  // 2. Parse request: supports either multipart/form-data or application/json
+  // 1. Parse request: supports either multipart/form-data or application/json
   const contentType = c.req.header('content-type') || '';
   let payload: any = {};
-  let uploadedR2Key: string | null = null;
+  let photoFile: File | null = null;
 
   if (contentType.includes('multipart/form-data')) {
     const formData = await c.req.formData();
     payload = {
-      reportedBy: (formData.get('reportedBy') as string) || (formData.get('reported_by') as string) || task.assignedTo,
+      taskId: paramTaskId || (formData.get('taskId') as string) || (formData.get('task_id') as string) || null,
+      roomId: (formData.get('roomId') as string) || (formData.get('room_id') as string),
+      roomNumber: (formData.get('roomNumber') as string) || (formData.get('room_number') as string),
+      reportedBy: (formData.get('reportedBy') as string) || (formData.get('reported_by') as string),
       issueType: (formData.get('issueType') as string) || (formData.get('issue_type') as string),
       description: formData.get('description') as string,
       severity: formData.get('severity') as string,
       notes: formData.get('notes') as string,
       photoR2Key: (formData.get('photoR2Key') as string) || (formData.get('photo_r2_key') as string),
     };
-
-    const photoFile = formData.get('photo') as File | null;
-    if (photoFile && photoFile.size > 0) {
-      const issueIdSnippet = crypto.randomUUID().slice(0, 8);
-      const safeName = photoFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-      uploadedR2Key = `photos/issues/${task.roomId}-${issueIdSnippet}-${safeName}`;
-
-      if (c.env.KEYSTAY_ASSETS) {
-        const fileBuffer = await photoFile.arrayBuffer();
-        await c.env.KEYSTAY_ASSETS.put(uploadedR2Key, fileBuffer, {
-          httpMetadata: {
-            contentType: photoFile.type || 'image/jpeg',
-          },
-        });
-      }
-    }
+    photoFile = formData.get('photo') as File | null;
   } else {
     payload = await c.req.json().catch(() => ({}));
+    if (paramTaskId) {
+      payload.taskId = paramTaskId;
+    }
   }
 
-  // Default reportedBy to task.assignedTo if not specified
-  if (!payload.reportedBy && task.assignedTo) {
-    payload.reportedBy = task.assignedTo;
+  const targetTaskId = payload.taskId || paramTaskId || null;
+  let finalRoomId = payload.roomId || payload.room_id || null;
+  let finalRoomNumber = payload.roomNumber || payload.room_number || null;
+
+  // 2. If Task ID is provided, query and verify the task exists
+  if (targetTaskId) {
+    const task = await db
+      .select()
+      .from(housekeepingTasks)
+      .where(eq(housekeepingTasks.id, targetTaskId))
+      .get();
+
+    if (!task) {
+      return c.json({ success: false, error: 'NOT_FOUND', message: 'Housekeeping task not found' }, 404);
+    }
+
+    finalRoomId = task.roomId;
+    finalRoomNumber = task.roomNumber;
+
+    if (!payload.reportedBy && task.assignedTo) {
+      payload.reportedBy = task.assignedTo;
+    }
   }
 
+  // 3. Guard: If no Task ID, roomId is mandatory for direct room issue reporting (UAT-HK04)
+  if (!finalRoomId) {
+    return c.json(
+      {
+        success: false,
+        error: 'VALIDATION_ERROR',
+        message: 'Either taskId or roomId is required to report an issue',
+      },
+      400,
+    );
+  }
+
+  if (!finalRoomNumber) {
+    finalRoomNumber = finalRoomId;
+  }
+
+  // 4. Handle Cloudflare R2 binary photo upload if provided
+  let uploadedR2Key: string | null = null;
+  if (photoFile && photoFile.size > 0) {
+    const issueIdSnippet = crypto.randomUUID().slice(0, 8);
+    const safeName = photoFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    uploadedR2Key = `photos/issues/${finalRoomId}-${issueIdSnippet}-${safeName}`;
+
+    if (c.env.KEYSTAY_ASSETS) {
+      const fileBuffer = await photoFile.arrayBuffer();
+      await c.env.KEYSTAY_ASSETS.put(uploadedR2Key, fileBuffer, {
+        httpMetadata: {
+          contentType: photoFile.type || 'image/jpeg',
+        },
+      });
+    }
+  }
+
+  // 5. Validate DTO with Zod
   const parsed = ReportIssueSchema.safeParse(payload);
   if (!parsed.success) {
     return c.json(
@@ -83,7 +117,7 @@ export const reportIssueHandler = async (c: any) => {
     );
   }
 
-  // 3. Verify Staff Exists
+  // 6. Verify Reporting Staff Exists
   const staff = await db
     .select()
     .from(housekeepingStaff)
@@ -100,8 +134,8 @@ export const reportIssueHandler = async (c: any) => {
 
   const newIssue = {
     id: issueId,
-    taskId,
-    roomId: task.roomId,
+    taskId: targetTaskId,
+    roomId: finalRoomId,
     reportedBy: staff.id,
     issueType: parsed.data.issueType,
     description: parsed.data.description,
@@ -118,9 +152,9 @@ export const reportIssueHandler = async (c: any) => {
     eventType: 'RoomIssueReported',
     timestamp: now,
     issueId,
-    taskId,
-    roomId: task.roomId,
-    roomNumber: task.roomNumber,
+    taskId: targetTaskId,
+    roomId: finalRoomId,
+    roomNumber: finalRoomNumber,
     reportedBy: staff.id,
     reporterName: `${staff.firstName} ${staff.lastName}`,
     issueType: parsed.data.issueType,
@@ -149,7 +183,7 @@ export const reportIssueHandler = async (c: any) => {
       message: 'Room issue reported successfully with Cloudflare R2 reference',
       data: {
         ...newIssue,
-        roomNumber: task.roomNumber,
+        roomNumber: finalRoomNumber,
         reportedByName: `${staff.firstName} ${staff.lastName}`,
         r2Uploaded: Boolean(uploadedR2Key),
       },
