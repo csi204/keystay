@@ -1464,7 +1464,14 @@ reservations.post('/:id/check-out', async (c) => {
        VALUES (?, 'ReservationCheckedOut', ?, 'Reservation', ?, 'pending', ?)`
     ).bind(outboxId, existing.id, JSON.stringify(checkoutEvent), now);
 
-    await c.env.DB.batch([stmtUpdate, stmtHistory, stmtOutbox]);
+    const actualCheckOutDate = actualCheckOut.slice(0, 10);
+
+    // Free up room_booked_dates from actual check-out date onwards (releases room for future guests on early checkout)
+    const stmtFreeBookedDates = c.env.DB.prepare(
+      'DELETE FROM room_booked_dates WHERE reservation_id = ? AND booked_date >= ?'
+    ).bind(existing.id, actualCheckOutDate);
+
+    await c.env.DB.batch([stmtUpdate, stmtFreeBookedDates, stmtHistory, stmtOutbox]);
 
     // 4. Fire QStash Fan-out to Upstash Topic: hotel.reservation.checkout
     await publishToQStash(c.env, 'hotel.reservation.checkout', checkoutEvent, outboxId);

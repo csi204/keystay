@@ -1,4 +1,5 @@
 import { type Env } from '../types';
+import { publishToQStash } from '../events/publisher';
 
 function getBangkokDate(): string {
   return new Intl.DateTimeFormat('en-CA', {
@@ -47,6 +48,16 @@ export async function runNightAudit(env: Env, customDate?: string): Promise<Nigh
       const historyId = crypto.randomUUID();
       const outboxId = crypto.randomUUID();
 
+      const noShowPayload = {
+        eventId: outboxId,
+        eventType: 'ReservationNoShow',
+        reservationId: res.id,
+        reservationCode: res.reservation_code,
+        roomId: res.room_id,
+        auditDate,
+        timestamp: now,
+      };
+
       await env.DB.batch([
         env.DB.prepare(
           `UPDATE reservations
@@ -84,19 +95,14 @@ export async function runNightAudit(env: Env, customDate?: string): Promise<Nigh
           'ReservationNoShow',
           res.id,
           'Reservation',
-          JSON.stringify({
-            eventId: outboxId,
-            eventType: 'ReservationNoShow',
-            reservationId: res.id,
-            reservationCode: res.reservation_code,
-            roomId: res.room_id,
-            auditDate,
-            timestamp: now,
-          }),
+          JSON.stringify(noShowPayload),
           'pending',
           now
         ),
       ]);
+
+      // Fire event to QStash Topic hotel.reservation.checkin so room-inventory is notified
+      await publishToQStash(env, 'hotel.reservation.checkin', noShowPayload, outboxId);
     }
 
     // 2. Count Today's Arrivals

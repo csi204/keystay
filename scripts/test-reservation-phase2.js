@@ -265,6 +265,60 @@ async function runTests() {
       headers: HEADERS,
     });
     assert(invalidCheckOut.status === 400, `Check-out on confirmed reservation returns 400 (got ${invalidCheckOut.status})`);
+
+    // Early Check-out Test: verify remaining dates in room_booked_dates are released
+    const earlyRoomId = `rm-early-${runId}`;
+    const earlyRes1 = await fetch(`${BASE_URL}/reservations`, {
+      method: 'POST',
+      headers: HEADERS,
+      body: JSON.stringify({
+        guestId: 'gst-001',
+        roomId: earlyRoomId,
+        roomNumber: `8${runId.slice(0, 2)}`,
+        roomTypeName: 'Deluxe Suite',
+        checkInDate: '2026-12-10',
+        checkOutDate: '2026-12-14',
+        numGuests: 2,
+        nightlyRate: '2000.00',
+      }),
+    });
+    const earlyJson1 = await earlyRes1.json();
+    assert(earlyRes1.status === 201, 'Initial 4-night reservation booked');
+    const earlyResId = earlyJson1.data.id;
+
+    // Check-in
+    await fetch(`${BASE_URL}/reservations/${earlyResId}/check-in`, {
+      method: 'POST',
+      headers: HEADERS,
+      body: JSON.stringify({ depositAmount: '500.00' }),
+    });
+
+    // Check-out early on day 2 (2026-12-11)
+    const earlyCheckOutRes = await fetch(`${BASE_URL}/reservations/${earlyResId}/check-out`, {
+      method: 'POST',
+      headers: HEADERS,
+      body: JSON.stringify({
+        actualCheckOut: '2026-12-11T10:00:00Z',
+      }),
+    });
+    assert(earlyCheckOutRes.status === 200, 'Early check-out succeeds');
+
+    // Attempt to book the newly freed dates (2026-12-11 to 2026-12-14) on the same room
+    const rebookRes = await fetch(`${BASE_URL}/reservations`, {
+      method: 'POST',
+      headers: HEADERS,
+      body: JSON.stringify({
+        guestId: 'gst-002',
+        roomId: earlyRoomId,
+        roomNumber: `8${runId.slice(0, 2)}`,
+        roomTypeName: 'Deluxe Suite',
+        checkInDate: '2026-12-11',
+        checkOutDate: '2026-12-14',
+        numGuests: 1,
+        nightlyRate: '2000.00',
+      }),
+    });
+    assert(rebookRes.status === 201, `Rebooking freed dates after early check-out succeeds with 201 Created (got ${rebookRes.status})`);
   }
 
   // Test 8: Endpoint #38 POST /reservations/:id/cancel
