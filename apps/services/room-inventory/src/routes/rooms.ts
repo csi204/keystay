@@ -267,9 +267,9 @@ roomsRoute.get('/:id/status', async (c) => {
   });
 });
 
-// State Machine Transition Matrix (docs/systemdesign.md Section 5.2)
+// State Machine Transition Matrix (docs/systemdesign.md Section 5.2 & UAT-FD06 Walk-in)
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
-  available: ['reserved', 'maintenance', 'out_of_order'],
+  available: ['reserved', 'occupied', 'cleaning', 'maintenance', 'out_of_order'],
   reserved: ['occupied', 'available'],
   occupied: ['checked_out', 'occupied'],
   checked_out: ['cleaning'],

@@ -4,11 +4,14 @@ import { floorsRoute } from './routes/floors';
 import { roomsRoute } from './routes/rooms';
 import { amenitiesRoute } from './routes/amenities';
 import { availabilityRoute } from './routes/availability';
+import { webhooksRoute } from './routes/webhooks';
 
 export interface Env {
   DB: D1Database;
   KEYSTAY_ASSETS?: R2Bucket;
   ENVIRONMENT?: string;
+  QSTASH_CURRENT_SIGNING_KEY?: string;
+  QSTASH_NEXT_SIGNING_KEY?: string;
 }
 
 const app = new Hono<{ Bindings: Env }>();
@@ -25,8 +28,8 @@ app.get('/health', (c) => {
 app.get('/', (c) => {
   return c.json({
     service: 'room-inventory',
-    description: 'Room & Inventory Management Service (Rooms, Types, Floors, Amenities, R2 Assets)',
-    version: '1.0.0',
+    description: 'Room & Inventory Management Service (Rooms, Types, Floors, Amenities, R2 Assets, QStash Webhooks)',
+    version: '2.0.0',
     endpoints: [
       'GET /rooms',
       'GET /rooms/:id',
@@ -46,6 +49,9 @@ app.get('/', (c) => {
       'DELETE /room-types/:id',
       'GET /floors',
       'GET /floors/:id/rooms',
+      'POST /webhooks/checkout',
+      'POST /webhooks/housekeeping-completed',
+      'POST /webhooks/checkin',
     ],
   });
 });
@@ -56,6 +62,10 @@ app.route('/floors', floorsRoute);
 app.route('/rooms', availabilityRoute);
 app.route('/rooms', amenitiesRoute);
 app.route('/rooms', roomsRoute);
+
+// Mount QStash Webhook Consumers (Issue #8)
+app.route('/webhooks', webhooksRoute);
+app.route('/rooms/webhooks', webhooksRoute);
 
 // Global Error Handler
 app.onError((err, c) => {
