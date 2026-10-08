@@ -1,7 +1,7 @@
 # 🖥️ Hotel Management System — System Architecture & Design Specification (`systemdesign.md`)
 
 > **เอกสารสถาปัตยกรรมระบบ การออกแบบเชิงวิศวกรรมซอฟต์แวร์ และข้อกำหนดทางเทคนิค (System Design Specification)**  
-> **โครงงาน:** ระบบบริหารจัดการโรงแรมหลังบ้าน (Internal Hotel Operations & Back-Office)  
+> **โครงงาน:** ระบบบริหารจัดการภายในสำหรับโรงแรมขนาดเล็ก 5–10 ห้อง (Small-Scale / Boutique Hotel Operations & Back-Office)  
 > **อ้างอิงไฟล์แม่:** `README.md` (root ของ repo)
 
 ---
