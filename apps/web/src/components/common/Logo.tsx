@@ -39,7 +39,7 @@ export const Logo: React.FC<LogoProps> = ({
         <span
           className={`font-bold font-sans tracking-wider text-color-text-primary ${currentSize.text} leading-none`}
         >
-          KEY<span className="text-accent">STAY</span>
+          KEYSTAY
         </span>
       )}
     </div>
