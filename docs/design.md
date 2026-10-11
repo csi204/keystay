@@ -142,9 +142,10 @@ Cloudflare Queues เป็นคิวแบบ Point-to-Point (Competing Consu
 
 การออกแบบระบบบริหารจัดการโรงแรม (Hospitality ERP) มีผู้ใช้งานที่ต้องจ้องหน้าจอนาน 8–10 ชั่วโมงต่อวัน ดีไซน์จึงต้อง**เน้นประสิทธิภาพการทำงาน (Operational Efficiency) ไม่ใช่ลูกเล่นแฟนซีที่ดูเป็น AI-Generated ทั่วไป**:
 
-### 8.1 ทำไมต้องแบนความสวยงามแบบ AI ทั่วไป?
+### 8.1 ทำไมต้องแบนความสวยงามแบบ AI ทั่วไป และใช้ shadcn/ui?
 - **AI Templates มักมีข้อเสีย:** ไล่สีม่วง-ฟ้าสดเกินไป (Neon Gradients), การ์ดโค้งมนหนาเตอะ (`rounded-3xl`), พื้นหลังฝ้าฟุ้งกระจาย (Glassmorphism), และความหนาแน่นของข้อมูลต่ำ (Low Density) ทำให้พนักงานต้องเลื่อนเมาส์ค้นหาข้อมูลตลอดเวลา
-- **สไตล์ของ KEYSTAY คือ Swiss / Linear Minimalist:**
+- **สไตล์ของ KEYSTAY คือ Swiss / Linear Minimalist บน shadcn/ui:**
+  - **สร้าง UI ด้วย shadcn/ui Components:** ทุก Portal ต้องประกอบขึ้นจาก Primitive Components ของ shadcn/ui (`@/components/ui/*` เช่น `Button`, `Card`, `Badge`, `Dialog`, `Sheet`, `Table`, `Input`) ไม่เขียน Ad-hoc UI ขึ้นมาเอง
   - เน้น **High Information Density:** หน้าจอ Room Matrix ออกแบบให้แสดงผังห้องพักสำหรับโรงแรมขนาดเล็ก 5–10 ห้อง ครบถ้วนในหน้าจอเดียวโดยไม่ต้องเลื่อนจอ (Zero-Scroll Overview)
   - **โทนสี Monochrome & Slate:** สีพื้นหลังขาว-เทาอ่อน (`#F8FAFC`) ตัวหนังสือดำสนิท (`#0F172A`)
   - **สีสดมีไว้เพื่อสถานะเท่านั้น:** แดง (ซ่อม), เขียว (ว่าง), น้ำเงิน (จอง), มรกต (พักอยู่), เหลือง (ทำความสะอาด)

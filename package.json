@@ -5,9 +5,9 @@
   "description": "KEYSTAY — Hotel Management System Monorepo",
   "packageManager": "pnpm@11.11.0",
   "scripts": {
-    "dev": "pnpm dlx turbo dev --concurrency=15",
-    "dev:frontend": "pnpm dlx turbo dev --filter=@keystay/web",
-    "dev:backend": "pnpm dlx turbo dev --filter=@keystay/api-gateway --filter=@keystay/service-*",
+    "dev": "node ./scripts/dev-backend.js",
+    "dev:frontend": "pnpm --filter @keystay/web dev",
+    "dev:backend": "node ./scripts/dev-backend.js",
     "build": "pnpm dlx turbo run build",
     "deploy": "pnpm dlx turbo run deploy",
     "lint": "pnpm dlx turbo run lint",
