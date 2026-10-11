@@ -2,7 +2,8 @@
 
 > ## โครงงานระบบบริหารจัดการโรงแรมหลังบ้าน (Internal Hotel Operations & Back-Office)[cite: 7]
 > สถาปัตยกรรม Microservices บน Serverless Stack (Cloudflare Workers, D1, Upstash QStash, KV) รวม 100 APIs[cite: 1, 7]  
-> รองรับ 4 บทบาทผู้ใช้งานตามโครงสร้าง RBAC: **Front Desk Staff (รวม Cashier/Billing), Housekeeping Staff, Manager, Admin**[cite: 1, 6, 7]
+> ออกแบบเฉพาะสำหรับ**ระบบบริหารจัดการภายในโรงแรมขนาดเล็ก 5–10 ห้อง (Boutique Hotel / Poshtel)**  
+> รวมบทบาทพนักงานต้อนรับและแคชเชียร์เป็นหนึ่งเดียว (Front Desk Staff & Cashier): **Front Desk Staff & Cashier, Housekeeping Staff, Manager, Admin**[cite: 1, 6, 7]
 
 ---
 
@@ -43,7 +44,8 @@
 
 ระบบจองโรงแรมทั่วไปที่พบเห็นได้บ่อยในตลาด (เช่น Booking.com, Agoda) มักเน้นมุมมอง **"ฝั่งลูกค้า" (B2C)** เช่น การค้นหาห้องพัก เปรียบเทียบราคา ชำระเงิน และรอรับการยืนยัน ซึ่งฟังก์ชันหลังบ้านส่วนใหญ่เป็นเพียง CRUD พื้นฐาน[cite: 7]
 
-โครงงานนี้จึงเลือกมุมมองที่แตกต่างและมีความท้าทายเชิงวิศวกรรมซอฟต์แวร์มากกว่า คือมุมมอง **"ฝั่งเจ้าของและพนักงานปฏิบัติการโรงแรม" (B2B / Operations)** ซึ่งเป็นระบบแกนหลัก (Back-Office Operating System) ที่พนักงานต้อนรับ (Front Desk รวม Cashier/Billing), แม่บ้าน (Housekeeping) และผู้บริหาร (Management) ต้องประสานงานร่วมกันแบบ Real-time ตลอด 24 ชั่วโมง[cite: 1, 7]:
+โครงงานนี้จึงเลือกมุมมองที่ตอบโจทย์เฉพาะเจาะจง คือมุมมอง **"ฝั่งเจ้าของและพนักงานปฏิบัติการโรงแรมขนาดเล็ก 5–10 ห้อง" (B2B / Small-Scale Hotel Operations)** ซึ่งเป็นระบบแกนหลักหลังบ้าน (Back-Office Operating System):
+ในโรงแรมขนาดเล็ก 5–10 ห้อง (Boutique Hotel / Poshtel / เกสต์เฮาส์) จะไม่มีเคาน์เตอร์การเงินหรือพนักงานบัญชีแยกต่างหาก แต่พนักงานต้อนรับเพียงคนเดียวจะทำหน้าที่ควบทั้งการต้อนรับและงานแคชเชียร์แบบครบวงจร (Front Desk Staff & Cashier) ประสานงานร่วมกับแม่บ้าน (Housekeeping) และผู้บริหาร (Management) แบบ Real-time ตลอด 24 ชั่วโมง[cite: 1, 7]:
 
 1.  **State Machine ของห้องพักมีความซับซ้อนและหมุนเวียนต่อเนื่อง:** สถานะห้องพักในโรงแรมมีวงจรชีวิตที่ชัดเจน (`ว่าง` → `จองแล้ว` → `เข้าพัก` → `เช็คเอาท์` → `รอทำความสะอาด` → `พร้อมใช้` หรือ `ส่งซ่อมบำรุง`) การเปลี่ยนสถานะในแต่ละจังหวะต้องควบคุมด้วย Business Logic ที่รัดกุมเพื่อป้องกันการจองซ้อน (Double Booking)[cite: 7]
 2.  **ตอบโจทย์ Use Case จริงในธุรกิจที่มีการส่งต่องานข้ามแผนก:** เมื่อลูกค้าเช็คเอาท์ แผนกต้อนรับต้องแจ้งแผนกแม่บ้านเข้าทำความสะอาดทันที ระบบการเงินต้องสร้างบิลรอรวมยอดมินิบาร์ และระบบรายงานต้องบันทึกสถิติเพื่อนำไปวิเคราะห์ Occupancy Rate โดยกระบวนการเหล่านี้ไม่ควรหยุดชะงักหากระบบใดระบบหนึ่งทำงานช้า[cite: 1, 7]
@@ -64,7 +66,7 @@
 
 ### ผู้ใช้งานระบบ (Actors & Roles)
 ระบบควบคุมการเข้าถึงด้วย **Role-Based Access Control (RBAC) 4 บทบาทหลัก**:
-*   **พนักงานต้อนรับและแคชเชียร์ (Front Desk Staff / Cashier — `role=front_desk`):** เช็คห้องว่าง, จัดการการจองล่วงหน้า, เช็คอิน, เช็คเอาท์, รับ Walk-in, ขยายเวลาพัก, อัปเกรดห้อง, คิดเงินค่าห้อง/มินิบาร์, หักเงินมัดจำ, ออกใบเสร็จรับเงิน และดำเนินการคืนเงิน *(ไม่มี Role Billing แยกต่างหาก เพื่อความคล่องตัวในการปฏิบัติงานหน้าเคาน์เตอร์)*[cite: 1, 6, 7]
+*   **พนักงานต้อนรับและแคชเชียร์ (Front Desk Staff & Cashier — `role=front_desk`):** รวมหน้าที่ต้อนรับและการเงินเข้าด้วยกันสำหรับโรงแรมขนาดเล็ก (5–10 ห้อง) — เช็คห้องว่าง, จัดการการจองล่วงหน้า, เช็คอิน, เช็คเอาท์, รับ Walk-in, ขยายเวลาพัก, อัปเกรดห้อง, คิดเงินค่าห้อง/มินิบาร์, หักเงินมัดจำ, ออกใบเสร็จรับเงิน และดำเนินการคืนเงิน *(ไม่มี Role พนักงานบัญชีแยกต่างหาก เพื่อความคล่องตัวในการปฏิบัติงานหน้าเคาน์เตอร์)*[cite: 1, 6, 7]
 *   **พนักงานแม่บ้าน (Housekeeping Staff — `role=housekeeping`):** รับมอบหมายงานทำความสะอาด, เปลี่ยนสถานะงาน, ตรวจสอบสภาพห้อง, รายงานสิ่งของชำรุด/ส่งฝ่ายช่าง[cite: 7]
 *   **ผู้จัดการ (Manager — `role=manager`):** ตรวจสอบภาพรวมการดำเนินงาน, จัดการประเภทห้องพักและอัตราค่าบริการ, ติดตาม Occupancy Rate และรายงานรายได้[cite: 7]
 *   **ผู้ดูแลระบบ (Admin — `role=admin`):** กำหนดสิทธิ์และบัญชีผู้ใช้งาน, ตั้งค่าระบบความปลอดภัย, ดูแลภาพรวมของระบบทั้งหมด[cite: 7]
@@ -127,9 +129,9 @@
 
 | สมาชิก | บทบาทหลักในทีม | Service Backend ที่รับผิดชอบ | จำนวน API | หน้าจอ Frontend | ภาระงานหลักอื่น ๆ |
 |---|---|---|:---:|---|---|
-| **คน A (เขตโสภณ)** | **Project Manager (PM) + Infra/DevOps Lead** | • Auth/User (12)<br/>• Billing (16)[cite: 1] | **28**[cite: 7] | • Login / User Admin<br/>• Billing & Cashier Desk[cite: 7] | วางโครงสร้าง Repo, ติดตั้ง Cloudflare Stack, ออกแบบ API Gateway, กำหนดมาตรฐาน Auth (JWT) และ KV, ติดตั้ง Upstash QStash, จัดการเอกสารภาพรวม[cite: 1, 7] |
-| **คน B (ธีรภัทร)** | **System Analyst (SA) + Backend Developer** | • Room Inventory (18)<br/>• Housekeeping (16)[cite: 1] | **34**[cite: 7] | • Room Status Board<br/>• จัดการงานและทีมแม่บ้าน[cite: 7] | เขียน SRS/Requirement, วิเคราะห์ State Machine, จัดทำ Use Case, ER Diagram, System Architecture, ตรวจสอบ API Contract และ Webhook Payloads[cite: 7] |
-| **คน C (ปวริศ)** | **Tester / QA Lead + Backend Developer** | • Reservation (24)<br/>• Report/Analytics (14)[cite: 1] | **38**[cite: 7] | • จองห้อง/Check-in/Check-out<br/>• Dashboard รายงานสรุปผล[cite: 7] | ออกแบบ Test Plan / Test Cases, จัดทำ Postman Collection, ทดสอบ Integration ข้าม Service, ทดสอบ Webhook Delivery/DLQ, สรุป Bug Report[cite: 1, 7] |
+| **คน A (เขตโสภณ)** | **PM + Infra/DevOps Lead** | • API Gateway<br/>• Auth/User (12)<br/>• Report/Analytics (14) | **26** + Gateway | **Manager & Admin Portal** (`/admin`)<br/>• KPI Dashboard<br/>• User Management<br/>• Export Reports | วางโครงสร้าง Monorepo, ติดตั้ง Cloudflare Stack (6 D1, KV, R2), ออกแบบ API Gateway & RBAC, ติดตั้ง Upstash QStash Event Broker, CI/CD Deploy Pipeline |
+| **คน B (ธีรภัทร)** | **SA Lead + Core Dev** | • Reservation (24)<br/>• Billing (16) | **40** | **Front Desk & Cashier Portal** (`/front-desk`)<br/>• Room Matrix Grid (5–10 ห้อง)<br/>• Check-in / Check-out<br/>• Cashier & Split Screen Invoices | System Analyst, วิเคราะห์ State Machine, ออกแบบ D1 Schemas & Outbox Pattern, กำหนด Event Contracts (`packages/events`), ดูแล Flow เงินมัดจำ/มินิบาร์/คิดเงิน |
+| **คน C (ปวริศ)** | **QA Lead + Core Dev** | • Room Inventory (18)<br/>• Housekeeping (16) | **34** | **Housekeeping Portal** (`/housekeeping`)<br/>• Cleaning Kanban Board<br/>• Task Execution & Inspection<br/>• Report Room Issue | ออกแบบ Test Plan / 21 UAT Test Cases, ทำ Automated Postman Collection, ทดสอบ Event-Driven Webhooks & DLQ, ควบคุม State เปลี่ยนผ่านงานแม่บ้านและผังห้อง |
 
 ---
 
@@ -189,7 +191,7 @@
 ### 📊 Persona 3 — Hotel General Manager: "วิชัย" (ผู้จัดการทั่วไป)
 *   **อายุ:** 45 ปี | ผู้บริหารระดับสูง | **บทบาทในระบบ:** `role=manager`
 *   **เป้าหมาย:** ติดตามผลประกอบการ ภาพรวมอัตราการเข้าพัก (Occupancy Rate) และควบคุมต้นทุนการดำเนินงาน[cite: 7]
-*   **Pain Points:** ต้องรอพนักงานบัญชีรวบรวมข้อมูลสิ้นวัน ทำให้ไม่สามารถตัดสินใจปรับราคาห้องพักได้ทันต่อสถานการณ์[cite: 7]
+*   **Pain Points:** ในโรงแรมขนาดเล็กเดิมที่ไม่มีระบบรวมศูนย์ ผู้จัดการต้องรอรวบรวมข้อมูลสิ้นวัน ทำให้ไม่สามารถตัดสินใจปรับราคาห้องพักได้ทันต่อสถานการณ์[cite: 7]
 *   **Needs & Motivations:** Dashboard แสดง Occupancy Rate, รายได้รวม และสถิติเช็คอิน/เช็คเอาท์แบบ Real-time พร้อมส่งออกรายงาน PDF/CSV ในคลิกเดียว[cite: 7]
 
 ---

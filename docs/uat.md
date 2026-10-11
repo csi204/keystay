@@ -1,5 +1,5 @@
 # 🧪 แผนการทดสอบการยอมรับของผู้ใช้ฉบับละเอียด (Detailed User Acceptance Testing: UAT)
-# Hotel Management System — Cloudflare Serverless Microservices
+# Hotel Management System — Cloudflare Serverless Microservices สำหรับโรงแรมขนาดเล็ก 5–10 ห้อง
 
 > **เวอร์ชัน:** 1.0.0  
 > **วันที่จัดทำ:** 19 กันยายน 2026  
@@ -41,7 +41,7 @@
 | `USR-FD` | `frontdesk@hotel.local` | `front_desk` | `Password123!` | Front Desk & Cashier Portal — Room Matrix, จอง, เช็คอิน, เช็คเอาท์, **ออกบิล, รับชำระเงิน, พิมพ์ใบเสร็จ** (รวม Cashiering) |
 | `USR-HK` | `housekeeping@hotel.local` | `housekeeping` | `Password123!` | Housekeeping Kanban, รับงาน, บันทึกงานเสร็จ, แจ้งชำรุด |
 
-> ⚠️ **ไม่มี Role `billing` แยกต่างหาก** — พนักงานหน้าเคาน์เตอร์ (role=`front_desk`) ทำหน้าที่ Cashier ด้วย ทดสอบ Billing Portal ด้วย `USR-FD` Token
+> ⚠️ **ไม่มี Role `billing` แยกต่างหาก** — เนื่องจากระบบออกแบบสำหรับโรงแรมขนาดเล็ก (5–10 ห้อง) พนักงานหน้าเคาน์เตอร์ (role=`front_desk`) จึงทำหน้าที่ Cashiering ควบคู่ด้วย ทั้งออกบิล รับเงินมัดจำ คิดค่ามินิบาร์ และออกใบเสร็จ การทดสอบ Billing & Cashier จึงดำเนินการด้วยสิทธิ์ `USR-FD` Token
 
 ---
 
@@ -54,7 +54,7 @@
 * **วัตถุประสงค์:** ตรวจสอบการแสดงผลสถานะห้องพักตามชั้น พร้อมสีสถานะถูกต้องตาม Design System
 * **เงื่อนไขเริ่มต้น (Preconditions):**
   1. เข้าสู่ระบบด้วยบัญชี Front Desk สำเร็จ
-  2. มีข้อมูลห้องพักในระบบอย่างน้อย 20 ห้อง กระจายอยู่ในชั้น 1, 2, 3
+  2. มีข้อมูลห้องพักในระบบจำลองสำหรับโรงแรมขนาดเล็ก (เช่น 8–10 ห้อง) กระจายอยู่ในชั้น 1, 2
   3. ห้องพักมีสถานะที่หลากหลาย (Available, Reserved, Occupied, Cleaning, Maintenance)
 * **ขั้นตอนการทดสอบ:**
   1. เข้าสู่หน้า Front Desk Portal (`/front-desk/rooms`)

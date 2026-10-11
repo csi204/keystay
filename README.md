@@ -1,8 +1,9 @@
 # 🏨 Hotel Management System — Project Design Document & Specification
 
 > ## โครงงานระบบบริหารจัดการโรงแรมหลังบ้าน (Internal Hotel Operations & Back-Office)
-> สถาปัตยกรรม Microservices บน Serverless Stack (Cloudflare Workers, D1, Queues) รวม 100 APIs  
-> รองรับ 4 บทบาทผู้ใช้งาน: **Front Desk Staff, Housekeeping Staff, Billing Staff, Manager / Admin**
+> สถาปัตยกรรม Microservices บน Serverless Stack (Cloudflare Workers, D1, Queues/QStash) รวม 100 APIs  
+> ออกแบบเฉพาะสำหรับ**ระบบบริหารจัดการภายในโรงแรมขนาดเล็ก 5–10 ห้อง (Boutique Hotel / Poshtel)**  
+> รองรับ 3 บทบาทหลักของทีมปฏิบัติการ: **Front Desk Staff & Cashier, Housekeeping Staff, Manager / Admin**
 
 ---
 
@@ -66,11 +67,12 @@
 
 ระบบจองโรงแรมทั่วไปที่พบเห็นได้บ่อยในตลาด (เช่น Booking.com, Agoda) มักเน้นมุมมอง **"ฝั่งลูกค้า" (B2C)** เช่น การค้นหาห้องพัก เปรียบเทียบราคา ชำระเงิน และรอรับการยืนยัน ซึ่งฟังก์ชันหลังบ้านส่วนใหญ่เป็นเพียง CRUD พื้นฐาน
 
-โครงงานนี้จึงเลือกมุมมองที่แตกต่างและมีความท้าทายเชิงวิศวกรรมซอฟต์แวร์มากกว่า คือมุมมอง **"ฝั่งเจ้าของและพนักงานปฏิบัติการโรงแรม" (B2B / Operations)** ซึ่งเป็นระบบแกนหลัก (Back-Office Operating System) ที่พนักงานต้อนรับ (Front Desk), แม่บ้าน (Housekeeping), การเงิน (Billing) และผู้บริหาร (Management) ต้องประสานงานร่วมกันแบบ Real-time ตลอด 24 ชั่วโมง:
+โครงงานนี้จึงเลือกมุมมองที่ตอบโจทย์เฉพาะเจาะจง คือมุมมอง **"ฝั่งเจ้าของและพนักงานปฏิบัติการโรงแรมขนาดเล็ก 5–10 ห้อง" (B2B / Small-Scale Hotel Operations)** ซึ่งเป็นระบบแกนหลักหลังบ้าน (Back-Office Operating System):
+ในโรงแรมขนาดเล็ก 5–10 ห้อง (Boutique Hotel / Poshtel / เกสต์เฮาส์) จะไม่มีเคาน์เตอร์การเงินหรือพนักงานบัญชีแยกต่างหาก แต่พนักงานต้อนรับเพียงคนเดียวจะทำหน้าที่ควบทั้งการต้อนรับและงานแคชเชียร์แบบครบวงจร (Front Desk Staff & Cashier) ประสานงานร่วมกับแม่บ้าน (Housekeeping) และผู้บริหาร (Manager / Admin) แบบ Real-time ตลอด 24 ชั่วโมง:
 
 1.  **State Machine ของห้องพักมีความซับซ้อนและหมุนเวียนต่อเนื่อง:** สถานะห้องพักในโรงแรมมีวงจรชีวิตที่ชัดเจน (`ว่าง` → `จองแล้ว` → `เข้าพัก` → `เช็คเอาท์` → `รอทำความสะอาด` → `พร้อมใช้` หรือ `ส่งซ่อมบำรุง`) การเปลี่ยนสถานะในแต่ละจังหวะต้องควบคุมด้วย Business Logic ที่รัดกุมเพื่อป้องกันการจองซ้อน (Double Booking)
-2.  **ตอบโจทย์ Use Case จริงในธุรกิจที่มีการส่งต่องานข้ามแผนก:** เมื่อลูกค้าเช็คเอาท์ แผนกต้อนรับต้องแจ้งแผนกแม่บ้านเข้าทำความสะอาดทันที แผนกการเงินต้องสรุปรายการค่าใช้จ่ายและออกใบเสร็จ และผู้บริหารต้องได้รับข้อมูลสถิติเพื่อนำไปวิเคราะห์ Occupancy Rate โดยกระบวนการเหล่านี้ไม่ควรหยุดชะงักหากระบบใดระบบหนึ่งทำงานช้า
-3.  **เป็นกรณีศึกษาที่สะท้อนศักยภาพของ Microservices Architecture อย่างแท้จริง:** ความเชื่อมโยงข้ามแผนกนี้เปิดโอกาสให้ประยุกต์ใช้แนวคิดระดับสูง เช่น **Database-per-Service** (แยกฐานข้อมูลอิสระ 6 ก้อน), **Outbox Pattern** (ป้องกันข้อมูลสูญหายขณะส่งข้อความข้าม Service) และ **Asynchronous Event Bus** ผ่าน Cloudflare Queues ที่ทำงานแบบ Decoupled ไร้การพึ่งพากันโดยตรง
+2.  **ตอบโจทย์ Use Case จริงในธุรกิจที่มีการส่งต่องานข้ามแผนก:** เมื่อลูกค้าเช็คเอาท์ แผนกต้อนรับ/แคชเชียร์จะดำเนินการหักลบเงินมัดจำ คิดค่ามินิบาร์ และออกใบเสร็จ ระบบจะแจ้งแผนกแม่บ้านเข้าทำความสะอาดทันที และส่งข้อมูลสถิติไปยังผู้บริหารเพื่อนำไปวิเคราะห์ Occupancy Rate โดยกระบวนการเหล่านี้ไม่ควรหยุดชะงักหากระบบใดระบบหนึ่งทำงานช้า
+3.  **เป็นกรณีศึกษาที่สะท้อนศักยภาพของ Microservices Architecture อย่างแท้จริง:** ความเชื่อมโยงข้ามแผนกนี้เปิดโอกาสให้ประยุกต์ใช้แนวคิดระดับสูง เช่น **Database-per-Service** (แยกฐานข้อมูลอิสระ 6 ก้อน), **Outbox Pattern** (ป้องกันข้อมูลสูญหายขณะส่งข้อความข้าม Service) และ **Asynchronous Event Bus** ผ่าน Cloudflare Queues / Upstash QStash ที่ทำงานแบบ Decoupled ไร้การพึ่งพากันโดยตรง
 
 ---
 
@@ -88,9 +90,8 @@
 *(หมายเหตุ: รวบรวมขอบเขตของระบบและรายการความต้องการใช้งานเข้าด้วยกัน เพื่อความกระชับและขจัดความซ้ำซ้อนตามหลัก Clean Documentation)*
 
 ### ผู้ใช้งานระบบ (Actors)
-*   **พนักงานต้อนรับ (Front Desk Staff):** เช็คห้องว่าง, จัดการการจอง, เช็คอิน, เช็คเอาท์, รับ Walk-in, ขยายเวลาพัก, อัปเกรดห้อง
+*   **พนักงานต้อนรับและแคชเชียร์ (Front Desk Staff & Cashier):** รวมหน้าที่ต้อนรับและการเงินเข้าด้วยกันสำหรับโรงแรมขนาดเล็ก (5–10 ห้อง) — เช็คห้องว่าง, จัดการการจองล่วงหน้า, เช็คอิน, เช็คเอาท์, รับ Walk-in, ขยายเวลาพัก, อัปเกรดห้อง, จัดการบิลค่าห้องและมินิบาร์, บันทึกการชำระเงิน, หักเงินมัดจำ, ออกใบเสร็จ/ใบกำกับภาษี, คืนเงิน (ไม่มี Role พนักงานบัญชีแยกต่างหาก)
 *   **พนักงานแม่บ้าน (Housekeeping Staff):** รับมอบหมายงานทำความสะอาด, เปลี่ยนสถานะงาน, ตรวจสอบสภาพห้อง, รายงานสิ่งของชำรุด
-*   **พนักงานการเงิน/บัญชี (Billing Staff):** จัดการบิลค่าห้องและค่าบริการเสริม, บันทึกการชำระเงิน, ออกใบเสร็จ/ใบกำกับภาษี, คืนเงิน
 *   **ผู้จัดการ / ผู้ดูแลระบบ (Manager / Admin):** กำหนดสิทธิ์และบัญชีผู้ใช้, จัดการข้อมูลประเภทห้องและราคา, ดูรายงานสถิติ Occupancy Rate และสรุปรายได้
 
 ### ความสามารถหลักของระบบ (Core System Requirements)
@@ -153,9 +154,9 @@
 
 | สมาชิก | บทบาทเสริม (Role) | Service Backend ที่รับผิดชอบ | จำนวน API | หน้าจอ Frontend | ภาระงานหลักอื่น ๆ |
 |---|---|---|:---:|---|---|
-| **คน A (เขตโสภณ)** | **PM + Infra/DevOps Lead** | • Auth/User (12)<br/>• Billing (16) | **28** | • Login / Logout<br/>• User Management<br/>• Billing & Payment | วางโครงสร้าง Repo, ติดตั้ง Cloudflare Stack, ออกแบบ API Gateway, กำหนดมาตรฐาน Auth (JWT), จัดการเอกสารภาพรวม |
-| **คน B (ธีรภัทร)** | **System Analyst (SA)** | • Room Inventory (18)<br/>• Housekeeping (16) | **34** | • Room Status Board<br/>• จัดการงานและทีมแม่บ้าน | เขียน SRS/Requirement, จัดทำ Use Case Diagram, ER Diagram, System Design, ตรวจสอบ API Contract ก่อนเริ่ม Code |
-| **คน C (ปวริศ)** | **Tester / QA Lead** | • Reservation (24)<br/>• Report/Analytics (14) | **38** | • จองห้อง/Check-in/Check-out<br/>• Dashboard รายงานสรุปผล | ออกแบบ Test Plan / Test Cases, จัดทำ Collection บน Postman, ทดสอบ Integration ข้าม Service, สรุป Bug Report |
+| **คน A (เขตโสภณ)** | **PM + Infra/DevOps Lead** | • API Gateway<br/>• Auth/User (12)<br/>• Report/Analytics (14) | **26** + Gateway | **Manager & Admin Portal** (`/admin`)<br/>• KPI Dashboard<br/>• User Management<br/>• Export Reports | วางโครงสร้าง Monorepo, ติดตั้ง Cloudflare Stack (6 D1, KV, R2), ออกแบบ API Gateway & RBAC, ติดตั้ง Upstash QStash Event Broker, CI/CD Deploy Pipeline |
+| **คน B (ธีรภัทร)** | **SA Lead + Core Dev** | • Reservation (24)<br/>• Billing (16) | **40** | **Front Desk & Cashier Portal** (`/front-desk`)<br/>• Room Matrix Grid (5–10 ห้อง)<br/>• Check-in / Check-out<br/>• Cashier & Split Screen Invoices | System Analyst, วิเคราะห์ State Machine, ออกแบบ D1 Schemas & Outbox Pattern, กำหนด Event Contracts (`packages/events`), ดูแล Flow เงินมัดจำ/มินิบาร์/คิดเงิน |
+| **คน C (ปวริศ)** | **QA Lead + Core Dev** | • Room Inventory (18)<br/>• Housekeeping (16) | **34** | **Housekeeping Portal** (`/housekeeping`)<br/>• Cleaning Kanban Board<br/>• Task Execution & Inspection<br/>• Report Room Issue | ออกแบบ Test Plan / 21 UAT Test Cases, ทำ Automated Postman Collection, ทดสอบ Event-Driven Webhooks & DLQ, ควบคุม State เปลี่ยนผ่านงานแม่บ้านและผังห้อง |
 
 ---
 
@@ -196,14 +197,14 @@
 
 ## 10. 👥 ข้อมูลกลุ่มผู้ใช้งานจำลอง (User Personas)
 
-### 🧑‍💼 Persona 1 — Front Desk Staff: "ฟ้า" (พนักงานต้อนรับ)
-*   **อายุ:** 24 ปี | ประสบการณ์ 2 ปี | **เป้าหมาย:** ให้บริการเช็คอิน-เช็คเอาท์แขกได้อย่างรวดเร็ว ถูกต้อง และไม่เกิดการจองซ้อน
+### 🧑‍💼 Persona 1 — Front Desk Staff & Cashier: "ฟ้า" (พนักงานต้อนรับและแคชเชียร์)
+*   **อายุ:** 24 ปี | ประสบการณ์ 2 ปี | **เป้าหมาย:** ให้บริการเช็คอิน-เช็คเอาท์แขก พร้อมคิดเงิน ออกบิล และจัดการเงินมัดจำได้อย่างรวดเร็ว ถูกต้องในจุดเดียวสำหรับโรงแรมขนาดเล็ก (5–10 ห้อง)
 *   **Pain Points:**
     *   ช่วงเวลาเร่งด่วน (Peak Hour 12:00 - 14:00) มักสับสนว่าห้องไหนทำความสะอาดเสร็จแล้วจริง ทำให้แขกต้องยืนรอนาน
-    *   การคำนวณค่าใช้จ่ายเสริม (มินิบาร์, ค่าปรับเช็คเอาท์เลท) ในระบบเดิมต้องเปิดหลายหน้าจอและคิดเลขด้วยมือ เสี่ยงต่อการคิดเงินผิดพลาด
+    *   การคำนวณค่าใช้จ่ายเสริม (มินิบาร์, ค่าปรับเช็คเอาท์เลท) และการหักลบเงินมัดจำในระบบเดิมต้องคิดเลขด้วยมือ เสี่ยงต่อการคิดเงินผิดพลาด
 *   **Needs & Motivations:**
     *   หน้าจอแสดงสถานะห้องพักแบบ Real-time ที่อัปเดตทันทีเมื่อแม่บ้านทำความสะอาดเสร็จโดยไม่ต้องกด Refresh
-    *   ฟังก์ชันเช็คอิน/เช็คเอาท์ใน 1 คลิก พร้อมออกใบสรุปค่าใช้จ่ายล่วงหน้า (Invoice Preview) ที่รวมภาษีและส่วนลดอัตโนมัติ
+    *   ฟังก์ชันเช็คอิน/เช็คเอาท์ใน 1 คลิก พร้อมออกใบสรุปค่าใช้จ่ายล่วงหน้า (Invoice Preview) ที่รวมภาษี ส่วนลด และหักเงินมัดจำอัตโนมัติ
 
 ---
 
@@ -221,7 +222,7 @@
 ### 📊 Persona 3 — Hotel General Manager: "วิชัย" (ผู้จัดการทั่วไป)
 *   **อายุ:** 45 ปี | ผู้บริหารระดับสูง | **เป้าหมาย:** ติดตามผลประกอบการ ภาพรวมอัตราการเข้าพัก และควบคุมต้นทุนการดำเนินงาน
 *   **Pain Points:**
-    *   การดูสรุปรายได้และ Occupancy Rate ต้องรอพนักงานบัญชีรวบรวมข้อมูลสิ้นวัน ทำให้ไม่สามารถตัดสินใจปรับราคาห้องพักได้ทันต่อสถานการณ์
+    *   ในโรงแรมขนาดเล็กเดิมที่ไม่มีระบบรวมศูนย์ ผู้จัดการต้องรอรวบรวมข้อมูลสิ้นวัน ทำให้ไม่สามารถตัดสินใจปรับราคาห้องพักได้ทันต่อสถานการณ์
     *   ไม่มีข้อมูลเชิงลึกว่าห้องพักประเภทใดสร้างรายได้สูงสุด หรือแม่บ้านคนใดมีประสิทธิภาพในการทำงานดีที่สุด
 *   **Needs & Motivations:**
     *   Dashboard รายงานผลประกอบการแบบ Real-time ที่แสดง Occupancy Rate, รายได้รวม และสถิติการเช็คอิน/เช็คเอาท์ประจำวัน
@@ -236,15 +237,13 @@ flowchart LR
 
     %% Actors
     Staff(["👤 Hotel Staff\n(abstract)"])
-    FD(["👤 Front Desk Staff"])
+    FD(["👤 Front Desk Staff\n(รวม Cashier & Billing)"])
     HK(["👤 Housekeeping Staff"])
-    BL(["👤 Billing Staff"])
     MGR(["👤 Manager / Admin"])
 
     %% Actor Generalization
     FD  -.->|"<<generalize>>"| Staff
     HK  -.->|"<<generalize>>"| Staff
-    BL  -.->|"<<generalize>>"| Staff
     MGR -.->|"<<generalize>>"| Staff
 
     %% Shared Use Cases
@@ -310,11 +309,11 @@ flowchart LR
         UC_ProcessRefund(("Process Refund"))
     end
 
-    BL --- UC_CreateBill
-    BL --- UC_AddCharge
-    BL --- UC_ProcessPayment
-    BL --- UC_IssueInvoice
-    BL --- UC_ProcessRefund
+    FD --- UC_CreateBill
+    FD --- UC_AddCharge
+    FD --- UC_ProcessPayment
+    FD --- UC_IssueInvoice
+    FD --- UC_ProcessRefund
 
     UC_ProcessPayment -.->|"<<include>>"| UC_CreateBill
     UC_IssueInvoice -.->|"<<extend>>"| UC_ProcessPayment
@@ -844,7 +843,7 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    actor BS as Billing Staff
+    actor FD as Front Desk Staff (Cashier)
     participant GW as API Gateway
     participant BL as Billing Service
     participant DB_B as D1: db_billing
@@ -852,7 +851,7 @@ sequenceDiagram
     participant RP as Report Service
     participant DB_RP as D1: db_report
 
-    BS->>GW: POST /bills/{id}/pay {payment_method_id, amount}
+    FD->>GW: POST /bills/{id}/pay {payment_method_id, amount}
     GW->>BL: Route to Billing Service
     BL->>DB_B: ตรวจสอบความถูกต้องของบิลและยอดค้างชำระ
     BL->>DB_B: BEGIN TRANSACTION
@@ -861,7 +860,7 @@ sequenceDiagram
     BL->>DB_B: INSERT INTO outbox_events (BillPaid)
     BL->>DB_B: COMMIT
     BL-->>GW: 200 OK {bill, payment}
-    GW-->>BS: รับชำระเงินสำเร็จ
+    GW-->>FD: รับชำระเงินสำเร็จ
     BL--)Q3: Publish BillPaid {bill_id, reservation_id, total_amount, method}
     Q3--)RP: Consume BillPaid
     RP->>DB_RP: INSERT INTO revenue_records (date, amount, type, method)
@@ -1417,9 +1416,9 @@ erDiagram
 
 ## 19. ⚙️ การทดสอบการยอมรับของผู้ใช้ (User Acceptance Testing: UAT)
 
-**โครงงาน:** Hotel Management System (Microservice Architecture)  
+**โครงงาน:** Hotel Management System (Microservice Architecture สำหรับโรงแรมขนาดเล็ก 5–10 ห้อง)  
 **รูปแบบการทดสอบ:** Manual UAT & Functional Integration Testing ผ่าน Postman และ UI Prototype  
-**กลุ่มผู้ทดสอบ:** Front Desk Staff, Housekeeping Staff, Billing Staff, Hotel Manager / Admin
+**กลุ่มผู้ทดสอบ:** Front Desk Staff & Cashier, Housekeeping Staff, Hotel Manager / Admin
 
 ### ตารางกรณีทดสอบ (UAT Test Cases)
 
@@ -1441,7 +1440,7 @@ erDiagram
 | **UAT-HK03** | Complete Cleaning | แม่บ้านกด "Complete" หลังทำความสะอาดเสร็จ | Task อัปเดตเป็น `completed` และห้องพักในระบบคืนสถานะเป็น `available` | ห้องพักกลับมาเป็น available พร้อมขายทันที | **Pass** |
 | **UAT-HK04** | Report Issue | แจ้งสิ่งของชำรุด (ก๊อกน้ำรั่ว) ระดับ High | ระบบบันทึก Issue และปรับสถานะห้องเป็น `maintenance` | ห้องถูกปรับเป็น maintenance และปิดรับการจอง | **Pass** |
 
-#### 🧾 3. Billing Staff (UAT-BL)
+#### 🧾 3. Front Desk Cashiering & Billing (UAT-BL — ดำเนินการโดย Front Desk Staff)
 | รหัสทดสอบ | ฟีเจอร์ที่ทดสอบ | ขั้นตอนการทดสอบ | ผลลัพธ์ที่คาดหวัง | ผลลัพธ์จริง | สถานะ |
 |---|---|---|---|---|:---:|
 | **UAT-BL01** | Auto Bill Creation | ตรวจสอบรายการบิลหลังมีห้องเช็คเอาท์ | พบใบแจ้งหนี้ใหม่ที่รวมค่าห้องตามจำนวนคืน พร้อมภาษี 7% ถูกต้อง | บิลถูกสร้างอัตโนมัติพร้อมคำนวณภาษีถูกต้อง | **Pass** |
@@ -1461,9 +1460,9 @@ erDiagram
 
 | กลุ่มผู้ใช้งาน (Role) | จำนวน Test Cases | ผ่าน (Pass) | ไม่ผ่าน (Fail) | คิดเป็นร้อยละ |
 |---|:---:|:---:|:---:|:---:|
-| **Front Desk Staff** | 6 | 6 | 0 | 100% |
+| **Front Desk Staff & Cashier (จอง/เช็คอิน/เช็คเอาท์)** | 6 | 6 | 0 | 100% |
+| **Front Desk Staff & Cashier (การเงิน/บิล/มินิบาร์)** | 4 | 4 | 0 | 100% |
 | **Housekeeping Staff** | 4 | 4 | 0 | 100% |
-| **Billing Staff** | 4 | 4 | 0 | 100% |
 | **Manager / Admin** | 4 | 4 | 0 | 100% |
 | **รวมทั้งหมด** | **18** | **18** | **0** | **100%** |
 
