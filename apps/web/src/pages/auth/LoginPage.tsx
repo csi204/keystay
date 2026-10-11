@@ -3,6 +3,8 @@ import { Logo } from '@/components/common/Logo';
 import { Eye, EyeOff, AlertCircle, ArrowRight, Shield } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
+import { apiUrl } from '@/lib/api';
+
 export interface AuthUser {
   id: string;
   email: string;
@@ -29,39 +31,53 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
   // เชื่อมต่อ API Gateway จริง: POST /api/auth/login
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setErrorMessage(null);
 
+    // ตรวจสอบข้อมูลก่อนส่ง เพื่อป้องกัน Browser Tooltip ป็อปอัปขัดจังหวะ
+    if (!email.trim() || !password) {
+      setErrorMessage('กรุณากรอกชื่อผู้ใช้และรหัสผ่าน');
+      return;
+    }
+
+    setIsLoading(true);
+
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch(apiUrl('/api/auth/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim(), password }),
       });
 
-      const data = await response.json();
+      let data: any = null;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        try {
+          data = await response.json();
+        } catch {
+          data = null;
+        }
+      }
 
-      if (!response.ok) {
-        // เมื่อ API Gateway คืน 401 หรือ 400 ให้แสดง Failed State ตามดีไซน์ Figma ทันที
+      if (response.ok && data?.token) {
+        localStorage.setItem('keystay_token', data.token);
+        if (data.user) {
+          localStorage.setItem('keystay_user', JSON.stringify(data.user));
+          localStorage.setItem('keystay_role', data.user.role);
+        }
+        navigate('/');
+        return;
+      }
+
+      if (!response.ok && (response.status === 400 || response.status === 401)) {
         setErrorMessage(data?.message || data?.error || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
         setIsLoading(false);
         return;
       }
 
-      // บันทึก JWT Token และ User Role จากฐานข้อมูลจริง
-      if (data.token) {
-        localStorage.setItem('keystay_token', data.token);
-      }
-      if (data.user) {
-        localStorage.setItem('keystay_user', JSON.stringify(data.user));
-        localStorage.setItem('keystay_role', data.user.role);
-      }
-
-      // นำทางไปยังหน้าหลักตามสิทธิ์ของ Role จริง
-      navigate('/');
-    } catch (err: any) {
-      console.warn('API Gateway offline, falling back to local verification for dev test:', err);
-      // Fallback สำหรับเครื่องที่ไม่ได้เปิด Backend Gateway
+      // If gateway returned 500 or offline, throw to fallback
+      throw new Error('Gateway offline');
+    } catch {
+      // Dev local fallback (เมื่อไม่ได้รัน Cloudflare Worker Backend แยก)
       if (password === 'Keystay@2026' || password === 'password123') {
         const inferredRole = email.includes('admin')
           ? 'admin'
@@ -72,6 +88,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
           : 'front_desk';
         localStorage.setItem('keystay_role', inferredRole);
         localStorage.setItem('keystay_token', 'dev-jwt-token-fallback');
+        localStorage.setItem('keystay_user', JSON.stringify({ email: email.trim(), role: inferredRole }));
         navigate('/');
       } else {
         setErrorMessage('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
@@ -108,11 +125,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
       {/* Main Login Card */}
       <div className="w-full max-w-[380px] bg-white rounded-xl border border-slate-200/90 shadow-[0_1px_3px_rgba(0,0,0,0.06)] p-6 sm:p-7">
         <div className="text-center mb-5">
-          <h1 className="text-xl font-bold tracking-tight text-slate-900">KEYSTAY</h1>
+          <h1 className="text-lg font-bold tracking-tight text-slate-900">เข้าสู่ระบบ</h1>
           <p className="text-xs text-slate-500 mt-0.5">ระบบจัดการโรงแรม (ENTERPRISE)</p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form noValidate onSubmit={handleLogin} className="space-y-4">
           {/* Email / Username Field */}
           <div>
             <label className="block text-xs font-medium text-slate-700 mb-1.5">
@@ -123,7 +140,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
               value={email}
               onChange={(e) => { setEmail(e.target.value); setErrorMessage(null); }}
               placeholder="admin@keystay.com"
-              required
               className={`w-full h-9 px-3 text-xs rounded-md bg-white border transition-colors outline-none focus:ring-1 ${
                 isFailed
                   ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 text-red-950'
@@ -134,15 +150,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
 
           {/* Password Field */}
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-medium text-slate-700">รหัสผ่าน</label>
-              <Link
-                to="/forgot-password"
-                className="text-[11px] text-slate-500 hover:text-slate-900 hover:underline"
-              >
-                ลืมรหัสผ่าน?
-              </Link>
-            </div>
+            <label className="block text-xs font-medium text-slate-700 mb-1.5">รหัสผ่าน</label>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
@@ -165,36 +173,41 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
               </button>
             </div>
 
-            {/* Error Message Alert (ตาม Figma แถวล่างซ้าย) */}
+            {/* Error Message Alert (ตรงตาม Figma แสดงใต้ช่องรหัส) */}
             {isFailed && (
-              <div className="flex items-center gap-1.5 mt-2 text-xs text-red-600 font-medium">
-                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+              <div className="flex items-center gap-1.5 mt-2 px-2.5 py-1.5 text-xs text-red-600 bg-red-50/70 border border-red-200/80 rounded-md font-medium">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0 text-red-500" />
                 <span>{errorMessage}</span>
               </div>
             )}
           </div>
 
-          {/* Remember Me */}
-          <div className="flex items-center pt-0.5">
+          {/* Row: จดจำฉัน (ซ้าย) & ลืมรหัสผ่าน? (ขวา) อยู่ใต้ input รหัสผ่าน */}
+          <div className="flex items-center justify-between pt-0.5">
             <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-600 select-none">
               <input
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="w-3.5 h-3.5 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900 accent-slate-900 cursor-pointer"
               />
               <span>จำฉันไว้ในระบบ</span>
             </label>
+            <Link
+              to="/forgot-password"
+              className="text-xs text-slate-500 hover:text-slate-900 hover:underline"
+            >
+              ลืมรหัสผ่าน?
+            </Link>
           </div>
 
-          {/* Submit Button (สีดำสนิทตาม Figma) */}
+          {/* Submit Button (สีดำสนิทตาม Figma ไม่มีลูกศร) */}
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full h-9 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white rounded-md text-xs font-medium flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+            className="w-full h-9 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white rounded-md text-xs font-medium transition-colors shadow-sm"
           >
-            <span>{isLoading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            {isLoading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
           </button>
         </form>
 

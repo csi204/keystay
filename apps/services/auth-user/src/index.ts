@@ -661,6 +661,7 @@ app.post('/forgot-password', async (c) => {
     return c.json({
       success: true,
       message: 'If the email exists, a password reset link has been generated and sent to your email address.',
+      devResetToken: resetToken,
     });
   } catch (err: any) {
     return c.json({ success: false, error: err.message || 'Internal Server Error' }, 500);
@@ -716,6 +717,60 @@ app.post('/reset-password', async (c) => {
     }
 
     return c.json({ success: true, message: 'Password reset successfully. You can now login with your new password.' });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message || 'Internal Server Error' }, 500);
+  }
+});
+
+// ==========================================
+// 13. POST /change-password — เปลี่ยนรหัสผ่านสำหรับผู้ใช้ที่ล็อกอินแล้ว
+// ==========================================
+const changePasswordSchema = z.object({
+  oldPassword: z.string().min(1, 'Old password is required'),
+  newPassword: z.string().min(8, 'New password must be at least 8 characters'),
+});
+
+app.post('/change-password', async (c) => {
+  try {
+    const userId = c.req.header('x-user-id');
+    if (!userId) {
+      return c.json({ success: false, error: 'Unauthorized: missing user identity' }, 401);
+    }
+
+    const body = await c.req.json();
+    const parsed = changePasswordSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json({ success: false, error: parsed.error.format() }, 400);
+    }
+
+    const { oldPassword, newPassword } = parsed.data;
+
+    const user = await c.env.DB
+      .prepare('SELECT id, password_hash FROM users WHERE id = ?')
+      .bind(userId)
+      .first<{ id: string; password_hash: string }>();
+
+    if (!user) {
+      return c.json({ success: false, error: 'User not found' }, 404);
+    }
+
+    const passwordMatch = await verifyPassword(oldPassword, user.password_hash);
+    if (!passwordMatch) {
+      return c.json({ success: false, error: 'รหัสผ่านปัจจุบันไม่ถูกต้อง' }, 400);
+    }
+
+    const newHashedPassword = await hashPassword(newPassword);
+    const now = new Date().toISOString();
+
+    await c.env.DB.prepare('UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?')
+      .bind(newHashedPassword, now, userId)
+      .run();
+
+    if (c.env.KV) {
+      await c.env.KV.delete(`user:${userId}`);
+    }
+
+    return c.json({ success: true, message: 'เปลี่ยนรหัสผ่านสำเร็จแล้ว' });
   } catch (err: any) {
     return c.json({ success: false, error: err.message || 'Internal Server Error' }, 500);
   }

@@ -223,6 +223,7 @@ app.use('/api/*', async (c, next) => {
       (path.startsWith('/api/rooms') && c.req.method === 'GET') ||
       (path.startsWith('/api/rooms/') && path.endsWith('/status') && c.req.method === 'PATCH') ||
       path.startsWith('/api/auth/logout') ||
+      path.startsWith('/api/auth/change-password') ||
       path.startsWith('/api/auth/users/' + user.sub);
     if (!isAllowed) {
       return c.json(
