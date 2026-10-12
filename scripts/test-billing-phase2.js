@@ -5,7 +5,7 @@ const crypto = require('node:crypto');
 // Load dev vars if present
 let QSTASH_KEY = process.env.QSTASH_CURRENT_SIGNING_KEY;
 try {
-  const devVarsPath = path.join(__dirname, '../apps/services/billing/.dev.vars');
+  const devVarsPath = path.join(__dirname, '../services/billing/.dev.vars');
   if (fs.existsSync(devVarsPath)) {
     const lines = fs.readFileSync(devVarsPath, 'utf8').split('\n');
     for (const rawLine of lines) {

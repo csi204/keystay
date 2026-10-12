@@ -49,7 +49,7 @@
 
 ---
 
-## 4. `apps/services/*` (ทั้ง 6 services: auth-user, room-inventory, reservation, housekeeping, billing, report-analytics)
+## 4. `services/*` (ทั้ง 6 services: auth-user, room-inventory, reservation, housekeeping, billing, report-analytics)
 
 ทุก service ใช้ dependency ชุดเดียวกันเป็นหลัก:
 

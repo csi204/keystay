@@ -4,14 +4,14 @@
 hotel-management-system/
 ├── apps/
 │   ├── api-gateway/              # Cloudflare Worker — จุดเดียวที่ client เรียก, JWT verify, RBAC, route ผ่าน Service Binding
-│   ├── web/                      # Frontend SPA — React + Vite + Tailwind CSS
-│   └── services/                 # Microservices — Cloudflare Workers (TypeScript)
-│       ├── auth-user/            # Service #1: Auth + User Management (12 APIs) — db_auth_user
-│       ├── room-inventory/       # Service #2: Rooms, Types, Floors, Amenities (18 APIs) — db_room
-│       ├── reservation/          # Service #3: Reservations, Guests, Check-in/out (24 APIs) — db_reservation
-│       ├── housekeeping/         # Service #4: Tasks, Staff, Issues, Schedule (16 APIs) — db_housekeeping
-│       ├── billing/              # Service #5: Bills, Payments, Invoices (16 APIs) — db_billing
-│       └── report-analytics/     # Service #6: Stats, Revenue, Occupancy (14 APIs) — db_report
+│   └── web/                      # Frontend SPA — React + Vite + Tailwind CSS
+├── services/                     # Microservices — Cloudflare Workers (TypeScript)
+│   ├── auth-user/            # Service #1: Auth + User Management (12 APIs) — db_auth_user
+│   ├── room-inventory/       # Service #2: Rooms, Types, Floors, Amenities (18 APIs) — db_room
+│   ├── reservation/          # Service #3: Reservations, Guests, Check-in/out (24 APIs) — db_reservation
+│   ├── housekeeping/         # Service #4: Tasks, Staff, Issues, Schedule (16 APIs) — db_housekeeping
+│   ├── billing/              # Service #5: Bills, Payments, Invoices (16 APIs) — db_billing
+│   └── report-analytics/     # Service #6: Stats, Revenue, Occupancy (14 APIs) — db_report
 │
 ├── packages/                     # โค้ดที่ใช้ร่วมกันข้าม apps/services
 │   ├── types/                    # Shared TypeScript Interfaces, DTOs, Enums (auth, room, reservation, housekeeping, billing, report)
@@ -69,10 +69,10 @@ apps/api-gateway/
 └── wrangler.toml                 # Service Bindings (ชี้ไปทั้ง 6 Workers) + KV binding
 ```
 
-## โครงสร้างภายในแต่ละ `apps/services/<service-name>/`
+## โครงสร้างภายในแต่ละ `services/<service-name>/`
 
 ```
-apps/services/reservation/        # ตัวอย่าง: Reservation Service
+services/reservation/        # ตัวอย่าง: Reservation Service
 ├── src/
 │   ├── index.ts                  # Worker entry point (fetch handler + QStash webhook handler)
 │   ├── controllers/              # รับ HTTP Request, validate, ส่งต่อให้ service layer
