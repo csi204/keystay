@@ -118,7 +118,7 @@ pnpm --filter @keystay/reservation dev
 | แอป / เซอร์วิส | Local Port | หน้าที่ |
 |---|---|---|
 | `apps/web` | `5173` | Frontend Single Page Application (React + Vite) |
-| `apps/api-gateway` | `8787` | Central API Gateway, Reverse Proxy, JWT Guard, Rate Limiter |
+| `services/api-gateway` | `8787` | Central API Gateway, Reverse Proxy, JWT Guard, Rate Limiter |
 | `auth-user` | `8788` | Authentication, Users, Roles & Permissions |
 | `room-inventory` | `8789` | Rooms, Room Types, Floors, Status History |
 | `reservation` | `8790` | Bookings, Guests, Check-in / Check-out, Walk-in |

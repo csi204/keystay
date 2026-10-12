@@ -2,7 +2,7 @@ const { spawn } = require('child_process');
 const path = require('path');
 
 const services = [
-  { name: 'api-gateway', cwd: path.join(__dirname, '../apps/api-gateway') },
+  { name: 'api-gateway', cwd: path.join(__dirname, '../services/api-gateway') },
   { name: 'auth-user', cwd: path.join(__dirname, '../services/auth-user') },
   { name: 'room-inventory', cwd: path.join(__dirname, '../services/room-inventory') },
   { name: 'reservation', cwd: path.join(__dirname, '../services/reservation') },

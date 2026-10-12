@@ -27,7 +27,7 @@ const servicesToDeploy = [
   { name: 'housekeeping', dir: 'services/housekeeping' },
   { name: 'billing', dir: 'services/billing' },
   { name: 'report-analytics', dir: 'services/report-analytics' },
-  { name: 'api-gateway', dir: 'apps/api-gateway' },
+  { name: 'api-gateway', dir: 'services/api-gateway' },
 ];
 
 console.log('\n🚀 Deploying KEYSTAY Backend Services & API Gateway to Cloudflare...\n');

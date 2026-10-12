@@ -21,28 +21,6 @@ importers:
         specifier: ^5.8.2
         version: 5.8.2
 
-  apps/api-gateway:
-    dependencies:
-      '@keystay/types':
-        specifier: workspace:*
-        version: link:../../packages/types
-      '@keystay/utils':
-        specifier: workspace:*
-        version: link:../../packages/utils
-      hono:
-        specifier: ^4.7.2
-        version: 4.13.9
-      jose:
-        specifier: ^5.10.0
-        version: 5.10.0
-    devDependencies:
-      '@cloudflare/workers-types':
-        specifier: ^4.20250224.0
-        version: 4.20260702.1
-      typescript:
-        specifier: ^5.8.2
-        version: 5.8.2
-
   apps/web:
     dependencies:
       '@keystay/types':
@@ -131,6 +109,28 @@ importers:
       '@keystay/types':
         specifier: workspace:*
         version: link:../types
+    devDependencies:
+      '@cloudflare/workers-types':
+        specifier: ^4.20250224.0
+        version: 4.20260702.1
+      typescript:
+        specifier: ^5.8.2
+        version: 5.8.2
+
+  services/api-gateway:
+    dependencies:
+      '@keystay/types':
+        specifier: workspace:*
+        version: link:../../packages/types
+      '@keystay/utils':
+        specifier: workspace:*
+        version: link:../../packages/utils
+      hono:
+        specifier: ^4.7.2
+        version: 4.13.9
+      jose:
+        specifier: ^5.10.0
+        version: 5.10.0
     devDependencies:
       '@cloudflare/workers-types':
         specifier: ^4.20250224.0

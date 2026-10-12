@@ -3,9 +3,9 @@
 ```
 hotel-management-system/
 ├── apps/
-│   ├── api-gateway/              # Cloudflare Worker — จุดเดียวที่ client เรียก, JWT verify, RBAC, route ผ่าน Service Binding
 │   └── web/                      # Frontend SPA — React + Vite + Tailwind CSS
-├── services/                     # Microservices — Cloudflare Workers (TypeScript)
+├── services/                     # Backend Workers (TypeScript)
+│   ├── api-gateway/              # Central API Gateway — Reverse Proxy, JWT Guard, RBAC, Service Bindings
 │   ├── auth-user/            # Service #1: Auth + User Management (12 APIs) — db_auth_user
 │   ├── room-inventory/       # Service #2: Rooms, Types, Floors, Amenities (18 APIs) — db_room
 │   ├── reservation/          # Service #3: Reservations, Guests, Check-in/out (24 APIs) — db_reservation
@@ -50,10 +50,10 @@ hotel-management-system/
 
 > `README.md` ที่ root คือเอกสารหลักของโปรเจกต์ทั้งหมด — ประกอบด้วย System Architecture, State Machine, Sequence Diagrams, 100 APIs, ER Diagrams, และ UAT ครบ 18 test cases
 
-## โครงสร้างภายใน `apps/api-gateway/`
+## โครงสร้างภายใน `services/api-gateway/`
 
 ```
-apps/api-gateway/
+services/api-gateway/
 ├── src/
 │   ├── index.ts                  # Worker entry point (fetch handler)
 │   ├── middleware/

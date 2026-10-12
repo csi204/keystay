@@ -37,7 +37,7 @@
 
 ---
 
-## 3. `apps/api-gateway` (Cloudflare Worker)
+## 3. `services/api-gateway` (Cloudflare Worker)
 
 | Package | ใช้ทำอะไร |
 |---|---|
