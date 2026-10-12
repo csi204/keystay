@@ -3,12 +3,12 @@ const path = require('path');
 
 const services = [
   { name: 'api-gateway', cwd: path.join(__dirname, '../apps/api-gateway') },
-  { name: 'auth-user', cwd: path.join(__dirname, '../apps/services/auth-user') },
-  { name: 'room-inventory', cwd: path.join(__dirname, '../apps/services/room-inventory') },
-  { name: 'reservation', cwd: path.join(__dirname, '../apps/services/reservation') },
-  { name: 'housekeeping', cwd: path.join(__dirname, '../apps/services/housekeeping') },
-  { name: 'billing', cwd: path.join(__dirname, '../apps/services/billing') },
-  { name: 'report-analytics', cwd: path.join(__dirname, '../apps/services/report-analytics') },
+  { name: 'auth-user', cwd: path.join(__dirname, '../services/auth-user') },
+  { name: 'room-inventory', cwd: path.join(__dirname, '../services/room-inventory') },
+  { name: 'reservation', cwd: path.join(__dirname, '../services/reservation') },
+  { name: 'housekeeping', cwd: path.join(__dirname, '../services/housekeeping') },
+  { name: 'billing', cwd: path.join(__dirname, '../services/billing') },
+  { name: 'report-analytics', cwd: path.join(__dirname, '../services/report-analytics') },
 ];
 
 console.log('🚀 Starting KEYSTAY Backend Services (Bypassing Turbo for Windows AppLocker)...');

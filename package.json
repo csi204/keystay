@@ -8,6 +8,7 @@
     "dev": "node ./scripts/dev-backend.js",
     "dev:frontend": "pnpm --filter @keystay/web dev",
     "dev:backend": "node ./scripts/dev-backend.js",
+    "deploy:backend": "node ./scripts/deploy-backend.js",
     "build": "pnpm dlx turbo run build",
     "deploy": "pnpm dlx turbo run deploy",
     "lint": "pnpm dlx turbo run lint",

@@ -34,7 +34,7 @@ pnpm dlx wrangler login
 ### 4. วางไฟล์ `.env` ที่ root และ `.dev.vars` ในแต่ละ service
 - คัดลอกค่าจาก `OnlyMe/SECRETS_HANDBOOK.md` หรือถามค่าจากเขต (`@hazeco`)
 - ที่ root: สร้างไฟล์ `.env` (ดูตัวอย่างใน `.env.example`)
-- ที่แต่ละ service: สร้างไฟล์ `.dev.vars` เช่น `apps/services/auth-user/.dev.vars`
+- ที่แต่ละ service: สร้างไฟล์ `.dev.vars` เช่น `services/auth-user/.dev.vars`
 > ⚠️ ห้าม commit ไฟล์ `.env` และ `*.dev.vars` ขึ้น Git เด็ดขาด (อยู่ใน `.gitignore` แล้ว)
 
 ### 5. สร้าง D1 Local SQLite + รัน Migration ครบทั้ง 6 Services ในคำสั่งเดียว

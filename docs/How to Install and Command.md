@@ -169,7 +169,7 @@ git push origin feat/ชื่อฟีเจอร์
 - **อัตโนมัติ (CI/CD):** เมื่อ PR ถูก Merge เข้า `main` GitHub Actions (`.github/workflows/deploy.yml`) จะ Build และ Deploy ทุกเซอร์วิสขึ้น Cloudflare Workers & Pages อัตโนมัติ
 - **Manual Deploy รายเซอร์วิส:**
   ```bash
-  cd apps/services/report-analytics
+  cd services/report-analytics
   pnpm dlx wrangler deploy
   ```
 
