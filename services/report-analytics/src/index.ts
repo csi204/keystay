@@ -1,6 +1,9 @@
 import { Hono } from 'hono';
-import { z } from 'zod';
 import { Receiver } from '@upstash/qstash';
+import { getDb } from './db/client';
+import { ReportService } from './services/report.service';
+import { auditEvents, dailyStats, revenueRecords } from './db/schema';
+import { sql } from 'drizzle-orm';
 
 export interface Env {
   DB: D1Database;
@@ -11,7 +14,6 @@ export interface Env {
 
 const app = new Hono<{ Bindings: Env }>();
 
-// Timezone helpers for Thailand (Asia/Bangkok) to prevent UTC date shift bugs
 function getBangkokDate(): string {
   return new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Bangkok',
@@ -21,18 +23,18 @@ function getBangkokDate(): string {
   }).format(new Date());
 }
 
-function getBangkokMonth(): string {
-  return getBangkokDate().slice(0, 7);
+function getService(env: Env) {
+  const db = getDb(env.DB);
+  return { db, reportService: new ReportService(db) };
 }
 
-// ==========================================
-// 1. HEALTH & INFO
-// ==========================================
+// 1. Health
 app.get('/health', (c) => {
   return c.json({
     status: 'ok',
     service: 'report-analytics',
     version: '1.0.0',
+    orm: 'Drizzle ORM',
     timestamp: new Date().toISOString(),
   });
 });
@@ -40,292 +42,109 @@ app.get('/health', (c) => {
 app.get('/', (c) => {
   return c.json({
     service: 'report-analytics',
-    description: 'KEYSTAY Executive Analytics & Financial Reporting Microservice',
+    description: 'KEYSTAY Executive Analytics & Financial Reporting Microservice (Drizzle ORM)',
     endpoints_count: 14,
     status: 'operational',
   });
 });
 
-// ==========================================
-// 2. EXECUTIVE DASHBOARD SUMMARY (API #97)
-// ==========================================
+// 2. Executive Dashboard Summary (API #97)
 app.get('/dashboard/summary', async (c) => {
   try {
     const today = getBangkokDate();
-
-    // 1. Fetch today's stats from daily_stats
-    const dailyStmt = c.env.DB.prepare(
-      'SELECT * FROM daily_stats WHERE stat_date = ?'
-    ).bind(today);
-    let todayStats = await dailyStmt.first<any>();
-
-    // Fallback if today's record has not been generated yet
-    if (!todayStats) {
-      const latestStmt = c.env.DB.prepare(
-        'SELECT * FROM daily_stats ORDER BY stat_date DESC LIMIT 1'
-      );
-      todayStats = (await latestStmt.first<any>()) || {
-        stat_date: today,
-        total_rooms: 22,
-        occupied_rooms: 15,
-        available_rooms: 5,
-        reserved_rooms: 1,
-        maintenance_rooms: 1,
-        occupancy_rate: 68.18,
-        total_checkins: 4,
-        total_checkouts: 3,
-        total_revenue: 62100.0,
-        room_revenue: 58200.0,
-        minibar_revenue: 3900.0,
-      };
-    }
-
-    // 2. Fetch current month summary
-    const currentMonth = today.slice(0, 7);
-    const monthStmt = c.env.DB.prepare(
-      'SELECT * FROM monthly_summary WHERE year_month = ?'
-    ).bind(currentMonth);
-    const monthSummary = (await monthStmt.first<any>()) || {
-      total_revenue: 1720000.0,
-      avg_occupancy_rate: 74.2,
-      adr: 4020.0,
-      revpar: 2982.84,
-    };
-
-    // 3. Fetch recent room performance top 3
-    const topRoomsStmt = c.env.DB.prepare(
-      'SELECT room_number, room_type_name, total_revenue, total_nights_sold FROM room_performance WHERE year_month = ? ORDER BY total_revenue DESC LIMIT 3'
-    ).bind(currentMonth);
-    const topRooms = (await topRoomsStmt.all()).results;
-
-    return c.json({
-      success: true,
-      data: {
-        date: today,
-        last_updated: new Date().toISOString(),
-        kpi: {
-          occupancy_rate: todayStats.occupancy_rate,
-          total_revenue_today: todayStats.total_revenue,
-          room_revenue_today: todayStats.room_revenue,
-          minibar_revenue_today: todayStats.minibar_revenue,
-          rooms_occupied: todayStats.occupied_rooms,
-          rooms_available: todayStats.available_rooms,
-          rooms_reserved: todayStats.reserved_rooms,
-          rooms_maintenance: todayStats.maintenance_rooms,
-          total_rooms: todayStats.total_rooms,
-          checkins_today: todayStats.total_checkins,
-          checkouts_today: todayStats.total_checkouts,
-        },
-        monthly_mtd: {
-          month: currentMonth,
-          total_revenue: monthSummary.total_revenue,
-          avg_occupancy_rate: monthSummary.avg_occupancy_rate,
-          adr: monthSummary.adr,
-          revpar: monthSummary.revpar,
-        },
-        top_performing_rooms: topRooms,
-      },
-    });
+    const { reportService } = getService(c.env);
+    const result = await reportService.getDashboardSummary(today);
+    return c.json({ success: true, data: result });
   } catch (err: any) {
     return c.json({ success: false, error: err.message }, 500);
   }
 });
 
-// ==========================================
-// 3. REVENUE DAILY & MONTHLY (APIs #88, #89)
-// ==========================================
+// 3. Revenue Daily (API #88)
 app.get('/reports/revenue-daily', async (c) => {
   try {
     const rawLimit = Number(c.req.query('limit')) || 14;
     const limit = Math.max(1, Math.min(rawLimit, 100));
-    const stmt = c.env.DB.prepare(
-      'SELECT stat_date, total_revenue, room_revenue, minibar_revenue, total_checkouts FROM daily_stats ORDER BY stat_date DESC LIMIT ?'
-    ).bind(limit);
-    const rows = (await stmt.all()).results;
-
-    // Calculate trend
-    let totalWindowRevenue = 0;
-    for (const r of rows as any[]) {
-      totalWindowRevenue += r.total_revenue || 0;
-    }
-    const avgDailyRevenue = rows.length > 0 ? totalWindowRevenue / rows.length : 0;
-
-    return c.json({
-      success: true,
-      data: {
-        records: rows,
-        summary: {
-          period_days: rows.length,
-          total_window_revenue: totalWindowRevenue,
-          average_daily_revenue: Math.round(avgDailyRevenue * 100) / 100,
-        },
-      },
-    });
+    const { reportService } = getService(c.env);
+    const result = await reportService.getRevenueDaily(limit);
+    return c.json({ success: true, data: result });
   } catch (err: any) {
     return c.json({ success: false, error: err.message }, 500);
   }
 });
 
+// 4. Daily Stats
+app.get('/reports/daily-stats', async (c) => {
+  try {
+    const rawLimit = Number(c.req.query('limit')) || 30;
+    const limit = Math.max(1, Math.min(rawLimit, 100));
+    const { reportService } = getService(c.env);
+    const result = await reportService.getDailyStats(limit);
+    return c.json({ success: true, data: result });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
+});
+
+// 5. Revenue Monthly (API #89)
 app.get('/reports/revenue-monthly', async (c) => {
   try {
-    const year = c.req.query('year') || '2026';
-    const stmt = c.env.DB.prepare(
-      'SELECT year_month, total_revenue, net_revenue, avg_occupancy_rate, total_reservations, adr, revpar FROM monthly_summary WHERE year_month LIKE ? ORDER BY year_month ASC'
-    ).bind(`${year}-%`);
-    const rows = (await stmt.all()).results;
-
-    return c.json({
-      success: true,
-      data: {
-        year: year,
-        months: rows,
-      },
-    });
+    const rawLimit = Number(c.req.query('limit')) || 12;
+    const limit = Math.max(1, Math.min(rawLimit, 36));
+    const { reportService } = getService(c.env);
+    const result = await reportService.getRevenueMonthly(limit);
+    return c.json({ success: true, data: result });
   } catch (err: any) {
     return c.json({ success: false, error: err.message }, 500);
   }
 });
 
-// ==========================================
-// 4. OCCUPANCY RATE (API #87)
-// ==========================================
-app.get('/reports/occupancy-rate', async (c) => {
+// 6. Occupancy Report (API #90)
+app.get('/reports/occupancy', async (c) => {
   try {
-    const rawDays = Number(c.req.query('days')) || 14;
-    const limit = Math.max(1, Math.min(rawDays, 100));
-    const stmt = c.env.DB.prepare(
-      'SELECT stat_date, occupancy_rate, occupied_rooms, available_rooms, maintenance_rooms, total_rooms FROM daily_stats ORDER BY stat_date DESC LIMIT ?'
-    ).bind(limit);
-    const rows = (await stmt.all()).results;
-
-    let sumOccupancy = 0;
-    let peakRate = 0;
-    let peakDate = '';
-    for (const r of rows as any[]) {
-      sumOccupancy += r.occupancy_rate || 0;
-      if (r.occupancy_rate > peakRate) {
-        peakRate = r.occupancy_rate;
-        peakDate = r.stat_date;
-      }
-    }
-    const avgOccupancy = rows.length > 0 ? sumOccupancy / rows.length : 0;
-
-    return c.json({
-      success: true,
-      data: {
-        records: rows,
-        metrics: {
-          average_occupancy_rate: Math.round(avgOccupancy * 100) / 100,
-          peak_occupancy_rate: peakRate,
-          peak_date: peakDate,
-        },
-      },
-    });
-  } catch (err: any) {
-    return c.json({ success: false, error: err.message }, 500);
-  }
-});
-
-// ==========================================
-// 5. REVENUE BY ROOM TYPE & TOP ROOMS (APIs #90, #91)
-// ==========================================
-app.get('/reports/revenue-by-room-type', async (c) => {
-  try {
-    const currentMonth = c.req.query('month') || getBangkokMonth();
-    const stmt = c.env.DB.prepare(
-      'SELECT room_type_name, SUM(total_revenue) as revenue, SUM(total_nights_sold) as nights_sold, SUM(total_bookings) as total_bookings FROM room_performance WHERE year_month = ? GROUP BY room_type_name ORDER BY revenue DESC'
-    ).bind(currentMonth);
-    const rows = (await stmt.all()).results;
-
-    let grandTotal = 0;
-    for (const r of rows as any[]) {
-      grandTotal += r.revenue || 0;
-    }
-
-    const breakdown = (rows as any[]).map((r) => ({
-      ...r,
-      revenue_share_percentage: grandTotal > 0 ? Math.round((r.revenue / grandTotal) * 10000) / 100 : 0,
-    }));
-
-    return c.json({
-      success: true,
-      data: {
-        month: currentMonth,
-        total_revenue: grandTotal,
-        room_types: breakdown,
-      },
-    });
-  } catch (err: any) {
-    return c.json({ success: false, error: err.message }, 500);
-  }
-});
-
-app.get('/reports/top-rooms', async (c) => {
-  try {
-    const rawLimit = Number(c.req.query('limit')) || 5;
+    const rawLimit = Number(c.req.query('limit')) || 30;
     const limit = Math.max(1, Math.min(rawLimit, 100));
-    const month = c.req.query('month') || getBangkokMonth();
-    const stmt = c.env.DB.prepare(
-      'SELECT room_id, room_number, room_type_name, total_bookings, total_nights_sold, total_revenue FROM room_performance WHERE year_month = ? ORDER BY total_revenue DESC LIMIT ?'
-    ).bind(month, limit);
-    const rows = (await stmt.all()).results;
-
-    return c.json({
-      success: true,
-      data: {
-        month: month,
-        top_rooms: rows,
-      },
-    });
+    const { reportService } = getService(c.env);
+    const result = await reportService.getOccupancyReport(limit);
+    return c.json({ success: true, data: result });
   } catch (err: any) {
     return c.json({ success: false, error: err.message }, 500);
   }
 });
 
-// ==========================================
-// 6. AVERAGE STAY DURATION & CANCELLATION (APIs #92, #93)
-// ==========================================
-app.get('/reports/avg-stay-duration', async (c) => {
+// 7. Room Performance (API #91)
+app.get('/reports/room-performance', async (c) => {
   try {
-    const stmt = c.env.DB.prepare(
-      'SELECT year_month, avg_stay_duration, total_reservations, total_guests FROM monthly_summary ORDER BY year_month DESC LIMIT 6'
-    );
-    const rows = (await stmt.all()).results;
-
-    const demoStmt = c.env.DB.prepare(
-      'SELECT nationality, avg_stay_nights, guest_count FROM guest_demographics ORDER BY guest_count DESC LIMIT 5'
-    );
-    const demoRows = (await demoStmt.all()).results;
-
-    return c.json({
-      success: true,
-      data: {
-        overall_trend: rows,
-        by_nationality: demoRows,
-      },
-    });
+    const today = getBangkokDate();
+    const month = c.req.query('month') || today.slice(0, 7);
+    const rawLimit = Number(c.req.query('limit')) || 22;
+    const limit = Math.max(1, Math.min(rawLimit, 100));
+    const { reportService } = getService(c.env);
+    const result = await reportService.getRoomPerformance(month, limit);
+    return c.json({ success: true, data: result });
   } catch (err: any) {
     return c.json({ success: false, error: err.message }, 500);
   }
 });
 
-app.get('/reports/cancellation-rate', async (c) => {
+// 8. KPIs (API #87)
+app.get('/reports/kpis', async (c) => {
   try {
-    const stmt = c.env.DB.prepare(
-      'SELECT year_month, cancellation_rate, total_reservations FROM monthly_summary ORDER BY year_month DESC LIMIT 6'
-    );
-    const rows = (await stmt.all()).results;
-
-    const dailyStmt = c.env.DB.prepare(
-      'SELECT stat_date, total_cancellations, total_checkins FROM daily_stats ORDER BY stat_date DESC LIMIT 7'
-    );
-    const dailyRows = (await dailyStmt.all()).results;
-
+    const today = getBangkokDate();
+    const { reportService } = getService(c.env);
+    const summary = await reportService.getDashboardSummary(today);
     return c.json({
       success: true,
       data: {
-        monthly_cancellation_rate: rows,
-        recent_daily_cancellations: dailyRows,
+        date: today,
+        occupancy_rate: summary.kpi.occupancy_rate,
+        total_revenue_today: summary.kpi.total_revenue_today,
+        rooms_occupied: summary.kpi.rooms_occupied,
+        rooms_available: summary.kpi.rooms_available,
+        monthly_mtd_revenue: summary.monthly_mtd.total_revenue,
+        monthly_avg_occupancy: summary.monthly_mtd.avg_occupancy_rate,
+        adr: summary.monthly_mtd.adr,
+        revpar: summary.monthly_mtd.revpar,
       },
     });
   } catch (err: any) {
@@ -333,195 +152,108 @@ app.get('/reports/cancellation-rate', async (c) => {
   }
 });
 
-// ==========================================
-// 7. HOUSEKEEPING & CHECKIN/OUT STATS (APIs #94, #95)
-// ==========================================
-app.get('/reports/housekeeping-performance', async (c) => {
+// 9. Cancellations (API #92)
+app.get('/reports/cancellations', async (c) => {
   try {
-    const date = c.req.query('date') || getBangkokDate();
-    const stmt = c.env.DB.prepare(
-      'SELECT staff_id, staff_name, tasks_completed, avg_duration_minutes, issues_reported FROM housekeeping_performance WHERE record_date = ?'
-    ).bind(date);
-    let rows = (await stmt.all()).results;
-
-    if (rows.length === 0) {
-      // Fallback to latest records
-      const fallbackStmt = c.env.DB.prepare(
-        'SELECT staff_id, staff_name, tasks_completed, avg_duration_minutes, issues_reported FROM housekeeping_performance ORDER BY record_date DESC LIMIT 5'
-      );
-      rows = (await fallbackStmt.all()).results;
-    }
-
-    return c.json({
-      success: true,
-      data: {
-        date: date,
-        staff_performance: rows,
-      },
-    });
+    const rawLimit = Number(c.req.query('limit')) || 30;
+    const limit = Math.max(1, Math.min(rawLimit, 90));
+    const { reportService } = getService(c.env);
+    const result = await reportService.getCancellations(limit);
+    return c.json({ success: true, data: result });
   } catch (err: any) {
     return c.json({ success: false, error: err.message }, 500);
   }
 });
 
-app.get('/reports/checkin-checkout-stats', async (c) => {
-  try {
-    const rawDays = Number(c.req.query('days')) || 7;
-    const limit = Math.max(1, Math.min(rawDays, 100));
-    const stmt = c.env.DB.prepare(
-      'SELECT stat_date, total_checkins, total_checkouts, total_walk_ins FROM daily_stats ORDER BY stat_date DESC LIMIT ?'
-    ).bind(limit);
-    const rows = (await stmt.all()).results;
-
-    return c.json({
-      success: true,
-      data: {
-        period_days: rows.length,
-        stats: rows,
-      },
-    });
-  } catch (err: any) {
-    return c.json({ success: false, error: err.message }, 500);
-  }
-});
-
-// ==========================================
-// 8. GUEST DEMOGRAPHICS (API #96)
-// ==========================================
+// 10. Guest Demographics (API #93)
 app.get('/reports/guest-demographics', async (c) => {
   try {
-    const month = c.req.query('month') || getBangkokMonth();
-    const stmt = c.env.DB.prepare(
-      'SELECT nationality, guest_count, total_revenue, avg_stay_nights FROM guest_demographics WHERE year_month = ? ORDER BY guest_count DESC'
-    ).bind(month);
-    let rows = (await stmt.all()).results;
-
-    if (rows.length === 0) {
-      const fallbackStmt = c.env.DB.prepare(
-        'SELECT nationality, guest_count, total_revenue, avg_stay_nights FROM guest_demographics ORDER BY year_month DESC, guest_count DESC LIMIT 5'
-      );
-      rows = (await fallbackStmt.all()).results;
-    }
-
-    let totalGuests = 0;
-    for (const r of rows as any[]) {
-      totalGuests += r.guest_count || 0;
-    }
-
-    const demographics = (rows as any[]).map((r) => ({
-      ...r,
-      guest_share_percentage: totalGuests > 0 ? Math.round((r.guest_count / totalGuests) * 10000) / 100 : 0,
-    }));
-
-    return c.json({
-      success: true,
-      data: {
-        month: month,
-        total_guests: totalGuests,
-        demographics: demographics,
-      },
-    });
+    const today = getBangkokDate();
+    const month = c.req.query('month') || today.slice(0, 7);
+    const { reportService } = getService(c.env);
+    const result = await reportService.getGuestDemographics(month);
+    return c.json({ success: true, data: result });
   } catch (err: any) {
     return c.json({ success: false, error: err.message }, 500);
   }
 });
 
-// ==========================================
-// 9. REFRESH ENDPOINT FOR ADMIN & STAFF (PARTIAL REFRESH)
-// ==========================================
+// 11. Housekeeping Efficiency (API #94)
+app.get('/reports/housekeeping-efficiency', async (c) => {
+  try {
+    const today = getBangkokDate();
+    const date = c.req.query('date') || today;
+    const { reportService } = getService(c.env);
+    const result = await reportService.getHousekeepingEfficiency(date);
+    return c.json({ success: true, data: result });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
+});
+
+// 12. Audit Logs (API #96)
+app.get('/reports/audit-logs', async (c) => {
+  try {
+    const rawLimit = Number(c.req.query('limit')) || 50;
+    const limit = Math.max(1, Math.min(rawLimit, 200));
+    const { reportService } = getService(c.env);
+    const result = await reportService.getAuditLogs(limit);
+    return c.json({ success: true, data: result });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
+});
+
+// 13. Refresh Reports (API #95)
 app.post('/reports/refresh', async (c) => {
   try {
     const section = c.req.query('section') || 'all';
-    const timestamp = new Date().toISOString();
-    const today = timestamp.slice(0, 10);
-    const currentMonth = today.slice(0, 7);
+    const now = new Date().toISOString();
+    const { reportService } = getService(c.env);
 
-    const refreshedSections: Record<string, any> = {};
-
-    if (section === 'all' || section === 'kpi' || section === 'daily') {
-      const dailyStmt = c.env.DB.prepare(
-        'SELECT * FROM daily_stats ORDER BY stat_date DESC LIMIT 1'
-      );
-      refreshedSections.kpi = await dailyStmt.first();
-    }
-
-    if (section === 'all' || section === 'occupancy') {
-      const occStmt = c.env.DB.prepare(
-        'SELECT stat_date, occupancy_rate, occupied_rooms, available_rooms FROM daily_stats ORDER BY stat_date DESC LIMIT 7'
-      );
-      refreshedSections.occupancy = (await occStmt.all()).results;
-    }
-
-    if (section === 'all' || section === 'revenue') {
-      const revStmt = c.env.DB.prepare(
-        'SELECT room_type_name, SUM(total_revenue) as revenue FROM room_performance WHERE year_month = ? GROUP BY room_type_name'
-      ).bind(currentMonth);
-      refreshedSections.revenue_by_type = (await revStmt.all()).results;
-    }
-
-    if (section === 'all' || section === 'housekeeping') {
-      const hkStmt = c.env.DB.prepare(
-        'SELECT staff_name, tasks_completed, avg_duration_minutes FROM housekeeping_performance ORDER BY record_date DESC LIMIT 5'
-      );
-      refreshedSections.housekeeping = (await hkStmt.all()).results;
-    }
-
-    if (section === 'all' || section === 'demographics') {
-      const demoStmt = c.env.DB.prepare(
-        'SELECT nationality, guest_count, total_revenue FROM guest_demographics ORDER BY guest_count DESC LIMIT 5'
-      );
-      refreshedSections.demographics = (await demoStmt.all()).results;
-    }
+    await reportService.recordAuditEvent({
+      eventType: 'ManualReportRefresh',
+      sourceService: 'report-analytics',
+      performedBy: 'system',
+      payload: JSON.stringify({ section, timestamp: now }),
+    });
 
     return c.json({
       success: true,
       message: `Section '${section}' refreshed successfully.`,
-      refreshed_section: section,
-      refreshed_at: timestamp,
-      data: refreshedSections,
+      refreshed_at: now,
     });
   } catch (err: any) {
     return c.json({ success: false, error: err.message }, 500);
   }
 });
 
-// ==========================================
-// 10. EXPORT CSV (API #99)
-// ==========================================
+// 14. Export CSV (API #98)
 app.get('/reports/export/csv', async (c) => {
   try {
+    const reportType = c.req.query('type') || 'daily_stats';
     const today = getBangkokDate();
-    const ALLOWED_REPORT_TYPES = ['daily_stats', 'room_performance', 'monthly_summary'];
-    const rawType = c.req.query('type') || 'daily_stats';
-    const reportType = ALLOWED_REPORT_TYPES.includes(rawType) ? rawType : 'daily_stats';
-    let csvContent = '';
-    let filename = `keystay_${reportType}_${today}.csv`;
+    const filename = `keystay_${reportType}_${today}.csv`;
+    const { reportService } = getService(c.env);
 
+    let csvContent = '';
     if (reportType === 'daily_stats') {
-      const stmt = c.env.DB.prepare(
-        'SELECT stat_date, total_rooms, occupied_rooms, available_rooms, occupancy_rate, total_checkins, total_checkouts, total_revenue, room_revenue, minibar_revenue FROM daily_stats ORDER BY stat_date DESC'
-      );
-      const rows = (await stmt.all()).results;
+      const rows = await reportService.getDailyStats(100);
       csvContent = 'Date,Total Rooms,Occupied,Available,Occupancy %,Check-ins,Check-outs,Total Revenue,Room Revenue,Minibar Revenue\n';
       for (const r of rows as any[]) {
-        csvContent += `${r.stat_date},${r.total_rooms},${r.occupied_rooms},${r.available_rooms},${r.occupancy_rate}%,${r.total_checkins},${r.total_checkouts},${r.total_revenue},${r.room_revenue},${r.minibar_revenue}\n`;
+        csvContent += `${r.statDate},${r.totalRooms},${r.occupiedRooms},${r.availableRooms},${r.occupancyRate}%,${r.totalCheckins},${r.totalCheckouts},${r.totalRevenue},${r.roomRevenue},${r.minibarRevenue}\n`;
       }
     } else if (reportType === 'room_performance') {
-      const stmt = c.env.DB.prepare(
-        'SELECT room_number, room_type_name, year_month, total_bookings, total_nights_sold, total_revenue FROM room_performance ORDER BY year_month DESC, total_revenue DESC'
-      );
-      const rows = (await stmt.all()).results;
+      const month = today.slice(0, 7);
+      const res = await reportService.getRoomPerformance(month, 50);
       csvContent = 'Room Number,Room Type,Month,Total Bookings,Nights Sold,Total Revenue (THB)\n';
-      for (const r of rows as any[]) {
+      for (const r of res.rooms as any[]) {
         csvContent += `"${r.room_number}","${r.room_type_name}",${r.year_month},${r.total_bookings},${r.total_nights_sold},${r.total_revenue}\n`;
       }
     } else {
-      const stmt = c.env.DB.prepare(
-        'SELECT year_month, total_revenue, net_revenue, avg_occupancy_rate, total_reservations, adr, revpar FROM monthly_summary ORDER BY year_month DESC'
-      );
-      const rows = (await stmt.all()).results;
+      const res = await reportService.getRevenueMonthly(24);
       csvContent = 'Month,Total Revenue,Net Revenue,Avg Occupancy %,Total Bookings,ADR,RevPAR\n';
-      for (const r of rows as any[]) {
+      for (const r of res.history as any[]) {
         csvContent += `${r.year_month},${r.total_revenue},${r.net_revenue},${r.avg_occupancy_rate}%,${r.total_reservations},${r.adr},${r.revpar}\n`;
       }
     }
@@ -537,38 +269,22 @@ app.get('/reports/export/csv', async (c) => {
   }
 });
 
-// ==========================================
-// 11. EXPORT PRINTABLE PDF / HTML (API #98)
-// Minimalist, Clean, Non-AI Swiss Typography Design
-// ==========================================
+// 15. Export Printable PDF / HTML (API #99)
 app.get('/reports/export/pdf', async (c) => {
   try {
     const today = getBangkokDate();
-    const month = today.slice(0, 7);
+    const { reportService } = getService(c.env);
+    const summary = await reportService.getDashboardSummary(today);
+    const dailyBreakdown = await reportService.getDailyStats(7);
 
-    const statsStmt = c.env.DB.prepare(
-      'SELECT stat_date, total_rooms, occupied_rooms, occupancy_rate, total_revenue FROM daily_stats ORDER BY stat_date DESC LIMIT 7'
-    );
-    const stats = (await statsStmt.all()).results;
-
-    const summaryStmt = c.env.DB.prepare(
-      'SELECT * FROM monthly_summary WHERE year_month = ?'
-    ).bind(month);
-    const mtd = (await summaryStmt.first<any>()) || {
-      total_revenue: 1720000.0,
-      avg_occupancy_rate: 74.2,
-      adr: 4020.0,
-      revpar: 2982.84,
-    };
-
-    const rowsHtml = (stats as any[])
+    const rowsHtml = (dailyBreakdown as any[])
       .map(
         (s) => `
       <tr>
-        <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; font-family: monospace;">${s.stat_date}</td>
-        <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; text-align: right;">${s.occupied_rooms} / ${s.total_rooms}</td>
-        <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: 500;">${s.occupancy_rate}%</td>
-        <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; text-align: right; font-family: monospace;">฿${Number(s.total_revenue).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+        <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; font-family: monospace;">${s.statDate}</td>
+        <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; text-align: right;">${s.occupiedRooms} / ${s.totalRooms}</td>
+        <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: 500;">${s.occupancyRate}%</td>
+        <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; text-align: right; font-family: monospace;">฿${Number(s.totalRevenue).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
       </tr>`
       )
       .join('');
@@ -656,19 +372,19 @@ app.get('/reports/export/pdf', async (c) => {
   <div class="kpi-grid">
     <div class="kpi-card">
       <div class="kpi-label">Month-to-Date Revenue</div>
-      <div class="kpi-value">฿${Number(mtd.total_revenue).toLocaleString()}</div>
+      <div class="kpi-value">฿${Number(summary.monthly_mtd.total_revenue).toLocaleString()}</div>
     </div>
     <div class="kpi-card">
       <div class="kpi-label">Average Occupancy</div>
-      <div class="kpi-value">${mtd.avg_occupancy_rate}%</div>
+      <div class="kpi-value">${summary.monthly_mtd.avg_occupancy_rate}%</div>
     </div>
     <div class="kpi-card">
       <div class="kpi-label">ADR (Average Daily Rate)</div>
-      <div class="kpi-value">฿${Number(mtd.adr).toLocaleString()}</div>
+      <div class="kpi-value">฿${Number(summary.monthly_mtd.adr).toLocaleString()}</div>
     </div>
     <div class="kpi-card">
       <div class="kpi-label">RevPAR</div>
-      <div class="kpi-value">฿${Number(mtd.revpar).toLocaleString()}</div>
+      <div class="kpi-value">฿${Number(summary.monthly_mtd.revpar).toLocaleString()}</div>
     </div>
   </div>
 
@@ -689,7 +405,7 @@ app.get('/reports/export/pdf', async (c) => {
 
   <div class="footer">
     <div>Confidential — For Internal Management Only</div>
-    <div>KEYSTAY Microservices Engine v1.0</div>
+    <div>KEYSTAY Microservices Engine v1.0 (Drizzle)</div>
   </div>
 </body>
 </html>`;
@@ -704,45 +420,7 @@ app.get('/reports/export/pdf', async (c) => {
   }
 });
 
-// ==========================================
-// 12. CUSTOM REPORT QUERY BUILDER (API #100)
-// ==========================================
-app.get('/reports/custom', async (c) => {
-  try {
-    const groupBy = c.req.query('groupBy') || 'day';
-    const rawLimit = Number(c.req.query('limit')) || 30;
-    const limit = Math.max(1, Math.min(rawLimit, 100));
-
-    if (groupBy === 'room_type') {
-      const stmt = c.env.DB.prepare(
-        'SELECT room_type_name, SUM(total_bookings) as bookings, SUM(total_nights_sold) as nights, SUM(total_revenue) as revenue FROM room_performance GROUP BY room_type_name ORDER BY revenue DESC'
-      );
-      const rows = (await stmt.all()).results;
-      return c.json({ success: true, groupBy: 'room_type', results: rows });
-    }
-
-    if (groupBy === 'nationality') {
-      const stmt = c.env.DB.prepare(
-        'SELECT nationality, SUM(guest_count) as total_guests, SUM(total_revenue) as revenue, AVG(avg_stay_nights) as avg_stay FROM guest_demographics GROUP BY nationality ORDER BY total_guests DESC'
-      );
-      const rows = (await stmt.all()).results;
-      return c.json({ success: true, groupBy: 'nationality', results: rows });
-    }
-
-    // Default by date
-    const stmt = c.env.DB.prepare(
-      'SELECT stat_date, occupancy_rate, total_revenue, total_checkins, total_checkouts FROM daily_stats ORDER BY stat_date DESC LIMIT ?'
-    ).bind(limit);
-    const rows = (await stmt.all()).results;
-    return c.json({ success: true, groupBy: 'day', results: rows });
-  } catch (err: any) {
-    return c.json({ success: false, error: err.message }, 500);
-  }
-});
-
-// ==========================================
-// 13. WEBHOOK CONSUMERS (Upstash QStash & Event Bus)
-// ==========================================
+// 16. Webhooks (Upstash QStash & Event Bus)
 app.use('/webhooks/*', async (c, next) => {
   const signature = c.req.header('upstash-signature');
   const signingKey = c.env.QSTASH_CURRENT_SIGNING_KEY;
@@ -779,30 +457,31 @@ app.post('/webhooks/checkout', async (c) => {
     const payload = await c.req.json();
     const today = getBangkokDate();
     const now = new Date().toISOString();
+    const { db, reportService } = getService(c.env);
 
-    // Record audit event
-    await c.env.DB.prepare(
-      'INSERT INTO audit_events (id, event_type, source_service, payload, received_at) VALUES (?, ?, ?, ?, ?)'
-    )
-      .bind(
-        crypto.randomUUID(),
-        'ReservationCheckedOut',
-        'reservation',
-        JSON.stringify(payload),
-        now
-      )
-      .run();
+    await reportService.recordAuditEvent({
+      eventType: 'ReservationCheckedOut',
+      sourceService: 'reservation',
+      payload: JSON.stringify(payload),
+    });
 
-    // Increment today's checkouts in daily_stats (UPSERT prevents missing record data loss)
-    await c.env.DB.prepare(`
-      INSERT INTO daily_stats (id, stat_date, total_checkouts, created_at, updated_at)
-      VALUES (?, ?, 1, ?, ?)
-      ON CONFLICT(stat_date) DO UPDATE SET
-        total_checkouts = total_checkouts + 1,
-        updated_at = excluded.updated_at
-    `)
-      .bind(`ds-${crypto.randomUUID()}`, today, now, now)
-      .run();
+    // Upsert daily_stats using Drizzle onConflictDoUpdate
+    await db
+      .insert(dailyStats)
+      .values({
+        id: `ds-${crypto.randomUUID()}`,
+        statDate: today,
+        totalCheckouts: 1,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: dailyStats.statDate,
+        set: {
+          totalCheckouts: sql`${dailyStats.totalCheckouts} + 1`,
+          updatedAt: now,
+        },
+      });
 
     return c.json({
       success: true,
@@ -819,43 +498,48 @@ app.post('/webhooks/bill-paid', async (c) => {
     const payload = await c.req.json();
     const today = getBangkokDate();
     const now = new Date().toISOString();
+    const { db, reportService } = getService(c.env);
 
-    // 1. Record in audit_events
-    await c.env.DB.prepare(
-      'INSERT INTO audit_events (id, event_type, source_service, payload, received_at) VALUES (?, ?, ?, ?, ?)'
-    )
-      .bind(crypto.randomUUID(), 'BillPaid', 'billing', JSON.stringify(payload), now)
-      .run();
+    await reportService.recordAuditEvent({
+      eventType: 'BillPaid',
+      sourceService: 'billing',
+      payload: JSON.stringify(payload),
+    });
 
-    // 2. Record revenue entry
     const amount = Number(payload.amountPaid || payload.totalAmount || 0);
-    await c.env.DB.prepare(
-      'INSERT INTO revenue_records (id, record_date, reservation_id, bill_id, room_type_name, revenue_type, amount, payment_method, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-    )
-      .bind(
-        crypto.randomUUID(),
-        today,
-        payload.reservationId || null,
-        payload.billId || null,
-        payload.roomTypeName || 'Room',
-        'room_charge',
-        amount,
-        payload.paymentMethod || 'CARD',
-        now
-      )
-      .run();
 
-    // 3. Update daily_stats revenue (UPSERT prevents silent revenue loss)
-    await c.env.DB.prepare(`
-      INSERT INTO daily_stats (id, stat_date, total_revenue, room_revenue, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?)
-      ON CONFLICT(stat_date) DO UPDATE SET
-        total_revenue = total_revenue + excluded.total_revenue,
-        room_revenue = room_revenue + excluded.room_revenue,
-        updated_at = excluded.updated_at
-    `)
-      .bind(`ds-${crypto.randomUUID()}`, today, amount, amount, now, now)
-      .run();
+    // Record revenue entry with Drizzle
+    await db.insert(revenueRecords).values({
+      id: crypto.randomUUID(),
+      recordDate: today,
+      reservationId: payload.reservationId || null,
+      billId: payload.billId || null,
+      roomTypeName: payload.roomTypeName || 'Room',
+      revenueType: 'room_charge',
+      amount,
+      paymentMethod: payload.paymentMethod || 'CARD',
+      createdAt: now,
+    });
+
+    // Update daily_stats revenue with Drizzle upsert
+    await db
+      .insert(dailyStats)
+      .values({
+        id: `ds-${crypto.randomUUID()}`,
+        statDate: today,
+        totalRevenue: amount,
+        roomRevenue: amount,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: dailyStats.statDate,
+        set: {
+          totalRevenue: sql`${dailyStats.totalRevenue} + ${amount}`,
+          roomRevenue: sql`${dailyStats.roomRevenue} + ${amount}`,
+          updatedAt: now,
+        },
+      });
 
     return c.json({
       success: true,
@@ -870,20 +554,13 @@ app.post('/webhooks/bill-paid', async (c) => {
 app.post('/webhooks/housekeeping-completed', async (c) => {
   try {
     const payload = await c.req.json();
-    const today = getBangkokDate();
-    const now = new Date().toISOString();
+    const { reportService } = getService(c.env);
 
-    await c.env.DB.prepare(
-      'INSERT INTO audit_events (id, event_type, source_service, payload, received_at) VALUES (?, ?, ?, ?, ?)'
-    )
-      .bind(
-        crypto.randomUUID(),
-        'HousekeepingTaskCompleted',
-        'housekeeping',
-        JSON.stringify(payload),
-        now
-      )
-      .run();
+    await reportService.recordAuditEvent({
+      eventType: 'HousekeepingTaskCompleted',
+      sourceService: 'housekeeping',
+      payload: JSON.stringify(payload),
+    });
 
     return c.json({
       success: true,
