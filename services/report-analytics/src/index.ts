@@ -78,9 +78,16 @@ app.get('/reports/daily-stats', async (c) => {
   try {
     const rawLimit = Number(c.req.query('limit')) || 30;
     const limit = Math.max(1, Math.min(rawLimit, 100));
+    const startDate = c.req.query('startDate') || undefined;
+    const endDate = c.req.query('endDate') || undefined;
     const { reportService } = getService(c.env);
-    const result = await reportService.getDailyStats(limit);
-    return c.json({ success: true, data: result });
+    const result = await reportService.getDailyStats(limit, startDate, endDate);
+    return c.json({
+      success: true,
+      data: result.rows,
+      warning: result.warning,
+      filter: result.filter,
+    });
   } catch (err: any) {
     return c.json({ success: false, error: err.message }, 500);
   }
@@ -91,9 +98,19 @@ app.get('/reports/revenue-monthly', async (c) => {
   try {
     const rawLimit = Number(c.req.query('limit')) || 12;
     const limit = Math.max(1, Math.min(rawLimit, 36));
+    const startMonth = c.req.query('startMonth') || undefined;
+    const endMonth = c.req.query('endMonth') || undefined;
     const { reportService } = getService(c.env);
-    const result = await reportService.getRevenueMonthly(limit);
-    return c.json({ success: true, data: result });
+    const result = await reportService.getRevenueMonthly(limit, startMonth, endMonth);
+    return c.json({
+      success: true,
+      data: {
+        months_count: result.months_count,
+        history: result.history,
+      },
+      warning: result.warning,
+      filter: result.filter,
+    });
   } catch (err: any) {
     return c.json({ success: false, error: err.message }, 500);
   }
@@ -238,9 +255,9 @@ app.get('/reports/export/csv', async (c) => {
 
     let csvContent = '';
     if (reportType === 'daily_stats') {
-      const rows = await reportService.getDailyStats(100);
+      const res = await reportService.getDailyStats(100);
       csvContent = 'Date,Total Rooms,Occupied,Available,Occupancy %,Check-ins,Check-outs,Total Revenue,Room Revenue,Minibar Revenue\n';
-      for (const r of rows as any[]) {
+      for (const r of res.rows) {
         csvContent += `${r.statDate},${r.totalRooms},${r.occupiedRooms},${r.availableRooms},${r.occupancyRate}%,${r.totalCheckins},${r.totalCheckouts},${r.totalRevenue},${r.roomRevenue},${r.minibarRevenue}\n`;
       }
     } else if (reportType === 'room_performance') {
@@ -277,7 +294,7 @@ app.get('/reports/export/pdf', async (c) => {
     const summary = await reportService.getDashboardSummary(today);
     const dailyBreakdown = await reportService.getDailyStats(7);
 
-    const rowsHtml = (dailyBreakdown as any[])
+    const rowsHtml = dailyBreakdown.rows
       .map(
         (s) => `
       <tr>

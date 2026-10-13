@@ -1,4 +1,4 @@
-import { eq, desc, sql } from 'drizzle-orm';
+import { eq, desc, sql, and, gte, lte } from 'drizzle-orm';
 import type { Database } from '../db/client';
 import {
   dailyStats,
@@ -122,18 +122,73 @@ export class ReportService {
     };
   }
 
-  async getDailyStats(limit: number) {
-    const rows = await this.db
+  async getDailyStats(limit: number, startDate?: string, endDate?: string) {
+    let warning: string | null = null;
+    let start = startDate;
+    let end = endDate;
+
+    if (start && end && start > end) {
+      warning = `startDate (${start}) is after endDate (${end}). Date range was automatically swapped to [${end} .. ${start}].`;
+      const temp = start;
+      start = end;
+      end = temp;
+    }
+
+    const conditions: any[] = [];
+    if (start) {
+      conditions.push(gte(dailyStats.statDate, start));
+    }
+    if (end) {
+      conditions.push(lte(dailyStats.statDate, end));
+    }
+
+    const query = this.db
       .select()
       .from(dailyStats)
-      .orderBy(desc(dailyStats.statDate))
-      .limit(limit)
-      .all();
-    return rows;
+      .orderBy(desc(dailyStats.statDate));
+
+    let rows: any[];
+    if (conditions.length > 0) {
+      rows = await query
+        .where(conditions.length === 1 ? conditions[0] : and(...conditions))
+        .limit(limit)
+        .all();
+    } else {
+      rows = await query.limit(limit).all();
+    }
+
+    return {
+      rows,
+      warning,
+      filter: {
+        startDate: start || null,
+        endDate: end || null,
+        limit,
+      },
+    };
   }
 
-  async getRevenueMonthly(limit: number) {
-    const rows = await this.db
+  async getRevenueMonthly(limit: number, startMonth?: string, endMonth?: string) {
+    let warning: string | null = null;
+    let start = startMonth;
+    let end = endMonth;
+
+    if (start && end && start > end) {
+      warning = `startMonth (${start}) is after endMonth (${end}). Month range was automatically swapped to [${end} .. ${start}].`;
+      const temp = start;
+      start = end;
+      end = temp;
+    }
+
+    const conditions: any[] = [];
+    if (start) {
+      conditions.push(gte(monthlySummary.yearMonth, start));
+    }
+    if (end) {
+      conditions.push(lte(monthlySummary.yearMonth, end));
+    }
+
+    const query = this.db
       .select({
         year_month: monthlySummary.yearMonth,
         total_revenue: monthlySummary.totalRevenue,
@@ -144,13 +199,27 @@ export class ReportService {
         revpar: monthlySummary.revpar,
       })
       .from(monthlySummary)
-      .orderBy(desc(monthlySummary.yearMonth))
-      .limit(limit)
-      .all();
+      .orderBy(desc(monthlySummary.yearMonth));
+
+    let rows: any[];
+    if (conditions.length > 0) {
+      rows = await query
+        .where(conditions.length === 1 ? conditions[0] : and(...conditions))
+        .limit(limit)
+        .all();
+    } else {
+      rows = await query.limit(limit).all();
+    }
 
     return {
       months_count: rows.length,
       history: rows,
+      warning,
+      filter: {
+        startMonth: start || null,
+        endMonth: end || null,
+        limit,
+      },
     };
   }
 

@@ -12,9 +12,23 @@ import { ShieldCheck, LogOut, KeyRound, UserCheck } from 'lucide-react';
 // ENTERPRISE ROUTE GUARDS (ความปลอดภัยระดับสูง)
 // ============================================================================
 
+import { getAuthToken, getAuthRole, getAuthUser, clearAuthSession } from './lib/api';
+
+// ============================================================================
+// ENTERPRISE LAZY LOADING (Code Splitting ตามเอกสาร)
+// ============================================================================
+const ManagerDashboardPage = React.lazy(() => import('./pages/admin/ManagerDashboardPage'));
+const RoomsPricingPage = React.lazy(() => import('./pages/admin/RoomsPricingPage'));
+const UsersManagementPage = React.lazy(() => import('./pages/admin/UsersManagementPage'));
+const ReportsAnalyticsPage = React.lazy(() => import('./pages/admin/ReportsAnalyticsPage'));
+
+// ============================================================================
+// ENTERPRISE ROUTE GUARDS (ความปลอดภัยระดับสูง แยกตาม Tab Session)
+// ============================================================================
+
 // Guard 1: ห้ามคนนอกแอบพิมพ์ URL เข้าหน้าภายในโดยตรง (ถ้าไม่มี token จะส่งไป 404 เสมือนไม่มีหน้านี้)
 const RequireAuth: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const token = localStorage.getItem('keystay_token');
+  const token = getAuthToken();
   if (!token) {
     return <NotFound404Page />;
   }
@@ -23,7 +37,7 @@ const RequireAuth: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 // Guard 2: ห้ามคนที่ล็อกอินแล้วแอบพิมพ์ URL ย้อนกลับไปหน้า Login/Forgot (ให้ดีดกลับไปหน้าหลักทันที)
 const GuestOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const token = localStorage.getItem('keystay_token');
+  const token = getAuthToken();
   if (token) {
     return <Navigate to="/" replace />;
   }
@@ -35,14 +49,17 @@ const GuestOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 // ============================================================================
 const AuthenticatedHome: React.FC = () => {
   const navigate = useNavigate();
-  const role = localStorage.getItem('keystay_role') || 'front_desk';
-  const rawUser = localStorage.getItem('keystay_user');
-  let user: any = null;
-  try {
-    user = rawUser ? JSON.parse(rawUser) : null;
-  } catch {
-    user = null;
+  const role = getAuthRole();
+
+  // If user is Admin or Manager, seamlessly forward to their portal dashboard
+  if (role === 'admin') {
+    return <Navigate to="/admin/dashboard" replace />;
   }
+  if (role === 'manager') {
+    return <Navigate to="/manager/dashboard" replace />;
+  }
+
+  const user = getAuthUser();
 
   const roleLabels: Record<string, string> = {
     admin: 'ผู้ดูแลระบบ (Admin)',
@@ -143,7 +160,15 @@ export const App: React.FC = () => {
           v7_relativeSplatPath: true,
         }}
       >
-        <Routes>
+        <React.Suspense
+          fallback={
+            <div className="min-h-screen bg-[#F7F9FB] flex flex-col items-center justify-center p-8 text-slate-500">
+              <div className="w-9 h-9 rounded-full border-2 border-[#F97316] border-t-transparent animate-spin mb-3" />
+              <span className="text-xs font-medium">กำลังโหลดโมดูลระบบ...</span>
+            </div>
+          }
+        >
+          <Routes>
           {/* หน้าภายใน: ต้องล็อกอินเท่านั้น หากแอบพิมพ์ URL เข้ามาจะเจอหน้า 404 ทันที */}
           <Route
             path="/"
@@ -153,6 +178,74 @@ export const App: React.FC = () => {
               </RequireAuth>
             }
           />
+          {/* หน้า Admin Portal (สำหรับผู้ดูแลระบบ Admin) */}
+          <Route
+            path="/admin"
+            element={<Navigate to="/admin/dashboard" replace />}
+          />
+          <Route
+            path="/admin/dashboard"
+            element={
+              <RequireAuth>
+                <ManagerDashboardPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/admin/rooms"
+            element={
+              <RequireAuth>
+                <RoomsPricingPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/admin/reports"
+            element={
+              <RequireAuth>
+                <ReportsAnalyticsPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <RequireAuth>
+                <UsersManagementPage />
+              </RequireAuth>
+            }
+          />
+
+          {/* หน้า Manager Portal (สำหรับผู้จัดการ Manager) */}
+          <Route
+            path="/manager"
+            element={<Navigate to="/manager/dashboard" replace />}
+          />
+          <Route
+            path="/manager/dashboard"
+            element={
+              <RequireAuth>
+                <ManagerDashboardPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/manager/rooms"
+            element={
+              <RequireAuth>
+                <RoomsPricingPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/manager/reports"
+            element={
+              <RequireAuth>
+                <ReportsAnalyticsPage />
+              </RequireAuth>
+            }
+          />
+
           <Route
             path="/change-password"
             element={
@@ -191,6 +284,7 @@ export const App: React.FC = () => {
           {/* URL อื่นๆ ทั้งหมดที่ไม่มีในระบบ: แสดง 404 พร้อมปุ่มย้อนกลับ */}
           <Route path="*" element={<NotFound404Page />} />
         </Routes>
+        </React.Suspense>
       </BrowserRouter>
     </>
   );

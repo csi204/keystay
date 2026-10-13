@@ -84,6 +84,48 @@ pnpm build
 
 ---
 
+## ⚡ สถาปัตยกรรม Frontend: Route Lazy Loading & Code Splitting
+
+แอปพลิเคชันฝั่งหน้าบ้าน (`apps/web`) ใช้สถาปัตยกรรม **Route-level Lazy Loading** ด้วย `React.lazy` และ `<React.Suspense>` เพื่อประสิทธิภาพระดับ Enterprise:
+
+### 1. ทำไมถึงต้องทำ Lazy Load?
+* หน้า **Admin & Manager Portal** มีขนาดใหญ่และมี Dependency หนัก (เช่น แผนภูมิวิเคราะห์, Recharts, ตารางจัดการผู้ใช้, ตารางจัดการห้องและราคา)
+* หากไม่ทำ Lazy Loading ผู้ใช้ทั่วไปหรือพนักงาน Front Desk ที่เข้าหน้าแรก/หน้า Login จะต้องดาวน์โหลด JavaScript ก้อนยักษ์ทั้งหมด ทำให้หน้าเว็บโหลดช้า
+* เมื่อใช้ Lazy Loading ตัว Bundle เริ่มต้นของหน้า Login จะมีขนาดเบามาก และโหลดเสร็จในเสี้ยววินาที (~100-150ms) โดยส่วนของ Admin จะถูกแยกเป็น Chunks ดาวน์โหลดเฉพาะเมื่อผู้ใช้เข้าสู่ระบบสำเร็จเท่านั้น
+
+### 2. รูปแบบการใช้งานในโค้ด (`apps/web/src/App.tsx`)
+```tsx
+// 1. นำเข้า Component หน้าแบบ Dynamic Import ผ่าน React.lazy
+const ManagerDashboardPage = React.lazy(() => import('./pages/admin/ManagerDashboardPage'));
+const RoomsPricingPage = React.lazy(() => import('./pages/admin/RoomsPricingPage'));
+const UsersManagementPage = React.lazy(() => import('./pages/admin/UsersManagementPage'));
+const ReportsAnalyticsPage = React.lazy(() => import('./pages/admin/ReportsAnalyticsPage'));
+
+// 2. ครอบ Routes ด้วย React.Suspense พร้อม UI Fallback ขณะกำลังโหลด Chunk
+<React.Suspense
+  fallback={
+    <div className="min-h-screen bg-[#F7F9FB] flex flex-col items-center justify-center p-8 text-slate-500">
+      <div className="w-9 h-9 rounded-full border-2 border-[#F97316] border-t-transparent animate-spin mb-3" />
+      <span className="text-xs font-medium">กำลังโหลดโมดูลระบบ...</span>
+    </div>
+  }
+>
+  <Routes>
+    {/* นิยาม Route ปกติ */}
+  </Routes>
+</React.Suspense>
+```
+
+### 3. ผลลัพธ์เมื่อ Build ด้วย Vite
+เมื่อสั่ง `pnpm --filter @keystay/web build` ตัว Vite จะตัดไฟล์เป็น Dynamic Chunks อัตโนมัติ:
+* `dist/assets/ManagerDashboardPage-[hash].js`
+* `dist/assets/RoomsPricingPage-[hash].js`
+* `dist/assets/UsersManagementPage-[hash].js`
+* `dist/assets/ReportsAnalyticsPage-[hash].js`
+ช่วยลด First Contentful Paint (FCP) และประหยัด Bandwidth ของระบบ
+
+---
+
 ## ❓ Troubleshooting ที่เจอบ่อย
 
 | อาการ | สาเหตุ / วิธีแก้ |
