@@ -10,10 +10,10 @@ Hotel Management System ใช้สถาปัตยกรรม **Microservic
 
 | Service | ความรับผิดชอบหลัก | DB ที่เป็นเจ้าของ |
 |---|---|---|
-| `auth-user` | ยืนยันตัวตน JWT, จัดการ User และ Role (RBAC) | `db_auth_user` (D1) + KV |
+| `auth-user` | ยืนยันตัวตน JWT, จัดการ User และ Role (RBAC), รีเฟรชโทเค็น, รีเซ็ตรหัสผ่าน | `db_auth_user` (D1) + KV |
 | `room-inventory` | คลังห้องพัก, ประเภทห้อง, ชั้น, สถานะห้องจริง ณ ปัจจุบัน | `db_room` (D1) |
 | `reservation` | การจองล่วงหน้า (Date Range), Walk-in, Check-in/out, ประวัติการจอง | `db_reservation` (D1) |
-| `housekeeping` | งานทำความสะอาด, ทีมแม่บ้าน, บันทึกการตรวจห้อง, แจ้งซ่อม | `db_housekeeping` (D1) |
+| `housekeeping` | งานทำความสะอาด, ทีมแม่บ้าน, บันทึกการตรวจห้อง, แจ้งซ่อม, บริหารคู่ค้าและสมุดเบอร์ติดต่อ Outsource (ช่าง/คนสวนภายนอก) | `db_housekeeping` (D1) |
 | `billing` | บิล, ค่ามินิบาร์/บริการเสริม, รับชำระเงิน, ออกใบเสร็จ/ใบกำกับภาษี | `db_billing` (D1) |
 | `report-analytics` | สถิติ Occupancy Rate, รายได้ประจำวัน/เดือน, ประสิทธิภาพงาน | `db_report` (D1) |
 
@@ -113,6 +113,8 @@ Cloudflare Queues เป็นคิวแบบ Point-to-Point (Competing Consu
 | ดูรายงานสถิติ / KPI Dashboard | ❌ | ❌ | ✅ | ✅ |
 | อนุมัติส่วนลดพิเศษเกินเกณฑ์ | ❌ | ❌ | ✅ | ✅ |
 | จัดการบัญชีผู้ใช้ / พนักงาน | ❌ | ❌ | ❌ | ✅ |
+| ดูสมุดเบอร์ติดต่อ Outsource / โทรออกฉุกเฉิน | ✅ (Read Only) | ✅ (Read Only) | ✅ (Read Only) | ✅ (Read Only) |
+| จัดการข้อมูล Outsource (Add/Edit/Delete/Status) | ❌ | ❌ | ❌ (ดูและตรวจสัญญา) | ✅ (Full CRUD) |
 
 ---
 
@@ -135,6 +137,21 @@ Cloudflare Queues เป็นคิวแบบ Point-to-Point (Competing Consu
 เมื่อมีผู้ใช้งานจองห้องพักในเสี้ยววินาทีเดียวกัน:
 - ในระดับแอปพลิเคชัน: ตรวจสอบความว่างของห้องในตาราง `reservations` ภายใน Atomic Batch Statement
 - ในระดับฐานข้อมูล: ทำ Partial Unique Index บน `reservations` สำหรับห้องและวันที่จอง
+
+### 7.4 การบริหารจัดการคู่ค้าภายนอกและช่างซ่อมบำรุง (Outsource & Facility Maintenance)
+สำหรับ**โรงแรมขนาดเล็ก 5–10 ห้อง (Boutique Hotel / Poshtel)** ข้อจำกัดสำคัญทางธุรกิจคือ **ไม่มีทีมช่างเทคนิคซ่อมบำรุงประจำ (In-house Maintenance Crew)** เหมือนโรงแรมขนาดใหญ่ เนื่องจากต้นทุนค่าจ้างประจำไม่คุ้มค่ากับการดำเนินงาน โรงแรมจึงเลือกใช้รูปแบบ **"On-Demand Outsource / Specialized Contractors"** เพื่อเข้ามาแก้ไขปัญหาหน้างาน
+
+#### 💡 เหตุผลทางสถาปัตยกรรมที่จัดเก็บใน Service #4 Housekeeping & Facility Maintenance (`db_housekeeping`):
+1. **ไม่จัดเก็บใน `auth-user`:** เพราะช่าง ช่างแอร์ หรือคนสวนเป็นบุคคลภายนอก ไม่ได้มีบัญชีผู้ใช้งานหรือสิทธิ์ล็อกอินเข้าสู่ระบบ (No Auth Credentials/Login Token) จึงไม่เข้ากับความรับผิดชอบของ `auth-user` ที่เน้น Authentication และ Internal Staff RBAC
+2. **ไม่จัดเก็บใน `room-inventory`:** เพราะคู่ค้า Outsource ไม่ได้มีเพียงช่างซ่อมห้องพัก แต่รวมถึงคนสวน (Landscaping), ช่างอาคาร และบริการภายนอกอื่นๆ ที่ดูแลพื้นที่ส่วนกลาง ซึ่งไม่ได้ผูกติดกับห้องพักรายห้องโดยตรง
+3. **ตรงกับโดเมน Housekeeping & Facility Maintenance มากที่สุด:** แม่บ้านและทีมบำรุงรักษาอาคารเป็นผู้พบปัญหาหน้างานและต้องประสานงานกับช่าง/คนสวนโดยตรง อีกทั้งเมื่อช่างเข้าปฏิบัติงาน แม่บ้าน/Front Desk/Admin ต้องอัปเดตสถานะห้องพักเป็น `maintenance` ควบคู่กับการตรวจรับมอบงาน การจัดเก็บ `outsource_contacts` ไว้ใน `db_housekeeping` จึงสะท้อนบริบทการทำงานจริง (Operational Reality) และแบ่งขอบเขต Domain-Driven Design ได้อย่างถูกต้องที่สุด
+
+#### สิทธิ์การใช้งานและการเข้าถึง (RBAC & User Access):
+- **Front Desk (พนักงานต้อนรับ):** เป็น "ด่านแรก" ที่รับเรื่องร้องเรียนจากแขกโดยตรง เช่น แขกโทรมาดึกๆ แจ้งว่า *"แอร์ไม่เย็น / ส้วมตัน / ท่อน้ำแตก"* Front Desk จึงมีปุ่ม **Quick Emergency Contact Drawer** (Read-Only) เพื่อดูเบอร์ช่างฉุกเฉิน 24 ชม. และโทรตามมาแก้ไขหน้างานได้ทันที
+- **Housekeeping (แม่บ้าน):** เป็น "คนหน้างาน" ที่เจอปัญหาทางกายภาพระหว่างตรวจห้องหรือทำความสะอาด มีปุ่ม **Quick Contact Dialog** (Read-Only) ดูเบอร์ช่างเฉพาะทางเพื่อโทรสอบถามหรือนัดหมายเข้าซ่อมควบคู่กับการเปิดใบงาน (Report Room Issue)
+- **Admin & Manager:**
+  - **Manager:** ดูภาพรวมคู่ค้าและตรวจสอบสัญญา/อัตราค่าบริการ
+  - **Admin (ผู้มีสิทธิ์จัดการ Master Data):** ถือสิทธิ์ **Full CRUD** (เพิ่ม, แก้ไข, ระงับการใช้งาน `is_active = 0`) ใน Admin Portal ผ่าน Housekeeping APIs (`/housekeeping/outsource-contacts`) เพื่อป้องกันไม่ให้ข้อมูลเบอร์ติดต่อในระบบถูกแก้ไขคลาดเคลื่อน
 
 ---
 

@@ -67,6 +67,27 @@ CREATE TABLE IF NOT EXISTS outbox_events (
     created_at TEXT NOT NULL
 );
 
+-- 6. Outsource Contacts (คู่ค้า/ช่างซ่อมบำรุง/คนสวนภายนอก)
+CREATE TABLE IF NOT EXISTS outsource_contacts (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    category TEXT NOT NULL CHECK(category IN ('air_conditioning', 'plumbing', 'electrical', 'carpentry', 'general_maintenance', 'locksmith', 'pest_control', 'other')),
+    service_type TEXT NOT NULL,
+    phone_primary TEXT NOT NULL,
+    phone_secondary TEXT,
+    line_id TEXT,
+    is_emergency INTEGER NOT NULL DEFAULT 0,
+    available_hours TEXT DEFAULT '24 ชั่วโมง',
+    price_rate_note TEXT,
+    rating REAL DEFAULT 5.0,
+    address TEXT,
+    notes TEXT,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_by TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_tasks_room ON housekeeping_tasks(room_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON housekeeping_tasks(status);
@@ -74,3 +95,6 @@ CREATE INDEX IF NOT EXISTS idx_tasks_assigned ON housekeeping_tasks(assigned_to)
 CREATE INDEX IF NOT EXISTS idx_tasks_date ON housekeeping_tasks(scheduled_date);
 CREATE INDEX IF NOT EXISTS idx_room_issues_room ON room_issues(room_id);
 CREATE INDEX IF NOT EXISTS idx_room_issues_status ON room_issues(status);
+CREATE INDEX IF NOT EXISTS idx_outsource_category ON outsource_contacts(category);
+CREATE INDEX IF NOT EXISTS idx_outsource_is_active ON outsource_contacts(is_active);
+CREATE INDEX IF NOT EXISTS idx_outsource_is_emergency ON outsource_contacts(is_emergency);

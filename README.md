@@ -1,7 +1,7 @@
 # 🏨 Hotel Management System — Project Design Document & Specification
 
 > ## โครงงานระบบบริหารจัดการโรงแรมหลังบ้าน (Internal Hotel Operations & Back-Office)
-> สถาปัตยกรรม Microservices บน Serverless Stack (Cloudflare Workers, D1, Queues/QStash) รวม 100 APIs  
+> สถาปัตยกรรม Microservices บน Serverless Stack (Cloudflare Workers, D1, Queues/QStash) รวม 105 APIs  
 > ออกแบบเฉพาะสำหรับ**ระบบบริหารจัดการภายในโรงแรมขนาดเล็ก 5–10 ห้อง (Boutique Hotel / Poshtel)**  
 > รองรับ 3 บทบาทหลักของทีมปฏิบัติการ: **Front Desk Staff & Cashier, Housekeeping Staff, Manager / Admin**
 
@@ -17,7 +17,7 @@
 | ทำไมถึงออกแบบแบบนี้ / เหตุผล Architecture | `docs/design.md` |
 | ทำ UI, สี, component, Status Badge | `docs/designsystem.md` |
 | หาว่าไฟล์วางอยู่ที่ไหนใน repo | `docs/structure.md` |
-| ดู Service Architecture, Sequence Diagram, 100 APIs | `docs/systemdesign.md` |
+| ดู Service Architecture, Sequence Diagram, 105 APIs | `docs/systemdesign.md` |
 | ดูแผนแบ่งงาน, ใครรับผิดชอบ service ไหน, Phase | `docs/อ่านก่อนทำงาน.md` |
 | Setup เครื่อง, คำสั่ง dev/migrate/deploy | `docs/How to Install and Command.md` |
 
@@ -47,7 +47,7 @@
 13. [🖥️ สถาปัตยกรรมระบบ (System Architecture & Event-Driven Patterns)](#13-สถาปัตยกรรมระบบ-system-architecture--event-driven-patterns)
 14. [🔄 วงจรชีวิตสถานะห้องพัก (Room Lifecycle State Machine)](#14-วงจรชีวิตสถานะห้องพัก-room-lifecycle-state-machine)
 15. [🔁 แผนผังลำดับการทำงานหลัก (Sequence Diagrams - 5 Flows)](#15-แผนผังลำดับการทำงานหลัก-sequence-diagrams)
-16. [📋 รายการ API ทั้งหมด (100 Microservice Endpoints)](#16-รายการ-api-ทั้งหมด-100-microservice-endpoints)
+16. [📋 รายการ API ทั้งหมด (105 Microservice Endpoints)](#16-รายการ-api-ทั้งหมด-105-microservice-endpoints)
 17. [🗄️ โครงสร้างฐานข้อมูลและผังความสัมพันธ์ (Database Schema & ER Diagrams)](#17-โครงสร้างฐานข้อมูลและผังความสัมพันธ์-database-schema--er-diagrams)
 18. [🎯 การออกแบบหน้าจอ (UI Prototype & Wireframe)](#18-การออกแบบหน้าจอ-ui-prototype--wireframe)
 19. [⚙️ การทดสอบการยอมรับของผู้ใช้ (User Acceptance Testing: UAT)](#19-การทดสอบการยอมรับของผู้ใช้-user-acceptance-testing-uat)
@@ -78,7 +78,7 @@
 
 ## 3. 🗃️ วัตถุประสงค์ของโครงงาน (Objectives)
 
-1.  เพื่อออกแบบและพัฒนาระบบบริหารจัดการโรงแรมหลังบ้านด้วยสถาปัตยกรรม **Microservices Architecture** ครอบคลุม 6 เซอร์วิสหลัก และมีจำนวน API รวม 100 Endpoints
+1.  เพื่อออกแบบและพัฒนาระบบบริหารจัดการโรงแรมหลังบ้านด้วยสถาปัตยกรรม **Microservices Architecture** ครอบคลุม 6 เซอร์วิสหลัก และมีจำนวน API รวม 105 Endpoints
 2.  เพื่อพัฒนาระบบจัดการวงจรชีวิตห้องพัก (Room Lifecycle & State Machine) งานจอง งานเช็คอิน/เช็คเอาท์ งานทำความสะอาด ระบบบิล และระบบรายงานสถิติแบบ Real-time
 3.  เพื่อประยุกต์ใช้แพตเทิร์นสถาปัตยกรรมระดับสูง ได้แก่ **Database-per-Service**, **Outbox Pattern**, และ **Asynchronous Event-Driven Messaging (Pub/Sub & Fan-out)** บน Serverless Infrastructure
 4.  เพื่อศึกษาการทำงานของ Cloudflare Workers, D1 (Serverless SQLite), และ Queues ในการพัฒนาระบบที่รองรับการ Deploy แยกกันได้อย่างอิสระ (Independent Deployability) และมีความทนทานสูง (Resilience)
@@ -90,18 +90,18 @@
 *(หมายเหตุ: รวบรวมขอบเขตของระบบและรายการความต้องการใช้งานเข้าด้วยกัน เพื่อความกระชับและขจัดความซ้ำซ้อนตามหลัก Clean Documentation)*
 
 ### ผู้ใช้งานระบบ (Actors)
-*   **พนักงานต้อนรับและแคชเชียร์ (Front Desk Staff & Cashier):** รวมหน้าที่ต้อนรับและการเงินเข้าด้วยกันสำหรับโรงแรมขนาดเล็ก (5–10 ห้อง) — เช็คห้องว่าง, จัดการการจองล่วงหน้า, เช็คอิน, เช็คเอาท์, รับ Walk-in, ขยายเวลาพัก, อัปเกรดห้อง, จัดการบิลค่าห้องและมินิบาร์, บันทึกการชำระเงิน, หักเงินมัดจำ, ออกใบเสร็จ/ใบกำกับภาษี, คืนเงิน (ไม่มี Role พนักงานบัญชีแยกต่างหาก)
-*   **พนักงานแม่บ้าน (Housekeeping Staff):** รับมอบหมายงานทำความสะอาด, เปลี่ยนสถานะงาน, ตรวจสอบสภาพห้อง, รายงานสิ่งของชำรุด
-*   **ผู้จัดการ / ผู้ดูแลระบบ (Manager / Admin):** กำหนดสิทธิ์และบัญชีผู้ใช้, จัดการข้อมูลประเภทห้องและราคา, ดูรายงานสถิติ Occupancy Rate และสรุปรายได้
+*   **พนักงานต้อนรับและแคชเชียร์ (Front Desk Staff & Cashier):** รวมหน้าที่ต้อนรับและการเงินเข้าด้วยกันสำหรับโรงแรมขนาดเล็ก (5–10 ห้อง) — เช็คห้องว่าง, จัดการการจองล่วงหน้า, เช็คอิน, เช็คเอาท์, รับ Walk-in, ขยายเวลาพัก, อัปเกรดห้อง, จัดการบิลค่าห้องและมินิบาร์, บันทึกการชำระเงิน, หักเงินมัดจำ, ออกใบเสร็จ/ใบกำกับภาษี, คืนเงิน (ไม่มี Role พนักงานบัญชีแยกต่างหาก) พร้อมสิทธิ์ **Read-Only สำหรับสมุดเบอร์ติดต่อ Outsource ฉุกเฉิน** เพื่อโทรเรียกช่างซ่อมบำรุงด่วน (แอร์เสีย, ส้วมตัน, ท่อแตก) ได้ทันทีเมื่อแขกร้องเรียน
+*   **พนักงานแม่บ้าน (Housekeeping Staff):** รับมอบหมายงานทำความสะอาด, เปลี่ยนสถานะงาน, ตรวจสอบสภาพห้อง, รายงานสิ่งของชำรุด พร้อมสิทธิ์ **Read-Only สำหรับสมุดเบอร์ช่าง Outsource เฉพาะทาง** เพื่อประสานงานซ่อมหน้างานควบคู่กับการเปิดใบงาน Issue
+*   **ผู้จัดการ / ผู้ดูแลระบบ (Manager / Admin):** กำหนดสิทธิ์และบัญชีผู้ใช้, จัดการข้อมูลประเภทห้องและราคา, ดูรายงานสถิติ Occupancy Rate และสรุปรายได้ โดย **Admin เป็นผู้มีสิทธิ์ Full CRUD จัดการ Master Data ข้อมูลคู่ค้าและช่าง Outsource ภายนอก** (เพิ่ม, แก้ไข, ระงับการใช้งาน `is_active = 0`) เพื่อป้องกันข้อมูลเบอร์โทรศัพท์สูญหายหรือถูกแก้ไขโดยไม่ได้รับอนุญาต
 
 ### ความสามารถหลักของระบบ (Core System Requirements)
-1.  **ระบบสิทธิ์และการยืนยันตัวตน (Auth & User Management):** สมัครสมาชิก, ล็อกอินด้วย JWT, รีเฟรชโทเค็น, รีเซ็ตรหัสผ่าน, และกำหนดสิทธิ์แบบ Role-Based Access Control (RBAC)
+1.  **ระบบสิทธิ์ และการยืนยันตัวตน (Auth & User Management):** สมัครสมาชิก, ล็อกอินด้วย JWT, รีเฟรชโทเค็น, รีเซ็ตรหัสผ่าน, กำหนดสิทธิ์แบบ Role-Based Access Control (RBAC 4 Roles)
 2.  **ระบบห้องพักและสิ่งอำนวยความสะดวก (Room Inventory Management):** จัดการห้องพัก, ประเภทห้อง (Standard, Deluxe, Suite, Presidential), ชั้น, สิ่งอำนวยความสะดวก และประวัติการเปลี่ยนแปลง
 3.  **ระบบวงจรชีวิตสถานะห้องพัก (Room Lifecycle State Machine):** จัดการและควบคุมการเปลี่ยนสถานะของห้องพักทั้ง 7 สถานะอย่างเป็นระบบตามเงื่อนไขทางธุรกิจ
 4.  **ระบบการจองห้องพัก (Reservation Management):** สร้างการจองล่วงหน้า, ปรับเปลี่ยนวันเข้าพัก, ยกเลิกการจอง, บันทึกประวัติแขก (Guest Profiles) และรองรับการ Walk-in
 5.  **ระบบเช็คอินและเช็คเอาท์ (Check-in & Check-out Operations):** ตรวจสอบสิทธิ์การเข้าพัก, บันทึกเวลาเช็คอินจริง, กระจายคำสั่งเช็คเอาท์ (Fan-out) ไปยังฝ่ายแม่บ้านและการเงิน
 6.  **ระบบขยายเวลาพักและอัปเกรดห้อง (Extend Stay & Room Upgrade):** ปรับปรุงรายละเอียดการจองขณะเข้าพัก พร้อมคำนวณส่วนต่างค่าห้องพักอัตโนมัติ
-7.  **ระบบงานแม่บ้านและทำความสะอาด (Housekeeping Operations):** ระบบสร้างงานทำความสะอาดอัตโนมัติหลังเช็คเอาท์, มอบหมายงานตามกะ/โซน, บันทึกเวลาเริ่มและเสร็จสิ้น
+7.  **ระบบงานแม่บ้าน งานทำความสะอาด และจัดการคู่ค้า Outsource (Housekeeping, Maintenance & Outsource Management):** ระบบสร้างงานทำความสะอาดอัตโนมัติหลังเช็คเอาท์, มอบหมายงานตามกะ/โซน, บันทึกเวลาเริ่มและเสร็จสิ้น, รายงานปัญหาห้องชำรุดส่งซ่อมบำรุง, และบริหารสมุดรายชื่อเบอร์ติดต่อช่าง/คนสวน/คู่ค้าภายนอก (Outsource Contacts) จำแนกตามหมวดหมู่งานและระดับความฉุกเฉิน
 8.  **ระบบรายงานปัญหาห้องพัก (Room Issue & Maintenance Reporting):** แจ้งปัญหาห้องชำรุด สิ่งของสูญหาย หรือปัญหาความสะอาด พร้อมส่งต่อสถานะไปยังฝ่ายซ่อมบำรุง
 9.  **ระบบบิลและค่าบริการเสริม (Billing & Folio Management):** บันทึกค่าห้อง, บริการเสริม (มินิบาร์, ซักรีด, รูมเซอร์วิส), ค่าปรับ และส่วนลดพิเศษ
 10. **ระบบชำระเงินและเอกสารทางการเงิน (Payment & Invoicing):** บันทึกการชำระเงินหลายช่องทาง (เงินสด, โอน, บัตร, QR), ออกใบเสร็จ, ออกใบแจ้งหนี้ และส่งอีเมล
@@ -121,7 +121,7 @@
 | ขั้นตอน (Phase) | รายละเอียดโดยย่อ (Brief Description) |
 |---|---|
 | **1. Planning** | ร่วมกันระบุปัญหาการดำเนินงานหลังบ้านของโรงแรม กำหนดขอบเขตโครงการ สถาปัตยกรรม Microservices และประเมินความเป็นไปได้ในการใช้ Cloudflare Serverless Stack |
-| **2. Analysis** | วิเคราะห์กระบวนการทางธุรกิจ (Business Process) วงจรชีวิตห้องพัก ออกแบบ Use Case Diagram และจัดทำข้อกำหนดความต้องการระบบ (SRS) เชิงฟังก์ชัน 100 APIs |
+| **2. Analysis** | วิเคราะห์กระบวนการทางธุรกิจ (Business Process) วงจรชีวิตห้องพัก ออกแบบ Use Case Diagram และจัดทำข้อกำหนดความต้องการระบบ (SRS) เชิงฟังก์ชัน 105 APIs |
 | **3. Design** | ออกแบบ System Architecture, State Machine, Class Diagram, Sequence Diagram (5 Flows), โครงสร้างฐานข้อมูล D1 6 ก้อน (ER Diagram) และ Design System |
 | **4. Development** | พัฒนา Backend Microservices บน Cloudflare Workers ด้วย TypeScript และ Drizzle ORM พัฒนา API Gateway เชื่อมต่อ Queues และพัฒนาหน้าจอ React + Tailwind CSS |
 | **5. Testing** | ดำเนินการทดสอบระบบด้วย Postman (Functional Test), ทดสอบ Event-Driven ข้ามเซอร์วิส และทำการทดสอบการยอมรับของผู้ใช้งาน (Manual UAT) ตามบทบาท |
@@ -144,7 +144,7 @@
 | **Frontend Framework** | React + Vite + TypeScript | พัฒนาในรูปแบบ Single Page Application (SPA) เพื่อความลื่นไหลในการใช้งานหลังบ้านของพนักงาน |
 | **Styling & UI Components** | Tailwind CSS | Utility-First CSS สำหรับตกแต่งหน้าจออย่างรวดเร็วและเป็นระเบียบ พร้อมสร้าง Status-Color Design System |
 | **Frontend Hosting** | Cloudflare Workers (Static Assets) | โฮสต์ไฟล์ Static ของ Frontend บน Workers Stack เดียวกัน ทำให้จัดการ Deploy ง่ายผ่าน `wrangler deploy` |
-| **API Documentation** | OpenAPI / Swagger | บันทึกข้อกำหนดและเอกสารสเปกของทั้ง 100 APIs สำหรับใช้อ้างอิงและทดสอบระบบ |
+| **API Documentation** | OpenAPI / Swagger | บันทึกข้อกำหนดและเอกสารสเปกของทั้ง 105 APIs สำหรับใช้อ้างอิงและทดสอบระบบ |
 | **Testing Tools** | Postman | ใช้ทดสอบ Functional API ราย Endpoint และทดสอบกระบวนการ Integration ข้ามเซอร์วิส |
 | **DevOps & CI/CD** | GitHub Actions + Wrangler CLI | ระบบตรวจทานโค้ดอัตโนมัติและสั่ง Deploy ระบบขึ้น Cloudflare โดยอัตโนมัติเมื่อ Merge โค้ด |
 
@@ -154,9 +154,9 @@
 
 | สมาชิก | บทบาทเสริม (Role) | Service Backend ที่รับผิดชอบ | จำนวน API | หน้าจอ Frontend | ภาระงานหลักอื่น ๆ |
 |---|---|---|:---:|---|---|
-| **คน A (เขตโสภณ)** | **PM + Infra/DevOps Lead** | • API Gateway<br/>• Auth/User (12)<br/>• Report/Analytics (14) | **26** + Gateway | **Manager & Admin Portal** (`/admin`)<br/>• KPI Dashboard<br/>• User Management<br/>• Export Reports | วางโครงสร้าง Monorepo, ติดตั้ง Cloudflare Stack (6 D1, KV, R2), ออกแบบ API Gateway & RBAC, ติดตั้ง Upstash QStash Event Broker, CI/CD Deploy Pipeline |
-| **คน B (ธีรภัทร)** | **SA Lead + Core Dev** | • Reservation (24)<br/>• Billing (16) | **40** | **Front Desk & Cashier Portal** (`/front-desk`)<br/>• Room Matrix Grid (5–10 ห้อง)<br/>• Check-in / Check-out<br/>• Cashier & Split Screen Invoices | System Analyst, วิเคราะห์ State Machine, ออกแบบ D1 Schemas & Outbox Pattern, กำหนด Event Contracts (`packages/events`), ดูแล Flow เงินมัดจำ/มินิบาร์/คิดเงิน |
-| **คน C (ปวริศ)** | **QA Lead + Core Dev** | • Room Inventory (18)<br/>• Housekeeping (16) | **34** | **Housekeeping Portal** (`/housekeeping`)<br/>• Cleaning Kanban Board<br/>• Task Execution & Inspection<br/>• Report Room Issue | ออกแบบ Test Plan / 21 UAT Test Cases, ทำ Automated Postman Collection, ทดสอบ Event-Driven Webhooks & DLQ, ควบคุม State เปลี่ยนผ่านงานแม่บ้านและผังห้อง |
+| **คน A (เขตโสภณ)** | **PM + Infra/DevOps Lead** | • API Gateway<br/>• Auth/User (12)<br/>• Report/Analytics (14) | **26** + Gateway | **Manager & Admin Portal** (`/admin`)<br/>• KPI Dashboard<br/>• User Management<br/>• Outsource Contacts Management (Admin UI)<br/>• Export Reports | วางโครงสร้าง Monorepo, ติดตั้ง Cloudflare Stack (6 D1, KV, R2), ออกแบบ API Gateway & RBAC, ติดตั้ง Upstash QStash Event Broker, ดูแล Master Data Outsource (Admin UI), CI/CD Deploy Pipeline |
+| **คน B (ธีรภัทร)** | **SA Lead + Core Dev** | • Reservation (24)<br/>• Billing (16) | **40** | **Front Desk & Cashier Portal** (`/front-desk`)<br/>• Room Matrix Grid (5–10 ห้อง)<br/>• Check-in / Check-out<br/>• Cashier & Split Screen Invoices<br/>• Quick Emergency Contact Drawer | System Analyst, วิเคราะห์ State Machine, ออกแบบ D1 Schemas & Outbox Pattern, กำหนด Event Contracts (`packages/events`), ดูแล Flow เงินมัดจำ/มินิบาร์/คิดเงิน และช่องทางติดต่อช่างด่วน |
+| **คน C (ปวริศ)** | **QA Lead + Core Dev** | • Room Inventory (18)<br/>• Housekeeping (21) | **39** | **Housekeeping Portal** (`/housekeeping`)<br/>• Cleaning Kanban Board<br/>• Task Execution & Inspection<br/>• Report Room Issue<br/>• Outsource Contacts CRUD & Quick Contact Dialog | ออกแบบ Test Plan / 24 UAT Test Cases, ทำ Automated Postman Collection, ดูแล D1 Schema และ APIs งานแม่บ้านและ Outsource Contacts, ควบคุม State เปลี่ยนผ่านงานแม่บ้านและผังห้อง |
 
 ---
 
@@ -267,6 +267,7 @@ flowchart LR
         UC_CheckOut(("Process Check-out"))
         UC_ExtendStay(("Extend Stay / Upgrade Room"))
         UC_CancelRes(("Cancel Reservation"))
+        UC_QuickEmergency(("Quick Emergency Outsource Contact"))
     end
 
     FD --- UC_ViewRooms
@@ -275,6 +276,7 @@ flowchart LR
     FD --- UC_CheckOut
     FD --- UC_ExtendStay
     FD --- UC_CancelRes
+    FD --- UC_QuickEmergency
 
     UC_CheckIn -.->|"<<include>>"| UC_ViewRooms
     UC_ExtendStay -.->|"<<extend>>"| UC_CheckIn
@@ -288,6 +290,7 @@ flowchart LR
         UC_CompleteTask(("Mark Task Complete"))
         UC_ReportIssue(("Report Room Issue"))
         UC_ManageSchedule(("Manage Staff Schedule"))
+        UC_QuickTechnician(("Quick Technician Contact"))
     end
 
     HK --- UC_ViewTasks
@@ -295,6 +298,7 @@ flowchart LR
     HK --- UC_CompleteTask
     HK --- UC_ReportIssue
     HK --- UC_ManageSchedule
+    HK --- UC_QuickTechnician
 
     UC_CompleteTask -.->|"<<include>>"| UC_ViewTasks
     UC_ReportIssue -.->|"<<extend>>"| UC_CompleteTask
@@ -325,6 +329,7 @@ flowchart LR
         UC_AdminDashboard(("View KPI Dashboard"))
         UC_ManageUsers(("Manage User Accounts & Roles"))
         UC_ManageRoomTypes(("Manage Room Types & Rates"))
+        UC_ManageOutsource(("Manage Outsource Master Data (CRUD)"))
         UC_ViewReports(("Generate Occupancy & Revenue Reports"))
         UC_ExportReports(("Export Reports (PDF/CSV)"))
     end
@@ -332,6 +337,7 @@ flowchart LR
     MGR --- UC_AdminDashboard
     MGR --- UC_ManageUsers
     MGR --- UC_ManageRoomTypes
+    MGR --- UC_ManageOutsource
     MGR --- UC_ViewReports
     MGR --- UC_ExportReports
 
@@ -551,6 +557,28 @@ classDiagram
         +String paymentMethod
     }
 
+    class OutsourceContact {
+        +String id
+        +String name
+        +OutsourceCategory category
+        +String serviceType
+        +String phonePrimary
+        +String phoneSecondary
+        +String lineId
+        +Boolean isEmergency
+        +String availableHours
+        +String priceRateNote
+        +Float rating
+        +String address
+        +String notes
+        +Boolean isActive
+        +String createdBy
+        +DateTime createdAt
+        +DateTime updatedAt
+        +getEmergencyContacts() OutsourceContact[]
+        +toggleActive(status: Boolean) Boolean
+    }
+
     %% Relationships
     Floor "1" *-- "0..*" Room
     RoomType "1" o-- "0..*" Room
@@ -567,6 +595,8 @@ classDiagram
     Bill "1" --> "0..1" Invoice
     Reservation "0..1" --> "0..*" RevenueRecord
     Bill "0..1" --> "0..*" RevenueRecord
+    HousekeepingStaff "0..1" --> "0..*" OutsourceContact : "contacts for repairs"
+    User "1" --> "0..*" OutsourceContact : "admin manages master data"
 ```
 
 ---
@@ -581,11 +611,11 @@ flowchart TB
     KV[("<b>Cloudflare KV</b><br/>Session · Permissions · Config")]
     GW["<b>API Gateway — Cloudflare Worker</b><br/>Reverse Proxy · JWT Verify · Rate Limit · CORS · Route → Service"]
 
-    subgraph SERVICES["Microservices Layer — Cloudflare Workers · 6 Services · 100 APIs"]
+    subgraph SERVICES["Microservices Layer — Cloudflare Workers · 6 Services · 105 APIs"]
         AUTH["<b>#1 Auth / User Service</b><br/>12 APIs<br/>users · sessions · permissions"]
         ROOM["<b>#2 Room Inventory Service</b><br/>18 APIs<br/>rooms · room_types · floors · amenities"]
         RES["<b>#3 Reservation Service</b><br/>24 APIs<br/>guests · reservations · history"]
-        HK["<b>#4 Housekeeping Service</b><br/>16 APIs<br/>staff · tasks · issues · schedule"]
+        HK["<b>#4 Housekeeping Service</b><br/>21 APIs<br/>staff · tasks · issues · schedule · outsource_contacts"]
         BILL["<b>#5 Billing Service</b><br/>16 APIs<br/>bills · bill_items · payments · invoices"]
         RPT["<b>#6 Report / Analytics Service</b><br/>14 APIs<br/>daily_stats · revenue · summaries"]
     end
@@ -870,7 +900,7 @@ sequenceDiagram
 
 ---
 
-## 16. 📋 รายการ API ทั้งหมด (100 Microservice Endpoints)
+## 16. 📋 รายการ API ทั้งหมด (105 Microservice Endpoints)
 
 ### 🔐 Service #1: Auth/User Service (12 APIs)
 1. `POST /register` — ลงทะเบียนผู้ใช้งานใหม่
@@ -932,7 +962,7 @@ sequenceDiagram
 53. `GET /reservations/:id/invoice-preview` — ดูตัวอย่างบิลล่วงหน้า
 54. `POST /reservations/:id/apply-discount` — ใช้โค้ดหรือบันทึกส่วนลด
 
-### 🧼 Service #4: Housekeeping Service (16 APIs)
+### 🧼 Service #4: Housekeeping Service (21 APIs)
 55. `GET /housekeeping/tasks` — รายการงานทำความสะอาดทั้งหมด
 56. `GET /housekeeping/tasks/:id` — ข้อมูลงานทำความสะอาดรายรายการ
 57. `POST /housekeeping/tasks` — สร้างงานทำความสะอาดด้วยมือ
@@ -949,40 +979,45 @@ sequenceDiagram
 68. `PUT /housekeeping/staff/:id/zone` — กำหนดโซนหรือชั้นที่รับผิดชอบ
 69. `POST /housekeeping/tasks/:id/report-issue` — แจ้งปัญหา/สิ่งของชำรุด
 70. `GET /housekeeping/schedule` — ตารางกะการทำงานของแม่บ้าน
+71. `GET /housekeeping/outsource-contacts` — ดึงรายชื่อผู้ติดต่อคู่ค้า/ช่าง Outsource ทั้งหมด (รองรับฟิลเตอร์ category, is_emergency)
+72. `GET /housekeeping/outsource-contacts/:id` — ดึงข้อมูลผู้ติดต่อ Outsource รายบุคคล/บริษัท
+73. `POST /housekeeping/outsource-contacts` — เพิ่มข้อมูลคู่ค้า/ช่าง Outsource ใหม่ (เฉพาะ Admin)
+74. `PUT /housekeeping/outsource-contacts/:id` — แก้ไขข้อมูลช่างและเงื่อนไขการติดต่อ (เฉพาะ Admin)
+75. `DELETE /housekeeping/outsource-contacts/:id` — ระงับการใช้งานช่าง/คู่ค้า (Soft Delete: `is_active = 0`, เฉพาะ Admin)
 
 ### 🧾 Service #5: Billing Service (16 APIs)
-71. `GET /bills` — รายการบิลทั้งหมด
-72. `GET /bills/:id` — ข้อมูลบิลรายใบ
-73. `POST /bills` — สร้างบิลใหม่
-74. `PUT /bills/:id` — แก้ไขข้อมูลบิล
-75. `POST /bills/:id/items` — เพิ่มรายการค่าใช้จ่ายเสริม (มินิบาร์/ซักรีด)
-76. `DELETE /bills/:id/items/:itemId` — ลบรายการค่าใช้จ่าย
-77. `POST /bills/:id/pay` — บันทึกการชำระเงิน
-78. `GET /bills/:id/receipt` — พิมพ์/ดูใบเสร็จรับเงิน
-79. `GET /bills/by-reservation/:reservationId` — ค้นหาบิลจากการจอง
-80. `POST /bills/:id/refund` — ดำเนินการคืนเงิน
-81. `POST /bills/:id/discount` — เพิ่มส่วนลดท้ายบิล
-82. `GET /payment-methods` — ช่องทางการชำระเงินที่เปิดรับ
-83. `POST /payment-methods` — เพิ่มช่องทางการชำระเงิน
-84. `GET /invoices` — รายการใบแจ้งหนี้ทั้งหมด
-85. `GET /invoices/:id` — ดูใบแจ้งหนี้รายใบ
-86. `POST /invoices/:id/send-email` — ส่งใบแจ้งหนี้ให้แขกทางอีเมล
+76. `GET /bills` — รายการบิลทั้งหมด
+77. `GET /bills/:id` — ข้อมูลบิลรายใบ
+78. `POST /bills` — สร้างบิลใหม่
+79. `PUT /bills/:id` — แก้ไขข้อมูลบิล
+80. `POST /bills/:id/items` — เพิ่มรายการค่าใช้จ่ายเสริม (มินิบาร์/ซักรีด)
+81. `DELETE /bills/:id/items/:itemId` — ลบรายการค่าใช้จ่าย
+82. `POST /bills/:id/pay` — บันทึกการชำระเงิน
+83. `GET /bills/:id/receipt` — พิมพ์/ดูใบเสร็จรับเงิน
+84. `GET /bills/by-reservation/:reservationId` — ค้นหาบิลจากการจอง
+85. `POST /bills/:id/refund` — ดำเนินการคืนเงิน
+86. `POST /bills/:id/discount` — เพิ่มส่วนลดท้ายบิล
+87. `GET /payment-methods` — ช่องทางการชำระเงินที่เปิดรับ
+88. `POST /payment-methods` — เพิ่มช่องทางการชำระเงิน
+89. `GET /invoices` — รายการใบแจ้งหนี้ทั้งหมด
+90. `GET /invoices/:id` — ดูใบแจ้งหนี้รายใบ
+91. `POST /invoices/:id/send-email` — ส่งใบแจ้งหนี้ให้แขกทางอีเมล
 
 ### 📊 Service #6: Report/Analytics Service (14 APIs)
-87. `GET /reports/occupancy-rate` — สถิติอัตราการเข้าพัก (Occupancy Rate)
-88. `GET /reports/revenue-daily` — รายงานสรุปรายได้รายวัน
-89. `GET /reports/revenue-monthly` — รายงานสรุปรายได้รายเดือน
-90. `GET /reports/revenue-by-room-type` — รายงานรายได้แยกตามประเภทห้อง
-91. `GET /reports/top-rooms` — รายการห้องพักที่ทำรายได้สูงสุด
-92. `GET /reports/avg-stay-duration` — จำนวนคืนที่เข้าพักเฉลี่ย
-93. `GET /reports/cancellation-rate` — อัตราการยกเลิกการจอง
-94. `GET /reports/housekeeping-performance` — รายงานประสิทธิภาพงานแม่บ้าน
-95. `GET /reports/checkin-checkout-stats` — สถิติจำนวนเช็คอินและเช็คเอาท์
-96. `GET /reports/guest-demographics` — สถิติสัญชาติและกลุ่มผู้เข้าพัก
-97. `GET /dashboard/summary` — ข้อมูลสรุปภาพรวมสำหรับ Dashboard
-98. `GET /reports/export/pdf` — ส่งออกรายงานเป็นไฟล์ PDF
-99. `GET /reports/export/csv` — ส่งออกรายงานเป็นไฟล์ CSV
-100. `GET /reports/custom` — ดึงข้อมูลรายงานแบบกำหนดช่วงเวลาเอง
+92. `GET /reports/occupancy-rate` — สถิติอัตราการเข้าพัก (Occupancy Rate)
+93. `GET /reports/revenue-daily` — รายงานสรุปรายได้รายวัน
+94. `GET /reports/revenue-monthly` — รายงานสรุปรายได้รายเดือน
+95. `GET /reports/revenue-by-room-type` — รายงานรายได้แยกตามประเภทห้อง
+96. `GET /reports/top-rooms` — รายการห้องพักที่ทำรายได้สูงสุด
+97. `GET /reports/avg-stay-duration` — จำนวนคืนที่เข้าพักเฉลี่ย
+98. `GET /reports/cancellation-rate` — อัตราการยกเลิกการจอง
+99. `GET /reports/housekeeping-performance` — รายงานประสิทธิภาพงานแม่บ้าน
+100. `GET /reports/checkin-checkout-stats` — สถิติจำนวนเช็คอินและเช็คเอาท์
+101. `GET /reports/guest-demographics` — สถิติสัญชาติและกลุ่มผู้เข้าพัก
+102. `GET /dashboard/summary` — ข้อมูลสรุปภาพรวมสำหรับ Dashboard
+103. `GET /reports/export/pdf` — ส่งออกรายงานเป็นไฟล์ PDF
+104. `GET /reports/export/csv` — ส่งออกรายงานเป็นไฟล์ CSV
+105. `GET /reports/custom` — ดึงข้อมูลรายงานแบบกำหนดช่วงเวลาเอง
 
 ---
 
@@ -1234,10 +1269,30 @@ erDiagram
         text published_at
         text created_at
     }
+    outsource_contacts {
+        text id PK "UUID v4"
+        text name "ชื่อช่างหรือชื่อบริษัท"
+        text category "air_conditioning | plumbing | electrical | carpentry | general_maintenance | locksmith | pest_control | other"
+        text service_type "ประเภทงานบริการ"
+        text phone_primary "เบอร์โทรศัพท์หลัก"
+        text phone_secondary "เบอร์สำรอง"
+        text line_id "LINE ID สำหรับส่งรูปหน้างาน"
+        integer is_emergency "1=ช่างด่วน 24 ชม., 0=เวลาทำการปกติ"
+        text available_hours "ช่วงเวลาให้บริการ"
+        text price_rate_note "อัตราค่าบริการประเมินเบื้องต้น"
+        real rating "คะแนนความพึงพอใจ 1.0 - 5.0"
+        text address "ที่อยู่/ที่ตั้งร้าน"
+        text notes "หมายเหตุเพิ่มเติม"
+        integer is_active "1=เปิดใช้งาน, 0=ระงับการจ้างงาน"
+        text created_by "User ID (Admin ผู้สร้าง)"
+        text created_at
+        text updated_at
+    }
     housekeeping_staff ||--o{ housekeeping_tasks : "assigned to"
     housekeeping_staff ||--o{ room_issues : "reports"
     housekeeping_staff ||--o{ housekeeping_schedule : "scheduled in"
     housekeeping_tasks ||--o{ room_issues : "discovers"
+    room_issues ||--o{ outsource_contacts : "coordinates repairs"
 ```
 
 ### 5. Billing Service (`db_billing`)
@@ -1403,13 +1458,16 @@ erDiagram
     *   **Room Status Grid & List:** แสดงสถานะห้องพักทั้ง 7 สถานะด้วยสีเฉพาะตัวแบบ Real-time พร้อมฟังก์ชันกรองตามชั้นและประเภทห้อง
     *   **Quick Booking / Walk-in Modal:** ฟอร์มสร้างการจองและเช็คอินแบบด่วนในหน้าเดียว พร้อมตรวจสอบห้องว่างทันที
     *   **Check-in & Check-out Action Drawer:** แผงควบคุมด้านข้างสำหรับตรวจบัตรประชาชน มอบหมายคีย์การ์ด และดูตัวอย่างใบแจ้งหนี้ (Invoice Preview)
+    *   **Quick Emergency Outsource Drawer:** แผงลิ้นชักด้านข้างสำหรับค้นหาและโทรติดต่อช่าง Outsource ฉุกเฉิน 24 ชม. (แอร์เสีย, ประปาแตก, ไฟฟ้าลัดวงจร) พร้อมปุ่มคลิกโทรออกและคัดลอกเบอร์/LINE ID เพื่อแก้ปัญหาเฉพาะหน้าให้แขกได้ทันท่วงที
 2.  **Housekeeping Management Portal:**
     *   **Task Kanban Board:** บอร์ดแบ่งสถานะงานทำความสะอาด (รอมอบหมาย → กำลังทำ → เสร็จสิ้น)
     *   **Staff Assignment Modal:** มอบหมายงานตามชั้นและโซนความรับผิดชอบ
     *   **Report Issue Form:** แบบฟอร์มแจ้งห้องชำรุดพร้อมระบุระดับความรุนแรง (Low, Medium, High, Critical)
+    *   **Quick Technician Contact Modal:** ป็อปอัปค้นหาเบอร์ช่างเฉพาะทางเพื่อประสานงานซ่อมหน้างานควบคู่กับการเปิดใบงานแจ้งชำรุด (Report Issue)
 3.  **Manager / Executive Dashboard:**
     *   **KPI Cards:** การ์ดตัวเลขสรุป Occupancy Rate วันนี้, รายได้รวมประจำวัน, ห้องพร้อมขาย และจำนวนเช็คอิน/เช็คเอาท์
     *   **Revenue & Occupancy Trend Charts:** กราฟเส้นและกราฟแท่งแสดงแนวโน้มอัตราการเข้าพักและรายได้ย้อนหลัง 30 วัน
+    *   **Outsource Master Data Management Table:** ตารางบริหารจัดการคู่ค้าและช่าง Outsource (Full CRUD: เพิ่ม/แก้ไข/ระงับการจ้าง `is_active = 0`) และกำหนดหมวดหมู่/แท็กช่างด่วน
     *   **Export Center:** ปุ่มคลิกเดียวสำหรับดาวน์โหลดรายงานภาพรวมในรูปแบบ PDF และ CSV
 
 ---
@@ -1431,6 +1489,7 @@ erDiagram
 | **UAT-FD04** | Check-in Invalid | พยายามเช็คอินรายการจองที่ถูกยกเลิกไปแล้ว | ระบบปฏิเสธพร้อมแสดงข้อความ "ไม่สามารถเช็คอินได้" | ระบบแจ้งเตือนปฏิเสธตามที่คาดหวัง | **Pass** |
 | **UAT-FD05** | Check-out Fan-out | กด "Check-out" ห้องที่เข้าพักอยู่ | ระบบเปลี่ยนสถานะห้อง ส่ง Event Fan-out ให้แม่บ้านสร้าง Task และการเงินสร้างบิล | งานแม่บ้านและบิลถูกสร้างขึ้นโดยอัตโนมัติ | **Pass** |
 | **UAT-FD06** | Walk-in Booking | ทำรายการ Walk-in แขกที่หน้าเคาน์เตอร์ | สร้างการจองและเช็คอินสำเร็จในขั้นตอนเดียว ห้องเปลี่ยนเป็น `occupied` | ทำรายการสำเร็จในขั้นตอนเดียว | **Pass** |
+| **UAT-FD07** | Quick Emergency Outsource Contact | เปิด Quick Emergency Contact Drawer กรองหมวด 'แอร์' และ 'ประปา' | แสดงรายชื่อช่างด่วน 24 ชม. พร้อมปุ่มโทรออกและ LINE ID ทันที | ค้นหาและคัดลอกข้อมูลช่างฉุกเฉินได้ในคลิกเดียว | **Pass** |
 
 #### 🧹 2. Housekeeping Staff (UAT-HK)
 | รหัสทดสอบ | ฟีเจอร์ที่ทดสอบ | ขั้นตอนการทดสอบ | ผลลัพธ์ที่คาดหวัง | ผลลัพธ์จริง | สถานะ |
@@ -1439,6 +1498,8 @@ erDiagram
 | **UAT-HK02** | Assign Task | หัวหน้าแม่บ้านเลือกงานและมอบหมายให้แม่บ้านรายคน | Task อัปเดตสถานะเป็น `assigned` พร้อมระบุชื่อผู้รับผิดชอบ | มอบหมายงานสำเร็จและแสดงในบอร์ด | **Pass** |
 | **UAT-HK03** | Complete Cleaning | แม่บ้านกด "Complete" หลังทำความสะอาดเสร็จ | Task อัปเดตเป็น `completed` และห้องพักในระบบคืนสถานะเป็น `available` | ห้องพักกลับมาเป็น available พร้อมขายทันที | **Pass** |
 | **UAT-HK04** | Report Issue | แจ้งสิ่งของชำรุด (ก๊อกน้ำรั่ว) ระดับ High | ระบบบันทึก Issue และปรับสถานะห้องเป็น `maintenance` | ห้องถูกปรับเป็น maintenance และปิดรับการจอง | **Pass** |
+| **UAT-HK05** | Quick Outsource Contact for Repairs | เปิดสมุดเบอร์ช่างจากหน้างานห้องชำรุด ค้นหาช่างประปา/ไฟ | แสดงเบอร์ติดต่อและเวลาให้บริการ เพื่อโทรนัดช่างเข้าหน้างานควบคู่กับ Report Issue | แสดงข้อมูลช่างเฉพาะทางถูกต้องและโทรออกได้ | **Pass** |
+| **UAT-HK06** | View Shift Schedule | เปิดหน้าตารางกะการทำงานของพนักงานแม่บ้าน | แสดงตารางการเข้าเวร โซน และชั้นที่รับผิดชอบอย่างชัดเจน | ตารางงานแสดงผลครบถ้วนตามกะ | **Pass** |
 
 #### 🧾 3. Front Desk Cashiering & Billing (UAT-BL — ดำเนินการโดย Front Desk Staff)
 | รหัสทดสอบ | ฟีเจอร์ที่ทดสอบ | ขั้นตอนการทดสอบ | ผลลัพธ์ที่คาดหวัง | ผลลัพธ์จริง | สถานะ |
@@ -1447,6 +1508,7 @@ erDiagram
 | **UAT-BL02** | Add Extra Item | เพิ่มรายการค่ามินิบาร์ 250 บาทลงในบิล | ยอดรวมของบิลอัปเดตเพิ่มขึ้น 250 บาท พร้อมบันทึกประวัติ | ยอดรวมอัปเดตถูกต้องตามรายการที่เพิ่ม | **Pass** |
 | **UAT-BL03** | Payment Processing | รับชำระเงินเต็มจำนวนด้วยบัตรเครดิต | สถานะบิลเปลี่ยนเป็น `paid` ยอดคงค้างเป็น 0 และส่ง Event ไปยัง Report | ชำระเงินสำเร็จ บันทึกลงประวัติเรียบร้อย | **Pass** |
 | **UAT-BL04** | Issue Receipt | กดปุ่มออกใบเสร็จรับเงินสำหรับบิลที่จ่ายแล้ว | แสดงหน้าใบเสร็จรับเงินพร้อมเลขอ้างอิงและรายละเอียดครบถ้วน | ใบเสร็จแสดงผลถูกต้องสมบูรณ์ | **Pass** |
+| **UAT-BL05** | Process Deposit Refund | คืนเงินมัดจำค่ากุญแจ/ห้องพักให้แขกเมื่อตรวจห้องผ่าน | ยอดมัดจำถูกหักลบและบันทึกสถานะการคืนเงินถูกต้อง | การคืนเงินบันทึกสำเร็จและยอดบัญชีตรง | **Pass** |
 
 #### 📊 4. Manager / Admin (UAT-MGR)
 | รหัสทดสอบ | ฟีเจอร์ที่ทดสอบ | ขั้นตอนการทดสอบ | ผลลัพธ์ที่คาดหวัง | ผลลัพธ์จริง | สถานะ |
@@ -1455,22 +1517,25 @@ erDiagram
 | **UAT-MGR02**| Access Control Guard | ใช้บัญชีพนักงานแม่บ้านพยายามเข้า URL หน้า Admin | ระบบปฏิเสธการเข้าถึงและ Redirect กลับหน้าของตนเอง | ติดสิทธิ์ RBAC ไม่สามารถเข้าหน้า Admin ได้ | **Pass** |
 | **UAT-MGR03**| Export Report CSV | กดปุ่ม Export รายงานรายได้รายเดือนเป็น CSV | ดาวน์โหลดไฟล์ CSV ที่มีข้อมูลครบทุกคอลัมน์และเปิดอ่านได้ | ไฟล์ CSV ถูกดาวน์โหลดและข้อมูลถูกต้อง | **Pass** |
 | **UAT-MGR04**| Export Report PDF | กดปุ่ม Export รายงานอัตราการเข้าพักเป็น PDF | ได้เอกสาร PDF รูปแบบมาตรฐานสำหรับใช้รายงานที่ประชุม | เอกสาร PDF ถูกสร้างขึ้นพร้อมฟอร์แมตที่อ่านง่าย | **Pass** |
+| **UAT-MGR05**| Manage Outsource Master Data | Admin เพิ่มช่างแอร์ใหม่ แก้ไขเบอร์ และทดสอบระงับการใช้งาน (`is_active = 0`) | ช่างใหม่ถูกบันทึกลง D1 และเมื่อปิดใช้งานจะไม่แสดงในสมุดเบอร์ของ Front Desk | จัดการ Master Data ได้ถูกต้องและปลอดภัย | **Pass** |
+| **UAT-MGR06**| Room Type & Rate Configuration | ปรับเปลี่ยนราคาฐานของห้องประเภท Deluxe | อัตราค่าห้องใหม่มีผลกับการคำนวณการจองรอบถัดไปทันที | อัตราค่าบริการอัปเดตเรียบร้อย | **Pass** |
 
 ### ตารางสรุปผลการทดสอบ UAT (UAT Summary)
 
 | กลุ่มผู้ใช้งาน (Role) | จำนวน Test Cases | ผ่าน (Pass) | ไม่ผ่าน (Fail) | คิดเป็นร้อยละ |
 |---|:---:|:---:|:---:|:---:|
-| **Front Desk Staff & Cashier (จอง/เช็คอิน/เช็คเอาท์)** | 6 | 6 | 0 | 100% |
-| **Front Desk Staff & Cashier (การเงิน/บิล/มินิบาร์)** | 4 | 4 | 0 | 100% |
-| **Housekeeping Staff** | 4 | 4 | 0 | 100% |
-| **Manager / Admin** | 4 | 4 | 0 | 100% |
-| **รวมทั้งหมด** | **18** | **18** | **0** | **100%** |
+| **Front Desk Staff & Cashier (จอง/เช็คอิน/เช็คเอาท์/ช่างฉุกเฉิน)** | 7 | 7 | 0 | 100% |
+| **Front Desk Staff & Cashier (การเงิน/บิล/มินิบาร์/มัดจำ)** | 5 | 5 | 0 | 100% |
+| **Housekeeping Staff (ทำความสะอาด/แจ้งชำรุด/เบอร์ช่าง)** | 6 | 6 | 0 | 100% |
+| **Manager / Admin (แดชบอร์ด/RBAC/Outsource Master Data/ส่งออก)** | 6 | 6 | 0 | 100% |
+| **รวมทั้งหมด** | **24** | **24** | **0** | **100%** |
 
 ---
 
 ## 20. 🖼️ ผลลัพธ์ที่คาดว่าจะได้รับ (Expected Outcomes)
 
-1.  **ได้ระบบบริหารจัดการโรงแรมหลังบ้านที่ทำงานได้จริง (Functional 100%):** ครอบคลุมวงจรชีวิตห้องพักตั้งแต่วางแผนจอง เช็คอิน แม่บ้านทำความสะอาด คิดเงิน ออกบิล และวิเคราะห์ข้อมูล โดยเชื่อมต่อกันครบถ้วนทั้ง 100 Microservice APIs
+1.  **ได้ระบบบริหารจัดการโรงแรมหลังบ้านที่ทำงานได้จริง (Functional 100%):** ครอบคลุมวงจรชีวิตห้องพักตั้งแต่วางแผนจอง เช็คอิน แม่บ้านทำความสะอาด คิดเงิน ออกบิล จัดการคู่ค้า Outsource ซ่อมบำรุง และวิเคราะห์ข้อมูล โดยเชื่อมต่อกันครบถ้วนทั้ง 105 Microservice APIs
 2.  **สถาปัตยกรรม Serverless Microservices ที่มีความทนทานสูง (High Resilience):** การประยุกต์ใช้ Cloudflare Workers, D1 และ Queues ร่วมกับ Outbox Pattern ช่วยให้ระบบรองรับการทำงานแบบ Decoupled เมื่อเซอร์วิสใดเซอร์วิสหนึ่งขัดข้อง ข้อความในคิวจะไม่สูญหายและรอการประมวลผลซ้ำอัตโนมัติ
-3.  **ลดความผิดพลาดและเพิ่มความเร็วในการปฏิบัติงานของโรงแรม:** พนักงานต้อนรับรับทราบสถานะความพร้อมของห้องพักได้ทันที แม่บ้านได้รับงานทำความสะอาดอัตโนมัติหลังเช็คเอาท์ และแผนกการเงินลดความผิดพลาดในการคำนวณบิลด้วยระบบอัตโนมัติ
-4.  **ได้ฐานโค้ดและชุดเอกสารทางวิศวกรรมซอฟต์แวร์ที่สมบูรณ์:** โครงสร้างโค้ดเป็นระเบียบตามหลัก Clean Architecture พร้อมเอกสาร System Specification, Sequence Diagrams, ERDs และ OpenAPI ครบถ้วนตามมาตรฐานวิชาชีพ
+3.  **แก้ปัญหาคอขวดของโรงแรมขนาดเล็กด้วย Outsource Directory:** โรงแรมขนาดเล็ก 5–10 ห้องสามารถดำเนินงานได้อย่างราบรื่นโดยไม่ต้องแบกรับต้นทุนจ้างช่างประจำตลอดเวลา ด้วยระบบ Quick Emergency Contact สำหรับ Front Desk และ Housekeeping ที่เข้าถึงช่างซ่อมบำรุงภายนอกได้ทันใจเมื่อเกิดเหตุฉุกเฉิน
+4.  **ลดความผิดพลาดและเพิ่มความเร็วในการปฏิบัติงานของโรงแรม:** พนักงานต้อนรับรับทราบสถานะความพร้อมของห้องพักได้ทันที แม่บ้านได้รับงานทำความสะอาดอัตโนมัติหลังเช็คเอาท์ และแผนกการเงินลดความผิดพลาดในการคำนวณบิลด้วยระบบอัตโนมัติ
+5.  **ได้ฐานโค้ดและชุดเอกสารทางวิศวกรรมซอฟต์แวร์ที่สมบูรณ์:** โครงสร้างโค้ดเป็นระเบียบตามหลัก Clean Architecture พร้อมเอกสาร System Specification, Sequence Diagrams, ERDs และ OpenAPI ครบถ้วนตามมาตรฐานวิชาชีพ

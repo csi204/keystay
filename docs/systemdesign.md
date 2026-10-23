@@ -32,11 +32,11 @@ flowchart TB
         KV[("<b>Cloudflare KV</b><br/>Session Store · Roles & Permissions Cache")]
         GW["<b>API Gateway (Cloudflare Worker)</b><br/>• Reverse Proxy & Routing<br/>• JWT Authentication & RBAC (4 Roles)<br/>• Rate Limiting & CORS Enforcement<br/>• Request Validation & Logging"]
 
-        subgraph MICROSERVICES["Microservices Layer (6 Independent Workers · 100 APIs)"]
-            SVC_AUTH["<b>#1 Auth/User Service</b><br/>12 APIs · JWT & User Management"]
+        subgraph MICROSERVICES["Microservices Layer (6 Independent Workers · 105 APIs)"]
+            SVC_AUTH["<b>#1 Auth/User Service</b><br/>12 APIs · JWT, Users & RBAC"]
             SVC_ROOM["<b>#2 Room Inventory Service</b><br/>18 APIs · Rooms, Floors, Types"]
             SVC_RES["<b>#3 Reservation Service</b><br/>24 APIs · Booking, Check-in/out"]
-            SVC_HK["<b>#4 Housekeeping Service</b><br/>16 APIs · Cleaning Tasks, Issues"]
+            SVC_HK["<b>#4 Housekeeping Service</b><br/>21 APIs · Cleaning, Maintenance & Outsource Contacts"]
             SVC_BILL["<b>#5 Billing Service</b><br/>16 APIs · Folio, Payments, Invoices"]
             SVC_RPT["<b>#6 Report/Analytics Service</b><br/>14 APIs · Occupancy, Revenue Stats"]
         end
@@ -101,7 +101,7 @@ flowchart TB
 | **1. Auth/User Service** | ยืนยันตัวตน, จัดการโทเค็น JWT, ควบคุมสิทธิ์การเข้าถึง (RBAC 4 Roles), บริหารผู้ใช้ | Users, Roles, Sessions, Password Tokens | เขต |
 | **2. Room Inventory Service** | คลังห้องพัก, ประเภทห้อง, ชั้น, สิ่งอำนวยความสะดวก, สถานะห้องจริง ณ ปัจจุบัน | Rooms, Room Types, Floors, Amenities | บุญ |
 | **3. Reservation Service** | การจองล่วงหน้า (Date Range), Walk-in, Check-in, Check-out, ประวัติการจอง | Reservations, Guests, Booking History | เดียร์ |
-| **4. Housekeeping Service** | งานทำความสะอาด, ตารางกะแม่บ้าน, มอบหมายงาน, แจ้งสิ่งของชำรุด | Staff, Tasks, Issues, Schedules | บุญ |
+| **4. Housekeeping Service** | งานทำความสะอาด, ตารางกะแม่บ้าน, มอบหมายงาน, แจ้งสิ่งของชำรุด, สมุดเบอร์ติดต่อและคู่ค้า Outsource (ช่าง/คนสวน/งานบริการภายนอก) | Staff, Tasks, Issues, Schedules, Outsource Contacts | บุญ |
 | **5. Billing Service** | จัดการบิลและค่าใช้จ่ายเสริม (มินิบาร์, ซักรีด), ชำระเงิน, ออกใบเสร็จ/ใบแจ้งหนี้ | Bills, Bill Items, Payments, Invoices | เดียร์ |
 | **6. Report/Analytics Service** | รวบรวมสถิติ, คำนวณ Occupancy Rate, รายได้รายวัน/รายเดือน, ประสิทธิภาพงาน | Daily Stats, Monthly Summaries, Audit Logs | เขต |
 
@@ -132,6 +132,30 @@ CREATE TABLE IF NOT EXISTS outbox_events (
 );
 CREATE INDEX IF NOT EXISTS idx_outbox_status ON outbox_events(status);
 CREATE INDEX IF NOT EXISTS idx_outbox_created ON outbox_events(created_at);
+
+-- DDL ตาราง outsource_contacts ในฐานข้อมูล db_housekeeping (Master Data คู่ค้า/ช่างซ่อมบำรุง/คนสวนภายนอก)
+CREATE TABLE IF NOT EXISTS outsource_contacts (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,                         -- ชื่อช่าง หรือ ชื่อบริษัท/ร้าน (เช่น ช่างแอร์สมเกียรติ, บจก.สยามเซอร์วิส)
+    category TEXT NOT NULL,                     -- ประเภทงานช่าง/บริการ (air_conditioning, plumbing, electrical, carpentry, general_maintenance, locksmith, pest_control, other)
+    service_type TEXT NOT NULL,                 -- คำอธิบายบริการสั้นๆ (เช่น ล้าง/ซ่อมแอร์, ซ่อมท่อประปา-สุขภัณฑ์, ซ่อมไฟฟ้า)
+    phone_primary TEXT NOT NULL,                -- เบอร์โทรหลัก (คลิกโทรออกได้ tel:...)
+    phone_secondary TEXT,                       -- เบอร์โทรสำรอง
+    line_id TEXT,                               -- LINE ID สำหรับส่งรูปหน้างานหรือแผนที่
+    is_emergency INTEGER NOT NULL DEFAULT 0,   -- เป็นเบอร์ฉุกเฉิน 24 ชม. หรือไม่ (สำหรับ Front Desk ดึงขึ้นมาเด่นสุดตอนดึก)
+    available_hours TEXT DEFAULT '24 ชั่วโมง',  -- เวลาทำการ เช่น '08:00 - 18:00' หรือ '24 ชั่วโมง'
+    price_rate_note TEXT,                       -- อัตราค่าบริการเบื้องต้น (เช่น เริ่มต้น 500 บาท/ครั้ง)
+    rating REAL DEFAULT 5.0,                    -- ประเมินความพึงพอใจหรือโน้ตคุณภาพงาน (1.0 - 5.0)
+    address TEXT,                               -- ที่อยู่ / พิกัดร้าน
+    notes TEXT,                                 -- หมายเหตุเพิ่มเติม (เช่น โทรแจ้งล่วงหน้า 30 นาที)
+    is_active INTEGER NOT NULL DEFAULT 1,       -- สถานะเปิดใช้งาน (1=ใช้งาน, 0=ระงับ/ยกเลิกสัญญา ตามนโยบาย Admin)
+    created_by TEXT,                            -- User ID ของ Admin ผู้บันทึกข้อมูล
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_outsource_category ON outsource_contacts(category);
+CREATE INDEX IF NOT EXISTS idx_outsource_is_active ON outsource_contacts(is_active);
+CREATE INDEX IF NOT EXISTS idx_outsource_is_emergency ON outsource_contacts(is_emergency);
 ```
 
 ---
@@ -417,7 +441,7 @@ sequenceDiagram
 
 ---
 
-## 8. รายการ API ทั้ง 100 Endpoints จำแนกรายเซอร์วิส
+## 8. รายการ API ทั้ง 105 Endpoints จำแนกรายเซอร์วิส
 
 > **RBAC 4 Roles:** `admin` · `manager` · `front_desk` (รวม Cashier/Billing) · `housekeeping`  
 > **DTO Rule:** ทุก Request/Response ส่งเป็น string เท่านั้น Backend parse ด้วย `z.coerce.number()` / `.transform()`
@@ -485,7 +509,7 @@ sequenceDiagram
 - `GET /reservations/:id/invoice-preview` — ดูตัวอย่างบิลล่วงหน้าก่อนเช็คเอาท์
 - `POST /reservations/:id/apply-discount` — กำหนดส่วนลดพิเศษสำหรับการจอง (Manager/Admin)
 
-### 🧼 8.4 Service #4: Housekeeping Service (16 APIs) — เจ้าของ: บุญ
+### 🧼 8.4 Service #4: Housekeeping Service (21 APIs) — เจ้าของ: บุญ
 
 - `GET /housekeeping/tasks` — รายการงานทำความสะอาดทั้งหมด
 - `GET /housekeeping/tasks/:id` — รายละเอียดงานทำความสะอาดรายรายการ
@@ -503,6 +527,11 @@ sequenceDiagram
 - `PUT /housekeeping/staff/:id/zone` — กำหนดโซนหรือชั้นรับผิดชอบของแม่บ้าน
 - `POST /housekeeping/tasks/:id/report-issue` — แจ้งปัญหา/สิ่งของชำรุดในห้องพัก
 - `GET /housekeeping/schedule` — ตารางการทำงานและวันหยุดของแผนกแม่บ้าน
+- `GET /housekeeping/outsource-contacts` — ดึงรายชื่อคู่ค้าและช่าง Outsource ทั้งหมด (filter: category, is_emergency, is_active)
+- `GET /housekeeping/outsource-contacts/:id` — ดึงรายละเอียดคู่ค้า Outsource รายบุคคล/บริษัท
+- `POST /housekeeping/outsource-contacts` — เพิ่มคู่ค้า/ช่าง Outsource ใหม่เข้าระบบ (Admin Only)
+- `PUT /housekeeping/outsource-contacts/:id` — แก้ไขข้อมูลคู่ค้า Outsource (Admin Only)
+- `DELETE /housekeeping/outsource-contacts/:id` — ระงับการใช้งานคู่ค้า Outsource (`is_active = 0`) (Admin Only)
 
 ### 🧾 8.5 Service #5: Billing Service (16 APIs) — เจ้าของ: เดียร์ (เข้าใช้งานได้โดย role=`front_desk`)
 

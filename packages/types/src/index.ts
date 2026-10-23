@@ -114,6 +114,39 @@ export interface HousekeepingTask {
   createdAt: string;
 }
 
+// 4.1 Outsource Contacts Types
+export const OutsourceCategorySchema = z.enum([
+  'air_conditioning',
+  'plumbing',
+  'electrical',
+  'carpentry',
+  'general_maintenance',
+  'locksmith',
+  'pest_control',
+  'other',
+]);
+export type OutsourceCategory = z.infer<typeof OutsourceCategorySchema>;
+
+export interface OutsourceContact {
+  id: string;
+  name: string;
+  category: OutsourceCategory;
+  serviceType: string;
+  phonePrimary: string;
+  phoneSecondary?: string;
+  lineId?: string;
+  isEmergency: number;
+  availableHours?: string;
+  priceRateNote?: string;
+  rating?: number;
+  address?: string;
+  notes?: string;
+  isActive: number;
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ==========================================
 // 5. Billing & Cashier Types
 // ==========================================

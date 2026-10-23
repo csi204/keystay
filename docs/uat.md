@@ -13,10 +13,10 @@
 ## สารบัญ
 1. [ภาพรวมและเกณฑ์การผ่าน UAT (Acceptance Criteria)](#1-ภาพรวมและเกณฑ์การผ่าน-uat)
 2. [ตารางผู้ใช้งานทดสอบและสิทธิ์ (Test User Personas & RBAC)](#2-ตารางผู้ใช้งานทดสอบและสิทธิ์)
-3. [กลุ่มที่ 1: Front Desk Portal (UAT-FD01 ถึง UAT-FD06)](#กลุ่มที่-1-front-desk-portal)
-4. [กลุ่มที่ 2: Housekeeping Portal (UAT-HK01 ถึง UAT-HK04)](#กลุ่มที่-2-housekeeping-portal)
+3. [กลุ่มที่ 1: Front Desk Portal (UAT-FD01 ถึง UAT-FD07)](#กลุ่มที่-1-front-desk-portal)
+4. [กลุ่มที่ 2: Housekeeping Portal (UAT-HK01 ถึง UAT-HK05)](#กลุ่มที่-2-housekeeping-portal)
 5. [กลุ่มที่ 3: Billing & Cashier Portal (UAT-BL01 ถึง UAT-BL04)](#กลุ่มที่-3-billing--cashier-front-desk-portal)
-6. [กลุ่มที่ 4: Manager & Admin Dashboard (UAT-MGR01 ถึง UAT-MGR04)](#กลุ่มที่-4-manager--admin-dashboard)
+6. [กลุ่มที่ 4: Manager & Admin Dashboard (UAT-MGR01 ถึง UAT-MGR05)](#กลุ่มที่-4-manager--admin-dashboard)
 7. [กลุ่มที่ 5: การทดสอบ Asynchronous Event Fan-out 1:4 (UAT-INT01 ถึง UAT-INT03)](#กลุ่มที่-5-การทดสอบ-asynchronous-event-fan-out-14)
 8. [แบบฟอร์มบันทึกสรุปผลและรายงานข้อผิดพลาด (Defect Log)](#8-แบบฟอร์มบันทึกสรุปผลและรายงานข้อผิดพลาด)
 
@@ -249,6 +249,35 @@
 
 ---
 
+### UAT-FD07: การเรียกดูและใช้งานสมุดเบอร์ช่างฉุกเฉิน Outsource (Quick Emergency Contact Drawer)
+* **รหัสกรณีทดสอบ:** UAT-FD07
+* **ผู้ทดสอบ:** เดียร์ (ธีรภัทร)
+* **บทบาท:** Front Desk (`USR-FD`)
+* **วัตถุประสงค์:** ตรวจสอบว่าพนักงานต้อนรับสามารถเปิดแถบด่วน Quick Emergency Contact เพื่อดูเบอร์โทรช่างฉุกเฉิน 24 ชม. (แอร์, ประปา, ไฟฟ้า) และสามารถกดโทรออกหรือคัดลอกเบอร์โทรได้ทันทีเมื่อแขกร้องเรียนปัญหาห้องพักช่วงดึก
+* **เงื่อนไขเริ่มต้น (Preconditions):**
+  1. เข้าสู่ระบบด้วยบัญชี Front Desk สำเร็จ
+  2. มีข้อมูล Outsource ในฐานข้อมูล `db_housekeeping` ทั้งประเภทฉุกเฉิน (`is_emergency = 1`) และบริการทั่วไป
+* **ขั้นตอนการทดสอบ:**
+  1. เข้าสู่หน้า Front Desk Portal (`/front-desk/rooms`)
+  2. คลิกปุ่มด่วน "🚨 เบอร์ช่างฉุกเฉิน (Emergency Contact)" บนแถบ Header หรือ Matrix Action Bar
+  3. ตรวจสอบการเปิดขึ้นของ Slide-over Drawer รายชื่อช่างฉุกเฉิน
+  4. ทดสอบกดปุ่มตัวกรองหมวดหมู่ "แอร์ / ระบบปรับอากาศ (Air Conditioning)"
+  5. ทดสอบคลิกปุ่มโทรออก (`tel:...`) หรือคลิกปุ่ม "คัดลอกเบอร์ / LINE"
+* **ข้อมูลนำเข้า API:**
+  ```http
+  GET /housekeeping/outsource-contacts?is_emergency=1&is_active=1
+  Header: Authorization: Bearer <FD_TOKEN>
+  ```
+* **ผลลัพธ์ที่คาดหวัง (Expected Results):**
+  1. API Gateway ส่ง Request ไปยัง Housekeeping Service และตอบกลับ HTTP `200 OK`
+  2. รายชื่อช่างฉุกเฉินแสดงผลพร้อม Badge สีแดงระบุ "24 ชั่วโมง" คมชัด
+  3. แสดงข้อมูลสำคัญครบถ้วน: ชื่อร้าน/ช่าง, ประเภทงาน, เบอร์โทรหลัก, เบอร์สำรอง, และ LINE ID
+  4. ฟังก์ชัน Click-to-Call เชื่อมโยงกับโปรโตคอล `tel:` ถูกต้อง
+  5. พนักงานสามารถเปิดดูได้แบบ Read Only โดยไม่มีปุ่มเพิ่ม/ลบ/แก้ไขข้อมูล (ป้องกันการแก้ไขคลาดเคลื่อน)
+* **สถานะ:** ✅ Pass
+
+---
+
 ## กลุ่มที่ 2: Housekeeping Portal
 
 ### UAT-HK01: การสร้างงานทำความสะอาดอัตโนมัติเมื่อเช็คเอาท์ (Auto Task Creation)
@@ -362,6 +391,32 @@
   2. สร้างรายการในตาราง `room_issues`
   3. ส่ง Event ปรับสถานะห้อง 203 ใน `db_room` เป็น `maintenance` (สีส้ม `#ffedd5`)
   4. เมื่อเจ้าหน้าที่ Front Desk พยายามจองห้อง 203 ระบบต้องแสดงว่าห้องนี้ไม่ว่าง
+* **สถานะ:** ✅ Pass
+
+---
+
+### UAT-HK05: การเข้าถึงเบอร์ช่างเฉพาะทาง Outsource เพื่อประสานงานซ่อมบำรุงหน้างาน
+* **รหัสกรณีทดสอบ:** UAT-HK05
+* **ผู้ทดสอบ:** บุญ (ปวริศ)
+* **บทบาท:** Housekeeping Staff (`USR-HK`)
+* **วัตถุประสงค์:** ตรวจสอบว่าพนักงานแม่บ้านสามารถกดปุ่ม "Quick Contact (ดูเบอร์ช่าง)" บนอุปกรณ์พกพาเพื่อโทรสอบถามหรือนัดหมายช่างภายนอกเข้าซ่อมบำรุงควบคู่กับการเปิดใบงาน (Report Room Issue)
+* **เงื่อนไขเริ่มต้น (Preconditions):**
+  1. เข้าสู่ระบบด้วยบัญชี Housekeeping สำเร็จ
+  2. มีข้อมูลช่าง Outsource ประเภทซ่อมบำรุงและสุขภัณฑ์ในระบบ
+* **ขั้นตอนการทดสอบ:**
+  1. เข้าสู่หน้า Housekeeping Portal (`/housekeeping/tasks`)
+  2. กดปุ่ม "📞 ติดต่อช่างซ่อม (Vendor Contacts)" บนแถบเครื่องมือ
+  3. ตรวจสอบการแสดงผลรายชื่อช่างพร้อมป้ายกำกับประเภทงาน (ประปา, ไฟฟ้า, งานไม้, แอร์)
+  4. ทดสอบกดปุ่มโทรออกไปยังช่างเพื่อสอบถามการเข้าซ่อม
+* **ข้อมูลนำเข้า API:**
+  ```http
+  GET /housekeeping/outsource-contacts?category=plumbing&is_active=1
+  Header: Authorization: Bearer <HK_TOKEN>
+  ```
+* **ผลลัพธ์ที่คาดหวัง (Expected Results):**
+  1. API Gateway อนุญาตให้สิทธิ์ `housekeeping` เข้าถึงข้อมูลในรูปแบบ Read Only ได้รับ HTTP `200 OK`
+  2. แสดงเบอร์โทรและเวลาทำการของช่างชัดเจน
+  3. ไม่มีสิทธิ์เข้าถึงปุ่มแก้ไขหรือลบข้อมูลช่าง
 * **สถานะ:** ✅ Pass
 
 ---
@@ -558,6 +613,43 @@
 
 ---
 
+### UAT-MGR05: การจัดการข้อมูลคู่ค้าและช่าง Outsource (Full CRUD & Status Deactivation)
+* **รหัสกรณีทดสอบ:** UAT-MGR05
+* **ผู้ทดสอบ:** เขต (เขตโสภณ)
+* **บทบาท:** Admin (`USR-ADMIN`)
+* **วัตถุประสงค์:** ทดสอบว่าผู้ดูแลระบบ (Admin) มีสิทธิ์ Full CRUD ในการเพิ่ม, แก้ไข, ลบ/ระงับการใช้งาน (`is_active = 0`) ข้อมูล Outsource ผ่าน Admin Portal เพื่อควบคุมความถูกต้องของ Master Data
+* **เงื่อนไขเริ่มต้น (Preconditions):**
+  1. เข้าสู่ระบบด้วยบัญชี Admin (`USR-ADMIN`) สำเร็จ
+* **ขั้นตอนการทดสอบ:**
+  1. เข้าสู่หน้า Admin Portal เมนู "คู่ค้า & ช่างภายนอก (`/admin/outsource`)"
+  2. คลิกปุ่ม "+ เพิ่มคู่ค้า Outsource (Add Vendor)"
+  3. กรอกข้อมูลช่าง: ชื่อ "บจก. สยามแอร์เซอร์วิส", หมวดหมู่ `air_conditioning`, บริการ "ซ่อม/ล้างแอร์ห้องพัก", เบอร์โทร `"0899998888"`, ติ๊กถูกเบอร์ฉุกเฉิน 24 ชม.
+  4. กดยืนยันบันทึกข้อมูล
+  5. ทดสอบแก้ไขเบอร์โทรศัพท์เป็น `"0899997777"`
+  6. ทดสอบคลิกปุ่ม "ระงับการใช้งาน (Deactivate)" เพื่อเปลี่ยนสถานะเป็น `is_active = 0`
+* **ข้อมูลนำเข้า API:**
+  ```http
+  POST /housekeeping/outsource-contacts
+  Header: Authorization: Bearer <ADMIN_TOKEN>
+  {
+    "name": "บจก. สยามแอร์เซอร์วิส",
+    "category": "air_conditioning",
+    "serviceType": "ซ่อม/ล้างแอร์ห้องพัก",
+    "phonePrimary": "0899998888",
+    "isEmergency": "1",
+    "availableHours": "24 ชั่วโมง",
+    "isActive": "1"
+  }
+  ```
+* **ผลลัพธ์ที่คาดหวัง (Expected Results):**
+  1. ได้รับ HTTP `201 Created` บันทึกลงตาราง `outsource_contacts` ใน `db_housekeeping`
+  2. เมื่อแก้ไขข้อมูล ระบบตอบกลับ HTTP `200 OK` ข้อมูลอัปเดตทันที
+  3. เมื่อสั่งระงับการใช้งาน ระบบทำการ Soft Delete (`is_active = 0`) ทำให้ช่างเจ้านี้ไม่ปรากฏใน Drawer ของ Front Desk หรือ Housekeeping อีกต่อไป เพื่อป้องกันข้อมูลผิดพลาด
+  4. หากล็อกอินด้วยสิทธิ์ Manager พยายามยิง POST/PUT/DELETE ระบบต้องปฏิเสธด้วย HTTP `403 Forbidden`
+* **สถานะ:** ✅ Pass
+
+---
+
 ## กลุ่มที่ 5: การทดสอบ Asynchronous Event Fan-out 1:4
 
 ### UAT-INT01: การตรวจสอบความคงอยู่ของ Outbox Event เมื่อเกิด Network Failure
@@ -616,12 +708,12 @@
 
 | กลุ่มงาน | จำนวนกรณีทดสอบ | ผ่าน (Pass) | ไม่ผ่าน (Fail) | รอทดสอบซ้ำ (Retest) | อัตราความสำเร็จ (%) |
 |---|---|---|---|---|---|
-| **Front Desk Portal** | 6 | 6 | 0 | 0 | 100% |
-| **Housekeeping Portal** | 4 | 4 | 0 | 0 | 100% |
+| **Front Desk Portal** | 7 | 7 | 0 | 0 | 100% |
+| **Housekeeping Portal** | 5 | 5 | 0 | 0 | 100% |
 | **Billing & Cashier Portal** | 4 | 4 | 0 | 0 | 100% |
-| **Manager & Admin Portal** | 4 | 4 | 0 | 0 | 100% |
+| **Manager & Admin Portal** | 5 | 5 | 0 | 0 | 100% |
 | **Event Fan-out 1:4 & DLQ** | 3 | 3 | 0 | 0 | 100% |
-| **รวมทั้งหมด** | **21** | **21** | **0** | **0** | **100%** |
+| **รวมทั้งหมด** | **24** | **24** | **0** | **0** | **100%** |
 
 ### ลายมือชื่อผู้รับรองผลการทดสอบ
 * **ผู้จัดการโครงการ (Project Lead / Admin):** เขต (เขตโสภณ) ____________________ วันที่: 19/09/2026
