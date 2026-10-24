@@ -355,51 +355,82 @@ flowchart TD
         V --> W["PUT /rooms/:id/maintenance ปรับห้องเป็น cleaning หรือ available"]
         W --> X(["สิ้นสุด: ห้องพักกลับมาพร้อมขาย / พร้อมใช้งาน"])
     end
+
+    subgraph HIGHLIGHTS1 [" 💡 สถาปัตยกรรม & จุดเด่นสำคัญ (Key Highlights) "]
+        H1["• <b>Quick Emergency Drawer:</b> พนักงานเข้าถึงช่าง 24 ชม. ได้ทันทีในคลิกเดียว (Click-to-Call / LINE ID)<br/>• <b>Instant Room Lock:</b> ปรับ rooms.status = 'maintenance' ทันที ป้องกัน Front Desk เผลอเปิดขายห้องชำรุด<br/>• <b>Cloudflare R2 Storage:</b> อัปโหลดรูปถ่ายความเสียหายขึ้น R2 เพื่อเป็นหลักฐานให้ช่างประเมินหน้างาน<br/>• <b>Inspection Gate:</b> ต้องมีแม่บ้านตรวจรับงานซ่อม (Pass) ก่อนคืนสถานะห้องเป็น ready/available"]
+    end
+    style HIGHLIGHTS1 fill:#fffbeb,stroke:#f59e0b,stroke-width:1.5px,color:#92400e
+    style H1 fill:#ffffff,stroke:#fde68a,color:#78350f,text-align:left
 ```
 
 ---
 
-### 2. โฟลว์กระบวนการเช็คอินและการรับ Walk-in (Front Desk Check-in & Walk-in Integration Flow)
-> **เป้าหมาย:** แสดงขั้นตอนการเช็คอินของแขกที่มีการจองล่วงหน้าเปรียบเทียบกับ Walk-in การตรวจเอกสาร การเก็บมัดจำ และการปรับสถานะห้องพักแบบเรียลไทม์
+### 2. โฟลว์กระบวนการเช็คอิน เข้าพัก เช็คเอาท์ และหมุนเวียนห้องพัก (Guest Stay Lifecycle & Room Turnover Closed-Loop Flow)
+> **เป้าหมาย:** แสดงวงจรชีวิตการเข้าพักของแขกแบบ Closed-Loop ครบถ้วนตั้งแต่การจอง/Walk-in, การเช็คอิน, การเข้าพัก, การเช็คเอาท์คืนห้อง ไปจนถึงแม่บ้านทำความสะอาดเสร็จ และระบบคืนสถานะห้องเป็นพร้อมขาย (`available`) เปิดรับแขกรอบใหม่
 
 ```mermaid
 flowchart TD
-    subgraph GUEST [" 🧳 แขกผู้เข้าพัก (Guest) "]
-        A2(["เริ่มต้น: แขกมาถึงเคาน์เตอร์โรงแรม"]) --> B2["แจ้งชื่อผู้จอง หรือ ขอเปิดห้องพักแบบ Walk-in"]
+    subgraph GUEST [" 🧳 1. แขกผู้เข้าพัก (Guest) "]
+        A2(["เริ่มต้น: แขกมาถึงเคาน์เตอร์"]) --> B2["แจ้งชื่อผู้จอง หรือ ขอเปิดห้องพักแบบ Walk-in"]
         B2 --> C2["แสดงบัตรประชาชน / พาสปอร์ต"]
-        C2 --> D2["ชำระค่าห้องส่วนที่เหลือ (ถ้ามี) พร้อมวางเงินมัดจำกุญแจ"]
-        D2 --> E2["รับคีย์การ์ดและเข้าพักในห้องพัก"]
+        C2 --> D2["ชำระเงินค่าห้อง พร้อมวางมัดจำกุญแจ"]
+        D2 --> E2["รับคีย์การ์ดและเข้าพัก (Occupied)"]
+        E2 --> F2["พักผ่อนตามระยะเวลาการจอง"]
+        F2 --> G2["ครบกำหนด: นำคีย์การ์ดมาคืนที่เคาน์เตอร์เพื่อเช็คเอาท์"]
+        G2 --> H2["รับเงินมัดจำคืน / ชำระค่ามินิบาร์ (ถ้ามี)"]
+        H2 --> I2(["แขกเดินทางออกจากโรงแรม"])
     end
 
-    subgraph FRONT_DESK [" 🧑‍💼 พนักงานต้อนรับ (Front Desk Staff) "]
-        B2 --> F2{"มีข้อมูลการจองล่วงหน้าหรือไม่?"}
-        F2 -->|มีจองล่วงหน้า| G2["ค้นหารายการจองจากชื่อ หรือ Booking Number"]
-        F2 -->|ไม่มี / Walk-in| H2["ตรวจสอบผังห้องว่างบน Compact Room Matrix Grid"]
-        H2 --> I2["เลือกห้องพักที่ว่าง (สถานะ available)"]
-        I2 --> J2["กรอกข้อมูลผู้เข้าพัก (Walk-in Booking Form)"]
-        G2 --> K2["ตรวจสอบความถูกต้องของเอกสารยืนยันตัวตน"]
-        J2 --> K2
-        K2 --> L2["รับเงินค่าห้องและเงินมัดจำ (Cashier Mode)"]
-        L2 --> M2["กดยืนยันปุ่ม 'Check-in' บนระบบ"]
-        M2 --> N2["ส่งมอบคีย์การ์ดและแจ้งข้อมูลการเข้าพักให้แขก"]
-        N2 --> E2
+    subgraph FRONT_DESK [" 🧑‍💼 2. พนักงานต้อนรับ (Front Desk Staff) "]
+        B2 --> J2{"มีข้อมูลการจองหรือไม่?"}
+        J2 -->|มีจองล่วงหน้า| K2["ค้นหารายการจอง (Booking Code)"]
+        J2 -->|ไม่มี / Walk-in| L2["เปิด Compact Room Matrix Grid เลือกห้องว่าง"]
+        L2 --> M2["กรอกข้อมูลผู้เข้าพัก (Walk-in Form)"]
+        K2 & M2 --> N2["ตรวจสอบเอกสารยืนยันตัวตน"]
+        N2 --> O2["รับชำระเงินและมัดจำกุญแจ (Cashier Mode)"]
+        O2 --> P2["กดยืนยันปุ่ม 'Check-in' บนระบบ"]
+        P2 --> Q2["มอบหมายคีย์การ์ดให้แขก"]
+        Q2 --> E2
+
+        G2 --> R2["เปิดหน้าจอ Cashier ตรวจมินิบาร์และหักลบมัดจำ"]
+        R2 --> S2["กดยืนยัน 'Check-out' บนระบบ"]
+        S2 --> H2
     end
 
-    subgraph SYSTEM [" ⚙️ ระบบ KEYSTAY (Reservation & Room Inventory Services) "]
-        M2 --> O2["POST /reservations/:id/check-in"]
-        O2 --> P2["บันทึก Check-in Timestamp ลง db_reservation"]
-        P2 --> Q2["Transactional Outbox: บันทึก Event 'ReservationCheckedIn'"]
-        Q2 --> R2["ส่ง Webhook ไปยัง Room Inventory Service"]
-        R2 --> S2["ปรับสถานะห้องพัก rooms.status เป็น 'occupied'"]
-        S2 --> T2["บันทึกประวัติการเปลี่ยนสถานะลง room_status_history"]
-        T2 --> U2(["สิ้นสุด: ห้องพักเปลี่ยนสถานะเป็น occupied เรียบร้อย"])
+    subgraph SYSTEM [" ⚙️ 3. ระบบหลังบ้าน (KEYSTAY Microservices & Event Bus) "]
+        P2 --> T2["POST /reservations/:id/check-in"]
+        T2 --> U2["Transactional Outbox: Event 'ReservationCheckedIn'"]
+        U2 --> V2["Room Service: ปรับ rooms.status = 'occupied'"]
+
+        S2 --> W2["POST /reservations/:id/check-out"]
+        W2 --> X2["Transactional Outbox: Event 'ReservationCheckedOut'"]
+        X2 --> Y2["Upstash QStash: Broadcast Event Fan-out 1:4"]
+        Y2 --> Z2["Room Service: ปรับ rooms.status = 'checked_out'"]
+        Y2 --> AA2["Housekeeping Service: Auto-create Cleaning Task (Urgent)"]
     end
+
+    subgraph HOUSEKEEPING [" 🧹 4. แผนกแม่บ้านและการคืนห้อง (Housekeeping & Re-open Room) "]
+        AA2 --> AB2["แม่บ้านรับแจ้งเตือน Task ทำความสะอาดห้องพัก"]
+        AB2 --> AC2["เข้าปฏิบัติงานทำความสะอาดห้องพัก (status = cleaning)"]
+        AC2 --> AD2["จัดเตรียมเตียง, สิ่งอำนวยความสะดวก และตรวจความเรียบร้อย"]
+        AD2 --> AE2["กดยืนยัน 'Complete Task' ผ่านแอปแม่บ้าน"]
+        AE2 --> AF2["PUT /housekeeping/tasks/:id/complete"]
+        AF2 --> AG2["Event: 'HousekeepingTaskCompleted' ส่งไป Room Service"]
+        AG2 --> AH2["Room Service: ปรับ rooms.status = 'available'"]
+        AH2 --> AI2(["🎯 สิ้นสุด Closed-Loop: ห้องพักพร้อมเปิดรับแขกใหม่ 100%"])
+    end
+
+    subgraph HIGHLIGHTS2 [" 💡 สถาปัตยกรรม & จุดเด่นสำคัญ (Key Highlights) "]
+        H2_BOX["• <b>Complete Closed-Loop Lifecycle:</b> วงจรห้องพักสมบูรณ์ตั้งแต่ ว่าง ➔ เข้าพัก (occupied) ➔ คืนห้อง (checked_out) ➔ ทำความสะอาด (cleaning) ➔ คืนห้องว่าง (available) พร้อมขายใหม่<br/>• <b>Walk-in & Compact Matrix:</b> หน้าจอเลือกห้องว่างและเปิดจองได้ในคลิกเดียว ลดเวลาทำงานของพนักงานต้อนรับ<br/>• <b>Event-Driven Automation:</b> เช็คเอาท์แล้วงานแม่บ้านเด้งขึ้นอัตโนมัติทันที ไม่ต้องโทรสั่งงานข้ามแผนก<br/>• <b>Strict State Transition:</b> ป้องกันสถานะชนกันด้วย Room State Machine และ Atomic db.batch()"]
+    end
+    style HIGHLIGHTS2 fill:#fffbeb,stroke:#f59e0b,stroke-width:1.5px,color:#92400e
+    style H2_BOX fill:#ffffff,stroke:#fde68a,color:#78350f,text-align:left
 ```
 
 ---
 
 ### 3. โฟลว์กระบวนการเช็คเอาท์ คิดเงิน และกระจายงานแม่บ้าน (Check-out, Cashier & 1:4 Fan-out Flow)
-> **เป้าหมาย:** แสดงขั้นตอนการคืนห้องพัก การคิดเงินมินิบาร์ การหักลบเงินมัดจำ การปิดบิล และการกระจาย Event แบบ Fan-out 1:4 ไปยัง 4 เซอร์วิสอัตโนมัติ
+> **เป้าหมาย:** แสดงขั้นตอนการคืนห้องพัก การคิดเงินมินิบาร์ การหักลบเงินมัดจำ การปิดบิล และการกระจาย Event แบบ Fan-out 1:4 ไปยัง 4 เซอร์วิสอัตโนมัติ พร้อมการทำความสะอาดคืนห้องว่าง
 
 ```mermaid
 flowchart TD
@@ -435,8 +466,18 @@ flowchart TD
             R3 --> U3["3. Billing: สรุปปิดยอดบิล ย้ายสถานะเป็น 'paid'"]
             R3 --> V3["4. Report Analytics: คำนวณรายได้และ Occupancy ประจำวัน"]
         end
-        S3 & T3 & U3 & V3 --> W3(["สิ้นสุด: ระบบกระจายงานสำเร็จครบทั้ง 4 ส่วนงาน"])
+        S3 & U3 & V3 --> W3(["ระบบประมวลผล 3 เซอร์วิสสำเร็จ"])
+        T3 --> HK_CLEAN["แม่บ้านเข้าทำความสะอาดห้องพัก (status = cleaning)"]
+        HK_CLEAN --> HK_DONE["PUT /housekeeping/tasks/:id/complete"]
+        HK_DONE --> RM_AVAIL["Room Inventory: ปรับ rooms.status = 'available'"]
+        RM_AVAIL --> W3_END(["สิ้นสุด: ห้องพักกลับมาพร้อมขายรอบใหม่"])
     end
+
+    subgraph HIGHLIGHTS3 [" 💡 สถาปัตยกรรม & จุดเด่นสำคัญ (Key Highlights) "]
+        H3_BOX["• <b>True 1:4 Fan-out Event Bus:</b> กด Check-out ครั้งเดียวกระจายงานขนานกัน 4 เซอร์วิส (Room, Housekeeping, Billing, Report) ด้วย Upstash QStash<br/>• <b>Cashier Auto-Settlement:</b> รวมค่าห้อง มินิบาร์ ค่าชำรุด คำนวณภาษี 7% และหักลบเงินมัดจำกุญแจอัตโนมัติในหน้าเดียว<br/>• <b>Decoupled Architecture:</b> หากเซอร์วิสใดเซอร์วิสหนึ่งล่าช้า ข้อความใน Queue จะไม่สูญหายและมี Auto-retry รับประกัน At-Least-Once Delivery<br/>• <b>Turnover Ready:</b> แม่บ้านรับงานทันทีและคืนสถานะห้องเป็น available หลังทำความสะอาดเสร็จ"]
+    end
+    style HIGHLIGHTS3 fill:#fffbeb,stroke:#f59e0b,stroke-width:1.5px,color:#92400e
+    style H3_BOX fill:#ffffff,stroke:#fde68a,color:#78350f,text-align:left
 ```
 
 ---
@@ -473,6 +514,12 @@ flowchart TD
         R4 --> S4["ช่างที่ถูกระงับการใช้งาน (is_active = 0) จะไม่แสดงในลิสต์โทรออก ป้องกันโทรผิด"]
         S4 --> T4(["สิ้นสุด: Master Data คู่ค้าถูกต้องและปลอดภัย 100%"])
     end
+
+    subgraph HIGHLIGHTS4 [" 💡 สถาปัตยกรรม & จุดเด่นสำคัญ (Key Highlights) "]
+        H4_BOX["• <b>Role-Based Access Control (RBAC):</b> เฉพาะสิทธิ์ Admin/Manager เท่านั้นที่เข้าถึงการจัดการ Master Data คู่ค้าได้<br/>• <b>Safe Soft-Delete Pattern:</b> ระงับการจ้างด้วย is_active = 0 เพื่อเก็บรักษาประวัติความสัมพันธ์ ไม่ลบแถวข้อมูลจริง<br/>• <b>Real-time Front Desk Sync:</b> ช่างที่ถูกระงับจะหายจากแถบ Quick Emergency Drawer ของพนักงานต้อนรับทันที ป้องกันโทรผิดพลาด"]
+    end
+    style HIGHLIGHTS4 fill:#fffbeb,stroke:#f59e0b,stroke-width:1.5px,color:#92400e
+    style H4_BOX fill:#ffffff,stroke:#fde68a,color:#78350f,text-align:left
 ```
 
 ---
@@ -1179,6 +1226,7 @@ sequenceDiagram
     DB_R-->>RMS: Updated
     RMS-->>GW: 200 OK
     GW-->>UI: ห้องพักกลับสู่สถานะ Available พร้อมขาย
+    Note over HK,OUT: 💡 จุดเด่น Flow #6: 1) Cloudflare R2 บันทึกหลักฐานรูปถ่าย  2) ล็อคห้อง maintenance ทันทีป้องกันเปิดขายซ้ำ  3) Quick Emergency Drawer โทรหาช่าง 24 ชม. ในคลิกเดียว  4) ตรวจรับงานก่อนคืนสถานะ available
 ```
 
 ---

@@ -491,6 +491,7 @@ sequenceDiagram
     DB_R-->>RMS: Updated
     RMS-->>GW: 200 OK
     GW-->>UI: ห้องพักกลับสู่สถานะ Available พร้อมขาย
+    Note over HK,OUT: 💡 จุดเด่น Flow 6: 1) Cloudflare R2 บันทึกหลักฐานรูปถ่าย  2) ล็อคห้อง maintenance ทันทีป้องกันเปิดขายซ้ำ  3) Quick Emergency Drawer โทรหาช่าง 24 ชม. ในคลิกเดียว  4) ตรวจรับงานก่อนคืนสถานะ available
 ```
 
 ---
