@@ -19,6 +19,7 @@
 | หาว่าไฟล์วางอยู่ที่ไหนใน repo | `docs/structure.md` |
 | ดู Service Architecture, Sequence Diagram, 105 APIs | `docs/systemdesign.md` |
 | ดูแผนแบ่งงาน, ใครรับผิดชอบ service ไหน, Phase | `docs/อ่านก่อนทำงาน.md` |
+| เตรียมนำเสนอความคืบหน้า CSI400 ต่อ อ.ท็อป (7 เกณฑ์) | `docs/PROGRESS_PRESENTATION_GUIDE.md` |
 | Setup เครื่อง, คำสั่ง dev/migrate/deploy | `docs/How to Install and Command.md` |
 
 **กฎเหล็กสำหรับ AI:**

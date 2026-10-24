@@ -14,6 +14,7 @@
 | เขียน service ฝั่ง backend (Cloudflare Workers + D1) | `docs/systemdesign.md` |
 | ดูแผนแบ่งงาน, Phase, ใครรับผิดชอบ service ไหน | `docs/อ่านก่อนทำงาน.md` |
 | ดู Test Cases, เกณฑ์การทดสอบ, UAT ฉบับละเอียด | `docs/uat.md` |
+| เตรียมนำเสนอความคืบหน้า CSI400 ต่อ อ.ท็อป (7 เกณฑ์) | `docs/PROGRESS_PRESENTATION_GUIDE.md` |
 | ติดตั้งครั้งแรกหรือ setup เครื่องใหม่ | `docs/How to Install and Command.md` |
 
 > `README.md` อยู่ที่ **root** ของ repo — ไม่ได้อยู่ใน `docs/`
