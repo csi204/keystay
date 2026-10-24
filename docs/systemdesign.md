@@ -13,9 +13,9 @@
 3. [สถาปัตยกรรมฐานข้อมูลแยกอิสระ (Database-per-Service Architecture)](#3)
 4. [ระบบส่งข้อความแบบกระจายและ Outbox Pattern (Upstash QStash & Outbox)](#4)
 5. [วงจรชีวิตสถานะห้องพัก (Room Lifecycle State Machine)](#5)
-6. [แผนภาพลำดับการทำงานหลัก 5 กระบวนการ (Core Sequence Diagrams)](#6)
+6. [แผนภาพลำดับการทำงานหลัก 6 กระบวนการ (Core Sequence Diagrams)](#6)
 7. [ตารางความสัมพันธ์ Event Bus ข้ามเซอร์วิส (Cross-Service Event Mapping)](#7)
-8. [รายการ API ทั้ง 100 Endpoints จำแนกรายเซอร์วิส](#8)
+8. [รายการ API ทั้ง 105 Endpoints จำแนกรายเซอร์วิส](#8)
 9. [ความทนทาน ความปลอดภัย และความสอดคล้องของข้อมูล](#9)
 
 ---
@@ -291,7 +291,7 @@ export async function runNightAudit(env: Env) {
 
 ---
 
-## 6. แผนภาพลำดับการทำงานหลัก 5 กระบวนการ (Core Sequence Diagrams)
+## 6. แผนภาพลำดับการทำงานหลัก 6 กระบวนการ (Core Sequence Diagrams)
 
 ### 6.1 Flow 1: การจองห้องพักล่วงหน้า (Advance Booking)
 
@@ -422,6 +422,75 @@ sequenceDiagram
     BL-)QSTASH: POST /v2/topics/hotel.billing.paid
     QSTASH-)RP: Webhook POST /webhooks/bill-paid
     RP->>RP: บันทึกรายได้ลง revenue_records & monthly_summary
+```
+
+### 6.6 Flow 6: การแจ้งซ่อมห้องพักและประสานงานช่าง Outsource ฉุกเฉิน (Room Issue & Emergency Outsource Maintenance)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor HK as แม่บ้าน (Housekeeping)
+    actor FD as พนักงานต้อนรับ (Front Desk)
+    participant UI as Web App (Drawer / Portal)
+    participant GW as API Gateway
+    participant HKS as Housekeeping Service
+    participant DB_H as D1: db_housekeeping
+    participant R2 as Cloudflare R2 (Photos)
+    participant RMS as Room Inventory Service
+    participant DB_R as D1: db_room
+    actor OUT as ช่าง Outsource (คู่ค้าภายนอก)
+
+    %% 1. แจ้งปัญหาและถ่ายรูป
+    HK->>UI: พบอุปกรณ์ชำรุด (แอร์เสีย, น้ำรั่ว)
+    HK->>UI: ถ่ายรูปหน้างานและกรอกฟอร์มแจ้งซ่อม
+    UI->>GW: POST /housekeeping/issues/upload-photo (Multipart)
+    GW->>R2: บันทึกรูปถ่ายลง Bucket 'keystay'
+    R2-->>GW: photo_r2_key (URL)
+    GW-->>UI: 200 OK {photo_r2_key}
+
+    UI->>GW: POST /housekeeping/issues {room_id, issue_type, description, photo_r2_key, severity}
+    GW->>HKS: Route to Housekeeping Service
+    HKS->>DB_H: INSERT INTO room_issues (status='open')
+    DB_H-->>HKS: 201 Created {issue_id}
+    HKS-->>GW: 201 Created
+    GW-->>UI: แสดง Alert แจ้งเตือนห้องชำรุดบนแดชบอร์ด
+
+    %% 2. ปรับสถานะห้องเป็น maintenance
+    UI->>GW: PUT /rooms/:id/maintenance {is_maintenance: true, reason: 'แอร์เสีย'}
+    GW->>RMS: Route to Room Inventory Service
+    RMS->>DB_R: UPDATE rooms SET status='maintenance' WHERE id=:id
+    DB_R-->>RMS: Updated
+    RMS-->>GW: 200 OK (ห้องถูกล็อค ห้ามเปิดขาย)
+
+    %% 3. Front Desk / แม่บ้านเปิด Quick Emergency Drawer หาช่าง
+    FD->>UI: เปิด Quick Emergency Contact Drawer
+    UI->>GW: GET /housekeeping/outsource-contacts?category=air_conditioning&is_emergency=1
+    GW->>HKS: Query Outsource Contacts
+    HKS->>DB_H: SELECT * FROM outsource_contacts WHERE category='air_conditioning' AND is_emergency=1 AND is_active=1
+    DB_H-->>HKS: Return vendor records
+    HKS-->>GW: 200 OK [vendors list]
+    GW-->>UI: แสดงรายชื่อช่างด่วน 24 ชม. พร้อมปุ่มโทรและ LINE ID
+
+    %% 4. ติดต่อช่าง
+    FD->>OUT: Click-to-Call (tel:0899998888) หรือ Copy LINE ID ส่งรูป R2 ให้ช่าง
+    OUT-->>FD: รับงาน ยืนยันเข้าหน้างานภายใน 30 นาที
+
+    %% 5. ซ่อมเสร็จและตรวจรับ
+    Note over OUT,HK: ช่างเข้าปฏิบัติงานซ่อมหน้างานจนเสร็จสมบูรณ์
+    HK->>UI: เข้าตรวจรับงานซ่อม (Pass)
+    HK->>UI: กดยืนยันปิดใบงาน
+    UI->>GW: PUT /housekeeping/issues/:id/resolve {resolution_notes: 'ซ่อมแซมและตรวจรับเรียบร้อย'}
+    GW->>HKS: Update Issue Status
+    HKS->>DB_H: UPDATE room_issues SET status='resolved', resolved_at=NOW()
+    HKS-->>GW: 200 OK
+
+    %% 6. คืนสถานะห้องพร้อมขาย
+    UI->>GW: PUT /rooms/:id/maintenance {is_maintenance: false}
+    GW->>RMS: Update Room Status
+    RMS->>DB_R: UPDATE rooms SET status='available' WHERE id=:id
+    DB_R-->>RMS: Updated
+    RMS-->>GW: 200 OK
+    GW-->>UI: ห้องพักกลับสู่สถานะ Available พร้อมขาย
 ```
 
 ---
