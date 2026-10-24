@@ -365,63 +365,44 @@ flowchart TD
 
 ---
 
-### 2. โฟลว์กระบวนการเช็คอิน เข้าพัก เช็คเอาท์ และหมุนเวียนห้องพัก (Guest Stay Lifecycle & Room Turnover Closed-Loop Flow)
-> **เป้าหมาย:** แสดงวงจรชีวิตการเข้าพักของแขกแบบ Closed-Loop ครบถ้วนตั้งแต่การจอง/Walk-in, การเช็คอิน, การเข้าพัก, การเช็คเอาท์คืนห้อง ไปจนถึงแม่บ้านทำความสะอาดเสร็จ และระบบคืนสถานะห้องเป็นพร้อมขาย (`available`) เปิดรับแขกรอบใหม่
+### 2. โฟลว์กระบวนการเช็คอินและการรับ Walk-in (Front Desk Check-in & Walk-in Integration Flow)
+> **เป้าหมาย:** แสดงขั้นตอนการเช็คอินของแขกที่มีการจองล่วงหน้าเปรียบเทียบกับ Walk-in การตรวจเอกสาร การเก็บมัดจำ และการปรับสถานะห้องพักเป็น `occupied` แบบเรียลไทม์ พร้อมส่งต่อเข้าสู่ช่วงการเข้าพัก (Stay Period)
 
 ```mermaid
 flowchart TD
     subgraph GUEST [" 🧳 1. แขกผู้เข้าพัก (Guest) "]
-        A2(["เริ่มต้น: แขกมาถึงเคาน์เตอร์"]) --> B2["แจ้งชื่อผู้จอง หรือ ขอเปิดห้องพักแบบ Walk-in"]
+        A2(["เริ่มต้น: แขกมาถึงเคาน์เตอร์โรงแรม"]) --> B2["แจ้งชื่อผู้จอง หรือ ขอเปิดห้องพักแบบ Walk-in"]
         B2 --> C2["แสดงบัตรประชาชน / พาสปอร์ต"]
-        C2 --> D2["ชำระเงินค่าห้อง พร้อมวางมัดจำกุญแจ"]
-        D2 --> E2["รับคีย์การ์ดและเข้าพัก (Occupied)"]
-        E2 --> F2["พักผ่อนตามระยะเวลาการจอง"]
-        F2 --> G2["ครบกำหนด: นำคีย์การ์ดมาคืนที่เคาน์เตอร์เพื่อเช็คเอาท์"]
-        G2 --> H2["รับเงินมัดจำคืน / ชำระค่ามินิบาร์ (ถ้ามี)"]
-        H2 --> I2(["แขกเดินทางออกจากโรงแรม"])
+        C2 --> D2["ชำระค่าห้องส่วนที่เหลือ (ถ้ามี) พร้อมวางเงินมัดจำกุญแจ"]
+        D2 --> E2["รับคีย์การ์ดและเข้าพักในห้องพัก"]
+        E2 --> F2(["🎯 เช็คอินสำเร็จ: แขกเข้าพักผ่อน (Status = occupied)"])
     end
 
     subgraph FRONT_DESK [" 🧑‍💼 2. พนักงานต้อนรับ (Front Desk Staff) "]
-        B2 --> J2{"มีข้อมูลการจองหรือไม่?"}
-        J2 -->|มีจองล่วงหน้า| K2["ค้นหารายการจอง (Booking Code)"]
-        J2 -->|ไม่มี / Walk-in| L2["เปิด Compact Room Matrix Grid เลือกห้องว่าง"]
-        L2 --> M2["กรอกข้อมูลผู้เข้าพัก (Walk-in Form)"]
-        K2 & M2 --> N2["ตรวจสอบเอกสารยืนยันตัวตน"]
-        N2 --> O2["รับชำระเงินและมัดจำกุญแจ (Cashier Mode)"]
-        O2 --> P2["กดยืนยันปุ่ม 'Check-in' บนระบบ"]
-        P2 --> Q2["มอบหมายคีย์การ์ดให้แขก"]
-        Q2 --> E2
-
-        G2 --> R2["เปิดหน้าจอ Cashier ตรวจมินิบาร์และหักลบมัดจำ"]
-        R2 --> S2["กดยืนยัน 'Check-out' บนระบบ"]
-        S2 --> H2
+        B2 --> G2{"มีข้อมูลการจองล่วงหน้าหรือไม่?"}
+        G2 -->|มีจองล่วงหน้า| H2["ค้นหารายการจองจากชื่อ หรือ Booking Code"]
+        G2 -->|ไม่มี / Walk-in| I2["ตรวจสอบผังห้องว่างบน Compact Room Matrix Grid"]
+        I2 --> J2["เลือกห้องพักที่ว่าง (สถานะ available)"]
+        J2 --> K2["กรอกข้อมูลผู้เข้าพัก (Walk-in Booking Form)"]
+        H2 & K2 --> L2["ตรวจสอบความถูกต้องของเอกสารยืนยันตัวตน"]
+        L2 --> M2["รับเงินค่าห้องและเงินมัดจำ (Cashier Mode)"]
+        M2 --> N2["กดยืนยันปุ่ม 'Check-in' บนระบบ"]
+        N2 --> O2["ส่งมอบคีย์การ์ดและแจ้งข้อมูลการเข้าพักให้แขก"]
+        O2 --> E2
     end
 
     subgraph SYSTEM [" ⚙️ 3. ระบบหลังบ้าน (KEYSTAY Microservices & Event Bus) "]
-        P2 --> T2["POST /reservations/:id/check-in"]
-        T2 --> U2["Transactional Outbox: Event 'ReservationCheckedIn'"]
-        U2 --> V2["Room Service: ปรับ rooms.status = 'occupied'"]
-
-        S2 --> W2["POST /reservations/:id/check-out"]
-        W2 --> X2["Transactional Outbox: Event 'ReservationCheckedOut'"]
-        X2 --> Y2["Upstash QStash: Broadcast Event Fan-out 1:4"]
-        Y2 --> Z2["Room Service: ปรับ rooms.status = 'checked_out'"]
-        Y2 --> AA2["Housekeeping Service: Auto-create Cleaning Task (Urgent)"]
-    end
-
-    subgraph HOUSEKEEPING [" 🧹 4. แผนกแม่บ้านและการคืนห้อง (Housekeeping & Re-open Room) "]
-        AA2 --> AB2["แม่บ้านรับแจ้งเตือน Task ทำความสะอาดห้องพัก"]
-        AB2 --> AC2["เข้าปฏิบัติงานทำความสะอาดห้องพัก (status = cleaning)"]
-        AC2 --> AD2["จัดเตรียมเตียง, สิ่งอำนวยความสะดวก และตรวจความเรียบร้อย"]
-        AD2 --> AE2["กดยืนยัน 'Complete Task' ผ่านแอปแม่บ้าน"]
-        AE2 --> AF2["PUT /housekeeping/tasks/:id/complete"]
-        AF2 --> AG2["Event: 'HousekeepingTaskCompleted' ส่งไป Room Service"]
-        AG2 --> AH2["Room Service: ปรับ rooms.status = 'available'"]
-        AH2 --> AI2(["🎯 สิ้นสุด Closed-Loop: ห้องพักพร้อมเปิดรับแขกใหม่ 100%"])
+        N2 --> P2["POST /reservations/:id/check-in"]
+        P2 --> Q2["db.batch(): บันทึก actual_check_in และ outbox_events"]
+        Q2 --> R2["Transactional Outbox: Event 'ReservationCheckedIn'"]
+        R2 --> S2["Webhook ส่งต่อไปยัง Room Inventory Service"]
+        S2 --> T2["Room Inventory: ปรับ rooms.status = 'occupied'"]
+        T2 --> U2["บันทึกประวัติลง room_status_history"]
+        U2 --> V2(["📌 ส่งต่อเข้าสู่ช่วงเวลาการพักผ่อน (Stay Period)<br/><i>(เมื่อครบกำหนด จะเข้าสู่ Flow การเช็คเอาท์และหมุนเวียนห้องพักใน AC 3)</i>"])
     end
 
     subgraph HIGHLIGHTS2 [" 💡 สถาปัตยกรรม & จุดเด่นสำคัญ (Key Highlights) "]
-        H2_BOX["• <b>Complete Closed-Loop Lifecycle:</b> วงจรห้องพักสมบูรณ์ตั้งแต่ ว่าง ➔ เข้าพัก (occupied) ➔ คืนห้อง (checked_out) ➔ ทำความสะอาด (cleaning) ➔ คืนห้องว่าง (available) พร้อมขายใหม่<br/>• <b>Walk-in & Compact Matrix:</b> หน้าจอเลือกห้องว่างและเปิดจองได้ในคลิกเดียว ลดเวลาทำงานของพนักงานต้อนรับ<br/>• <b>Event-Driven Automation:</b> เช็คเอาท์แล้วงานแม่บ้านเด้งขึ้นอัตโนมัติทันที ไม่ต้องโทรสั่งงานข้ามแผนก<br/>• <b>Strict State Transition:</b> ป้องกันสถานะชนกันด้วย Room State Machine และ Atomic db.batch()"]
+        H2_BOX["• <b>Walk-in & Compact Matrix Grid:</b> หน้าจอเลือกห้องว่างและเปิดจอง Walk-in ได้ในคลิกเดียว ลดเวลาทำงานหน้าเคาน์เตอร์<br/>• <b>Atomic Check-in Transaction:</b> บันทึกเวลาเช็คอิน, ประวัติการเข้าพัก, และ Transactional Outbox ภายใต้ db.batch() ก้อนเดียว<br/>• <b>Decoupled State Sync:</b> Reservation Service ส่งต่อ Event ผ่าน Webhook ไปยัง Room Service เพื่อปรับ rooms.status = 'occupied'<br/>• <b>Clear Process Boundary:</b> สิ้นสุดที่สถานะ occupied (แขกเข้าพัก) โดยวงจรการคืนห้อง คิดเงิน และทำความสะอาดจะส่งต่อเข้าสู่ AC 3"]
     end
     style HIGHLIGHTS2 fill:#fffbeb,stroke:#f59e0b,stroke-width:1.5px,color:#92400e
     style H2_BOX fill:#ffffff,stroke:#fde68a,color:#78350f,text-align:left
@@ -429,8 +410,8 @@ flowchart TD
 
 ---
 
-### 3. โฟลว์กระบวนการเช็คเอาท์ คิดเงิน และกระจายงานแม่บ้าน (Check-out, Cashier & 1:4 Fan-out Flow)
-> **เป้าหมาย:** แสดงขั้นตอนการคืนห้องพัก การคิดเงินมินิบาร์ การหักลบเงินมัดจำ การปิดบิล และการกระจาย Event แบบ Fan-out 1:4 ไปยัง 4 เซอร์วิสอัตโนมัติ พร้อมการทำความสะอาดคืนห้องว่าง
+### 3. โฟลว์กระบวนการเช็คเอาท์ คิดเงิน และหมุนเวียนห้องพัก (Check-out, Cashier & Room Turnover Flow)
+> **เป้าหมาย:** แสดงขั้นตอนการคืนห้องพัก การคิดเงินมินิบาร์ การหักลบเงินมัดจำ การปิดบิล การกระจาย Event แบบ Fan-out 1:4 ไปยัง 4 เซอร์วิสอัตโนมัติ และการส่งต่อให้แม่บ้านทำความสะอาดจนคืนสถานะห้องเป็นพร้อมขาย (`available`) รอบใหม่ (Complete Closed-Loop)
 
 ```mermaid
 flowchart TD
