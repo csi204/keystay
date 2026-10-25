@@ -123,6 +123,10 @@ export const OutsourceCategorySchema = z.enum([
   'general_maintenance',
   'locksmith',
   'pest_control',
+  'gardening',
+  'laundry',
+  'transport',
+  'cleaning',
   'other',
 ]);
 export type OutsourceCategory = z.infer<typeof OutsourceCategorySchema>;

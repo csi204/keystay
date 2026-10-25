@@ -137,7 +137,7 @@ CREATE INDEX IF NOT EXISTS idx_outbox_created ON outbox_events(created_at);
 CREATE TABLE IF NOT EXISTS outsource_contacts (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,                         -- ชื่อช่าง หรือ ชื่อบริษัท/ร้าน (เช่น ช่างแอร์สมเกียรติ, บจก.สยามเซอร์วิส)
-    category TEXT NOT NULL,                     -- ประเภทงานช่าง/บริการ (air_conditioning, plumbing, electrical, carpentry, general_maintenance, locksmith, pest_control, other)
+    category TEXT NOT NULL,                     -- ประเภทงานช่าง/บริการ (air_conditioning, plumbing, electrical, carpentry, general_maintenance, locksmith, pest_control, gardening, laundry, transport, cleaning, other)
     service_type TEXT NOT NULL,                 -- คำอธิบายบริการสั้นๆ (เช่น ล้าง/ซ่อมแอร์, ซ่อมท่อประปา-สุขภัณฑ์, ซ่อมไฟฟ้า)
     phone_primary TEXT NOT NULL,                -- เบอร์โทรหลัก (คลิกโทรออกได้ tel:...)
     phone_secondary TEXT,                       -- เบอร์โทรสำรอง

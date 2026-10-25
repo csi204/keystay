@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS outbox_events (
 CREATE TABLE IF NOT EXISTS outsource_contacts (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
-    category TEXT NOT NULL CHECK(category IN ('air_conditioning', 'plumbing', 'electrical', 'carpentry', 'general_maintenance', 'locksmith', 'pest_control', 'other')),
+    category TEXT NOT NULL CHECK(category IN ('air_conditioning', 'plumbing', 'electrical', 'carpentry', 'general_maintenance', 'locksmith', 'pest_control', 'gardening', 'laundry', 'transport', 'cleaning', 'other')),
     service_type TEXT NOT NULL,
     phone_primary TEXT NOT NULL,
     phone_secondary TEXT,

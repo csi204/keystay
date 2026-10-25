@@ -308,11 +308,11 @@ FROM reservations WHERE id = 'res-walkin-demo-001';
 #### 🛠️ รายการ APIs ที่สาธิตใน Flow เช็คเอาท์และการเงิน
 1. **`POST /api/v1/reservations/:id/check-out` (Endpoint #37):**
    - ตรวจสอบสถานะว่าต้องเป็น `checked_in` เท่านั้น และยิง Event Fan-out 1:4
-2. **`POST /api/v1/bills/:id/items` (Endpoint #80):**
+2. **`POST /api/v1/bills/:id/items` (Endpoint #75):**
    - เพิ่มรายการค่าใช้จ่ายเสริม เช่น ค่ามินิบาร์, ค่าเครื่องดื่ม, ค่าผ้าเช็ดตัวชำรุด
-3. **`POST /api/v1/bills/:id/pay` (Endpoint #82):**
+3. **`POST /api/v1/bills/:id/pay` (Endpoint #77):**
    - รับเงิน, หักเงินมัดจำ (`depositDeducted`), คำนวณยอดสุทธิ และเปลี่ยนสถานะบิลเป็น `paid`
-4. **`GET /api/v1/bills/:id/receipt` (Endpoint #83):**
+4. **`GET /api/v1/bills/:id/receipt` (Endpoint #78):**
    - ออกใบเสร็จรับเงินทางการพร้อมแจกแจง VAT 7% และรายละเอียดรายการย่อย
 
 #### 🗄️ หลักฐานผลการบันทึกข้อมูลจริงใน Database (D1 Billing Evidence)
@@ -431,7 +431,7 @@ WHERE b.id = 'bill-demo-001';
                         │
                         ▼
 [ พนักงานกดเปิด Quick Emergency Outsource Contact บนหน้าจอ ]
-  GET /housekeeping/outsource-contacts?is_emergency=1 (Endpoint #71)
+  GET /housekeeping/outsource-contacts?is_emergency=1 (Endpoint #101)
                         │
                         ▼
 ┌────────────────────────────────────────────────────────────────────────┐
@@ -448,37 +448,49 @@ WHERE b.id = 'bill-demo-001';
 
 #### 🛡️ การจัดการสิทธิ์ 2 ระดับในระบบช่าง Outsource (Dual-Tier Security Model)
 - **ระดับ Admin (Full CRUD):**
-  - มีสิทธิ์สร้าง, แก้ไข, ระงับคู่ค้า, บันทึกอัตราค่าบริการ และตรวจสัญญาจ้าง ผ่าน APIs #73, #74, #75
+  - มีสิทธิ์สร้าง, แก้ไข, ระงับคู่ค้า, บันทึกอัตราค่าบริการ และตรวจสัญญาจ้าง ผ่าน APIs #103, #104, #105
 - **ระดับ Front Desk & Housekeeping (Read-Only Operational View):**
-  - อนุญาตให้ **ดูเบอร์โทรศัพท์, LINE ID และประเภทงานซ่อมเท่านั้น** เพื่อโทรประสานงานหน้างานด่วน
+  - อนุญาตให้ **ดูเบอร์โทรศัพท์, LINE ID และประเภทงานซ่อมเท่านั้น** เพื่อโทรประสานงานหน้างานด่วน (APIs #101, #102)
   - **ถูกบล็อกไม่ให้แก้ไขหรือลบข้อมูลคู่ค้า** หากพยายามยิงคำสั่ง PUT/DELETE จะได้ผลลัพธ์ **`403 Forbidden`**
 
 #### 🗄️ หลักฐานผลการบันทึกข้อมูลคู่ค้า Outsource ใน Database (D1 Schema & Records)
+> **💡 ระบบจัดหมวดหมู่ 12 ป้าย (12 Categories):**  
+> ครอบคลุมงานบริการโรงแรมทั้ง 12 ด้านอย่างแท้จริง: `air_conditioning`, `plumbing`, `electrical`, `carpentry`, `general_maintenance`, `locksmith`, `pest_control`, `gardening` (คนสวน), `laundry` (ซักรีด), `transport` (รถรับส่ง), `cleaning` (ซักพรม/ผ้าม่าน), `other`
+
 *ผลการ Query ตาราง `outsource_contacts` ใน D1:*
 ```sql
 SELECT id, name, category, service_type, phone_primary, line_id, is_emergency 
-FROM outsource_contacts WHERE is_emergency = 1;
+FROM outsource_contacts;
 ```
-*Output ที่ได้จริงจาก D1:*
+*Output ที่ได้จริงจาก D1 (รวมช่างฉุกเฉินและลุงชาญคนสวนในหมวด `gardening`):*
 ```json
 [
   {
-    "id": "outsource-001",
-    "name": "บริษัท สยามแอร์เซอร์วิส จำกัด",
+    "id": "out-001",
+    "name": "บจก. สยามแอร์เซอร์วิส",
     "category": "air_conditioning",
-    "service_type": "ซ่อมและล้างเครื่องปรับอากาศฉุกเฉิน",
-    "phone_primary": "081-234-5678",
-    "line_id": "@siamair24hr",
+    "service_type": "ซ่อม/ล้างแอร์ห้องพัก 24 ชม.",
+    "phone_primary": "089-999-8888",
+    "line_id": "@siamair24",
     "is_emergency": 1
   },
   {
-    "id": "outsource-002",
-    "name": "ช่างสมบูรณ์ การช่าง 24 ชม.",
+    "id": "out-002",
+    "name": "ช่างต้อย ท่อตันสุขภัณฑ์ด่วน",
     "category": "plumbing",
-    "service_type": "ท่อประปารั่ว ปั๊มน้ำขัดข้อง",
-    "phone_primary": "089-876-5432",
-    "line_id": "somboon_fix",
+    "service_type": "แก้ท่อตัน ส้วมตัน น้ำรั่วซึม",
+    "phone_primary": "081-222-3333",
+    "line_id": "toy_pipe_express",
     "is_emergency": 1
+  },
+  {
+    "id": "out-004",
+    "name": "ลุงชาญ คนสวน & ดูแลภูมิทัศน์",
+    "category": "gardening",
+    "service_type": "ตัดแต่งต้นไม้ ปลูกหญ้า ดูแลสวนรอบอาคาร",
+    "phone_primary": "087-777-8888",
+    "line_id": null,
+    "is_emergency": 0
   }
 ]
 ```

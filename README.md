@@ -1313,45 +1313,47 @@ sequenceDiagram
 68. `PUT /housekeeping/staff/:id/zone` — กำหนดโซนหรือชั้นที่รับผิดชอบ
 69. `POST /housekeeping/tasks/:id/report-issue` — แจ้งปัญหา/สิ่งของชำรุด
 70. `GET /housekeeping/schedule` — ตารางกะการทำงานของแม่บ้าน
-71. `GET /housekeeping/outsource-contacts` — ดึงรายชื่อผู้ติดต่อคู่ค้า/ช่าง Outsource ทั้งหมด (รองรับฟิลเตอร์ category, is_emergency)
-72. `GET /housekeeping/outsource-contacts/:id` — ดึงข้อมูลผู้ติดต่อ Outsource รายบุคคล/บริษัท
-73. `POST /housekeeping/outsource-contacts` — เพิ่มข้อมูลคู่ค้า/ช่าง Outsource ใหม่ (เฉพาะ Admin)
-74. `PUT /housekeeping/outsource-contacts/:id` — แก้ไขข้อมูลช่างและเงื่อนไขการติดต่อ (เฉพาะ Admin)
-75. `DELETE /housekeeping/outsource-contacts/:id` — ระงับการใช้งานช่าง/คู่ค้า (Soft Delete: `is_active = 0`, เฉพาะ Admin)
 
 ### 🧾 Service #5: Billing Service (16 APIs)
-76. `GET /bills` — รายการบิลทั้งหมด
-77. `GET /bills/:id` — ข้อมูลบิลรายใบ
-78. `POST /bills` — สร้างบิลใหม่
-79. `PUT /bills/:id` — แก้ไขข้อมูลบิล
-80. `POST /bills/:id/items` — เพิ่มรายการค่าใช้จ่ายเสริม (มินิบาร์/ซักรีด)
-81. `DELETE /bills/:id/items/:itemId` — ลบรายการค่าใช้จ่าย
-82. `POST /bills/:id/pay` — บันทึกการชำระเงิน
-83. `GET /bills/:id/receipt` — พิมพ์/ดูใบเสร็จรับเงิน
-84. `GET /bills/by-reservation/:reservationId` — ค้นหาบิลจากการจอง
-85. `POST /bills/:id/refund` — ดำเนินการคืนเงิน
-86. `POST /bills/:id/discount` — เพิ่มส่วนลดท้ายบิล
-87. `GET /payment-methods` — ช่องทางการชำระเงินที่เปิดรับ
-88. `POST /payment-methods` — เพิ่มช่องทางการชำระเงิน
-89. `GET /invoices` — รายการใบแจ้งหนี้ทั้งหมด
-90. `GET /invoices/:id` — ดูใบแจ้งหนี้รายใบ
-91. `POST /invoices/:id/send-email` — ส่งใบแจ้งหนี้ให้แขกทางอีเมล
+71. `GET /bills` — รายการบิลทั้งหมด
+72. `GET /bills/:id` — ข้อมูลบิลรายใบ
+73. `POST /bills` — สร้างบิลใหม่
+74. `PUT /bills/:id` — แก้ไขข้อมูลบิล
+75. `POST /bills/:id/items` — เพิ่มรายการค่าใช้จ่ายเสริม (มินิบาร์/ซักรีด)
+76. `DELETE /bills/:id/items/:itemId` — ลบรายการค่าใช้จ่าย
+77. `POST /bills/:id/pay` — บันทึกการชำระเงิน
+78. `GET /bills/:id/receipt` — พิมพ์/ดูใบเสร็จรับเงิน
+79. `GET /bills/by-reservation/:reservationId` — ค้นหาบิลจากการจอง
+80. `POST /bills/:id/refund` — ดำเนินการคืนเงิน
+81. `POST /bills/:id/discount` — เพิ่มส่วนลดท้ายบิล
+82. `GET /payment-methods` — ช่องทางการชำระเงินที่เปิดรับ
+83. `POST /payment-methods` — เพิ่มช่องทางการชำระเงิน
+84. `GET /invoices` — รายการใบแจ้งหนี้ทั้งหมด
+85. `GET /invoices/:id` — ดูใบแจ้งหนี้รายใบ
+86. `POST /invoices/:id/send-email` — ส่งใบแจ้งหนี้ให้แขกทางอีเมล
 
 ### 📊 Service #6: Report/Analytics Service (14 APIs)
-92. `GET /reports/occupancy-rate` — สถิติอัตราการเข้าพัก (Occupancy Rate)
-93. `GET /reports/revenue-daily` — รายงานสรุปรายได้รายวัน
-94. `GET /reports/revenue-monthly` — รายงานสรุปรายได้รายเดือน
-95. `GET /reports/revenue-by-room-type` — รายงานรายได้แยกตามประเภทห้อง
-96. `GET /reports/top-rooms` — รายการห้องพักที่ทำรายได้สูงสุด
-97. `GET /reports/avg-stay-duration` — จำนวนคืนที่เข้าพักเฉลี่ย
-98. `GET /reports/cancellation-rate` — อัตราการยกเลิกการจอง
-99. `GET /reports/housekeeping-performance` — รายงานประสิทธิภาพงานแม่บ้าน
-100. `GET /reports/checkin-checkout-stats` — สถิติจำนวนเช็คอินและเช็คเอาท์
-101. `GET /reports/guest-demographics` — สถิติสัญชาติและกลุ่มผู้เข้าพัก
-102. `GET /dashboard/summary` — ข้อมูลสรุปภาพรวมสำหรับ Dashboard
-103. `GET /reports/export/pdf` — ส่งออกรายงานเป็นไฟล์ PDF
-104. `GET /reports/export/csv` — ส่งออกรายงานเป็นไฟล์ CSV
-105. `GET /reports/custom` — ดึงข้อมูลรายงานแบบกำหนดช่วงเวลาเอง
+87. `GET /reports/occupancy-rate` — สถิติอัตราการเข้าพัก (Occupancy Rate)
+88. `GET /reports/revenue-daily` — รายงานสรุปรายได้รายวัน
+89. `GET /reports/revenue-monthly` — รายงานสรุปรายได้รายเดือน
+90. `GET /reports/revenue-by-room-type` — รายงานรายได้แยกตามประเภทห้อง
+91. `GET /reports/top-rooms` — รายการห้องพักที่ทำรายได้สูงสุด
+92. `GET /reports/avg-stay-duration` — จำนวนคืนที่เข้าพักเฉลี่ย
+93. `GET /reports/cancellation-rate` — อัตราการยกเลิกการจอง
+94. `GET /reports/housekeeping-performance` — รายงานประสิทธิภาพงานแม่บ้าน
+95. `GET /reports/checkin-checkout-stats` — สถิติจำนวนเช็คอินและเช็คเอาท์
+96. `GET /reports/guest-demographics` — สถิติสัญชาติและกลุ่มผู้เข้าพัก
+97. `GET /dashboard/summary` — ข้อมูลสรุปภาพรวมสำหรับ Dashboard
+98. `GET /reports/export/pdf` — ส่งออกรายงานเป็นไฟล์ PDF
+99. `GET /reports/export/csv` — ส่งออกรายงานเป็นไฟล์ CSV
+100. `GET /reports/custom` — ดึงข้อมูลรายงานแบบกำหนดช่วงเวลาเอง
+
+### 🛠️ Outsource Contacts Management (5 APIs) — สังกัด Service #4 Housekeeping
+101. `GET /housekeeping/outsource-contacts` — ดึงรายชื่อผู้ติดต่อคู่ค้า/ช่าง Outsource ทั้งหมด (รองรับฟิลเตอร์ category, is_emergency)
+102. `GET /housekeeping/outsource-contacts/:id` — ดึงข้อมูลผู้ติดต่อ Outsource รายบุคคล/บริษัท
+103. `POST /housekeeping/outsource-contacts` — เพิ่มข้อมูลคู่ค้า/ช่าง Outsource ใหม่ (เฉพาะ Admin)
+104. `PUT /housekeeping/outsource-contacts/:id` — แก้ไขข้อมูลช่างและเงื่อนไขการติดต่อ (เฉพาะ Admin)
+105. `DELETE /housekeeping/outsource-contacts/:id` — ระงับการใช้งานช่าง/คู่ค้า (Soft Delete: `is_active = 0`, เฉพาะ Admin)
 
 ---
 
