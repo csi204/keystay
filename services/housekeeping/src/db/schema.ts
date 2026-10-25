@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
 
 // 1. Housekeeping Staff Table (พนักงานแม่บ้าน)
 export const housekeepingStaff = sqliteTable('housekeeping_staff', {
@@ -99,6 +99,42 @@ export const outboxEvents = sqliteTable('outbox_events', {
   createdAt: text('created_at').notNull(),
 });
 
+// 6. Outsource Contacts Table (สมุดรายชื่อคู่ค้า/ช่าง/คนสวนภายนอก)
+export const outsourceContacts = sqliteTable('outsource_contacts', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  category: text('category', {
+    enum: [
+      'air_conditioning',
+      'plumbing',
+      'electrical',
+      'carpentry',
+      'general_maintenance',
+      'locksmith',
+      'pest_control',
+      'gardening',
+      'laundry',
+      'transport',
+      'cleaning',
+      'other',
+    ],
+  }).notNull(),
+  serviceType: text('service_type').notNull(),
+  phonePrimary: text('phone_primary').notNull(),
+  phoneSecondary: text('phone_secondary'),
+  lineId: text('line_id'),
+  isEmergency: integer('is_emergency').notNull().default(0),
+  availableHours: text('available_hours').default('24 ชั่วโมง'),
+  priceRateNote: text('price_rate_note'),
+  rating: real('rating').default(5.0),
+  address: text('address'),
+  notes: text('notes'),
+  isActive: integer('is_active').notNull().default(1),
+  createdBy: text('created_by'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
+
 export type HousekeepingStaff = typeof housekeepingStaff.$inferSelect;
 export type NewHousekeepingStaff = typeof housekeepingStaff.$inferInsert;
 
@@ -113,3 +149,6 @@ export type NewHousekeepingSchedule = typeof housekeepingSchedule.$inferInsert;
 
 export type OutboxEvent = typeof outboxEvents.$inferSelect;
 export type NewOutboxEvent = typeof outboxEvents.$inferInsert;
+
+export type OutsourceContact = typeof outsourceContacts.$inferSelect;
+export type NewOutsourceContact = typeof outsourceContacts.$inferInsert;

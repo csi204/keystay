@@ -48,7 +48,7 @@ apps/web/src/
 1. **Front Desk & Cashier Portal:**
    - `Card` สำหรับการ์ดห้องพักใน Room Matrix
    - `Badge` (variant: `available`, `reserved`, `occupied`, ฯลฯ) สำหรับบอกสถานะห้อง
-   - `Sheet` (Slide-over Drawer) สำหรับแสดงรายละเอียดห้องเมื่อคลิก
+   - `Sheet` (Slide-over Drawer) สำหรับแสดงรายละเอียดห้องเมื่อคลิก และ **Quick Emergency Outsource Drawer** (ดูเบอร์ช่างฉุกเฉิน 24 ชม., คลิกโทรออกได้ทันที)
    - `Dialog` สำหรับหน้าต่างบันทึกเช็คอิน, เช็คเอาท์, และเคลียร์บิล
    - `Table` สำหรับรายการจอง และรายการบิล/มินิบาร์
    - `Button` สำหรับปุ่ม Action หลัก (สไตล์ดำมินิมอล หรือแบรนด์ส้ม)
@@ -56,9 +56,11 @@ apps/web/src/
    - `Card` สำหรับ Cleaning Task Cards บน Kanban Board
    - `Badge` (variant: `cleaning`, `maintenance`) สำหรับแสดงระดับความเร่งด่วนและประเภทงาน
    - `Button` ขนาดใหญ่พอดีนิ้วสัมผัส (Touch Target ≥ 44px)
+   - `Dialog` / `Sheet` สำหรับหน้าต่าง **Quick Contact (ดูเบอร์ช่าง)** ประสานงานซ่อมหน้างาน
 3. **Manager & Admin Portal:**
    - `Card` สำหรับ Executive KPI Tiles (Occupancy, Revenue, ADR, RevPAR)
-   - `Table` สำหรับรายการพนักงาน, ตารางประวัติแขก (CRM), และงบการเงิน
+   - `Table` สำหรับรายการพนักงาน, ตารางประวัติแขก (CRM), งบการเงิน, และ **ตารางบริหารจัดการ Outsource Master Data (`/admin/outsource`)**
+   - `Dialog` สำหรับแบบฟอร์มเพิ่ม/แก้ไขคู่ค้าและช่าง Outsource
    - `Input` + `Button` สำหรับแบบฟอร์มค้นหาและตัวกรองข้อมูล
 
 ---
@@ -98,6 +100,18 @@ apps/web/src/
 | `cleaning` | `#FFFBEB` (Amber 50) | `#92400E` (Amber 800) | `#FDE68A` (Amber 200) | `variant="cleaning"` | แม่บ้านกำลังทำความสะอาด |
 | `maintenance` | `#FEF2F2` (Red 50) | `#991B1B` (Red 800) | `#FECACA` (Red 200) | `variant="maintenance"` | ส่งซ่อม งดใช้งานชั่วคราว |
 | `out_of_order` | `#F1F5F9` (Slate 100) | `#475569` (Slate 600) | `#CBD5E1` (Slate 300) | `variant="outOfOrder"` | ปิดปรับปรุงใหญ่ระยะยาว |
+
+### 4.3 ป้ายกำกับหมวดหมู่คู่ค้า Outsource (Vendor Category Badges)
+หมวดหมู่ช่างและบริการภายนอกใช้ป้ายแบบ Soft Tone คมชัดตามประเภทงาน:
+| หมวดหมู่ (Category) | ความหมาย | Background | Text Color | Border Color |
+|---|---|---|---|---|
+| `air_conditioning` | ช่างแอร์ / ล้างแอร์ | `#F0F9FF` (Sky 50) | `#0369A1` (Sky 700) | `#BAE6FD` (Sky 200) |
+| `plumbing` | ช่างประปา / สุขภัณฑ์ | `#EFF6FF` (Blue 50) | `#1D4ED8` (Blue 700) | `#BFDBFE` (Blue 200) |
+| `electrical` | ช่างไฟฟ้า / แสงสว่าง | `#FEFCE8` (Yellow 50) | `#A16207` (Yellow 700)| `#FEF08A` (Yellow 200)|
+| `locksmith` | ช่างกุญแจ / ลูกบิดประตู | `#FAF5FF` (Purple 50) | `#7E22CE` (Purple 700)| `#E9D5FF` (Purple 200)|
+| `general_maintenance` | ซ่อมบำรุงทั่วไป / ช่างไม้ | `#F8FAFC` (Slate 50) | `#334155` (Slate 700) | `#CBD5E1` (Slate 300) |
+| `pest_control` | กำจัดแมลง / ปลวก | `#ECFDF5` (Emerald 50)| `#047857` (Emerald 700)| `#A7F3D0` (Emerald 200)|
+| **`is_emergency = 1`** | **เบอร์ฉุกเฉิน 24 ชั่วโมง** | `#FEF2F2` (Red 50) | `#B91C1C` (Red 700) | `#FECACA` (Red 200) |
 
 ---
 
