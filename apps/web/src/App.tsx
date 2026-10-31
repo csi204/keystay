@@ -24,6 +24,7 @@ const ReportsAnalyticsPage = React.lazy(() => import('./pages/admin/ReportsAnaly
 const RoomMatrixPage = React.lazy(() => import('./pages/front-desk/RoomMatrixPage'));
 const ReservationsPage = React.lazy(() => import('./pages/front-desk/ReservationsPage'));
 const DailyOperationsPage = React.lazy(() => import('./pages/front-desk/DailyOperationsPage'));
+const CashierFolioPage = React.lazy(() => import('./pages/front-desk/CashierFolioPage'));
 
 // ============================================================================
 // ENTERPRISE ROUTE GUARDS (ความปลอดภัยระดับสูง แยกตาม Tab Session)
@@ -210,6 +211,14 @@ export const App: React.FC = () => {
             element={
               <RequireAuth>
                 <DailyOperationsPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/front-desk/billing"
+            element={
+              <RequireAuth>
+                <CashierFolioPage />
               </RequireAuth>
             }
           />
