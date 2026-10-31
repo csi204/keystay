@@ -77,31 +77,31 @@ export const ReservationsPage: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-slate-900">
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
               {t('res.title')}
             </h1>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-sm text-slate-600 mt-0.5">
               {t('res.subtitle')}
             </p>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-[11px] text-slate-500 font-mono tabular-nums tracking-tight hidden sm:inline">
+            <span className="text-xs sm:text-sm text-slate-500 font-mono tabular-nums tracking-tight hidden sm:inline">
               {formatRelativeTime(lastRefreshed, locale)}
             </span>
             <button
               onClick={handleManualRefresh}
               disabled={loading || isRefreshing}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-md transition-colors shadow-sm disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-md transition-colors shadow-sm disabled:opacity-50"
               title={t('common.refresh')}
             >
-              <RotateCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <RotateCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">{t('common.refresh')}</span>
             </button>
 
             <button
               onClick={() => setIsNewModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-md shadow-sm transition-colors"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-md shadow-sm transition-colors"
             >
               <Plus className="w-4 h-4" />
               <span>{t('res.newReservation')}</span>
@@ -126,18 +126,18 @@ export const ReservationsPage: React.FC = () => {
               placeholder={t('res.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-sans"
+              className="w-full text-sm py-2 px-3.5 pl-9 bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-sans"
             />
           </div>
 
-          <div className="flex gap-1 overflow-x-auto no-scrollbar">
+          <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
             {['all', 'confirmed', 'checked_in', 'checked_out', 'cancelled'].map((st) => (
               <button
                 key={st}
                 onClick={() => setStatusFilter(st)}
-                className={`px-2.5 py-1 text-xs rounded border transition-colors whitespace-nowrap ${
+                className={`text-sm px-3.5 py-1.5 font-medium rounded-md border transition-colors whitespace-nowrap ${
                   statusFilter === st
-                    ? 'bg-slate-900 text-white border-slate-900 font-medium'
+                    ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
                     : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                 }`}
               >
@@ -150,19 +150,19 @@ export const ReservationsPage: React.FC = () => {
         {/* Reservations Table */}
         <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full text-left border-collapse text-sm">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
-                  <th className="py-3 px-4 font-mono font-medium tracking-tight">{t('res.bookingNumber')}</th>
-                  <th className="py-3 px-4">{t('common.guestName')}</th>
-                  <th className="py-3 px-4 font-mono font-medium tracking-tight">{t('common.room')}</th>
-                  <th className="py-3 px-4">{t('common.roomType')}</th>
-                  <th className="py-3 px-4 font-mono font-medium tracking-tight">{t('common.dates')}</th>
-                  <th className="py-3 px-4 text-center font-mono font-medium tracking-tight">{t('common.nights')}</th>
-                  <th className="py-3 px-4 text-right font-mono font-medium tracking-tight">{t('common.total')}</th>
-                  <th className="py-3 px-4 text-right font-mono font-medium tracking-tight">{t('common.deposit')}</th>
-                  <th className="py-3 px-4 text-center">{t('common.status')}</th>
-                  <th className="py-3 px-4 text-right">{t('common.actions')}</th>
+                <tr className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-700 uppercase tracking-wider py-3">
+                  <th className="py-3 px-4 font-mono font-bold tracking-wider">{t('res.bookingNumber')}</th>
+                  <th className="py-3 px-4 font-bold tracking-wider">{t('common.guestName')}</th>
+                  <th className="py-3 px-4 font-mono font-bold tracking-wider">{t('common.room')}</th>
+                  <th className="py-3 px-4 font-bold tracking-wider">{t('common.roomType')}</th>
+                  <th className="py-3 px-4 font-mono font-bold tracking-wider">{t('common.dates')}</th>
+                  <th className="py-3 px-4 text-center font-mono font-bold tracking-wider">{t('common.nights')}</th>
+                  <th className="py-3 px-4 text-right font-mono font-bold tracking-wider">{t('common.total')}</th>
+                  <th className="py-3 px-4 text-right font-mono font-bold tracking-wider">{t('common.deposit')}</th>
+                  <th className="py-3 px-4 text-center font-bold tracking-wider">{t('common.status')}</th>
+                  <th className="py-3 px-4 text-right font-bold tracking-wider">{t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -204,49 +204,49 @@ export const ReservationsPage: React.FC = () => {
                     const guestDisplayName = res.guestName || resolveGuestName(res);
 
                     return (
-                      <tr key={res.id} className="hover:bg-slate-50/70 transition-colors">
-                        <td className="py-3 px-4 font-mono font-medium tabular-nums tracking-tight text-slate-900">
+                      <tr key={res.id} className="hover:bg-slate-50/70 transition-colors text-sm text-slate-800">
+                        <td className="py-3.5 px-4 text-sm font-mono font-medium text-slate-900 tabular-nums tracking-tight">
                           {res.bookingNumber || res.id.slice(0, 8)}
                         </td>
-                        <td className="py-3 px-4 font-medium text-slate-800">
+                        <td className="py-3.5 px-4 font-medium text-sm text-slate-800">
                           {guestDisplayName}
                         </td>
-                        <td className="py-3 px-4 font-mono font-medium tabular-nums tracking-tight text-slate-900">
+                        <td className="py-3.5 px-4 text-sm font-mono font-medium text-slate-900 tabular-nums tracking-tight">
                           {roomNum}
                         </td>
-                        <td className="py-3 px-4 text-slate-700">
+                        <td className="text-sm py-3.5 px-4 text-slate-800">
                           {roomTypeName}
                         </td>
-                        <td className="py-3 px-4 font-mono tabular-nums tracking-tight text-slate-600">
+                        <td className="py-3.5 px-4 text-sm font-mono font-medium text-slate-900 tabular-nums tracking-tight">
                           {formatDateRange(res.checkInDate, res.checkOutDate, res.totalNights)}
                         </td>
-                        <td className="py-3 px-4 text-center font-mono tabular-nums tracking-tight text-slate-700">
+                        <td className="py-3.5 px-4 text-center font-mono tabular-nums tracking-tight text-slate-800">
                           {res.totalNights || '1'}
                         </td>
-                        <td className="py-3 px-4 text-right font-mono tabular-nums tracking-tight text-slate-900">
+                        <td className="py-3.5 px-4 text-right text-sm font-mono font-medium text-slate-900 tabular-nums tracking-tight">
                           {formatCurrency(res.totalAmount || '0')}
                         </td>
-                        <td className="py-3 px-4 text-right font-mono tabular-nums tracking-tight text-emerald-700">
+                        <td className="py-3.5 px-4 text-right text-sm font-mono font-medium text-slate-900 tabular-nums tracking-tight">
                           {formatCurrency(res.depositAmount || '0')}
                         </td>
-                        <td className="py-3 px-4 text-center">
+                        <td className="text-sm py-3.5 px-4 text-center">
                           <span
-                            className={`inline-block px-2.5 py-0.5 rounded text-[11px] font-medium border ${stCfg.bg} ${stCfg.text} ${stCfg.border}`}
+                            className={`inline-block px-2.5 py-0.5 rounded text-xs font-semibold border ${stCfg.bg} ${stCfg.text} ${stCfg.border}`}
                           >
                             {t(`status.${res.status}`)}
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-right">
+                        <td className="text-sm py-3.5 px-4 text-right">
                           {res.status === 'confirmed' ? (
                             <button
                               onClick={() => setCheckInReservationTarget(res)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded shadow-sm transition-colors"
+                              className="inline-flex items-center gap-1.5 text-sm font-semibold py-1.5 px-3.5 text-white bg-emerald-600 hover:bg-emerald-700 rounded shadow-sm transition-colors"
                             >
                               <LogIn className="w-3.5 h-3.5" />
                               <span>{t('ops.checkIn')}</span>
                             </button>
                           ) : (
-                            <span className="text-slate-400 text-xs">—</span>
+                            <span className="text-slate-400 text-sm">—</span>
                           )}
                         </td>
                       </tr>

@@ -11,8 +11,9 @@ describe('Page 2 — Reservations Management & Booking Modals (Space & Localizat
       'utf-8'
     );
 
-    // Verify balanced data-density padding
-    assert.match(pageCode, /py-3 px-4/);
+    // Verify balanced data-density padding and typography scale
+    assert.match(pageCode, /text-sm text-slate-800/);
+    assert.match(pageCode, /text-sm font-mono font-medium/);
 
     // Verify tabular-nums typography for numerals and dates
     assert.match(pageCode, /tabular-nums/);
@@ -77,5 +78,40 @@ describe('Page 2 — Reservations Management & Booking Modals (Space & Localizat
     assert.match(code, /res\.errorId/);
     assert.match(code, /payment\.method/);
     assert.match(code, /formatCurrency/);
+  });
+
+  it('enforces upgraded typography scales across ReservationsPage, NewBookingModal, and WalkInModal', () => {
+    const pageCode = fs.readFileSync(
+      path.resolve(process.cwd(), 'apps/web/src/pages/front-desk/ReservationsPage.tsx'),
+      'utf-8'
+    );
+    const newBookingCode = fs.readFileSync(
+      path.resolve(process.cwd(), 'apps/web/src/components/front-desk/NewBookingModal.tsx'),
+      'utf-8'
+    );
+    const walkInCode = fs.readFileSync(
+      path.resolve(process.cwd(), 'apps/web/src/components/front-desk/WalkInModal.tsx'),
+      'utf-8'
+    );
+
+    // ReservationsPage typography scale
+    assert.match(pageCode, /text-2xl font-bold text-slate-900/);
+    assert.match(pageCode, /text-sm px-3\.5 py-1\.5/);
+    assert.match(pageCode, /text-sm py-2 px-3\.5/);
+    assert.match(pageCode, /text-xs font-bold text-slate-700 uppercase tracking-wider py-3/);
+    assert.match(pageCode, /text-sm py-3\.5 px-4 text-slate-800/);
+    assert.match(pageCode, /text-sm font-mono font-medium/);
+    assert.match(pageCode, /text-sm font-semibold py-1\.5 px-3\.5/);
+
+    // NewBookingModal typography scale
+    assert.match(newBookingCode, /text-sm font-semibold text-slate-800/);
+    assert.match(newBookingCode, /text-sm py-2 px-3/);
+    assert.match(newBookingCode, /text-base font-bold font-mono text-slate-900/);
+    assert.match(newBookingCode, /text-sm font-semibold py-2\.5/);
+
+    // WalkInModal typography scale
+    assert.match(walkInCode, /text-sm font-semibold text-slate-800/);
+    assert.match(walkInCode, /text-sm py-2 px-3/);
+    assert.match(walkInCode, /text-sm font-semibold py-2\.5/);
   });
 });
