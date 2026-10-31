@@ -12,6 +12,9 @@ export interface UpdateUserDTO {
 export class UserService {
   constructor(private db: Database) {}
 
+  /**
+   * ดึงรายชื่อผู้ใช้งานทั้งหมด พร้อมรองรับการกรองตาม role และสถานะ isActive
+   */
   async getUsers(role?: string, isActive?: number) {
     const conditions = [];
     if (role) {
@@ -49,6 +52,10 @@ export class UserService {
     return rows.map((r) => ({ ...r, isActive: Boolean(r.isActive) }));
   }
 
+  /**
+   * ดึงข้อมูลผู้ใช้งานรายบุคคลด้วย User ID
+   * หากไม่พบจะโยน 404 USER_NOT_FOUND
+   */
   async getUserById(id: string) {
     const user = await this.db.select({
       id: users.id,
@@ -68,6 +75,10 @@ export class UserService {
     return { ...user, isActive: Boolean(user.isActive) };
   }
 
+  /**
+   * อัปเดตข้อมูลส่วนตัวของผู้ใช้ (ชื่อ, นามสกุล, email)
+   * ตรวจสอบความซ้ำซ้อนของ email ก่อนบันทึก
+   */
   async updateUser(id: string, dto: UpdateUserDTO) {
     const user = await this.db.select().from(users).where(eq(users.id, id)).get();
     if (!user) {
@@ -92,6 +103,10 @@ export class UserService {
     return await this.getUserById(id);
   }
 
+  /**
+   * ลบผู้ใช้งานแบบ Soft Delete
+   * เปลี่ยนสถานะ isActive = 0 และยกเลิก session ทั้งหมดของผู้ใช้ในคำสั่งเดียวกัน
+   */
   async deleteUser(id: string) {
     const user = await this.db.select().from(users).where(eq(users.id, id)).get();
     if (!user) {
@@ -108,6 +123,10 @@ export class UserService {
     return { success: true, message: 'User deleted successfully' };
   }
 
+  /**
+   * เปลี่ยนบทบาทหน้าที่ (Role) ของผู้ใช้งาน
+   * อัปเดต role ในตาราง users พร้อมบันทึก Outbox Event สำหรับ audit trail
+   */
   async updateRole(id: string, role: 'admin' | 'manager' | 'front_desk' | 'housekeeping') {
     const user = await this.db.select().from(users).where(eq(users.id, id)).get();
     if (!user) {
@@ -131,6 +150,10 @@ export class UserService {
     return { id, role, updatedAt: now };
   }
 
+  /**
+   * เปลี่ยนรหัสผ่านของผู้ใช้งาน
+   * ตรวจสอบความถูกต้องของรหัสผ่านเดิม หากถูกต้องจึงแฮชรหัสผ่านใหม่และบันทึกลงฐานข้อมูล
+   */
   async changePassword(userId: string, currentPass: string, newPass: string) {
     const user = await this.db.select().from(users).where(eq(users.id, userId)).get();
     if (!user) {

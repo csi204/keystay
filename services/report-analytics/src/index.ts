@@ -48,6 +48,11 @@ app.get('/', (c) => {
   });
 });
 
+/**
+ * [1] Dashboard Summary
+ * ดึงสรุปภาพรวมวันนี้ในหน้าเดียว — KPI วันนี้ (occupancy, รายได้, ห้องว่าง) + ยอดสะสม MTD ของเดือน (ADR, RevPAR)
+ * วันที่ใช้ timezone Bangkok เสมอ
+ */
 // 2. Executive Dashboard Summary (API #97)
 app.get('/dashboard/summary', async (c) => {
   try {
@@ -60,6 +65,11 @@ app.get('/dashboard/summary', async (c) => {
   }
 });
 
+/**
+ * [2] รายได้รายวัน (Revenue Daily)
+ * ดึงยอดรายได้ย้อนหลัง N วัน พร้อม trend | ?limit=1-100 (default 14)
+ * response: { window_days, trend: [...] }
+ */
 // 3. Revenue Daily (API #88)
 app.get('/reports/revenue-daily', async (c) => {
   try {
@@ -73,6 +83,11 @@ app.get('/reports/revenue-daily', async (c) => {
   }
 });
 
+/**
+ * [3] สถิติรายวัน (Daily Stats)
+ * ดึง occupancy + check-in/out + รายได้แต่ละวัน | กรองช่วงวันได้ด้วย ?startDate= ?endDate=
+ * response: { data: rows[], warning?, filter? }
+ */
 // 4. Daily Stats
 app.get('/reports/daily-stats', async (c) => {
   try {
@@ -93,6 +108,11 @@ app.get('/reports/daily-stats', async (c) => {
   }
 });
 
+/**
+ * [4] รายได้รายเดือน (Revenue Monthly)
+ * ดึงสรุปรายเดือนย้อนหลัง N เดือน | ?limit=1-36 (default 12) | กรองช่วงเดือนได้
+ * response: { months_count, history: [...] }
+ */
 // 5. Revenue Monthly (API #89)
 app.get('/reports/revenue-monthly', async (c) => {
   try {
@@ -116,6 +136,11 @@ app.get('/reports/revenue-monthly', async (c) => {
   }
 });
 
+/**
+ * [5] Occupancy Report
+ * ดึง breakdown % ห้องว่าง/ใช้ รายวัน ย้อนหลัง N วัน
+ * response: { period_days, daily_breakdown: [...] }
+ */
 // 6. Occupancy Report (API #90)
 app.get('/reports/occupancy', async (c) => {
   try {
@@ -129,6 +154,11 @@ app.get('/reports/occupancy', async (c) => {
   }
 });
 
+/**
+ * [6] Room Performance
+ * ดึงประสิทธิภาพแต่ละห้องในเดือนที่ระบุ — จองกี่คืน ทำรายได้เท่าไหร่
+ * ?month=YYYY-MM (default เดือนนี้) | ?limit=1-100 (default 22)
+ */
 // 7. Room Performance (API #91)
 app.get('/reports/room-performance', async (c) => {
   try {
@@ -144,6 +174,10 @@ app.get('/reports/room-performance', async (c) => {
   }
 });
 
+/**
+ * [7] KPIs วันนี้
+ * ดึง KPI หลัก (occupancy%, รายได้, ADR, RevPAR) — aggregate จาก getDashboardSummary
+ */
 // 8. KPIs (API #87)
 app.get('/reports/kpis', async (c) => {
   try {
@@ -169,6 +203,11 @@ app.get('/reports/kpis', async (c) => {
   }
 });
 
+/**
+ * [8] Cancellations Report
+ * ดึงประวัติการยกเลิก booking รายวัน ย้อนหลัง N วัน
+ * response: { period_days, daily_history: [...] }
+ */
 // 9. Cancellations (API #92)
 app.get('/reports/cancellations', async (c) => {
   try {
@@ -182,6 +221,11 @@ app.get('/reports/cancellations', async (c) => {
   }
 });
 
+/**
+ * [9] Guest Demographics
+ * ดึงข้อมูลลักษณะ guest ในเดือนที่ระบุ (สัญชาติ, ประเภท, ช่องทางจอง)
+ * ?month=YYYY-MM (default เดือนนี้)
+ */
 // 10. Guest Demographics (API #93)
 app.get('/reports/guest-demographics', async (c) => {
   try {
@@ -195,6 +239,11 @@ app.get('/reports/guest-demographics', async (c) => {
   }
 });
 
+/**
+ * [10] Housekeeping Efficiency
+ * ดึงประสิทธิภาพทีม housekeeping วันที่ระบุ — กี่ห้องเสร็จ ใช้เวลาเฉลี่ยเท่าไหร่
+ * ?date=YYYY-MM-DD (default วันนี้ Bangkok) | response: { date, staff_performance: [...] }
+ */
 // 11. Housekeeping Efficiency (API #94)
 app.get('/reports/housekeeping-efficiency', async (c) => {
   try {
@@ -208,6 +257,11 @@ app.get('/reports/housekeeping-efficiency', async (c) => {
   }
 });
 
+/**
+ * [11] Audit Logs
+ * ดึง log กิจกรรมสำคัญทั้งหมดในระบบ (checkout, bill paid, manual refresh) เรียงจากใหม่ไปเก่า
+ * ?limit=1-200 (default 50)
+ */
 // 12. Audit Logs (API #96)
 app.get('/reports/audit-logs', async (c) => {
   try {
@@ -221,6 +275,11 @@ app.get('/reports/audit-logs', async (c) => {
   }
 });
 
+/**
+ * [12] Manual Refresh Reports
+ * สั่ง refresh data ของ section ที่ระบุ + บันทึก audit event "ManualReportRefresh"
+ * ?section= (default "all") — ใช้ตอนต้องการ sync ข้อมูลด่วน
+ */
 // 13. Refresh Reports (API #95)
 app.post('/reports/refresh', async (c) => {
   try {
@@ -245,6 +304,12 @@ app.post('/reports/refresh', async (c) => {
   }
 });
 
+/**
+ * [13] Export CSV
+ * Export ข้อมูลเป็นไฟล์ .csv ดาวน์โหลดได้ทันที
+ * ?type= "daily_stats" | "room_performance" | "revenue_monthly" (default: daily_stats)
+ * filename: keystay_<type>_<date>.csv
+ */
 // 14. Export CSV (API #98)
 app.get('/reports/export/csv', async (c) => {
   try {
@@ -286,6 +351,11 @@ app.get('/reports/export/csv', async (c) => {
   }
 });
 
+/**
+ * [14] Export PDF / Printable HTML
+ * สร้าง HTML Report A4 พร้อม KPI cards + ตาราง 7 วันย้อนหลัง
+ * เปิดใน browser แล้วกด "Print / Save as PDF" ได้เลย
+ */
 // 15. Export Printable PDF / HTML (API #99)
 app.get('/reports/export/pdf', async (c) => {
   try {
@@ -437,6 +507,12 @@ app.get('/reports/export/pdf', async (c) => {
   }
 });
 
+/**
+ * [15–17] Webhooks (Event Bus จาก Services อื่น ผ่าน Upstash QStash)
+ * ถ้ามี QSTASH_CURRENT_SIGNING_KEY → verify signature ก่อนทุก request
+ * ถ้าไม่มี signing key (dev mode) → skip verify
+ * 401 ถ้า signature ผิดหรือขาดหาย
+ */
 // 16. Webhooks (Upstash QStash & Event Bus)
 app.use('/webhooks/*', async (c, next) => {
   const signature = c.req.header('upstash-signature');
@@ -469,6 +545,10 @@ app.use('/webhooks/*', async (c, next) => {
   await next();
 });
 
+/**
+ * Webhook: Guest Checkout
+ * รับ event จาก reservation service → บันทึก audit "ReservationCheckedOut" + เพิ่ม totalCheckouts ใน daily_stats (upsert)
+ */
 app.post('/webhooks/checkout', async (c) => {
   try {
     const payload = await c.req.json();
@@ -510,6 +590,11 @@ app.post('/webhooks/checkout', async (c) => {
   }
 });
 
+/**
+ * Webhook: Bill Paid
+ * รับ event จาก billing service → บันทึก revenue record + อัปเดต totalRevenue ใน daily_stats (upsert)
+ * Body: { reservationId, billId, amountPaid, paymentMethod, roomTypeName }
+ */
 app.post('/webhooks/bill-paid', async (c) => {
   try {
     const payload = await c.req.json();
@@ -568,6 +653,11 @@ app.post('/webhooks/bill-paid', async (c) => {
   }
 });
 
+/**
+ * Webhook: Housekeeping Completed
+ * รับ event จาก housekeeping service → บันทึก audit event "HousekeepingTaskCompleted"
+ * Body: { staffId, roomId, taskId }
+ */
 app.post('/webhooks/housekeeping-completed', async (c) => {
   try {
     const payload = await c.req.json();

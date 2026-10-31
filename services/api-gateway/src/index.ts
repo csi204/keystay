@@ -30,6 +30,11 @@ const getJwtSecret = (env: Env): string => {
 // ==========================================
 // 1. CORS MIDDLEWARE (Per docs/SECURITY.md)
 // ==========================================
+/**
+ * [Middleware 1] CORS
+ * คัดกรอง Origin ที่อนุญาต — Whitelist domains, *.workers.dev และ keystay*.pages.dev
+ * allowMethods: GET, POST, PUT, DELETE, PATCH, OPTIONS | maxAge: 86400 (1 วัน)
+ */
 const ALLOWED_ORIGINS = [
   'http://localhost:5173',
   'http://localhost:3000',
@@ -48,7 +53,7 @@ app.use('*', cors({
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Idempotency-Key'],
   exposeHeaders: ['Content-Range', 'X-Total-Count'],
-  maxAge: 86400,
+  maxAge: 86400, //1day
   credentials: true,
 }));
 
@@ -57,6 +62,10 @@ app.use('*', cors({
 // ==========================================
 app.use('*', async (c, next) => {
   await next();
+/**
+ * [Middleware 2] Security Headers
+ * แปะ security headers ให้ทุก response ป้องกัน XSS / Clickjacking
+ */
   c.header('X-Content-Type-Options', 'nosniff');
   c.header('X-Frame-Options', 'DENY');
   c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
@@ -69,6 +78,10 @@ app.use('*', async (c, next) => {
 app.use('*', async (c, next) => {
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || '127.0.0.1';
   const nowMinute = Math.floor(Date.now() / 60000);
+/**
+ * [Middleware 3] Rate Limiting
+ * จำกัดคำขอตาม IP ด้วย Cloudflare KV (สูงสุด 120 req/นาที ต่อ IP) เกินจะตอบ 429
+ */
   const rateLimitKey = `ratelimit:${ip}:${nowMinute}`;
 
   if (c.env.KV) {
@@ -127,6 +140,11 @@ app.get('/', (c) => {
 // ==========================================
 // 5. JWT AUTHENTICATION GUARD
 // ==========================================
+/**
+ * [Middleware 4] JWT Authentication Guard
+ * ตรวจสอบ Bearer token ทุกเส้นทางใต้ /api/* (ยกเว้น PUBLIC_PATHS)
+ * ตรวจสถานะ Blacklist จาก KV ด้วย jti หากเคย logout แล้วจะตอบ 401
+ */
 const PUBLIC_PATHS = [
   '/health',
   '/',
@@ -211,6 +229,12 @@ app.use('/api/*', async (c, next) => {
 
   const role = user.role;
 
+/**
+ * [Middleware 5] RBAC (Role-Based Access Control)
+ * ควบคุมสิทธิ์ตาม role: admin เข้าได้ทั้งหมด, manager ห้ามเปลี่ยน role/ลบ user,
+ * front_desk ห้ามเข้าถึงรายงาน/dashboard/สิทธิ์การเงิน, housekeeping เข้าได้เฉพาะส่วนงานแม่บ้าน
+ * หากไม่มีสิทธิ์จะปฏิเสธด้วย 403 Forbidden
+ */
   // Admin has access to everything
   if (role === 'admin') {
     return next();
