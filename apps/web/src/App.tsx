@@ -21,6 +21,7 @@ const ManagerDashboardPage = React.lazy(() => import('./pages/admin/ManagerDashb
 const RoomsPricingPage = React.lazy(() => import('./pages/admin/RoomsPricingPage'));
 const UsersManagementPage = React.lazy(() => import('./pages/admin/UsersManagementPage'));
 const ReportsAnalyticsPage = React.lazy(() => import('./pages/admin/ReportsAnalyticsPage'));
+const RoomMatrixPage = React.lazy(() => import('./pages/front-desk/RoomMatrixPage'));
 
 // ============================================================================
 // ENTERPRISE ROUTE GUARDS (ความปลอดภัยระดับสูง แยกตาม Tab Session)
@@ -57,6 +58,9 @@ const AuthenticatedHome: React.FC = () => {
   }
   if (role === 'manager') {
     return <Navigate to="/manager/dashboard" replace />;
+  }
+  if (role === 'front_desk') {
+    return <Navigate to="/front-desk/room-matrix" replace />;
   }
 
   const user = getAuthUser();
@@ -175,6 +179,19 @@ export const App: React.FC = () => {
             element={
               <RequireAuth>
                 <AuthenticatedHome />
+              </RequireAuth>
+            }
+          />
+          {/* หน้า Front Desk & Cashier Portal (เดียร์ @allmusgus) */}
+          <Route
+            path="/front-desk"
+            element={<Navigate to="/front-desk/room-matrix" replace />}
+          />
+          <Route
+            path="/front-desk/room-matrix"
+            element={
+              <RequireAuth>
+                <RoomMatrixPage />
               </RequireAuth>
             }
           />
