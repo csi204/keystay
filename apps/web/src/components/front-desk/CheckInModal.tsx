@@ -82,59 +82,59 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
       <div className="relative bg-white rounded-xl border border-slate-200 shadow-xl max-w-md w-full overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-150">
         <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
           <div className="flex items-center gap-2">
-            <LogIn className="w-4 h-4 text-emerald-600" />
-            <h2 className="text-sm font-bold text-slate-900">{t('checkin.title')}</h2>
+            <LogIn className="w-5 h-5 text-emerald-600" />
+            <h2 className="text-xl font-bold text-slate-900">{t('checkin.title')}</h2>
           </div>
           <button
             onClick={onClose}
             className="p-1 text-slate-400 hover:text-slate-600 rounded transition-colors"
             title={t('common.close')}
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
-            <div className="p-2.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 flex items-center gap-2">
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 flex items-center gap-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-600" />
               <span>{error}</span>
             </div>
           )}
 
           {/* Reservation Summary */}
-          <div className="bg-slate-50 rounded-lg border border-slate-200 p-3 space-y-2 text-xs">
+          <div className="bg-slate-50 rounded-lg border border-slate-200 p-4 space-y-2.5 text-sm">
             <div className="flex justify-between items-center">
-              <span className="text-slate-500">{t('checkin.bookingNumber')}</span>
-              <span className="font-mono font-bold tabular-nums text-slate-900">
+              <span className="text-sm font-medium text-slate-600">{t('checkin.bookingNumber')}</span>
+              <span className="text-base font-bold font-mono text-slate-900 tabular-nums">
                 {reservation.bookingNumber || reservation.id.slice(0, 8)}
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-slate-500">{t('checkin.guestName')}</span>
-              <span className="font-medium text-slate-900">{guestDisplayName}</span>
+              <span className="text-sm font-medium text-slate-600">{t('checkin.guestName')}</span>
+              <span className="text-sm font-semibold text-slate-900">{guestDisplayName}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-slate-500">{t('checkin.roomNumber')}</span>
-              <span className="font-mono font-semibold tabular-nums text-slate-900">
+              <span className="text-sm font-medium text-slate-600">{t('checkin.roomNumber')}</span>
+              <span className="text-base font-bold font-mono text-slate-900 tabular-nums">
                 {reservation.roomNumber ? t('checkin.roomLabel', { room: reservation.roomNumber }) : '—'}
               </span>
             </div>
             {roomTypeName && (
               <div className="flex justify-between items-center">
-                <span className="text-slate-500">{t('common.roomType')}</span>
-                <span className="font-medium text-slate-900">{roomTypeName}</span>
+                <span className="text-sm font-medium text-slate-600">{t('common.roomType')}</span>
+                <span className="text-sm font-semibold text-slate-900">{roomTypeName}</span>
               </div>
             )}
-            <div className="flex justify-between items-center font-mono tabular-nums text-[11px] pt-1 border-t border-slate-200">
-              <span className="text-slate-500 font-sans">{t('checkin.stayPeriod')}</span>
-              <span className="text-slate-700">
+            <div className="flex justify-between items-center font-mono tabular-nums text-sm pt-1 border-t border-slate-200">
+              <span className="text-sm font-medium text-slate-600 font-sans">{t('checkin.stayPeriod')}</span>
+              <span className="text-sm font-mono text-slate-700 tabular-nums">
                 {formatDateRange(reservation.checkInDate, reservation.checkOutDate, reservation.totalNights)}
               </span>
             </div>
-            <div className="flex justify-between items-center font-mono tabular-nums text-[11px]">
-              <span className="text-slate-500 font-sans">{t('checkin.keyDeposit')}</span>
-              <span className="text-emerald-700 font-semibold">
+            <div className="flex justify-between items-center font-mono tabular-nums text-sm">
+              <span className="text-sm font-medium text-slate-600 font-sans">{t('checkin.keyDeposit')}</span>
+              <span className="text-base font-bold font-mono text-emerald-700 tabular-nums">
                 {formatCurrency(reservation.depositAmount || 0)}
               </span>
             </div>
@@ -142,32 +142,32 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
 
           {/* National ID / Passport */}
           <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">
+            <label className="block text-sm font-medium text-slate-600 mb-1">
               {t('checkin.idLabel')}
             </label>
             <div className="relative">
-              <CreditCard className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <CreditCard className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 required
                 placeholder={t('checkin.idPlaceholder')}
                 value={nationalIdOrPassport}
                 onChange={(e) => setNationalIdOrPassport(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono tabular-nums"
+                className="w-full text-sm py-2 px-3 pl-9 bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono tabular-nums"
               />
             </div>
-            <p className="text-[10px] text-slate-400 mt-1">
+            <p className="text-xs text-slate-500 mt-1">
               {t('checkin.idHint')}
             </p>
           </div>
 
           {/* Checklist reminder */}
-          <div className="p-3 bg-emerald-50/60 rounded-lg border border-emerald-200 text-xs text-emerald-900 space-y-1.5">
-            <div className="flex items-center gap-1.5 font-semibold">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+          <div className="p-3 bg-emerald-50/60 rounded-lg border border-emerald-200 text-sm text-emerald-900 space-y-1.5">
+            <div className="flex items-center gap-1.5 font-semibold text-sm">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
               <span>{t('checkin.checklistTitle')}</span>
             </div>
-            <ul className="list-disc list-inside text-[11px] text-emerald-800 space-y-0.5">
+            <ul className="list-disc list-inside text-xs text-emerald-800 space-y-1">
               <li>{t('checkin.checklist1')}</li>
               <li>{t('checkin.checklist2')}</li>
               <li>{t('checkin.checklist3')}</li>
@@ -179,16 +179,16 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-md transition-colors"
+              className="px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-md transition-colors"
             >
               {t('common.cancel')}
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-4 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-md shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"
+              className="px-4 text-sm font-semibold py-2.5 text-white bg-slate-900 hover:bg-slate-800 rounded-md shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"
             >
-              <LogIn className="w-3.5 h-3.5" />
+              <LogIn className="w-4 h-4" />
               <span>{isSubmitting ? t('checkin.submitting') : t('checkin.confirmButton')}</span>
             </button>
           </div>

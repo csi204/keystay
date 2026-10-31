@@ -177,55 +177,55 @@ export const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
           <div className="flex items-center gap-2">
-            <CalendarPlus className="w-4 h-4 text-slate-900" />
-            <h2 className="text-sm font-bold text-slate-900">{t('extend.title')}</h2>
+            <CalendarPlus className="w-5 h-5 text-slate-900" />
+            <h2 className="text-xl font-bold text-slate-900">{t('extend.title')}</h2>
           </div>
           <button
             onClick={onClose}
             className="p-1 text-slate-400 hover:text-slate-600 rounded transition-colors"
             title={t('common.close')}
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
-            <div className="p-2.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 flex items-center gap-2">
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 flex items-center gap-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-600" />
               <span>{error}</span>
             </div>
           )}
 
           {/* Current Reservation Details Card */}
-          <div className="bg-slate-50 rounded-lg border border-slate-200 p-3 space-y-2 text-xs">
+          <div className="bg-slate-50 rounded-lg border border-slate-200 p-4 space-y-2.5 text-sm">
             <div className="flex justify-between items-center">
-              <span className="text-slate-500">{t('extend.roomNumber')}</span>
-              <span className="font-mono font-bold tabular-nums text-slate-900 text-sm">
+              <span className="text-sm font-medium text-slate-600">{t('extend.roomNumber')}</span>
+              <span className="text-base font-bold font-mono text-slate-900 tabular-nums">
                 {roomDisplayNumber}
               </span>
             </div>
             {roomTypeName && (
               <div className="flex justify-between items-center">
-                <span className="text-slate-500">{t('common.roomType')}</span>
-                <span className="font-medium text-slate-900">{roomTypeName}</span>
+                <span className="text-sm font-medium text-slate-600">{t('common.roomType')}</span>
+                <span className="text-sm font-semibold text-slate-900">{roomTypeName}</span>
               </div>
             )}
             <div className="flex justify-between items-center">
-              <span className="text-slate-500">{t('extend.guestName')}</span>
-              <span className="font-medium text-slate-900">{guestDisplayName}</span>
+              <span className="text-sm font-medium text-slate-600">{t('extend.guestName')}</span>
+              <span className="text-sm font-semibold text-slate-900">{guestDisplayName}</span>
             </div>
             <div className="flex justify-between items-center pt-1 border-t border-slate-200">
-              <span className="text-slate-500">{t('extend.currentCheckOut')}</span>
-              <span className="font-mono font-medium tabular-nums text-slate-700 flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-slate-400" />
+              <span className="text-sm font-medium text-slate-600">{t('extend.currentCheckOut')}</span>
+              <span className="text-base font-bold font-mono text-slate-900 tabular-nums flex items-center gap-1.5">
+                <Clock className="w-4 h-4 text-slate-400" />
                 {formatDate(reservation.checkOutDate, 'short')}
               </span>
             </div>
-            <div className="flex justify-between items-center font-mono tabular-nums text-[11px]">
-              <span className="text-slate-500 font-sans">{t('extend.nightlyRate')}</span>
-              <span className="text-slate-700 font-semibold">
+            <div className="flex justify-between items-center font-mono tabular-nums text-sm">
+              <span className="text-sm font-medium text-slate-600 font-sans">{t('extend.nightlyRate')}</span>
+              <span className="text-base font-bold font-mono text-slate-900 tabular-nums">
                 {formatCurrency(nightlyRate)}
               </span>
             </div>
@@ -233,11 +233,11 @@ export const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
 
           {/* New Check-out Date Input */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-sm font-medium text-slate-600 mb-1">
               {t('extend.newCheckOut')}
             </label>
             <div className="relative">
-              <Calendar className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="date"
                 required
@@ -247,33 +247,33 @@ export const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
                   setNewCheckOutDate(e.target.value);
                   setError(null);
                 }}
-                className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono tabular-nums"
+                className="w-full text-sm py-2 px-3 pl-9 bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono tabular-nums"
               />
             </div>
             {newCheckOutDate && newCheckOutDate <= reservation.checkOutDate && (
-              <p className="text-[11px] text-red-600 mt-1">
+              <p className="text-xs text-red-600 mt-1">
                 {t('extend.errorInvalidDate')}
               </p>
             )}
           </div>
 
           {/* Extension Summary Card */}
-          <div className="p-3 bg-emerald-50/60 rounded-lg border border-emerald-200 text-xs text-emerald-950 space-y-2">
+          <div className="p-4 bg-emerald-50/60 rounded-lg border border-emerald-200 text-sm text-emerald-950 space-y-2.5">
             <div className="flex justify-between items-center">
-              <span className="text-emerald-800 flex items-center gap-1.5">
-                <Moon className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="text-sm font-medium text-emerald-800 flex items-center gap-1.5">
+                <Moon className="w-4 h-4 text-emerald-600" />
                 {t('extend.extraNights')}
               </span>
-              <span className="font-mono font-bold tabular-nums text-sm text-emerald-900">
+              <span className="font-mono font-bold tabular-nums text-base text-emerald-900">
                 +{extraNights} {t('common.nights')}
               </span>
             </div>
             <div className="flex justify-between items-center pt-1.5 border-t border-emerald-200/80">
-              <span className="text-emerald-800 flex items-center gap-1.5 font-medium">
-                <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="text-sm font-medium text-emerald-800 flex items-center gap-1.5">
+                <DollarSign className="w-4 h-4 text-emerald-600" />
                 {t('extend.extraCharge')}
               </span>
-              <span className="font-mono font-bold tabular-nums text-base text-emerald-700">
+              <span className="text-base font-bold font-mono text-emerald-700 tabular-nums">
                 {formatCurrency(extraCharge)}
               </span>
             </div>
@@ -284,16 +284,16 @@ export const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-md transition-colors"
+              className="px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-md transition-colors"
             >
               {t('common.cancel')}
             </button>
             <button
               type="submit"
               disabled={isSubmitting || extraNights <= 0 || newCheckOutDate <= reservation.checkOutDate}
-              className="px-4 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-md shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"
+              className="px-4 text-sm font-semibold py-2.5 text-white bg-slate-900 hover:bg-slate-800 rounded-md shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"
             >
-              <CheckCircle2 className="w-3.5 h-3.5" />
+              <CheckCircle2 className="w-4 h-4" />
               <span>{isSubmitting ? t('extend.submitting') : t('extend.confirmButton')}</span>
             </button>
           </div>

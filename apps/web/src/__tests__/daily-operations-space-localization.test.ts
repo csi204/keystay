@@ -116,4 +116,46 @@ describe('Page 3 — Daily Operations Workflows (Space & Localization Polish)', 
       assert.ok(en[key], `Key ${key} missing in en`);
     }
   });
+
+  it('enforces upgraded typography scales across DailyOperationsPage and operational modals', () => {
+    const pageCode = fs.readFileSync(
+      path.resolve(process.cwd(), 'apps/web/src/pages/front-desk/DailyOperationsPage.tsx'),
+      'utf-8'
+    );
+    const checkInCode = fs.readFileSync(
+      path.resolve(process.cwd(), 'apps/web/src/components/front-desk/CheckInModal.tsx'),
+      'utf-8'
+    );
+    const checkOutCode = fs.readFileSync(
+      path.resolve(process.cwd(), 'apps/web/src/components/front-desk/CheckOutModal.tsx'),
+      'utf-8'
+    );
+    const extendCode = fs.readFileSync(
+      path.resolve(process.cwd(), 'apps/web/src/components/front-desk/ExtendStayModal.tsx'),
+      'utf-8'
+    );
+
+    // Queue sub-tabs use text-sm font-semibold
+    assert.match(pageCode, /text-sm font-semibold py-2\.5 px-4/);
+
+    // Table rows / cells render with text-sm text-slate-800
+    assert.match(pageCode, /text-sm py-3\.5 px-4 text-slate-800/);
+
+    // Action buttons use text-sm font-semibold
+    assert.match(pageCode, /text-sm font-semibold py-1\.5 px-3\.5/);
+
+    // DailyOperationsPage title and header
+    assert.match(pageCode, /text-2xl font-bold text-slate-900/);
+    assert.match(pageCode, /text-xs font-bold text-slate-700 uppercase tracking-wider py-3/);
+
+    // Operational modals typography scale
+    assert.match(checkInCode, /text-xl font-bold text-slate-900/);
+    assert.match(checkInCode, /text-sm font-semibold py-2\.5/);
+
+    assert.match(checkOutCode, /text-xl font-bold text-slate-900/);
+    assert.match(checkOutCode, /text-sm font-semibold py-2\.5/);
+
+    assert.match(extendCode, /text-xl font-bold text-slate-900/);
+    assert.match(extendCode, /text-sm font-semibold py-2\.5/);
+  });
 });
