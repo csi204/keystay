@@ -5,11 +5,14 @@ import { useReservations, ExtendedReservation, resolveGuestName } from '@/hooks/
 import { useRooms } from '@/hooks/useRooms';
 import { useI18n } from '@/lib/i18n';
 import { CheckInModal } from '@/components/front-desk/CheckInModal';
+import { CheckOutModal } from '@/components/front-desk/CheckOutModal';
+import { ExtendStayModal } from '@/components/front-desk/ExtendStayModal';
 import { RapidWalkInModal } from '@/components/front-desk/RapidWalkInModal';
 import {
   UserPlus,
   LogIn,
   LogOut,
+  CalendarPlus,
   RotateCw,
   WifiOff,
 } from 'lucide-react';
@@ -32,6 +35,8 @@ export const DailyOperationsPage: React.FC = () => {
 
   const [activeSubTab, setActiveSubTab] = useState<'arrivals' | 'departures'>('arrivals');
   const [checkInTarget, setCheckInTarget] = useState<ExtendedReservation | null>(null);
+  const [checkOutTarget, setCheckOutTarget] = useState<ExtendedReservation | null>(null);
+  const [extendTarget, setExtendTarget] = useState<ExtendedReservation | null>(null);
   const [isWalkInOpen, setIsWalkInOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -259,13 +264,23 @@ export const DailyOperationsPage: React.FC = () => {
                           {formatCurrency(res.totalAmount || '0')}
                         </td>
                         <td className="py-2.5 px-4 text-right">
-                          <button
-                            onClick={() => handleGoToBilling(res)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded-md shadow-sm transition-colors"
-                          >
-                            <LogOut className="w-3.5 h-3.5 text-slate-500" />
-                            <span>{t('ops.checkOut')}</span>
-                          </button>
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => setExtendTarget(res)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors"
+                              title={t('extend.button')}
+                            >
+                              <CalendarPlus className="w-3.5 h-3.5 text-slate-500" />
+                              <span>{t('extend.button')}</span>
+                            </button>
+                            <button
+                              onClick={() => setCheckOutTarget(res)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded-md shadow-sm transition-colors"
+                            >
+                              <LogOut className="w-3.5 h-3.5 text-slate-500" />
+                              <span>{t('ops.checkOut')}</span>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -283,6 +298,28 @@ export const DailyOperationsPage: React.FC = () => {
         isOpen={!!checkInTarget}
         onClose={() => setCheckInTarget(null)}
         onConfirm={checkInReservation}
+      />
+
+      {/* Check Out Modal */}
+      <CheckOutModal
+        reservation={checkOutTarget}
+        isOpen={!!checkOutTarget}
+        onClose={() => setCheckOutTarget(null)}
+        onSuccess={handleManualRefresh}
+      />
+
+      {/* Extend Stay Modal */}
+      <ExtendStayModal
+        reservation={extendTarget}
+        room={rooms.find((r) => r.id === extendTarget?.roomId) || null}
+        roomType={
+          roomTypes.find(
+            (rt) => rt.id === rooms.find((r) => r.id === extendTarget?.roomId)?.roomTypeId
+          ) || null
+        }
+        isOpen={!!extendTarget}
+        onClose={() => setExtendTarget(null)}
+        onSuccess={handleManualRefresh}
       />
 
       {/* Rapid Walk In Modal */}

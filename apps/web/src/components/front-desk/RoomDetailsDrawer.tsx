@@ -1,7 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Room, RoomType } from '@keystay/types';
 import { ROOM_STATUS_CONFIG } from './RoomCard';
 import { useI18n } from '@/lib/i18n';
+import { ExtendedReservation } from '@/hooks/useReservations';
+import { ExtendStayModal } from './ExtendStayModal';
 import {
   X,
   BedDouble,
@@ -13,15 +15,27 @@ import {
   Layers,
   FileText,
   Calendar,
+  CalendarPlus,
   Users,
 } from 'lucide-react';
+
+export type RoomDrawerAction =
+  | 'checkin'
+  | 'checkout'
+  | 'charge'
+  | 'walkin'
+  | 'clean'
+  | 'extend';
 
 export interface RoomDetailsDrawerProps {
   room: Room | null;
   roomType?: RoomType;
   isOpen: boolean;
   onClose: () => void;
-  onAction?: (action: 'checkin' | 'checkout' | 'charge' | 'walkin' | 'clean', room: Room) => void;
+  onAction?:
+    | ((action: RoomDrawerAction, room: Room) => void)
+    | ((action: 'checkin' | 'checkout' | 'charge' | 'walkin' | 'clean', room: Room) => void);
+  currentReservation?: ExtendedReservation | null;
 }
 
 export const RoomDetailsDrawer: React.FC<RoomDetailsDrawerProps> = ({
@@ -30,8 +44,10 @@ export const RoomDetailsDrawer: React.FC<RoomDetailsDrawerProps> = ({
   isOpen,
   onClose,
   onAction,
+  currentReservation,
 }) => {
   const { t, formatCurrency } = useI18n();
+  const [isExtendOpen, setIsExtendOpen] = useState(false);
 
   // Close on Escape key press
   useEffect(() => {
@@ -181,7 +197,7 @@ export const RoomDetailsDrawer: React.FC<RoomDetailsDrawerProps> = ({
           <div className="p-4 border-t border-slate-200 bg-slate-50 flex flex-col gap-2">
             {room.status === 'reserved' && (
               <button
-                onClick={() => onAction?.('checkin', room)}
+                onClick={() => (onAction as any)?.('checkin', room)}
                 className="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-md shadow-sm transition-colors flex items-center justify-center gap-2"
               >
                 <LogIn className="w-4 h-4" />
@@ -192,14 +208,24 @@ export const RoomDetailsDrawer: React.FC<RoomDetailsDrawerProps> = ({
             {room.status === 'occupied' && (
               <>
                 <button
-                  onClick={() => onAction?.('charge', room)}
+                  onClick={() => {
+                    (onAction as any)?.('extend', room);
+                    setIsExtendOpen(true);
+                  }}
+                  className="w-full py-2.5 px-3 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-md transition-colors flex items-center justify-center gap-2 shadow-sm"
+                >
+                  <CalendarPlus className="w-4 h-4 text-slate-600" />
+                  <span>{t('extend.button')}</span>
+                </button>
+                <button
+                  onClick={() => (onAction as any)?.('charge', room)}
                   className="w-full py-2.5 px-3 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-md transition-colors flex items-center justify-center gap-2 shadow-sm"
                 >
                   <PlusCircle className="w-4 h-4 text-slate-600" />
                   <span>{t('folio.addCharge')}</span>
                 </button>
                 <button
-                  onClick={() => onAction?.('checkout', room)}
+                  onClick={() => (onAction as any)?.('checkout', room)}
                   className="w-full py-2.5 px-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-md shadow-sm transition-colors flex items-center justify-center gap-2"
                 >
                   <LogOut className="w-4 h-4" />
@@ -211,14 +237,14 @@ export const RoomDetailsDrawer: React.FC<RoomDetailsDrawerProps> = ({
             {room.status === 'available' && (
               <>
                 <button
-                  onClick={() => onAction?.('walkin', room)}
+                  onClick={() => (onAction as any)?.('walkin', room)}
                   className="w-full py-2.5 px-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-md shadow-sm transition-colors flex items-center justify-center gap-2"
                 >
                   <LogIn className="w-4 h-4" />
                   <span>{t('ops.walkIn')}</span>
                 </button>
                 <button
-                  onClick={() => onAction?.('checkin', room)}
+                  onClick={() => (onAction as any)?.('checkin', room)}
                   className="w-full py-2.5 px-3 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-md transition-colors flex items-center justify-center gap-2 shadow-sm"
                 >
                   <Calendar className="w-4 h-4 text-slate-600" />
@@ -229,7 +255,7 @@ export const RoomDetailsDrawer: React.FC<RoomDetailsDrawerProps> = ({
 
             {room.status === 'checked_out' && (
               <button
-                onClick={() => onAction?.('clean', room)}
+                onClick={() => (onAction as any)?.('clean', room)}
                 className="w-full py-2.5 px-3 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded-md shadow-sm transition-colors flex items-center justify-center gap-2"
               >
                 <Sparkles className="w-4 h-4" />
@@ -239,6 +265,17 @@ export const RoomDetailsDrawer: React.FC<RoomDetailsDrawerProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Extend Stay Modal */}
+      {currentReservation && (
+        <ExtendStayModal
+          reservation={currentReservation}
+          room={room}
+          roomType={roomType}
+          isOpen={isExtendOpen}
+          onClose={() => setIsExtendOpen(false)}
+        />
+      )}
     </div>
   );
 };
