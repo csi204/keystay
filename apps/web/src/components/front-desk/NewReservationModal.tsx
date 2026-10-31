@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Room, RoomType } from '@keystay/types';
+import { useI18n } from '@/lib/i18n';
 import { X, Calendar, User, Phone, Mail, DollarSign, BedDouble, AlertCircle } from 'lucide-react';
 
 export interface NewReservationModalProps {
@@ -27,6 +28,8 @@ export const NewReservationModal: React.FC<NewReservationModalProps> = ({
   onClose,
   onSubmit,
 }) => {
+  const { t, formatCurrency } = useI18n();
+
   const todayStr = new Date().toISOString().split('T')[0];
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -84,15 +87,15 @@ export const NewReservationModal: React.FC<NewReservationModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!guestName.trim()) {
-      setError('กรุณาระบุชื่อ-นามสกุลแขกผู้เข้าพัก');
+      setError(t('res.errorGuestName'));
       return;
     }
     if (!phone.trim()) {
-      setError('กรุณาระบุเบอร์โทรศัพท์');
+      setError(t('res.errorPhone'));
       return;
     }
     if (!roomId) {
-      setError('กรุณาเลือกห้องพัก');
+      setError(t('res.errorRoom'));
       return;
     }
 
@@ -112,7 +115,7 @@ export const NewReservationModal: React.FC<NewReservationModalProps> = ({
     if (result.success) {
       onClose();
     } else {
-      setError(result.error || 'เกิดข้อผิดพลาดในการบันทึกการจอง');
+      setError(result.error || t('common.error'));
     }
   };
 
@@ -129,7 +132,7 @@ export const NewReservationModal: React.FC<NewReservationModalProps> = ({
         <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-slate-700" />
-            <h2 className="text-sm font-bold text-slate-900">สร้างการจองใหม่ (New Reservation)</h2>
+            <h2 className="text-sm font-bold text-slate-900">{t('res.newReservation')}</h2>
           </div>
           <button
             onClick={onClose}
@@ -150,19 +153,19 @@ export const NewReservationModal: React.FC<NewReservationModalProps> = ({
           {/* Guest Information */}
           <div className="space-y-3">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              ข้อมูลผู้เข้าพัก
+              {t('drawer.guestInfo')}
             </h3>
 
             <div>
               <label className="block text-xs font-medium text-slate-700 mb-1">
-                ชื่อ-นามสกุล *
+                {t('common.guestName')} *
               </label>
               <div className="relative">
                 <User className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
                   required
-                  placeholder="เช่น สมชาย ใจดี"
+                  placeholder={t('res.guestName')}
                   value={guestName}
                   onChange={(e) => setGuestName(e.target.value)}
                   className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"
@@ -173,7 +176,7 @@ export const NewReservationModal: React.FC<NewReservationModalProps> = ({
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">
-                  เบอร์โทรศัพท์ *
+                  {t('res.phoneNumber')} *
                 </label>
                 <div className="relative">
                   <Phone className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -190,7 +193,7 @@ export const NewReservationModal: React.FC<NewReservationModalProps> = ({
 
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">
-                  อีเมล (ถ้ามี)
+                  {t('res.emailOptional')}
                 </label>
                 <div className="relative">
                   <Mail className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -209,12 +212,12 @@ export const NewReservationModal: React.FC<NewReservationModalProps> = ({
           {/* Room & Stay Dates */}
           <div className="space-y-3 pt-2 border-t border-slate-100">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              ห้องพักและวันที่เข้าพัก
+              {t('res.roomAndDates')}
             </h3>
 
             <div>
               <label className="block text-xs font-medium text-slate-700 mb-1">
-                เลือกห้องพัก *
+                {t('res.selectRoom')} *
               </label>
               <select
                 value={roomId}
@@ -225,7 +228,7 @@ export const NewReservationModal: React.FC<NewReservationModalProps> = ({
                   const type = roomTypes.find((t) => t.id === r.roomTypeId);
                   return (
                     <option key={r.id} value={r.id}>
-                      ห้อง {r.roomNumber} ({type?.name || 'Standard'} · ฿{type?.basePrice || '1200'}/คืน)
+                      {t('common.room')} {r.roomNumber} ({type?.name || 'Standard'} · {formatCurrency(type?.basePrice || '1200')}{t('common.pricePerNight')})
                     </option>
                   );
                 })}
@@ -235,7 +238,7 @@ export const NewReservationModal: React.FC<NewReservationModalProps> = ({
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">
-                  วันเช็คอิน *
+                  {t('res.checkInDate')} *
                 </label>
                 <input
                   type="date"
@@ -248,7 +251,7 @@ export const NewReservationModal: React.FC<NewReservationModalProps> = ({
 
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">
-                  วันเช็คเอาท์ *
+                  {t('res.checkOutDate')} *
                 </label>
                 <input
                   type="date"
@@ -263,7 +266,7 @@ export const NewReservationModal: React.FC<NewReservationModalProps> = ({
 
             <div>
               <label className="block text-xs font-medium text-slate-700 mb-1">
-                เงินมัดจำ (บาท)
+                {t('res.depositBaht')}
               </label>
               <div className="relative">
                 <DollarSign className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -282,12 +285,12 @@ export const NewReservationModal: React.FC<NewReservationModalProps> = ({
           {/* Pricing Summary Box */}
           <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between text-xs font-mono">
             <div>
-              <span className="text-slate-500 block text-[11px]">จำนวนคืนที่พัก</span>
-              <span className="font-bold text-slate-800">{totalNights} คืน</span>
+              <span className="text-slate-500 block text-[11px]">{t('common.nights')}</span>
+              <span className="font-bold text-slate-800">{t('common.nightsCount', { count: totalNights })}</span>
             </div>
             <div className="text-right">
-              <span className="text-slate-500 block text-[11px]">ยอดรวมโดยประมาณ</span>
-              <span className="font-bold text-slate-900 text-sm">฿{Number(totalAmount).toLocaleString()}</span>
+              <span className="text-slate-500 block text-[11px]">{t('res.estimatedTotal')}</span>
+              <span className="font-bold text-slate-900 text-sm">{formatCurrency(totalAmount)}</span>
             </div>
           </div>
 
@@ -298,14 +301,14 @@ export const NewReservationModal: React.FC<NewReservationModalProps> = ({
               onClick={onClose}
               className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-md transition-colors"
             >
-              ยกเลิก
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
               className="px-4 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-md shadow-sm transition-colors disabled:opacity-50"
             >
-              {isSubmitting ? 'กำลังบันทึก...' : 'ยืนยันการจอง'}
+              {isSubmitting ? t('res.submitting') : t('res.confirmReservation')}
             </button>
           </div>
         </form>
@@ -313,4 +316,3 @@ export const NewReservationModal: React.FC<NewReservationModalProps> = ({
     </div>
   );
 };
-

@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { FrontDeskLayout } from '@/components/front-desk/FrontDeskLayout';
-import { useReservations, ExtendedReservation } from '@/hooks/useReservations';
+import { useReservations, ExtendedReservation, resolveGuestName } from '@/hooks/useReservations';
 import { useRooms } from '@/hooks/useRooms';
 import { NewReservationModal } from '@/components/front-desk/NewReservationModal';
 import { CheckInModal } from '@/components/front-desk/CheckInModal';
+import { useI18n } from '@/lib/i18n';
 import { ReservationStatus } from '@keystay/types';
 import {
   CalendarDays,
@@ -16,19 +17,21 @@ import {
   WifiOff,
 } from 'lucide-react';
 
-const RESERVATION_STATUS_CONFIG: Record<
+const RESERVATION_STATUS_STYLES: Record<
   ReservationStatus,
-  { label: string; bg: string; text: string; border: string }
+  { bg: string; text: string; border: string }
 > = {
-  pending: { label: 'รอยืนยัน', bg: 'bg-slate-100', text: 'text-slate-700', border: 'border-slate-300' },
-  confirmed: { label: 'ยืนยันแล้ว', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
-  checked_in: { label: 'เข้าพักแล้ว', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
-  checked_out: { label: 'เช็คเอาท์แล้ว', bg: 'bg-slate-100', text: 'text-slate-600', border: 'border-slate-200' },
-  cancelled: { label: 'ยกเลิก', bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' },
-  no_show: { label: 'ไม่เข้าพัก', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
+  pending: { bg: 'bg-slate-100', text: 'text-slate-700', border: 'border-slate-300' },
+  confirmed: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
+  checked_in: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
+  checked_out: { bg: 'bg-slate-100', text: 'text-slate-600', border: 'border-slate-200' },
+  cancelled: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' },
+  no_show: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
 };
 
 export const ReservationsPage: React.FC = () => {
+  const { t, formatDateRange, formatCurrency } = useI18n();
+
   const {
     reservations,
     loading,
@@ -59,7 +62,8 @@ export const ReservationsPage: React.FC = () => {
       if (statusFilter !== 'all' && r.status !== statusFilter) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        const matchesGuest = r.guestName?.toLowerCase().includes(q) || false;
+        const guestDisplayName = r.guestName || resolveGuestName(r);
+        const matchesGuest = guestDisplayName.toLowerCase().includes(q);
         const matchesBooking = r.bookingNumber?.toLowerCase().includes(q) || r.id.toLowerCase().includes(q);
         const matchesRoom = r.roomNumber?.toLowerCase().includes(q) || false;
         return matchesGuest || matchesBooking || matchesRoom;
@@ -75,10 +79,10 @@ export const ReservationsPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
           <div>
             <h1 className="text-xl font-bold tracking-tight text-slate-900">
-              รายการจองห้องพัก (Reservations)
+              {t('res.title')}
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
-              จัดการรายการจองห้องพักล่วงหน้า ตรวจสอบประวัติ และบันทึกเช็คอิน
+              {t('res.subtitle')}
             </p>
           </div>
 
@@ -87,10 +91,10 @@ export const ReservationsPage: React.FC = () => {
               onClick={handleManualRefresh}
               disabled={loading || isRefreshing}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-md transition-colors shadow-sm disabled:opacity-50"
-              title="รีเฟรชข้อมูล"
+              title={t('common.refresh')}
             >
               <RotateCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">รีเฟรช</span>
+              <span className="hidden sm:inline">{t('common.refresh')}</span>
             </button>
 
             <button
@@ -98,7 +102,7 @@ export const ReservationsPage: React.FC = () => {
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-md shadow-sm transition-colors"
             >
               <Plus className="w-4 h-4" />
-              <span>สร้างการจองใหม่</span>
+              <span>{t('res.newReservation')}</span>
             </button>
           </div>
         </div>
@@ -107,7 +111,7 @@ export const ReservationsPage: React.FC = () => {
         {isOffline && (
           <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2 text-xs text-amber-800">
             <WifiOff className="w-4 h-4 text-amber-600 flex-shrink-0" />
-            <span>ไม่สามารถเชื่อมต่อ API Gateway ได้ ข้อมูลอาจไม่อัปเดต</span>
+            <span>{t('matrix.offlineNotice')}</span>
           </div>
         )}
 
@@ -117,7 +121,7 @@ export const ReservationsPage: React.FC = () => {
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="ค้นหารหัสจอง, ชื่อแขก, เลขห้อง..."
+              placeholder={t('res.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-sans"
@@ -135,7 +139,7 @@ export const ReservationsPage: React.FC = () => {
                     : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                 }`}
               >
-                {st === 'all' ? 'ทั้งหมด' : RESERVATION_STATUS_CONFIG[st as ReservationStatus]?.label || st}
+                {st === 'all' ? t('status.all') : t(`status.${st}`)}
               </button>
             ))}
           </div>
@@ -147,82 +151,82 @@ export const ReservationsPage: React.FC = () => {
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
-                  <th className="py-2.5 px-4 font-mono">รหัสจอง</th>
-                  <th className="py-2.5 px-4">ชื่อผู้เข้าพัก</th>
-                  <th className="py-2.5 px-4 font-mono">ห้อง</th>
-                  <th className="py-2.5 px-4 font-mono">วันเข้า - ออก</th>
-                  <th className="py-2.5 px-4 text-center font-mono">คืน</th>
-                  <th className="py-2.5 px-4 text-right font-mono">ยอดรวม</th>
-                  <th className="py-2.5 px-4 text-right font-mono">มัดจำ</th>
-                  <th className="py-2.5 px-4 text-center">สถานะ</th>
-                  <th className="py-2.5 px-4 text-right">การจัดการ</th>
+                  <th className="py-3 px-4 font-mono">{t('res.bookingNumber')}</th>
+                  <th className="py-3 px-4">{t('common.guestName')}</th>
+                  <th className="py-3 px-4 font-mono">{t('common.room')}</th>
+                  <th className="py-3 px-4 font-mono">{t('common.dates')}</th>
+                  <th className="py-3 px-4 text-center font-mono">{t('common.nights')}</th>
+                  <th className="py-3 px-4 text-right font-mono">{t('common.total')}</th>
+                  <th className="py-3 px-4 text-right font-mono">{t('common.deposit')}</th>
+                  <th className="py-3 px-4 text-center">{t('common.status')}</th>
+                  <th className="py-3 px-4 text-right">{t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {loading && reservations.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="py-8 text-center text-slate-400">
-                      กำลังโหลดข้อมูลการจอง...
+                      {t('res.loadingReservations')}
                     </td>
                   </tr>
                 ) : filteredReservations.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="py-12 text-center text-slate-400">
-                      ไม่พบข้อมูลการจองตามเงื่อนไข
+                      {t('res.noReservationsFound')}
                     </td>
                   </tr>
                 ) : (
                   filteredReservations.map((res) => {
-                    const stCfg = RESERVATION_STATUS_CONFIG[res.status] || {
-                      label: res.status,
+                    const stCfg = RESERVATION_STATUS_STYLES[res.status] || {
                       bg: 'bg-slate-100',
                       text: 'text-slate-700',
                       border: 'border-slate-200',
                     };
                     const room = rooms.find((r) => r.id === res.roomId);
                     const roomNum = res.roomNumber || room?.roomNumber || '—';
+                    const guestDisplayName = res.guestName || resolveGuestName(res);
 
                     return (
                       <tr key={res.id} className="hover:bg-slate-50/70 transition-colors">
-                        <td className="py-2.5 px-4 font-mono font-medium text-slate-900">
+                        <td className="py-3 px-4 font-mono font-medium text-slate-900">
                           {res.bookingNumber || res.id.slice(0, 8)}
                         </td>
-                        <td className="py-2.5 px-4 font-medium text-slate-800">
-                          {res.guestName || 'แขกผู้เข้าพัก'}
+                        <td className="py-3 px-4 font-medium text-slate-800">
+                          {guestDisplayName}
                         </td>
-                        <td className="py-2.5 px-4 font-mono font-bold text-slate-900">
+                        <td className="py-3 px-4 font-mono font-bold text-slate-900">
                           {roomNum}
                         </td>
-                        <td className="py-2.5 px-4 font-mono text-slate-600">
-                          {res.checkInDate} <span className="text-slate-400">→</span> {res.checkOutDate}
+                        <td className="py-3 px-4 font-mono text-slate-600">
+                          {formatDateRange(res.checkInDate, res.checkOutDate, res.totalNights)}
                         </td>
-                        <td className="py-2.5 px-4 text-center font-mono text-slate-700">
+                        <td className="py-3 px-4 text-center font-mono text-slate-700">
                           {res.totalNights || '1'}
                         </td>
-                        <td className="py-2.5 px-4 text-right font-mono font-semibold text-slate-900">
-                          ฿{Number(res.totalAmount || '0').toLocaleString()}
+                        <td className="py-3 px-4 text-right font-mono font-semibold text-slate-900">
+                          {formatCurrency(res.totalAmount || '0')}
                         </td>
-                        <td className="py-2.5 px-4 text-right font-mono text-emerald-700">
-                          ฿{Number(res.depositAmount || '0').toLocaleString()}
+                        <td className="py-3 px-4 text-right font-mono text-emerald-700">
+                          {formatCurrency(res.depositAmount || '0')}
                         </td>
-                        <td className="py-2.5 px-4 text-center">
+                        <td className="py-3 px-4 text-center">
                           <span
-                            className={`inline-block px-2 py-0.5 rounded text-[10px] font-medium border ${stCfg.bg} ${stCfg.text} ${stCfg.border}`}
+                            className={`inline-block px-2.5 py-0.5 rounded text-[11px] font-medium border ${stCfg.bg} ${stCfg.text} ${stCfg.border}`}
                           >
-                            {stCfg.label}
+                            {t(`status.${res.status}`)}
                           </span>
                         </td>
-                        <td className="py-2.5 px-4 text-right">
+                        <td className="py-3 px-4 text-right">
                           {res.status === 'confirmed' ? (
                             <button
                               onClick={() => setCheckInReservationTarget(res)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded transition-colors"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded shadow-sm transition-colors"
                             >
-                              <LogIn className="w-3 h-3" />
-                              <span>เช็คอิน</span>
+                              <LogIn className="w-3.5 h-3.5" />
+                              <span>{t('ops.checkIn')}</span>
                             </button>
                           ) : (
-                            <span className="text-slate-400 text-[11px]">—</span>
+                            <span className="text-slate-400 text-xs">—</span>
                           )}
                         </td>
                       </tr>
@@ -256,4 +260,3 @@ export const ReservationsPage: React.FC = () => {
 };
 
 export default ReservationsPage;
-

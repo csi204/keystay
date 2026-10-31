@@ -1,10 +1,36 @@
 import { useState, useEffect, useCallback } from 'react';
-import { apiFetch } from '@/lib/api';
-import { Reservation } from '@keystay/types';
+import { apiFetch } from '../lib/api';
+import type { Reservation } from '@keystay/types';
 
 export interface ExtendedReservation extends Reservation {
   guestName?: string;
   roomNumber?: string;
+  guest?: {
+    id?: string;
+    fullName?: string;
+    phone?: string;
+    email?: string;
+    nationalId?: string;
+  } | null;
+}
+
+/**
+ * Resolves the guest display name from reservation data.
+ * Checks nested res.guest.fullName first, falls back to top-level res.guestName,
+ * or returns '—' as placeholder.
+ */
+export function resolveGuestName(res?: {
+  guest?: { fullName?: string | null } | null;
+  guestName?: string | null;
+} | null): string {
+  if (!res) return '—';
+  if (res.guest && typeof res.guest.fullName === 'string' && res.guest.fullName.trim()) {
+    return res.guest.fullName.trim();
+  }
+  if (typeof res.guestName === 'string' && res.guestName.trim()) {
+    return res.guestName.trim();
+  }
+  return '—';
 }
 
 export function useReservations() {
@@ -29,8 +55,13 @@ export function useReservations() {
     if (res.error) {
       setError(res.error);
     } else if (res.data) {
+      // Map guestName using resolveGuestName so res.guest.fullName is reliably surfaced
+      const mapped = res.data.map((r) => ({
+        ...r,
+        guestName: resolveGuestName(r),
+      }));
       // Sort newest first
-      const sorted = [...res.data].sort(
+      const sorted = [...mapped].sort(
         (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
       setReservations(sorted);

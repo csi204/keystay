@@ -10,7 +10,7 @@ export interface I18nContextValue {
   t: (key: string, params?: Record<string, string | number>) => string;
   formatCurrency: (amount: number | string) => string;
   formatDate: (dateStr?: string | null, format?: 'short' | 'medium' | 'long') => string;
-  formatDateRange: (startStr?: string | null, endStr?: string | null, nights?: number) => string;
+  formatDateRange: (startStr?: string | null, endStr?: string | null, nights?: number | string) => string;
 }
 
 const STORAGE_KEY = 'keystay_locale';
@@ -137,7 +137,7 @@ export function formatDateHelper(
 export function formatDateRangeHelper(
   startStr?: string | null,
   endStr?: string | null,
-  nights?: number,
+  nights?: number | string,
   locale: Locale = 'th'
 ): string {
   const sDate = parseSafeDate(startStr);
@@ -151,7 +151,13 @@ export function formatDateRangeHelper(
   const endFormatted = eDate ? formatDateHelper(endStr, 'short', locale) : '—';
 
   // Calculate nights if not provided
-  let nightCount = nights;
+  let nightCount: number | undefined =
+    typeof nights === 'number'
+      ? nights
+      : nights !== undefined && nights !== null && !isNaN(Number(nights))
+      ? Number(nights)
+      : undefined;
+
   if (nightCount === undefined && sDate && eDate) {
     const diffMs = eDate.getTime() - sDate.getTime();
     const calculated = Math.round(diffMs / (1000 * 60 * 60 * 24));
@@ -165,10 +171,10 @@ export function formatDateRangeHelper(
       locale === 'th'
         ? `${nightCount} คืน`
         : `${nightCount} night${nightCount === 1 ? '' : 's'}`;
-    return `${startFormatted} - ${endFormatted} (${nightLabel})`;
+    return `${startFormatted} – ${endFormatted} (${nightLabel})`;
   }
 
-  return `${startFormatted} - ${endFormatted}`;
+  return `${startFormatted} – ${endFormatted}`;
 }
 
 const defaultContextValue: I18nContextValue = {
@@ -208,7 +214,7 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
         formatCurrencyHelper(amount, locale),
       formatDate: (dateStr?: string | null, format?: 'short' | 'medium' | 'long') =>
         formatDateHelper(dateStr, format, locale),
-      formatDateRange: (startStr?: string | null, endStr?: string | null, nights?: number) =>
+      formatDateRange: (startStr?: string | null, endStr?: string | null, nights?: number | string) =>
         formatDateRangeHelper(startStr, endStr, nights, locale),
     }),
     [locale, dictionary]
