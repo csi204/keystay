@@ -287,4 +287,60 @@ export const th: Record<string, string> = {
   'checkout.submitting': 'กำลังดำเนินการ...',
   'checkout.forwardBilling': 'ไปยังหน้าคิดเงิน / ใบแจ้งหนี้',
   'checkout.errorGeneral': 'เกิดข้อผิดพลาดในการเช็คเอาท์',
+
+  // Room Types (Bilingual Metadata)
+  'roomTypes.Standard Room': 'ห้องสแตนดาร์ด',
+  'roomTypes.Deluxe Sea View': 'ห้องดีลักซ์ ซีวิว',
+  'roomTypes.Executive Suite': 'ห้องเอ็กเซ็กคิวทีฟ สวีท',
+  'roomTypes.Presidential Villa': 'ห้องเพรสซิเดนเชียล วิลล่า',
+
+  // Room Notes (Bilingual Metadata)
+  'roomNotes.Near garden pathway': 'ใกล้ทางเดินสวนหย่อม',
+  'roomNotes.Late check-in guest': 'แขกเช็คอินช่วงดึก',
+  'roomNotes.Priority checkout clean': 'ห้องทำความสะอาดเร่งด่วน',
+  'roomNotes.Accessible room': 'ห้องพักสำหรับผู้ใช้วีลแชร์',
+  'roomNotes.Ocean front': 'ริมชายหาดวิวทะเล',
+  'roomNotes.Awaiting housekeeping inspect': 'รอแม่บ้านตรวจสอบรอบสุดท้าย',
+  'roomNotes.Balcony terrace': 'ระเบียงรับลมส่วนตัว',
+  'roomNotes.AC fan replacement': 'รอเปลี่ยนพัดลมแอร์',
+  'roomNotes.Quiet zone': 'โซนเงียบสงบ',
+  'roomNotes.Sunset view': 'วิวพระอาทิตย์ตกดิน',
+  'roomNotes.VIP David Tan arriving tomorrow': 'แขก VIP David Tan เข้าพักพรุ่งนี้',
+  'roomNotes.Deep cleaning routine': 'รอบทำความสะอาดล้ำลึก',
+  'roomNotes.Corner executive': 'ห้องมุมสวีทวิวพาโนรามา',
+  'roomNotes.Executive lounge access': 'สิทธิเข้าใช้เอ็กเซ็กคิวทีฟเลานจ์',
+  'roomNotes.Plumbing maintenance': 'ช่างกำลังตรวจสอบระบบประปา',
+  'roomNotes.High floor panoramic': 'ชั้นสูงวิวเมืองมุมกว้าง',
+  'roomNotes.Presidential Penthouse East': 'เพนต์เฮาส์ปีกตะวันออก',
+
+  // Amenities (Bilingual Metadata)
+  'amenities.King Bed': 'เตียงคิงไซส์',
+  'amenities.Free Wi-Fi': 'ฟรี Wi-Fi',
+  'amenities.City View': 'วิวเมือง',
+  'amenities.Work Desk': 'โต๊ะทำงาน',
+  'amenities.Ocean View': 'วิวทะเล',
+  'amenities.Balcony': 'ระเบียงส่วนตัว',
+  'amenities.Mini-bar': 'มินิบาร์',
+  'amenities.Bathtub': 'อ่างอาบน้ำ',
+  'amenities.Living Room': 'ห้องนั่งเล่นแยกส่วน',
+  'amenities.Espresso Machine': 'เครื่องชงกาแฟเอสเปรสโซ',
+  'amenities.Lounge Access': 'สิทธิเข้าเอ็กเซ็กคิวทีฟเลานจ์',
+  'amenities.Private Pool': 'สระว่ายน้ำส่วนตัว',
+  'amenities.Butler Service': 'บริการบัตเลอร์ส่วนตัว',
+  'amenities.Kitchenette': 'มุมครัวส่วนตัว',
+  'amenities.Wi-Fi 6': 'Wi-Fi 6',
+  'amenities.Smart TV 55"': 'สมาร์ททีวี 55 นิ้ว',
+  'amenities.Balcony Sea View': 'ระเบียงวิวทะเล',
+  'amenities.Jacuzzi Bathtub': 'อ่างอาบน้ำจากุซซี่',
+  'amenities.Private Plunge Pool': 'สระว่ายน้ำส่วนตัว',
+
+  // Room Descriptions (Bilingual Metadata)
+  'roomDescriptions.Comfortable modern room with city view, work desk, and private ensuite bathroom.':
+    'ห้องพักทันสมัยสะดวกสบายพร้อมวิวเมือง โต๊ะทำงาน และห้องน้ำส่วนตัวในตัว',
+  'roomDescriptions.Spacious room featuring private balcony with panoramic ocean views and marble bathroom.':
+    'ห้องพักกว้างขวางพร้อมระเบียงส่วนตัว วิวทะเลแบบพาโนรามา และห้องน้ำหินอ่อน',
+  'roomDescriptions.Luxurious corner suite with separate living area, dining table, and deep soaking bathtub.':
+    'ห้องสวีทหัวมุมสุดหรูพร้อมห้องนั่งเล่นแยกส่วน โต๊ะรับประทานอาหาร และอ่างอาบน้ำขนาดใหญ่',
+  'roomDescriptions.The pinnacle of luxury with private plunge pool, master jacuzzi, 2 bedrooms, and butler service.':
+    'ที่สุดแห่งความหรูหราพร้อมสระว่ายน้ำส่วนตัว อ่างจากุซซี่หลัก 2 ห้องนอน และบริการบัตเลอร์ส่วนตัว',
 };

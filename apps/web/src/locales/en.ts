@@ -287,4 +287,60 @@ export const en: Record<string, string> = {
   'checkout.submitting': 'Processing Check-Out...',
   'checkout.forwardBilling': 'Proceed to Cashier Folio',
   'checkout.errorGeneral': 'An error occurred during check-out',
+
+  // Room Types (Bilingual Metadata)
+  'roomTypes.Standard Room': 'Standard Room',
+  'roomTypes.Deluxe Sea View': 'Deluxe Sea View',
+  'roomTypes.Executive Suite': 'Executive Suite',
+  'roomTypes.Presidential Villa': 'Presidential Villa',
+
+  // Room Notes (Bilingual Metadata)
+  'roomNotes.Near garden pathway': 'Near garden pathway',
+  'roomNotes.Late check-in guest': 'Late check-in guest',
+  'roomNotes.Priority checkout clean': 'Priority checkout clean',
+  'roomNotes.Accessible room': 'Accessible room',
+  'roomNotes.Ocean front': 'Ocean front',
+  'roomNotes.Awaiting housekeeping inspect': 'Awaiting housekeeping inspect',
+  'roomNotes.Balcony terrace': 'Balcony terrace',
+  'roomNotes.AC fan replacement': 'AC fan replacement',
+  'roomNotes.Quiet zone': 'Quiet zone',
+  'roomNotes.Sunset view': 'Sunset view',
+  'roomNotes.VIP David Tan arriving tomorrow': 'VIP David Tan arriving tomorrow',
+  'roomNotes.Deep cleaning routine': 'Deep cleaning routine',
+  'roomNotes.Corner executive': 'Corner executive',
+  'roomNotes.Executive lounge access': 'Executive lounge access',
+  'roomNotes.Plumbing maintenance': 'Plumbing maintenance',
+  'roomNotes.High floor panoramic': 'High floor panoramic',
+  'roomNotes.Presidential Penthouse East': 'Presidential Penthouse East',
+
+  // Amenities (Bilingual Metadata)
+  'amenities.King Bed': 'King Bed',
+  'amenities.Free Wi-Fi': 'Free Wi-Fi',
+  'amenities.City View': 'City View',
+  'amenities.Work Desk': 'Work Desk',
+  'amenities.Ocean View': 'Ocean View',
+  'amenities.Balcony': 'Balcony',
+  'amenities.Mini-bar': 'Mini-bar',
+  'amenities.Bathtub': 'Bathtub',
+  'amenities.Living Room': 'Living Room',
+  'amenities.Espresso Machine': 'Espresso Machine',
+  'amenities.Lounge Access': 'Lounge Access',
+  'amenities.Private Pool': 'Private Pool',
+  'amenities.Butler Service': 'Butler Service',
+  'amenities.Kitchenette': 'Kitchenette',
+  'amenities.Wi-Fi 6': 'Wi-Fi 6',
+  'amenities.Smart TV 55"': 'Smart TV 55"',
+  'amenities.Balcony Sea View': 'Balcony Sea View',
+  'amenities.Jacuzzi Bathtub': 'Jacuzzi Bathtub',
+  'amenities.Private Plunge Pool': 'Private Plunge Pool',
+
+  // Room Descriptions (Bilingual Metadata)
+  'roomDescriptions.Comfortable modern room with city view, work desk, and private ensuite bathroom.':
+    'Comfortable modern room with city view, work desk, and private ensuite bathroom.',
+  'roomDescriptions.Spacious room featuring private balcony with panoramic ocean views and marble bathroom.':
+    'Spacious room featuring private balcony with panoramic ocean views and marble bathroom.',
+  'roomDescriptions.Luxurious corner suite with separate living area, dining table, and deep soaking bathtub.':
+    'Luxurious corner suite with separate living area, dining table, and deep soaking bathtub.',
+  'roomDescriptions.The pinnacle of luxury with private plunge pool, master jacuzzi, 2 bedrooms, and butler service.':
+    'The pinnacle of luxury with private plunge pool, master jacuzzi, 2 bedrooms, and butler service.',
 };
