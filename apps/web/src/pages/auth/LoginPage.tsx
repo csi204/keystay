@@ -58,9 +58,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
         }
       }
 
-      if (response.ok && data?.token) {
-        const userObj = data.user || { email, role: 'front_desk' };
-        setAuthSession(data.token, userObj, userObj.role || 'front_desk');
+      const accessToken =
+        data?.data?.tokens?.accessToken ||
+        data?.tokens?.accessToken ||
+        data?.token ||
+        data?.accessToken;
+      const userObj = data?.data?.user || data?.user || { email, role: 'front_desk' };
+
+      if (response.ok && accessToken) {
+        setAuthSession(accessToken, userObj, userObj.role || 'front_desk');
         const r = userObj.role || 'front_desk';
         navigate(
           r === 'admin'
@@ -131,9 +137,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
       });
       const data = await response.json().catch(() => null);
 
-      if (response.ok && data?.token) {
-        const userObj = data.user || { email: demoEmail, role: targetRole };
-        setAuthSession(data.token, userObj, targetRole);
+      const accessToken =
+        data?.data?.tokens?.accessToken ||
+        data?.tokens?.accessToken ||
+        data?.token ||
+        data?.accessToken;
+      const userObj = data?.data?.user || data?.user || { email: demoEmail, role: targetRole };
+
+      if (response.ok && accessToken) {
+        setAuthSession(accessToken, userObj, targetRole);
         const dest =
           targetRole === 'admin'
             ? '/admin/dashboard'
