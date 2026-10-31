@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ExtendedReservation, resolveGuestName } from '@/hooks/useReservations';
+import { RoomType } from '@keystay/types';
 import { useI18n } from '@/lib/i18n';
+import { localizeRoomType } from '@/lib/localizeMetadata';
 import { apiFetch } from '@/lib/api';
 import {
   X,
@@ -12,11 +14,11 @@ import {
   Receipt,
   CheckCircle2,
   FileText,
-  DollarSign,
 } from 'lucide-react';
 
 export interface CheckOutModalProps {
   reservation: ExtendedReservation | null;
+  roomType?: RoomType | null;
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
@@ -32,13 +34,14 @@ export interface CheckOutModalProps {
 
 export const CheckOutModal: React.FC<CheckOutModalProps> = ({
   reservation,
+  roomType,
   isOpen,
   onClose,
   onSuccess,
   onConfirm,
 }) => {
   const navigate = useNavigate();
-  const { t, formatCurrency, formatDateRange } = useI18n();
+  const { t, locale, formatCurrency, formatDateRange } = useI18n();
 
   const [keyCardReturned, setKeyCardReturned] = useState<boolean>(true);
   const [note, setNote] = useState<string>('');
@@ -70,6 +73,11 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
     reservation.guestName ||
     reservation.guest?.fullName ||
     '—';
+
+  const roomTypeName = localizeRoomType(
+    roomType?.name || (reservation as any)?.roomType || (reservation as any)?.roomTypeName || (reservation as any)?.room?.roomType?.name,
+    locale
+  );
 
   const depositAmountNum = Number(reservation.depositAmount || 1000);
   const depositFormatted = formatCurrency(depositAmountNum);
@@ -165,7 +173,7 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
           <div className="bg-slate-50 rounded-lg border border-slate-200 p-3 space-y-2 text-xs">
             <div className="flex justify-between items-center">
               <span className="text-slate-500">{t('checkout.bookingNumber')}</span>
-              <span className="font-mono font-bold text-slate-900">
+              <span className="font-mono font-bold tabular-nums text-slate-900">
                 {reservation.bookingNumber || reservation.id.slice(0, 8)}
               </span>
             </div>
@@ -175,12 +183,18 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
             </div>
             <div className="flex justify-between items-center">
               <span className="text-slate-500">{t('checkout.roomNumber')}</span>
-              <span className="font-mono font-bold text-slate-900">
+              <span className="font-mono font-bold tabular-nums text-slate-900">
                 {reservation.roomNumber || '—'}
               </span>
             </div>
-            <div className="flex justify-between items-center font-mono text-[11px] pt-1 border-t border-slate-200">
-              <span className="text-slate-500">{t('checkout.stayPeriod')}</span>
+            {roomTypeName && (
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">{t('common.roomType')}</span>
+                <span className="font-medium text-slate-900">{roomTypeName}</span>
+              </div>
+            )}
+            <div className="flex justify-between items-center font-mono tabular-nums text-[11px] pt-1 border-t border-slate-200">
+              <span className="text-slate-500 font-sans">{t('checkout.stayPeriod')}</span>
               <span className="text-slate-700">
                 {formatDateRange(
                   reservation.checkInDate,
@@ -189,8 +203,8 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
                 )}
               </span>
             </div>
-            <div className="flex justify-between items-center font-mono text-[11px]">
-              <span className="text-slate-500">{t('common.total')}</span>
+            <div className="flex justify-between items-center font-mono tabular-nums text-[11px]">
+              <span className="text-slate-500 font-sans">{t('common.total')}</span>
               <span className="text-slate-900 font-bold">
                 {formatCurrency(reservation.totalAmount || 0)}
               </span>
@@ -221,7 +235,7 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                   <span>{t('checkout.keyDepositRefundTitle')}</span>
                 </div>
-                <p className="text-[11px] text-emerald-700">
+                <p className="text-[11px] text-emerald-700 tabular-nums">
                   {t('checkout.keyDepositRefundNotice', { amount: depositFormatted })}
                 </p>
               </div>

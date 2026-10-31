@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { ExtendedReservation, resolveGuestName } from '@/hooks/useReservations';
+import { RoomType } from '@keystay/types';
 import { useI18n } from '@/lib/i18n';
+import { localizeRoomType } from '@/lib/localizeMetadata';
 import { X, LogIn, CreditCard, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export interface CheckInModalProps {
   reservation: ExtendedReservation | null;
+  roomType?: RoomType | null;
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (reservationId: string, nationalIdOrPassport: string) => Promise<{ success: boolean; error?: string }>;
@@ -12,11 +15,12 @@ export interface CheckInModalProps {
 
 export const CheckInModal: React.FC<CheckInModalProps> = ({
   reservation,
+  roomType,
   isOpen,
   onClose,
   onConfirm,
 }) => {
-  const { t, formatCurrency, formatDateRange } = useI18n();
+  const { t, locale, formatCurrency, formatDateRange } = useI18n();
   const [nationalIdOrPassport, setNationalIdOrPassport] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,6 +67,11 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
     reservation.guest?.fullName ||
     '—';
 
+  const roomTypeName = localizeRoomType(
+    roomType?.name || (reservation as any)?.roomType || (reservation as any)?.roomTypeName || (reservation as any)?.room?.roomType?.name,
+    locale
+  );
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
@@ -79,6 +88,7 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
           <button
             onClick={onClose}
             className="p-1 text-slate-400 hover:text-slate-600 rounded transition-colors"
+            title={t('common.close')}
           >
             <X className="w-4 h-4" />
           </button>
@@ -94,30 +104,36 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
 
           {/* Reservation Summary */}
           <div className="bg-slate-50 rounded-lg border border-slate-200 p-3 space-y-2 text-xs">
-            <div className="flex justify-between">
+            <div className="flex justify-between items-center">
               <span className="text-slate-500">{t('checkin.bookingNumber')}</span>
-              <span className="font-mono font-bold text-slate-900">
+              <span className="font-mono font-bold tabular-nums text-slate-900">
                 {reservation.bookingNumber || reservation.id.slice(0, 8)}
               </span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between items-center">
               <span className="text-slate-500">{t('checkin.guestName')}</span>
               <span className="font-medium text-slate-900">{guestDisplayName}</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between items-center">
               <span className="text-slate-500">{t('checkin.roomNumber')}</span>
-              <span className="font-mono font-semibold text-slate-900">
+              <span className="font-mono font-semibold tabular-nums text-slate-900">
                 {reservation.roomNumber ? t('checkin.roomLabel', { room: reservation.roomNumber }) : '—'}
               </span>
             </div>
-            <div className="flex justify-between font-mono text-[11px] pt-1 border-t border-slate-200">
-              <span className="text-slate-500">{t('checkin.stayPeriod')}</span>
+            {roomTypeName && (
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">{t('common.roomType')}</span>
+                <span className="font-medium text-slate-900">{roomTypeName}</span>
+              </div>
+            )}
+            <div className="flex justify-between items-center font-mono tabular-nums text-[11px] pt-1 border-t border-slate-200">
+              <span className="text-slate-500 font-sans">{t('checkin.stayPeriod')}</span>
               <span className="text-slate-700">
                 {formatDateRange(reservation.checkInDate, reservation.checkOutDate, reservation.totalNights)}
               </span>
             </div>
-            <div className="flex justify-between font-mono text-[11px]">
-              <span className="text-slate-500">{t('checkin.keyDeposit')}</span>
+            <div className="flex justify-between items-center font-mono tabular-nums text-[11px]">
+              <span className="text-slate-500 font-sans">{t('checkin.keyDeposit')}</span>
               <span className="text-emerald-700 font-semibold">
                 {formatCurrency(reservation.depositAmount || 0)}
               </span>
@@ -137,7 +153,7 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
                 placeholder={t('checkin.idPlaceholder')}
                 value={nationalIdOrPassport}
                 onChange={(e) => setNationalIdOrPassport(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono"
+                className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono tabular-nums"
               />
             </div>
             <p className="text-[10px] text-slate-400 mt-1">

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { ExtendedReservation, resolveGuestName } from '@/hooks/useReservations';
 import { Room, RoomType } from '@keystay/types';
 import { useI18n } from '@/lib/i18n';
+import { localizeRoomType } from '@/lib/localizeMetadata';
 import { apiFetch } from '@/lib/api';
 import {
   X,
@@ -38,7 +39,7 @@ export const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
   onSuccess,
   onConfirm,
 }) => {
-  const { t, formatCurrency, formatDate } = useI18n();
+  const { t, locale, formatCurrency, formatDate } = useI18n();
 
   const [newCheckOutDate, setNewCheckOutDate] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -108,6 +109,11 @@ export const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
 
   const roomDisplayNumber =
     room?.roomNumber || reservation.roomNumber || '—';
+
+  const roomTypeName = localizeRoomType(
+    roomType?.name || (reservation as any)?.roomType || (reservation as any)?.roomTypeName || (reservation as any)?.room?.roomType?.name,
+    locale
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -196,23 +202,29 @@ export const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
           <div className="bg-slate-50 rounded-lg border border-slate-200 p-3 space-y-2 text-xs">
             <div className="flex justify-between items-center">
               <span className="text-slate-500">{t('extend.roomNumber')}</span>
-              <span className="font-mono font-bold text-slate-900 text-sm">
+              <span className="font-mono font-bold tabular-nums text-slate-900 text-sm">
                 {roomDisplayNumber}
               </span>
             </div>
+            {roomTypeName && (
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">{t('common.roomType')}</span>
+                <span className="font-medium text-slate-900">{roomTypeName}</span>
+              </div>
+            )}
             <div className="flex justify-between items-center">
               <span className="text-slate-500">{t('extend.guestName')}</span>
               <span className="font-medium text-slate-900">{guestDisplayName}</span>
             </div>
             <div className="flex justify-between items-center pt-1 border-t border-slate-200">
               <span className="text-slate-500">{t('extend.currentCheckOut')}</span>
-              <span className="font-mono font-medium text-slate-700 flex items-center gap-1.5">
+              <span className="font-mono font-medium tabular-nums text-slate-700 flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-slate-400" />
                 {formatDate(reservation.checkOutDate, 'short')}
               </span>
             </div>
-            <div className="flex justify-between items-center font-mono text-[11px]">
-              <span className="text-slate-500">{t('extend.nightlyRate')}</span>
+            <div className="flex justify-between items-center font-mono tabular-nums text-[11px]">
+              <span className="text-slate-500 font-sans">{t('extend.nightlyRate')}</span>
               <span className="text-slate-700 font-semibold">
                 {formatCurrency(nightlyRate)}
               </span>
@@ -235,7 +247,7 @@ export const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
                   setNewCheckOutDate(e.target.value);
                   setError(null);
                 }}
-                className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono"
+                className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono tabular-nums"
               />
             </div>
             {newCheckOutDate && newCheckOutDate <= reservation.checkOutDate && (
@@ -252,7 +264,7 @@ export const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
                 <Moon className="w-3.5 h-3.5 text-emerald-600" />
                 {t('extend.extraNights')}
               </span>
-              <span className="font-mono font-bold text-sm text-emerald-900">
+              <span className="font-mono font-bold tabular-nums text-sm text-emerald-900">
                 +{extraNights} {t('common.nights')}
               </span>
             </div>
@@ -261,7 +273,7 @@ export const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
                 <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
                 {t('extend.extraCharge')}
               </span>
-              <span className="font-mono font-bold text-base text-emerald-700">
+              <span className="font-mono font-bold tabular-nums text-base text-emerald-700">
                 {formatCurrency(extraCharge)}
               </span>
             </div>
