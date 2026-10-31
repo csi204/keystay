@@ -25,6 +25,10 @@ export interface LoginDTO {
 export class AuthService {
   constructor(private db: Database, private jwtSecret: string, private kv?: KVNamespace) {}
 
+  /**
+   * สมัครสมาชิกผู้ใช้งานใหม่
+   * เช็ค email ซ้ำในระบบ -> hash password -> บันทึก user, session และ outbox event ใน transaction เดียวกัน -> ออก accessToken และ refreshToken
+   */
   async register(dto: RegisterDTO) {
     const existing = await this.db.select().from(users).where(eq(users.email, dto.email.toLowerCase())).get();
     if (existing) {
@@ -98,6 +102,10 @@ export class AuthService {
     };
   }
 
+  /**
+   * เข้าสู่ระบบ
+   * ตรวจสอบ email และ password -> เช็คสถานะ isActive -> สร้าง session (รองรับ rememberMe 30 วัน) -> อัปเดต lastLoginAt -> ออก JWT access token และ refresh token
+   */
   async login(dto: LoginDTO) {
     const user = await this.db.select().from(users).where(eq(users.email, dto.email.toLowerCase())).get();
     if (!user) {
@@ -168,6 +176,10 @@ export class AuthService {
     };
   }
 
+  /**
+   * ขอออก Access Token ใหม่ด้วย Refresh Token (Rotation)
+   * ตรวจสอบความถูกต้องของ session และอายุ token -> ยกเลิก session เดิม (isRevoked = 1) -> สร้าง session ใหม่พร้อม refresh token ใหม่ -> ออก access token ใหม่
+   */
   async refreshToken(token: string) {
     const session = await this.db.select().from(sessions).where(eq(sessions.refreshToken, token)).get();
     if (!session || session.isRevoked) {
@@ -216,6 +228,10 @@ export class AuthService {
     };
   }
 
+  /**
+   * ออกจากระบบ
+   * ยกเลิก refresh token ในฐานข้อมูล และขึ้นบัญชีดำ JWT ID (jti) ใน Cloudflare KV เพื่อระงับการใช้งาน access token ทันที
+   */
   async logout(refreshToken?: string, jwtId?: string) {
     if (refreshToken) {
       await this.db.update(sessions).set({ isRevoked: 1 }).where(eq(sessions.refreshToken, refreshToken));
@@ -226,6 +242,10 @@ export class AuthService {
     return { success: true };
   }
 
+  /**
+   * ขอรีเซ็ตรหัสผ่าน
+   * ตรวจสอบ email ในระบบ หากพบจะสร้าง secure reset token (มีอายุ 1 ชั่วโมง) บันทึกในฐานข้อมูล หากไม่พบจะไม่เปิดเผยข้อมูลเพื่อความปลอดภัย (anti-enumeration)
+   */
   async requestPasswordReset(email: string) {
     const user = await this.db.select().from(users).where(eq(users.email, email.toLowerCase())).get();
     if (!user) {
@@ -251,6 +271,10 @@ export class AuthService {
     };
   }
 
+  /**
+   * รีเซ็ตรหัสผ่านใหม่
+   * ตรวจสอบความถูกต้องและอายุของ reset token -> แฮชรหัสผ่านใหม่ -> อัปเดตข้อมูลผู้ใช้ -> ทำเครื่องหมาย token เป็นใช้งานแล้ว -> ยกเลิก session เดิมทั้งหมดของผู้ใช้
+   */
   async resetPassword(token: string, newPassword: string) {
     const record = await this.db.select().from(passwordResetTokens).where(eq(passwordResetTokens.token, token)).get();
     if (!record || record.isUsed) {

@@ -13,6 +13,11 @@
     "deploy": "pnpm dlx turbo run deploy",
     "lint": "pnpm dlx turbo run lint",
     "typecheck": "pnpm dlx turbo run typecheck",
+    "test": "tsx scripts/run-mocha.ts",
+    "test:auth": "tsx scripts/run-mocha.ts auth-user",
+    "test:reports": "tsx scripts/run-mocha.ts report-analytics",
+    "test:gateway": "tsx scripts/run-mocha.ts api-gateway",
+    "test:khet": "tsx scripts/run-mocha.ts",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
     "setup:r2": "powershell -ExecutionPolicy Bypass -File ./scripts/setup-r2.ps1",
     "d1:migrate:local": "node ./scripts/migrate-d1.js",
@@ -25,10 +30,21 @@
     "db:seed:prod": "node ./scripts/seed-d1.js --remote"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/chai": "^5.2.3",
+    "@types/mocha": "^10.0.10",
     "@types/node": "^22.13.9",
+    "bcryptjs": "^3.0.3",
+    "chai": "^6.3.0",
+    "drizzle-orm": "^0.39.3",
+    "hono": "^4.13.9",
+    "jose": "^5.10.0",
+    "mocha": "^12.0.3",
     "prettier": "^3.5.3",
+    "tsx": "^4.23.15",
     "turbo": "^2.11.4",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "zod": "^3.24.2"
   },
   "engines": {
     "node": ">=22"

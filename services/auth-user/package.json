@@ -1,13 +1,15 @@
 {
   "name": "@keystay/service-auth-user",
   "version": "1.0.0",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "pnpm dlx wrangler dev --port 8788",
     "deploy": "pnpm dlx wrangler deploy",
     "typecheck": "tsc --noEmit",
-    "lint": "echo 'auth-user lint ok'"
+    "lint": "echo 'auth-user lint ok'",
+    "test": "pnpm --filter keystay test:auth"
   },
   "dependencies": {
     "@keystay/types": "workspace:*",

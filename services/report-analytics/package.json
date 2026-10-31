@@ -1,13 +1,15 @@
 {
   "name": "@keystay/service-report-analytics",
   "version": "1.0.0",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "pnpm dlx wrangler dev --port 8793",
     "deploy": "pnpm dlx wrangler deploy",
     "typecheck": "tsc --noEmit",
-    "lint": "echo 'report-analytics lint ok'"
+    "lint": "echo 'report-analytics lint ok'",
+    "test": "pnpm --filter keystay test:reports"
   },
   "dependencies": {
     "@keystay/events": "workspace:*",
