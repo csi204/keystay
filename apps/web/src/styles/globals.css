@@ -50,7 +50,18 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-background text-foreground antialiased font-sans text-[15px] leading-relaxed;
     font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  .pms-card {
+    @apply bg-card text-card-foreground rounded-lg border border-border shadow-elevation-sm transition-shadow duration-150;
+  }
+  .pms-card-interactive {
+    @apply bg-card text-card-foreground rounded-lg border border-border shadow-elevation-sm transition-all duration-150 hover:shadow-elevation-md hover:border-slate-300;
   }
 }
