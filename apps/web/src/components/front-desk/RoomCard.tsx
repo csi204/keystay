@@ -1,6 +1,7 @@
 import React from 'react';
 import { Room, RoomType, RoomStatus } from '@keystay/types';
 import { useI18n } from '@/lib/i18n';
+import { localizeRoomType, localizeRoomNote } from '@/lib/localizeMetadata';
 import { User } from 'lucide-react';
 
 export interface RoomCardProps {
@@ -75,7 +76,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
   onClick,
   density = 'compact',
 }) => {
-  const { t, formatCurrency } = useI18n();
+  const { t, formatCurrency, locale } = useI18n();
 
   const statusCfg = ROOM_STATUS_CONFIG[room.status] || {
     label: room.status,
@@ -123,7 +124,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
       {/* Room Type & Floor */}
       <div className={isCompact ? 'space-y-0.5' : 'space-y-1'}>
         <p className="text-xs font-medium text-slate-800 truncate">
-          {roomType?.name || 'Standard Room'}
+          {localizeRoomType(roomType?.name, locale)}
         </p>
         <div className={`flex items-center justify-between text-slate-500 font-mono tracking-tight ${
           isCompact ? 'text-[10px]' : 'text-[11px]'
@@ -152,7 +153,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
         <div className={`border-t border-slate-100 text-slate-500 truncate ${
           isCompact ? 'mt-1 pt-1 text-[9px]' : 'mt-2 pt-2 text-[10px]'
         }`}>
-          {room.notes}
+          {localizeRoomNote(room.notes, locale)}
         </div>
       )}
     </div>

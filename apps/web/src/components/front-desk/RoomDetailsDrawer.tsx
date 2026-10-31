@@ -2,6 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { Room, RoomType } from '@keystay/types';
 import { ROOM_STATUS_CONFIG } from './RoomCard';
 import { useI18n } from '@/lib/i18n';
+import {
+  localizeRoomType,
+  localizeRoomNote,
+  localizeRoomDescription,
+  localizeAmenity,
+} from '@/lib/localizeMetadata';
 import { ExtendedReservation } from '@/hooks/useReservations';
 import { ExtendStayModal } from './ExtendStayModal';
 import {
@@ -46,7 +52,7 @@ export const RoomDetailsDrawer: React.FC<RoomDetailsDrawerProps> = ({
   onAction,
   currentReservation,
 }) => {
-  const { t, formatCurrency } = useI18n();
+  const { t, formatCurrency, locale } = useI18n();
   const [isExtendOpen, setIsExtendOpen] = useState(false);
 
   // Close on Escape key press
@@ -122,13 +128,13 @@ export const RoomDetailsDrawer: React.FC<RoomDetailsDrawerProps> = ({
                   <span className="text-slate-500 block mb-0.5">{t('common.roomType')}</span>
                   <span className="font-medium text-slate-900 flex items-center gap-1.5">
                     <BedDouble className="w-3.5 h-3.5 text-slate-500" />
-                    {roomType?.name || 'Standard Room'}
+                    {localizeRoomType(roomType?.name, locale)}
                   </span>
                 </div>
 
                 <div>
                   <span className="text-slate-500 block mb-0.5">
-                    {t('common.floor', { floor: '' }).replace('{floor}', '').trim() || 'Floor'}
+                    {t('common.floor', { floor: '' }).replace('{floor}', '').trim() || (locale === 'th' ? 'ชั้น' : 'Floor')}
                   </span>
                   <span className="font-mono font-medium text-slate-900 flex items-center gap-1.5">
                     <Layers className="w-3.5 h-3.5 text-slate-500" />
@@ -155,7 +161,7 @@ export const RoomDetailsDrawer: React.FC<RoomDetailsDrawerProps> = ({
 
               {roomType?.description && (
                 <div className="pt-2 border-t border-slate-200/80 text-[11px] text-slate-600">
-                  {roomType.description}
+                  {localizeRoomDescription(roomType.description, locale)}
                 </div>
               )}
             </div>
@@ -172,7 +178,7 @@ export const RoomDetailsDrawer: React.FC<RoomDetailsDrawerProps> = ({
                       key={idx}
                       className="text-[11px] px-2 py-0.5 bg-slate-100 text-slate-700 rounded border border-slate-200"
                     >
-                      {amenity}
+                      {localizeAmenity(amenity, locale)}
                     </span>
                   ))}
                 </div>
@@ -187,7 +193,7 @@ export const RoomDetailsDrawer: React.FC<RoomDetailsDrawerProps> = ({
                   <span>{t('drawer.notes')}</span>
                 </h3>
                 <div className="p-3 bg-amber-50/50 rounded-lg border border-amber-200 text-xs text-amber-900 leading-relaxed">
-                  {room.notes}
+                  {localizeRoomNote(room.notes, locale)}
                 </div>
               </div>
             )}

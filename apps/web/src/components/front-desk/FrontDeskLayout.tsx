@@ -93,7 +93,7 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans flex flex-col">
       {/* Top Main Navigation Bar */}
       <header className="border-b border-slate-200 bg-white sticky top-0 z-30 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
+        <div className="max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-3">
           {/* Logo & Section Badge */}
           <div className="flex items-center gap-3 shrink-0">
             <Logo size="md" showText={true} />
@@ -193,7 +193,7 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
 
         {/* Secondary Navigation Tabs */}
         <div className="border-t border-slate-100 bg-slate-50/50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 flex gap-1 overflow-x-auto no-scrollbar">
+          <div className="max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 flex gap-1 overflow-x-auto no-scrollbar">
             {navTabs.map((tab) => {
               const Icon = tab.icon;
               const isActive =
@@ -222,7 +222,7 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">
+      <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {children}
       </main>
 

@@ -23,7 +23,7 @@ export const RoomMatrixGrid: React.FC<RoomMatrixGridProps> = ({
   density = 'compact',
   groupByFloor = true,
 }) => {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterFloor, setFilterFloor] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -169,9 +169,9 @@ export const RoomMatrixGrid: React.FC<RoomMatrixGridProps> = ({
 
         {floors.length > 1 && (
           <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500 flex items-center gap-1 font-medium">
+            <span className="text-xs text-slate-500 flex items-center gap-1 font-medium shrink-0">
               <Layers className="w-3.5 h-3.5 text-slate-400" />
-              <span>{t('common.floor', { floor: '' }).replace('{floor}', '').trim() || 'Floor'}:</span>
+              <span>{t('common.floor', { floor: '' }).replace('{floor}', '').trim() || (locale === 'th' ? 'ชั้น' : 'Floor')}:</span>
             </span>
             <div className="inline-flex p-1 bg-slate-100 rounded-lg gap-1 border border-slate-200/60">
               <button
