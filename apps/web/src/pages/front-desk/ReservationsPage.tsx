@@ -30,7 +30,7 @@ const RESERVATION_STATUS_STYLES: Record<
 };
 
 export const ReservationsPage: React.FC = () => {
-  const { t, formatDateRange, formatCurrency } = useI18n();
+  const { t, locale, formatDateRange, formatCurrency, formatRelativeTime } = useI18n();
 
   const {
     reservations,
@@ -87,6 +87,9 @@ export const ReservationsPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <span className="text-[11px] text-slate-500 font-mono tracking-tight hidden sm:inline">
+              {formatRelativeTime(lastRefreshed, locale)}
+            </span>
             <button
               onClick={handleManualRefresh}
               disabled={loading || isRefreshing}
@@ -151,13 +154,13 @@ export const ReservationsPage: React.FC = () => {
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
-                  <th className="py-3 px-4 font-mono">{t('res.bookingNumber')}</th>
+                  <th className="py-3 px-4 font-mono font-medium tracking-tight">{t('res.bookingNumber')}</th>
                   <th className="py-3 px-4">{t('common.guestName')}</th>
-                  <th className="py-3 px-4 font-mono">{t('common.room')}</th>
-                  <th className="py-3 px-4 font-mono">{t('common.dates')}</th>
-                  <th className="py-3 px-4 text-center font-mono">{t('common.nights')}</th>
-                  <th className="py-3 px-4 text-right font-mono">{t('common.total')}</th>
-                  <th className="py-3 px-4 text-right font-mono">{t('common.deposit')}</th>
+                  <th className="py-3 px-4 font-mono font-medium tracking-tight">{t('common.room')}</th>
+                  <th className="py-3 px-4 font-mono font-medium tracking-tight">{t('common.dates')}</th>
+                  <th className="py-3 px-4 text-center font-mono font-medium tracking-tight">{t('common.nights')}</th>
+                  <th className="py-3 px-4 text-right font-mono font-medium tracking-tight">{t('common.total')}</th>
+                  <th className="py-3 px-4 text-right font-mono font-medium tracking-tight">{t('common.deposit')}</th>
                   <th className="py-3 px-4 text-center">{t('common.status')}</th>
                   <th className="py-3 px-4 text-right">{t('common.actions')}</th>
                 </tr>
@@ -188,25 +191,25 @@ export const ReservationsPage: React.FC = () => {
 
                     return (
                       <tr key={res.id} className="hover:bg-slate-50/70 transition-colors">
-                        <td className="py-3 px-4 font-mono font-medium text-slate-900">
+                        <td className="py-3 px-4 font-mono font-medium tracking-tight text-slate-900">
                           {res.bookingNumber || res.id.slice(0, 8)}
                         </td>
                         <td className="py-3 px-4 font-medium text-slate-800">
                           {guestDisplayName}
                         </td>
-                        <td className="py-3 px-4 font-mono font-bold text-slate-900">
+                        <td className="py-3 px-4 font-mono font-medium tracking-tight text-slate-900">
                           {roomNum}
                         </td>
-                        <td className="py-3 px-4 font-mono text-slate-600">
+                        <td className="py-3 px-4 font-mono font-medium tracking-tight text-slate-600">
                           {formatDateRange(res.checkInDate, res.checkOutDate, res.totalNights)}
                         </td>
-                        <td className="py-3 px-4 text-center font-mono text-slate-700">
+                        <td className="py-3 px-4 text-center font-mono font-medium tracking-tight text-slate-700">
                           {res.totalNights || '1'}
                         </td>
-                        <td className="py-3 px-4 text-right font-mono font-semibold text-slate-900">
+                        <td className="py-3 px-4 text-right font-mono font-medium tracking-tight text-slate-900">
                           {formatCurrency(res.totalAmount || '0')}
                         </td>
-                        <td className="py-3 px-4 text-right font-mono text-emerald-700">
+                        <td className="py-3 px-4 text-right font-mono font-medium tracking-tight text-emerald-700">
                           {formatCurrency(res.depositAmount || '0')}
                         </td>
                         <td className="py-3 px-4 text-center">

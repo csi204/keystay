@@ -13,7 +13,7 @@ const STORAGE_KEY_DENSITY = 'keystay_matrix_density';
 
 export const RoomMatrixPage: React.FC = () => {
   const navigate = useNavigate();
-  const { t, locale } = useI18n();
+  const { t, locale, formatRelativeTime } = useI18n();
   const { rooms, roomTypes, loading, error, isOffline, lastRefreshed, refresh } =
     useRooms();
   const { reservations, refresh: refreshReservations } = useReservations();
@@ -108,11 +108,6 @@ export const RoomMatrixPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Timestamp of last refresh */}
-            <span className="text-[11px] text-slate-500 font-mono hidden sm:inline">
-              {t('matrix.lastUpdated', { time: refreshTimeStr })}
-            </span>
-
             {/* View Density Switch [ Compact | Comfortable ] */}
             <div className="inline-flex p-0.5 bg-slate-100 rounded-lg border border-slate-200/60 text-xs">
               <button
@@ -141,7 +136,10 @@ export const RoomMatrixPage: React.FC = () => {
               </button>
             </div>
 
-            {/* Selective Partial Refresh Button */}
+            {/* Selective Partial Refresh Button & Relative Timestamp */}
+            <span className="text-[11px] text-slate-500 font-mono tracking-tight hidden sm:inline">
+              {formatRelativeTime(lastRefreshed, locale)}
+            </span>
             <button
               onClick={handleManualRefresh}
               disabled={loading || isRefreshing}

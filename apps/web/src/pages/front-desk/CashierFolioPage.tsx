@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 
 export const CashierFolioPage: React.FC = () => {
-  const { t } = useI18n();
+  const { t, locale, formatRelativeTime } = useI18n();
   const location = useLocation();
   const navState = location.state as {
     reservationId?: string;
@@ -86,6 +86,9 @@ export const CashierFolioPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <span className="text-[11px] text-slate-500 font-mono tracking-tight hidden sm:inline">
+              {formatRelativeTime(lastRefreshed, locale)}
+            </span>
             <button
               onClick={handleManualRefresh}
               disabled={loading || isRefreshing}
@@ -131,10 +134,10 @@ export const CashierFolioPage: React.FC = () => {
                       : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                   }`}
                 >
-                  <span className="font-mono font-bold">{t('common.room')} {b.roomNumber || '—'}</span>
+                  <span className="font-mono font-medium tracking-tight">{t('common.room')} {b.roomNumber || '—'}</span>
                   <span className="opacity-80 truncate max-w-[100px]">{b.guestName || t('common.guest')}</span>
                   <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-medium tracking-tight ${
                       b.status === 'paid'
                         ? 'bg-emerald-500/20 text-emerald-300'
                         : 'bg-amber-500/20 text-amber-300'

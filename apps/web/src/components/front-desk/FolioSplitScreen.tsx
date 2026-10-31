@@ -181,7 +181,7 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
               <span>{t('folio.itemizedTitle')}</span>
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              {t('common.room')} {bill.roomNumber || '—'} · {t('common.guest')}: {bill.guestName || t('common.guest')}
+              {t('common.room')} <span className="font-mono font-medium tracking-tight">{bill.roomNumber || '—'}</span> · {t('common.guest')}: {bill.guestName || t('common.guest')}
             </p>
           </div>
 
@@ -203,9 +203,9 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
               <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
                 <th className="py-2 px-3">{t('folio.category')}</th>
                 <th className="py-2 px-3">{t('folio.item')}</th>
-                <th className="py-2 px-3 text-center font-mono">{t('folio.qty')}</th>
-                <th className="py-2 px-3 text-right font-mono">{t('folio.unitPrice')}</th>
-                <th className="py-2 px-3 text-right font-mono">{t('folio.amount')}</th>
+                <th className="py-2 px-3 text-center font-mono font-medium tracking-tight">{t('folio.qty')}</th>
+                <th className="py-2 px-3 text-right font-mono font-medium tracking-tight">{t('folio.unitPrice')}</th>
+                <th className="py-2 px-3 text-right font-mono font-medium tracking-tight">{t('folio.amount')}</th>
                 {!isPaid && <th className="py-2 px-3 text-center">{t('common.delete')}</th>}
               </tr>
             </thead>
@@ -225,11 +225,11 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
                       </span>
                     </td>
                     <td className="py-2.5 px-3 font-medium text-slate-900">{it.description}</td>
-                    <td className="py-2.5 px-3 text-center font-mono text-slate-600">{it.quantity}</td>
-                    <td className="py-2.5 px-3 text-right font-mono text-slate-600">
+                    <td className="py-2.5 px-3 text-center font-mono font-medium tracking-tight text-slate-600">{it.quantity}</td>
+                    <td className="py-2.5 px-3 text-right font-mono font-medium tracking-tight text-slate-600">
                       {formatCurrency(it.unitPrice || 0)}
                     </td>
-                    <td className="py-2.5 px-3 text-right font-mono font-semibold text-slate-900">
+                    <td className="py-2.5 px-3 text-right font-mono font-medium tracking-tight text-slate-900">
                       {formatCurrency(calculateItemTotal(it))}
                     </td>
                     {!isPaid && (
@@ -275,7 +275,7 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
           )}
 
           {/* Money Breakdown */}
-          <div className="space-y-2 text-xs font-mono bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+          <div className="space-y-2 text-xs font-mono font-medium tracking-tight bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
             <div className="flex justify-between text-slate-600">
               <span>{t('folio.subtotal')}:</span>
               <span>{formatCurrency(summary.subtotal)}</span>
@@ -286,7 +286,7 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
             </div>
             <div className="flex justify-between text-slate-600">
               <span>{t('folio.totalAmount')}:</span>
-              <span className="font-semibold text-slate-800">{formatCurrency(summary.totalWithVat)}</span>
+              <span className="font-semibold text-slate-800 font-mono font-medium tracking-tight">{formatCurrency(summary.totalWithVat)}</span>
             </div>
             <div className="flex justify-between text-emerald-700 font-medium pt-1.5 border-t border-slate-100">
               <span>{t('folio.depositDeducted')}:</span>
@@ -294,7 +294,7 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
             </div>
             <div className="flex justify-between text-base font-bold text-slate-900 pt-2 border-t border-slate-200">
               <span>{t('folio.netDue')}:</span>
-              <span className="text-lg text-emerald-800">{formatCurrency(summary.netDue)}</span>
+              <span className="text-lg text-emerald-800 font-mono font-medium tracking-tight">{formatCurrency(summary.netDue)}</span>
             </div>
           </div>
 

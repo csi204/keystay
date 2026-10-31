@@ -19,13 +19,14 @@ import {
 
 export const DailyOperationsPage: React.FC = () => {
   const navigate = useNavigate();
-  const { t, formatDate, formatDateRange, formatCurrency } = useI18n();
+  const { t, locale, formatDate, formatDateRange, formatCurrency, formatRelativeTime } = useI18n();
   const todayStr = new Date().toISOString().split('T')[0];
 
   const {
     reservations,
     loading,
     isOffline,
+    lastRefreshed,
     refresh,
     checkInReservation,
     walkInCheckIn,
@@ -96,6 +97,9 @@ export const DailyOperationsPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <span className="text-[11px] text-slate-500 font-mono tracking-tight hidden sm:inline">
+              {formatRelativeTime(lastRefreshed, locale)}
+            </span>
             <button
               onClick={handleManualRefresh}
               disabled={loading || isRefreshing}
@@ -159,7 +163,7 @@ export const DailyOperationsPage: React.FC = () => {
           <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
             <div className="p-3 bg-emerald-50/50 border-b border-emerald-100 flex items-center justify-between text-xs text-emerald-900 font-medium">
               <span>{t('ops.arrivalsDescription')}</span>
-              <span className="font-mono text-[11px] text-emerald-700">
+              <span className="font-mono font-medium tracking-tight text-[11px] text-emerald-700">
                 {t('ops.totalItems', { count: arrivals.length })}
               </span>
             </div>
@@ -168,11 +172,11 @@ export const DailyOperationsPage: React.FC = () => {
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
-                    <th className="py-2.5 px-4 font-mono">{t('res.bookingNumber')}</th>
+                    <th className="py-2.5 px-4 font-mono font-medium tracking-tight">{t('res.bookingNumber')}</th>
                     <th className="py-2.5 px-4">{t('common.guestName')}</th>
-                    <th className="py-2.5 px-4 font-mono">{t('common.room')}</th>
-                    <th className="py-2.5 px-4 font-mono">{t('common.dates')}</th>
-                    <th className="py-2.5 px-4 text-right font-mono">{t('common.deposit')}</th>
+                    <th className="py-2.5 px-4 font-mono font-medium tracking-tight">{t('common.room')}</th>
+                    <th className="py-2.5 px-4 font-mono font-medium tracking-tight">{t('common.dates')}</th>
+                    <th className="py-2.5 px-4 text-right font-mono font-medium tracking-tight">{t('common.deposit')}</th>
                     <th className="py-2.5 px-4 text-right">{t('common.actions')}</th>
                   </tr>
                 </thead>
@@ -186,19 +190,19 @@ export const DailyOperationsPage: React.FC = () => {
                   ) : (
                     arrivals.map((res) => (
                       <tr key={res.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="py-2.5 px-4 font-mono font-medium text-slate-900">
+                        <td className="py-2.5 px-4 font-mono font-medium tracking-tight text-slate-900">
                           {res.bookingNumber || res.id.slice(0, 8)}
                         </td>
                         <td className="py-2.5 px-4 font-medium text-slate-800">
                           {resolveGuestName(res) || res.guestName || res.guest?.fullName || '—'}
                         </td>
-                        <td className="py-2.5 px-4 font-mono font-bold text-slate-900">
+                        <td className="py-2.5 px-4 font-mono font-medium tracking-tight text-slate-900">
                           {res.roomNumber || '—'}
                         </td>
-                        <td className="py-2.5 px-4 font-mono text-slate-600">
+                        <td className="py-2.5 px-4 font-mono font-medium tracking-tight text-slate-600">
                           {formatDateRange(res.checkInDate, res.checkOutDate, res.totalNights)}
                         </td>
-                        <td className="py-2.5 px-4 text-right font-mono text-emerald-700 font-medium">
+                        <td className="py-2.5 px-4 text-right font-mono text-emerald-700 font-medium tracking-tight">
                           {formatCurrency(res.depositAmount || '0')}
                         </td>
                         <td className="py-2.5 px-4 text-right">
@@ -221,7 +225,7 @@ export const DailyOperationsPage: React.FC = () => {
           <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
             <div className="p-3 bg-blue-50/50 border-b border-blue-100 flex items-center justify-between text-xs text-blue-900 font-medium">
               <span>{t('ops.departuresDescription')}</span>
-              <span className="font-mono text-[11px] text-blue-700">
+              <span className="font-mono font-medium tracking-tight text-[11px] text-blue-700">
                 {t('ops.totalItems', { count: departures.length })}
               </span>
             </div>
@@ -230,11 +234,11 @@ export const DailyOperationsPage: React.FC = () => {
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
-                    <th className="py-2.5 px-4 font-mono">{t('res.bookingNumber')}</th>
+                    <th className="py-2.5 px-4 font-mono font-medium tracking-tight">{t('res.bookingNumber')}</th>
                     <th className="py-2.5 px-4">{t('common.guestName')}</th>
-                    <th className="py-2.5 px-4 font-mono">{t('common.room')}</th>
-                    <th className="py-2.5 px-4 font-mono">{t('common.dates')}</th>
-                    <th className="py-2.5 px-4 text-right font-mono">{t('common.total')}</th>
+                    <th className="py-2.5 px-4 font-mono font-medium tracking-tight">{t('common.room')}</th>
+                    <th className="py-2.5 px-4 font-mono font-medium tracking-tight">{t('common.dates')}</th>
+                    <th className="py-2.5 px-4 text-right font-mono font-medium tracking-tight">{t('common.total')}</th>
                     <th className="py-2.5 px-4 text-right">{t('common.actions')}</th>
                   </tr>
                 </thead>
@@ -248,19 +252,19 @@ export const DailyOperationsPage: React.FC = () => {
                   ) : (
                     departures.map((res) => (
                       <tr key={res.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="py-2.5 px-4 font-mono font-medium text-slate-900">
+                        <td className="py-2.5 px-4 font-mono font-medium tracking-tight text-slate-900">
                           {res.bookingNumber || res.id.slice(0, 8)}
                         </td>
                         <td className="py-2.5 px-4 font-medium text-slate-800">
                           {resolveGuestName(res) || res.guestName || res.guest?.fullName || '—'}
                         </td>
-                        <td className="py-2.5 px-4 font-mono font-bold text-slate-900">
+                        <td className="py-2.5 px-4 font-mono font-medium tracking-tight text-slate-900">
                           {res.roomNumber || '—'}
                         </td>
-                        <td className="py-2.5 px-4 font-mono text-slate-600">
+                        <td className="py-2.5 px-4 font-mono font-medium tracking-tight text-slate-600">
                           {formatDateRange(res.checkInDate, res.checkOutDate, res.totalNights)}
                         </td>
-                        <td className="py-2.5 px-4 text-right font-mono text-slate-900 font-semibold">
+                        <td className="py-2.5 px-4 text-right font-mono text-slate-900 font-medium tracking-tight">
                           {formatCurrency(res.totalAmount || '0')}
                         </td>
                         <td className="py-2.5 px-4 text-right">

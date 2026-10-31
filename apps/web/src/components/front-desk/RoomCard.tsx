@@ -125,12 +125,12 @@ export const RoomCard: React.FC<RoomCardProps> = ({
         <p className="text-xs font-medium text-slate-800 truncate">
           {roomType?.name || 'Standard Room'}
         </p>
-        <div className={`flex items-center justify-between text-slate-500 font-mono ${
+        <div className={`flex items-center justify-between text-slate-500 font-mono tracking-tight ${
           isCompact ? 'text-[10px]' : 'text-[11px]'
         }`}>
           <span>{t('common.floor', { floor: room.floor || '1' })}</span>
           {formattedPrice && (
-            <span className="text-slate-700 font-semibold">
+            <span className="text-slate-700 font-medium font-mono tracking-tight">
               {formattedPrice}{t('common.pricePerNight')}
             </span>
           )}

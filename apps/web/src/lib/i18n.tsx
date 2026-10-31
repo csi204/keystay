@@ -11,6 +11,7 @@ export interface I18nContextValue {
   formatCurrency: (amount: number | string) => string;
   formatDate: (dateStr?: string | null, format?: 'short' | 'medium' | 'long') => string;
   formatDateRange: (startStr?: string | null, endStr?: string | null, nights?: number | string) => string;
+  formatRelativeTime: (date?: Date | string | number | null, locale?: Locale) => string;
 }
 
 const STORAGE_KEY = 'keystay_locale';
@@ -177,6 +178,55 @@ export function formatDateRangeHelper(
   return `${startFormatted} – ${endFormatted}`;
 }
 
+/**
+ * Format relative time cleanly for selective refresh timestamps.
+ * Returns 'อัปเดตเมื่อสักครู่' / 'Updated just now' for < 60s,
+ * 'อัปเดต X นาทีที่แล้ว' / 'Updated Xm ago' for < 60m,
+ * 'อัปเดต X ชม. ที่แล้ว' / 'Updated Xh ago' for < 24h,
+ * 'อัปเดต X วันที่แล้ว' / 'Updated Xd ago' for >= 24h.
+ */
+export function formatRelativeTime(
+  date?: Date | string | number | null,
+  locale: Locale = 'th'
+): string {
+  if (!date) {
+    return locale === 'th' ? 'อัปเดตเมื่อสักครู่' : 'Updated just now';
+  }
+
+  let d: Date;
+  if (date instanceof Date) {
+    d = date;
+  } else if (typeof date === 'number') {
+    d = new Date(date);
+  } else {
+    d = new Date(date);
+  }
+
+  if (isNaN(d.getTime())) {
+    return '—';
+  }
+
+  const diffMs = Date.now() - d.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+
+  if (diffSec < 60) {
+    return locale === 'th' ? 'อัปเดตเมื่อสักครู่' : 'Updated just now';
+  }
+
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) {
+    return locale === 'th' ? `อัปเดต ${diffMin} นาทีที่แล้ว` : `Updated ${diffMin}m ago`;
+  }
+
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) {
+    return locale === 'th' ? `อัปเดต ${diffHr} ชม. ที่แล้ว` : `Updated ${diffHr}h ago`;
+  }
+
+  const diffDay = Math.floor(diffHr / 24);
+  return locale === 'th' ? `อัปเดต ${diffDay} วันที่แล้ว` : `Updated ${diffDay}d ago`;
+}
+
 const defaultContextValue: I18nContextValue = {
   locale: 'th',
   setLocale: () => {},
@@ -184,6 +234,7 @@ const defaultContextValue: I18nContextValue = {
   formatCurrency: (amount) => formatCurrencyHelper(amount, 'th'),
   formatDate: (dateStr, format) => formatDateHelper(dateStr, format, 'th'),
   formatDateRange: (startStr, endStr, nights) => formatDateRangeHelper(startStr, endStr, nights, 'th'),
+  formatRelativeTime: (date, loc) => formatRelativeTime(date, loc || 'th'),
 };
 
 const I18nContext = createContext<I18nContextValue>(defaultContextValue);
@@ -216,6 +267,8 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
         formatDateHelper(dateStr, format, locale),
       formatDateRange: (startStr?: string | null, endStr?: string | null, nights?: number | string) =>
         formatDateRangeHelper(startStr, endStr, nights, locale),
+      formatRelativeTime: (date?: Date | string | number | null, loc?: Locale) =>
+        formatRelativeTime(date, loc || locale),
     }),
     [locale, dictionary]
   );
