@@ -22,4 +22,19 @@ describe('FrontDeskLayout with Language Switcher', () => {
     const code = fs.readFileSync(path.resolve(process.cwd(), 'apps/web/src/App.tsx'), 'utf-8');
     assert.match(code, /I18nProvider/);
   });
+
+  it('uses enhanced typography scale for navigation tabs and header elements', () => {
+    const code = fs.readFileSync(
+      path.resolve(process.cwd(), 'apps/web/src/components/front-desk/FrontDeskLayout.tsx'),
+      'utf-8'
+    );
+    // Navigation tabs: text-sm font-medium py-3 px-4
+    assert.match(code, /text-sm font-medium py-3 px-4/);
+    // Live clock: text-xs sm:text-sm font-mono font-medium text-slate-700
+    assert.match(code, /text-xs sm:text-sm font-mono font-medium text-slate-700/);
+    // Emergency outsource button: text-xs sm:text-sm font-semibold
+    assert.match(code, /text-xs sm:text-sm font-semibold/);
+    // User profile name: text-sm font-semibold text-slate-900
+    assert.match(code, /text-sm font-semibold text-slate-900/);
+  });
 });
