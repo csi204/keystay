@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Room, RoomType } from '@keystay/types';
 import { ROOM_STATUS_CONFIG } from './RoomCard';
+import { useI18n } from '@/lib/i18n';
 import {
   X,
   BedDouble,
@@ -12,6 +13,7 @@ import {
   Layers,
   FileText,
   Calendar,
+  Users,
 } from 'lucide-react';
 
 export interface RoomDetailsDrawerProps {
@@ -29,6 +31,8 @@ export const RoomDetailsDrawer: React.FC<RoomDetailsDrawerProps> = ({
   onClose,
   onAction,
 }) => {
+  const { t, formatCurrency } = useI18n();
+
   // Close on Escape key press
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -50,10 +54,9 @@ export const RoomDetailsDrawer: React.FC<RoomDetailsDrawerProps> = ({
     dot: 'bg-slate-400',
   };
 
+  const localizedStatus = t(`status.${room.status}`);
   const formattedPrice = roomType?.basePrice
-    ? Number(roomType.basePrice).toLocaleString('th-TH', {
-        minimumFractionDigits: 2,
-      })
+    ? formatCurrency(roomType.basePrice)
     : null;
 
   return (
@@ -77,14 +80,14 @@ export const RoomDetailsDrawer: React.FC<RoomDetailsDrawerProps> = ({
                 className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}
               >
                 <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
-                <span>{statusCfg.label}</span>
+                <span>{localizedStatus}</span>
               </span>
             </div>
 
             <button
               onClick={onClose}
               className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors"
-              title="ปิด"
+              title={t('common.close')}
             >
               <X className="w-5 h-5" />
             </button>
@@ -95,12 +98,12 @@ export const RoomDetailsDrawer: React.FC<RoomDetailsDrawerProps> = ({
             {/* Room Basic Specs */}
             <div className="bg-slate-50 rounded-lg border border-slate-200 p-4 space-y-3">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                ข้อมูลห้องพัก
+                {t('drawer.roomDetails')}
               </h3>
 
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div>
-                  <span className="text-slate-500 block mb-0.5">ประเภทห้อง</span>
+                  <span className="text-slate-500 block mb-0.5">{t('common.roomType')}</span>
                   <span className="font-medium text-slate-900 flex items-center gap-1.5">
                     <BedDouble className="w-3.5 h-3.5 text-slate-500" />
                     {roomType?.name || 'Standard Room'}
@@ -108,25 +111,28 @@ export const RoomDetailsDrawer: React.FC<RoomDetailsDrawerProps> = ({
                 </div>
 
                 <div>
-                  <span className="text-slate-500 block mb-0.5">ชั้น</span>
+                  <span className="text-slate-500 block mb-0.5">
+                    {t('common.floor', { floor: '' }).replace('{floor}', '').trim() || 'Floor'}
+                  </span>
                   <span className="font-mono font-medium text-slate-900 flex items-center gap-1.5">
                     <Layers className="w-3.5 h-3.5 text-slate-500" />
-                    ชั้น {room.floor || '1'}
+                    {t('common.floor', { floor: room.floor || '1' })}
                   </span>
                 </div>
 
                 <div>
-                  <span className="text-slate-500 block mb-0.5">ราคาต่อคืน</span>
+                  <span className="text-slate-500 block mb-0.5">{t('drawer.price')}</span>
                   <span className="font-mono font-semibold text-slate-900 flex items-center gap-1.5">
                     <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
-                    ฿{formattedPrice || '—'}
+                    {formattedPrice ? `${formattedPrice}${t('common.pricePerNight')}` : '—'}
                   </span>
                 </div>
 
                 <div>
-                  <span className="text-slate-500 block mb-0.5">ความจุ</span>
-                  <span className="font-medium text-slate-900">
-                    {roomType?.capacity || 2} ท่าน
+                  <span className="text-slate-500 block mb-0.5">{t('drawer.capacity')}</span>
+                  <span className="font-medium text-slate-900 flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-slate-500" />
+                    {t('drawer.capacityCount', { count: roomType?.capacity || 2 })}
                   </span>
                 </div>
               </div>
@@ -142,7 +148,7 @@ export const RoomDetailsDrawer: React.FC<RoomDetailsDrawerProps> = ({
             {roomType?.amenities && roomType.amenities.length > 0 && (
               <div className="space-y-2">
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  สิ่งอำนวยความสะดวก
+                  {t('drawer.amenities')}
                 </h3>
                 <div className="flex flex-wrap gap-1.5">
                   {roomType.amenities.map((amenity, idx) => (
@@ -162,7 +168,7 @@ export const RoomDetailsDrawer: React.FC<RoomDetailsDrawerProps> = ({
               <div className="space-y-2">
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
                   <FileText className="w-3.5 h-3.5" />
-                  <span>บันทึกเพิ่มเติม</span>
+                  <span>{t('drawer.notes')}</span>
                 </h3>
                 <div className="p-3 bg-amber-50/50 rounded-lg border border-amber-200 text-xs text-amber-900 leading-relaxed">
                   {room.notes}
@@ -176,10 +182,10 @@ export const RoomDetailsDrawer: React.FC<RoomDetailsDrawerProps> = ({
             {room.status === 'reserved' && (
               <button
                 onClick={() => onAction?.('checkin', room)}
-                className="w-full py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-md shadow-sm transition-colors flex items-center justify-center gap-2"
+                className="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-md shadow-sm transition-colors flex items-center justify-center gap-2"
               >
                 <LogIn className="w-4 h-4" />
-                <span>บันทึกเช็คอิน (Check-in)</span>
+                <span>{t('ops.checkIn')}</span>
               </button>
             )}
 
@@ -187,17 +193,17 @@ export const RoomDetailsDrawer: React.FC<RoomDetailsDrawerProps> = ({
               <>
                 <button
                   onClick={() => onAction?.('charge', room)}
-                  className="w-full py-2 px-3 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-md transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-2.5 px-3 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-md transition-colors flex items-center justify-center gap-2 shadow-sm"
                 >
                   <PlusCircle className="w-4 h-4 text-slate-600" />
-                  <span>เพิ่มค่าใช้จ่าย / มินิบาร์ (Add Charge)</span>
+                  <span>{t('folio.addCharge')}</span>
                 </button>
                 <button
                   onClick={() => onAction?.('checkout', room)}
-                  className="w-full py-2 px-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-md shadow-sm transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-2.5 px-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-md shadow-sm transition-colors flex items-center justify-center gap-2"
                 >
                   <LogOut className="w-4 h-4" />
-                  <span>เช็คเอาท์และออกบิล (Check-out)</span>
+                  <span>{t('ops.checkOut')}</span>
                 </button>
               </>
             )}
@@ -206,17 +212,17 @@ export const RoomDetailsDrawer: React.FC<RoomDetailsDrawerProps> = ({
               <>
                 <button
                   onClick={() => onAction?.('walkin', room)}
-                  className="w-full py-2 px-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-md shadow-sm transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-2.5 px-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-md shadow-sm transition-colors flex items-center justify-center gap-2"
                 >
                   <LogIn className="w-4 h-4" />
-                  <span>ลงทะเบียน Walk-in ทันที</span>
+                  <span>{t('ops.walkIn')}</span>
                 </button>
                 <button
                   onClick={() => onAction?.('checkin', room)}
-                  className="w-full py-2 px-3 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-md transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-2.5 px-3 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-md transition-colors flex items-center justify-center gap-2 shadow-sm"
                 >
                   <Calendar className="w-4 h-4 text-slate-600" />
-                  <span>สร้างการจองใหม่ห้องนี้</span>
+                  <span>{t('drawer.newBooking')}</span>
                 </button>
               </>
             )}
@@ -224,10 +230,10 @@ export const RoomDetailsDrawer: React.FC<RoomDetailsDrawerProps> = ({
             {room.status === 'checked_out' && (
               <button
                 onClick={() => onAction?.('clean', room)}
-                className="w-full py-2 px-3 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded-md shadow-sm transition-colors flex items-center justify-center gap-2"
+                className="w-full py-2.5 px-3 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded-md shadow-sm transition-colors flex items-center justify-center gap-2"
               >
                 <Sparkles className="w-4 h-4" />
-                <span>แจ้งแม่บ้านทำความสะอาด</span>
+                <span>{t('drawer.requestCleaning')}</span>
               </button>
             )}
           </div>
@@ -236,4 +242,3 @@ export const RoomDetailsDrawer: React.FC<RoomDetailsDrawerProps> = ({
     </div>
   );
 };
-

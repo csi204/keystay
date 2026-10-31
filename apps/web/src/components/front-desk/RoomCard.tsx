@@ -1,9 +1,12 @@
 import React from 'react';
 import { Room, RoomType, RoomStatus } from '@keystay/types';
+import { useI18n } from '@/lib/i18n';
+import { User } from 'lucide-react';
 
 export interface RoomCardProps {
   room: Room;
   roomType?: RoomType;
+  guestName?: string;
   isSelected?: boolean;
   onClick: (room: Room) => void;
 }
@@ -66,9 +69,12 @@ export const ROOM_STATUS_CONFIG: Record<
 export const RoomCard: React.FC<RoomCardProps> = ({
   room,
   roomType,
+  guestName,
   isSelected = false,
   onClick,
 }) => {
+  const { t, formatCurrency } = useI18n();
+
   const statusCfg = ROOM_STATUS_CONFIG[room.status] || {
     label: room.status,
     bg: 'bg-slate-100',
@@ -77,31 +83,32 @@ export const RoomCard: React.FC<RoomCardProps> = ({
     dot: 'bg-slate-400',
   };
 
+  const localizedStatus = t(`status.${room.status}`);
+  const displayGuest = guestName || (room as any).guestName || (room as any).currentGuestName;
+
   const formattedPrice = roomType?.basePrice
-    ? Number(roomType.basePrice).toLocaleString('th-TH', {
-        minimumFractionDigits: 0,
-      })
+    ? formatCurrency(roomType.basePrice)
     : null;
 
   return (
     <div
       onClick={() => onClick(room)}
-      className={`group relative bg-white rounded-lg border p-4 text-left transition-all duration-150 cursor-pointer select-none ${
+      className={`group relative bg-white rounded-lg border p-4 text-left shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-150 cursor-pointer select-none ${
         isSelected
-          ? 'border-slate-900 ring-2 ring-slate-900/10 shadow-sm'
-          : 'border-slate-200 hover:border-slate-400 hover:shadow-sm'
+          ? 'border-slate-900 ring-2 ring-slate-900/10 shadow-md'
+          : 'border-slate-200'
       }`}
     >
       {/* Top Header: Room Number & Status Badge */}
       <div className="flex items-center justify-between gap-2 mb-2">
-        <span className="font-mono text-lg font-bold tracking-tight text-slate-900 group-hover:text-slate-800">
+        <span className="font-mono text-base font-bold text-slate-900 group-hover:text-slate-800 tracking-tight">
           {room.roomNumber}
         </span>
         <span
-          className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium border ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}
+          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}
         >
           <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
-          <span>{statusCfg.label}</span>
+          <span>{localizedStatus}</span>
         </span>
       </div>
 
@@ -111,17 +118,25 @@ export const RoomCard: React.FC<RoomCardProps> = ({
           {roomType?.name || 'Standard Room'}
         </p>
         <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono">
-          <span>ชั้น {room.floor || '1'}</span>
+          <span>{t('common.floor', { floor: room.floor || '1' })}</span>
           {formattedPrice && (
             <span className="text-slate-700 font-semibold">
-              ฿{formattedPrice}/คืน
+              {formattedPrice}{t('common.pricePerNight')}
             </span>
           )}
         </div>
       </div>
 
-      {/* Optional Note snippet if any */}
-      {room.notes && (
+      {/* Prominent Guest Name when occupied */}
+      {room.status === 'occupied' && (
+        <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center gap-1.5 text-xs font-semibold text-slate-800 bg-blue-50/70 px-2 py-1 rounded">
+          <User className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+          <span className="truncate">{displayGuest || t('common.guest')}</span>
+        </div>
+      )}
+
+      {/* Optional Note snippet if any and not occupied */}
+      {room.notes && room.status !== 'occupied' && (
         <div className="mt-2 pt-2 border-t border-slate-100 text-[10px] text-slate-500 truncate">
           {room.notes}
         </div>
@@ -129,4 +144,3 @@ export const RoomCard: React.FC<RoomCardProps> = ({
     </div>
   );
 };
-

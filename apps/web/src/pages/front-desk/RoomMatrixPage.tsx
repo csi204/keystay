@@ -1,20 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FrontDeskLayout } from '@/components/front-desk/FrontDeskLayout';
 import { RoomMatrixGrid } from '@/components/front-desk/RoomMatrixGrid';
 import { RoomDetailsDrawer } from '@/components/front-desk/RoomDetailsDrawer';
 import { useRooms } from '@/hooks/useRooms';
+import { useReservations } from '@/hooks/useReservations';
+import { useI18n } from '@/lib/i18n';
 import { Room } from '@keystay/types';
 import { RotateCw, AlertCircle, WifiOff } from 'lucide-react';
 
 export const RoomMatrixPage: React.FC = () => {
   const navigate = useNavigate();
+  const { t, locale } = useI18n();
   const { rooms, roomTypes, loading, error, isOffline, lastRefreshed, refresh } =
     useRooms();
+  const { reservations, refresh: refreshReservations } = useReservations();
 
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+
+  // Map active guest names by roomId
+  const roomGuests = useMemo(() => {
+    const map: Record<string, string> = {};
+    reservations.forEach((r) => {
+      if (r.roomId && r.guestName && (r.status === 'checked_in' || r.status === 'confirmed')) {
+        map[r.roomId] = r.guestName;
+      }
+    });
+    return map;
+  }, [reservations]);
 
   const handleSelectRoom = (room: Room) => {
     setSelectedRoom(room);
@@ -27,7 +42,7 @@ export const RoomMatrixPage: React.FC = () => {
 
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
-    await refresh();
+    await Promise.all([refresh(), refreshReservations()]);
     setIsRefreshing(false);
   };
 
@@ -50,11 +65,14 @@ export const RoomMatrixPage: React.FC = () => {
     ? roomTypes.find((t) => t.id === selectedRoom.roomTypeId)
     : undefined;
 
-  const refreshTimeStr = lastRefreshed.toLocaleTimeString('th-TH', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
+  const refreshTimeStr = lastRefreshed.toLocaleTimeString(
+    locale === 'th' ? 'th-TH' : 'en-US',
+    {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    }
+  );
 
   return (
     <FrontDeskLayout activeTab="matrix">
@@ -63,17 +81,17 @@ export const RoomMatrixPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
           <div>
             <h1 className="text-xl font-bold tracking-tight text-slate-900">
-              ผังห้องพัก (Room Matrix)
+              {t('matrix.title')}
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
-              แสดงสถานะทางกายภาพของห้องพักแบบ Real-time · คลิกที่ห้องเพื่อดูรายละเอียดหรือทำรายการ
+              {t('matrix.subtitle')}
             </p>
           </div>
 
           <div className="flex items-center gap-3">
             {/* Timestamp of last refresh */}
             <span className="text-[11px] text-slate-500 font-mono hidden sm:inline">
-              อัปเดตล่าสุด: {refreshTimeStr}
+              {t('matrix.lastUpdated', { time: refreshTimeStr })}
             </span>
 
             {/* Selective Partial Refresh Button */}
@@ -81,14 +99,14 @@ export const RoomMatrixPage: React.FC = () => {
               onClick={handleManualRefresh}
               disabled={loading || isRefreshing}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-md transition-colors shadow-sm disabled:opacity-50"
-              title="ดึงข้อมูลห้องพักสดใหม่จากเซิร์ฟเวอร์"
+              title={t('matrix.refresh')}
             >
               <RotateCw
                 className={`w-3.5 h-3.5 text-slate-600 ${
                   isRefreshing ? 'animate-spin' : ''
                 }`}
               />
-              <span>รีเฟรชผังห้อง</span>
+              <span>{t('matrix.refresh')}</span>
             </button>
           </div>
         </div>
@@ -97,9 +115,7 @@ export const RoomMatrixPage: React.FC = () => {
         {isOffline && (
           <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2 text-xs text-amber-800">
             <WifiOff className="w-4 h-4 text-amber-600 flex-shrink-0" />
-            <span>
-              ไม่สามารถเชื่อมต่อ API Gateway ได้ในขณะนี้ ข้อมูลที่แสดงอาจเป็นข้อมูลในแคช
-            </span>
+            <span>{t('matrix.offlineNotice')}</span>
           </div>
         )}
 
@@ -135,6 +151,7 @@ export const RoomMatrixPage: React.FC = () => {
             roomTypes={roomTypes}
             selectedRoom={selectedRoom}
             onSelectRoom={handleSelectRoom}
+            roomGuests={roomGuests}
           />
         )}
       </div>
