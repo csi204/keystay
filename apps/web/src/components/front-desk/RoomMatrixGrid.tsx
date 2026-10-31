@@ -186,3 +186,4 @@ export const RoomMatrixGrid: React.FC<RoomMatrixGridProps> = ({
     </div>
   );
 };
+

@@ -38,3 +38,4 @@ test('filterArrivalsAndDepartures separates reservations by date and status', ()
   assert.strictEqual(departures.length, 1);
   assert.strictEqual(departures[0].id, '2');
 });
+

@@ -236,3 +236,4 @@ export const RoomDetailsDrawer: React.FC<RoomDetailsDrawerProps> = ({
     </div>
   );
 };
+

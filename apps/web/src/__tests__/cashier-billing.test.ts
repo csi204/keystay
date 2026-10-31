@@ -46,3 +46,4 @@ test('calculateFolio handles zero items and full deposit payment', () => {
   assert.strictEqual(result.totalWithVat, '535.00');
   assert.strictEqual(result.netDue, '0.00');
 });
+

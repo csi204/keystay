@@ -250,3 +250,4 @@ export const RapidWalkInModal: React.FC<RapidWalkInModalProps> = ({
     </div>
   );
 };
+

@@ -25,3 +25,4 @@ test('role redirect resolves front_desk to /front-desk/room-matrix', () => {
   };
   assert.strictEqual(getDestinationByRole('front_desk'), '/front-desk/room-matrix');
 });
+

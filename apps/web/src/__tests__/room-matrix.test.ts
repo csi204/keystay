@@ -38,3 +38,4 @@ test('room filter correctly counts room statuses', () => {
   assert.strictEqual(counts['cleaning'], 1);
   assert.strictEqual(counts['reserved'], 1);
 });
+

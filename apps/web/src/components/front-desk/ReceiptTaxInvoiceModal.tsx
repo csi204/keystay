@@ -190,3 +190,4 @@ export const ReceiptTaxInvoiceModal: React.FC<ReceiptTaxInvoiceModalProps> = ({
     </div>
   );
 };
+

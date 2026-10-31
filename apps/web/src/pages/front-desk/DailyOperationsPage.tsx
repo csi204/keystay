@@ -298,3 +298,4 @@ export const DailyOperationsPage: React.FC = () => {
 };
 
 export default DailyOperationsPage;
+

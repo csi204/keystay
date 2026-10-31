@@ -171,3 +171,4 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
     </div>
   );
 };
+

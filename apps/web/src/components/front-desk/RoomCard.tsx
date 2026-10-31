@@ -129,3 +129,4 @@ export const RoomCard: React.FC<RoomCardProps> = ({
     </div>
   );
 };
+

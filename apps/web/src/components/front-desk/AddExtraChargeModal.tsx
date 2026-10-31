@@ -208,3 +208,4 @@ export const AddExtraChargeModal: React.FC<AddExtraChargeModalProps> = ({
     </div>
   );
 };
+

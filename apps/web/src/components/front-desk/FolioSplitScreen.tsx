@@ -274,3 +274,4 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
     </div>
   );
 };
+
