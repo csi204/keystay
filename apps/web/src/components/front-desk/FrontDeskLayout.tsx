@@ -12,6 +12,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { getAuthRole, getAuthUser, clearAuthSession } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 
 interface FrontDeskLayoutProps {
   children: React.ReactNode;
@@ -24,6 +25,7 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { locale, setLocale, t } = useI18n();
 
   // Retrieve user
   const user = getAuthUser();
@@ -32,12 +34,12 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
       ? `${user.firstName} ${user.lastName}`
       : 'เดียร์ (ธีรภัทร)';
 
-  // Live Clock
+  // Live Clock (localized according to active language)
   const [currentTime, setCurrentTime] = useState<string>('');
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
-      const formatted = new Intl.DateTimeFormat('th-TH', {
+      const formatted = new Intl.DateTimeFormat(locale === 'th' ? 'th-TH' : 'en-US', {
         weekday: 'short',
         day: '2-digit',
         month: 'short',
@@ -51,7 +53,7 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
     updateTime();
     const timer = setInterval(updateTime, 30000);
     return () => clearInterval(timer);
-  }, []);
+  }, [locale]);
 
   const handleLogout = () => {
     clearAuthSession();
@@ -61,25 +63,25 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
   const navTabs = [
     {
       key: 'matrix',
-      title: 'ผังห้องพัก (Room Matrix)',
+      title: t('nav.roomMatrix'),
       path: '/front-desk/room-matrix',
       icon: LayoutGrid,
     },
     {
       key: 'reservations',
-      title: 'รายการจอง (Reservations)',
+      title: t('nav.reservations'),
       path: '/front-desk/reservations',
       icon: CalendarDays,
     },
     {
       key: 'operations',
-      title: 'เช็คอิน / เช็คเอาท์ วันนี้',
+      title: t('nav.dailyOperations'),
       path: '/front-desk/daily-operations',
       icon: UserCheck,
     },
     {
       key: 'billing',
-      title: 'แคชเชียร์และบิล (Bills & Cashier)',
+      title: t('nav.billing'),
       path: '/front-desk/billing',
       icon: ReceiptText,
     },
@@ -88,18 +90,52 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans flex flex-col">
       {/* Top Main Navigation Bar */}
-      <header className="border-b border-slate-200 bg-white sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+      <header className="border-b border-slate-200 bg-white sticky top-0 z-30 shadow-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
+          {/* Logo & Section Badge */}
+          <div className="flex items-center gap-3 shrink-0">
             <Logo size="md" showText={true} />
             <div className="h-4 w-px bg-slate-200 hidden sm:block" />
             <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-              <ShieldCheck className="w-3 h-3 text-emerald-600" />
-              Front Desk & Cashier
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              {t('nav.systemName')}
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
+          {/* Right Header Controls */}
+          <div className="flex items-center gap-2.5">
+            {/* Segmented Language Switcher [ TH | EN ] */}
+            <div
+              role="group"
+              aria-label="Language Switcher"
+              className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/90 text-xs font-medium"
+            >
+              <button
+                type="button"
+                onClick={() => setLocale('th')}
+                className={`px-2.5 py-1 rounded-md transition-all font-semibold ${
+                  locale === 'th'
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+                aria-pressed={locale === 'th'}
+              >
+                TH
+              </button>
+              <button
+                type="button"
+                onClick={() => setLocale('en')}
+                className={`px-2.5 py-1 rounded-md transition-all font-semibold ${
+                  locale === 'en'
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+                aria-pressed={locale === 'en'}
+              >
+                EN
+              </button>
+            </div>
+
             {/* Live Clock */}
             {currentTime && (
               <div className="hidden md:flex items-center gap-1.5 text-xs font-mono text-slate-500 bg-slate-50 px-2.5 py-1 rounded-md border border-slate-200">
@@ -108,16 +144,23 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
               </div>
             )}
 
-            {/* User Badge */}
-            <div className="text-xs text-slate-700 font-medium hidden lg:block">
-              {userName}
+            {/* User Profile Indicator */}
+            <div className="hidden lg:flex items-center gap-2 pl-1">
+              <div className="w-7 h-7 rounded-full bg-orange-100 border border-orange-200 flex items-center justify-center text-xs font-semibold text-orange-700">
+                {userName.charAt(0)}
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="text-xs font-medium text-slate-800 leading-tight">{userName}</span>
+                <span className="text-[10px] text-slate-500 leading-tight">Front Desk</span>
+              </div>
             </div>
 
             {/* Change Password */}
             <Link
               to="/change-password"
-              className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-md border border-slate-200 transition-colors"
-              title="เปลี่ยนรหัสผ่าน"
+              className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors"
+              title={t('nav.changePassword')}
+              aria-label={t('nav.changePassword')}
             >
               <KeyRound className="w-3.5 h-3.5" />
             </Link>
@@ -125,11 +168,11 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
             {/* Logout */}
             <button
               onClick={handleLogout}
-              className="px-2.5 py-1 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md border border-red-200 transition-colors flex items-center gap-1 font-medium"
-              title="ออกจากระบบ"
+              className="px-2.5 py-1.5 text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg border border-rose-200 transition-colors flex items-center gap-1 font-medium"
+              title={t('nav.logout')}
             >
               <LogOut className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">ออกจากระบบ</span>
+              <span className="hidden sm:inline">{t('nav.logout')}</span>
             </button>
           </div>
         </div>
@@ -147,7 +190,7 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
                   to={tab.path}
                   className={`flex items-center gap-2 px-3.5 py-2.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap ${
                     isActive
-                      ? 'border-slate-900 text-slate-900 bg-white shadow-sm font-semibold'
+                      ? 'border-slate-900 text-slate-900 bg-white shadow-xs font-semibold'
                       : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
                   }`}
                 >
@@ -171,4 +214,3 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
     </div>
   );
 };
-

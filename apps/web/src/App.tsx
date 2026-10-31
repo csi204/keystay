@@ -13,6 +13,7 @@ import { ShieldCheck, LogOut, KeyRound, UserCheck } from 'lucide-react';
 // ============================================================================
 
 import { getAuthToken, getAuthRole, getAuthUser, clearAuthSession } from './lib/api';
+import { I18nProvider } from './lib/i18n';
 
 // ============================================================================
 // ENTERPRISE LAZY LOADING (Code Splitting ตามเอกสาร)
@@ -158,7 +159,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <>
+    <I18nProvider>
       {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
 
       <BrowserRouter
@@ -332,7 +333,7 @@ export const App: React.FC = () => {
         </Routes>
         </React.Suspense>
       </BrowserRouter>
-    </>
+    </I18nProvider>
   );
 };
 
