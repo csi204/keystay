@@ -95,11 +95,11 @@ export const RoomDetailsDrawer: React.FC<RoomDetailsDrawerProps> = ({
           {/* Header */}
           <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
             <div className="flex items-center gap-3">
-              <span className="font-mono text-2xl font-bold tracking-tight text-slate-900">
+              <span className="text-3xl font-bold font-mono text-slate-900">
                 {room.roomNumber}
               </span>
               <span
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}
+                className={`inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1 rounded-full border ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}
               >
                 <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
                 <span>{localizedStatus}</span>
@@ -125,42 +125,42 @@ export const RoomDetailsDrawer: React.FC<RoomDetailsDrawerProps> = ({
 
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div>
-                  <span className="text-slate-500 block mb-0.5">{t('common.roomType')}</span>
-                  <span className="font-medium text-slate-900 flex items-center gap-1.5">
-                    <BedDouble className="w-3.5 h-3.5 text-slate-500" />
+                  <span className="text-xs sm:text-sm text-slate-500 block mb-0.5">{t('common.roomType')}</span>
+                  <span className="text-base font-semibold text-slate-900 flex items-center gap-1.5">
+                    <BedDouble className="w-4 h-4 text-slate-500" />
                     {localizeRoomType(roomType?.name, locale)}
                   </span>
                 </div>
 
                 <div>
-                  <span className="text-slate-500 block mb-0.5">
+                  <span className="text-xs sm:text-sm text-slate-500 block mb-0.5">
                     {t('common.floor', { floor: '' }).replace('{floor}', '').trim() || (locale === 'th' ? 'ชั้น' : 'Floor')}
                   </span>
-                  <span className="font-mono font-medium text-slate-900 flex items-center gap-1.5">
-                    <Layers className="w-3.5 h-3.5 text-slate-500" />
+                  <span className="font-mono text-base font-semibold text-slate-900 flex items-center gap-1.5">
+                    <Layers className="w-4 h-4 text-slate-500" />
                     {t('common.floor', { floor: room.floor || '1' })}
                   </span>
                 </div>
 
                 <div>
-                  <span className="text-slate-500 block mb-0.5">{t('drawer.price')}</span>
-                  <span className="font-mono font-semibold text-slate-900 flex items-center gap-1.5">
-                    <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="text-xs sm:text-sm text-slate-500 block mb-0.5">{t('drawer.price')}</span>
+                  <span className="font-mono text-base font-semibold text-slate-900 flex items-center gap-1.5">
+                    <DollarSign className="w-4 h-4 text-emerald-600" />
                     {formattedPrice ? `${formattedPrice}${t('common.pricePerNight')}` : '—'}
                   </span>
                 </div>
 
                 <div>
-                  <span className="text-slate-500 block mb-0.5">{t('drawer.capacity')}</span>
-                  <span className="font-medium text-slate-900 flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5 text-slate-500" />
+                  <span className="text-xs sm:text-sm text-slate-500 block mb-0.5">{t('drawer.capacity')}</span>
+                  <span className="text-base font-semibold text-slate-900 flex items-center gap-1.5">
+                    <Users className="w-4 h-4 text-slate-500" />
                     {t('drawer.capacityCount', { count: roomType?.capacity || 2 })}
                   </span>
                 </div>
               </div>
 
               {roomType?.description && (
-                <div className="pt-2 border-t border-slate-200/80 text-[11px] text-slate-600">
+                <div className="pt-2 border-t border-slate-200/80 text-sm leading-relaxed text-slate-700">
                   {localizeRoomDescription(roomType.description, locale)}
                 </div>
               )}
@@ -176,7 +176,7 @@ export const RoomDetailsDrawer: React.FC<RoomDetailsDrawerProps> = ({
                   {roomType.amenities.map((amenity, idx) => (
                     <span
                       key={idx}
-                      className="text-[11px] px-2 py-0.5 bg-slate-100 text-slate-700 rounded border border-slate-200"
+                      className="text-xs sm:text-sm px-2.5 py-1 font-medium bg-slate-100 text-slate-700 rounded border border-slate-200"
                     >
                       {localizeAmenity(amenity, locale)}
                     </span>
@@ -192,7 +192,7 @@ export const RoomDetailsDrawer: React.FC<RoomDetailsDrawerProps> = ({
                   <FileText className="w-3.5 h-3.5" />
                   <span>{t('drawer.notes')}</span>
                 </h3>
-                <div className="p-3 bg-amber-50/50 rounded-lg border border-amber-200 text-xs text-amber-900 leading-relaxed">
+                <div className="p-3 bg-amber-50/50 rounded-lg border border-amber-200 text-sm leading-relaxed text-amber-950">
                   {localizeRoomNote(room.notes, locale)}
                 </div>
               </div>
@@ -204,7 +204,7 @@ export const RoomDetailsDrawer: React.FC<RoomDetailsDrawerProps> = ({
             {room.status === 'reserved' && (
               <button
                 onClick={() => (onAction as any)?.('checkin', room)}
-                className="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-md shadow-sm transition-colors flex items-center justify-center gap-2"
+                className="w-full text-sm font-semibold py-3 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md shadow-sm transition-colors flex items-center justify-center gap-2"
               >
                 <LogIn className="w-4 h-4" />
                 <span>{t('ops.checkIn')}</span>
@@ -218,21 +218,21 @@ export const RoomDetailsDrawer: React.FC<RoomDetailsDrawerProps> = ({
                     (onAction as any)?.('extend', room);
                     setIsExtendOpen(true);
                   }}
-                  className="w-full py-2.5 px-3 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-md transition-colors flex items-center justify-center gap-2 shadow-sm"
+                  className="w-full text-sm font-semibold py-3 px-3 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-md transition-colors flex items-center justify-center gap-2 shadow-sm"
                 >
                   <CalendarPlus className="w-4 h-4 text-slate-600" />
                   <span>{t('extend.button')}</span>
                 </button>
                 <button
                   onClick={() => (onAction as any)?.('charge', room)}
-                  className="w-full py-2.5 px-3 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-md transition-colors flex items-center justify-center gap-2 shadow-sm"
+                  className="w-full text-sm font-semibold py-3 px-3 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-md transition-colors flex items-center justify-center gap-2 shadow-sm"
                 >
                   <PlusCircle className="w-4 h-4 text-slate-600" />
                   <span>{t('folio.addCharge')}</span>
                 </button>
                 <button
                   onClick={() => (onAction as any)?.('checkout', room)}
-                  className="w-full py-2.5 px-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-md shadow-sm transition-colors flex items-center justify-center gap-2"
+                  className="w-full text-sm font-semibold py-3 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded-md shadow-sm transition-colors flex items-center justify-center gap-2"
                 >
                   <LogOut className="w-4 h-4" />
                   <span>{t('ops.checkOut')}</span>
@@ -244,14 +244,14 @@ export const RoomDetailsDrawer: React.FC<RoomDetailsDrawerProps> = ({
               <>
                 <button
                   onClick={() => (onAction as any)?.('walkin', room)}
-                  className="w-full py-2.5 px-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-md shadow-sm transition-colors flex items-center justify-center gap-2"
+                  className="w-full text-sm font-semibold py-3 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded-md shadow-sm transition-colors flex items-center justify-center gap-2"
                 >
                   <LogIn className="w-4 h-4" />
                   <span>{t('ops.walkIn')}</span>
                 </button>
                 <button
                   onClick={() => (onAction as any)?.('checkin', room)}
-                  className="w-full py-2.5 px-3 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-md transition-colors flex items-center justify-center gap-2 shadow-sm"
+                  className="w-full text-sm font-semibold py-3 px-3 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-md transition-colors flex items-center justify-center gap-2 shadow-sm"
                 >
                   <Calendar className="w-4 h-4 text-slate-600" />
                   <span>{t('drawer.newBooking')}</span>
@@ -262,7 +262,7 @@ export const RoomDetailsDrawer: React.FC<RoomDetailsDrawerProps> = ({
             {room.status === 'checked_out' && (
               <button
                 onClick={() => (onAction as any)?.('clean', room)}
-                className="w-full py-2.5 px-3 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded-md shadow-sm transition-colors flex items-center justify-center gap-2"
+                className="w-full text-sm font-semibold py-3 px-3 bg-purple-600 hover:bg-purple-700 text-white rounded-md shadow-sm transition-colors flex items-center justify-center gap-2"
               >
                 <Sparkles className="w-4 h-4" />
                 <span>{t('drawer.requestCleaning')}</span>

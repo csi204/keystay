@@ -108,13 +108,11 @@ export const RoomCard: React.FC<RoomCardProps> = ({
     >
       {/* Top Header: Room Number & Status Badge */}
       <div className={`flex items-center justify-between gap-2 ${isCompact ? 'mb-1.5' : 'mb-2'}`}>
-        <span className="font-mono text-base font-bold text-slate-900 group-hover:text-slate-800 tracking-tight">
+        <span className="text-lg font-bold font-mono tracking-tight text-slate-900 group-hover:text-slate-800">
           {room.roomNumber}
         </span>
         <span
-          className={`inline-flex items-center gap-1.5 rounded-full font-medium border ${
-            isCompact ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-0.5 text-[11px]'
-          } ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}
+          className={`inline-flex items-center gap-1.5 rounded-full text-xs px-2.5 py-0.5 font-semibold border ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}
         >
           <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
           <span>{localizedStatus}</span>
@@ -123,15 +121,13 @@ export const RoomCard: React.FC<RoomCardProps> = ({
 
       {/* Room Type & Floor */}
       <div className={isCompact ? 'space-y-0.5' : 'space-y-1'}>
-        <p className="text-xs font-medium text-slate-800 truncate">
+        <p className="text-sm font-semibold text-slate-800 truncate">
           {localizeRoomType(roomType?.name, locale)}
         </p>
-        <div className={`flex items-center justify-between text-slate-500 font-mono tracking-tight ${
-          isCompact ? 'text-[10px]' : 'text-[11px]'
-        }`}>
-          <span>{t('common.floor', { floor: room.floor || '1' })}</span>
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-slate-600 font-mono tracking-tight">{t('common.floor', { floor: room.floor || '1' })}</span>
           {formattedPrice && (
-            <span className="text-slate-700 font-medium font-mono tracking-tight">
+            <span className="text-xs sm:text-sm font-bold font-mono text-slate-900 tracking-tight">
               {formattedPrice}{t('common.pricePerNight')}
             </span>
           )}
@@ -140,8 +136,8 @@ export const RoomCard: React.FC<RoomCardProps> = ({
 
       {/* Prominent Guest Name when occupied */}
       {room.status === 'occupied' && (
-        <div className={`border-t border-slate-100 flex items-center gap-1.5 font-semibold text-slate-800 bg-blue-50/70 rounded ${
-          isCompact ? 'mt-1.5 pt-1.5 px-1.5 py-0.5 text-[11px]' : 'mt-2.5 pt-2 px-2 py-1 text-xs'
+        <div className={`border-t border-slate-100 flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-blue-900 bg-blue-50/70 rounded ${
+          isCompact ? 'mt-1.5 pt-1.5 px-1.5 py-0.5' : 'mt-2.5 pt-2 px-2 py-1'
         }`}>
           <User className={`${isCompact ? 'w-3 h-3' : 'w-3.5 h-3.5'} text-blue-600 shrink-0`} />
           <span className="truncate">{displayGuest || t('common.guest')}</span>
@@ -150,8 +146,8 @@ export const RoomCard: React.FC<RoomCardProps> = ({
 
       {/* Optional Note snippet if any and not occupied */}
       {room.notes && room.status !== 'occupied' && (
-        <div className={`border-t border-slate-100 text-slate-500 truncate ${
-          isCompact ? 'mt-1 pt-1 text-[9px]' : 'mt-2 pt-2 text-[10px]'
+        <div className={`border-t border-slate-100 text-xs text-slate-600 leading-snug truncate ${
+          isCompact ? 'mt-1 pt-1' : 'mt-2 pt-2'
         }`}>
           {localizeRoomNote(room.notes, locale)}
         </div>

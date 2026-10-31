@@ -124,7 +124,7 @@ export const RoomMatrixGrid: React.FC<RoomMatrixGridProps> = ({
             <button
               key={chip.key}
               onClick={() => setFilterStatus(chip.key)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors whitespace-nowrap ${
+              className={`inline-flex items-center gap-1.5 rounded-full text-sm px-3.5 py-1.5 font-medium border transition-colors whitespace-nowrap ${
                 isActive
                   ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
                   : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
@@ -132,7 +132,7 @@ export const RoomMatrixGrid: React.FC<RoomMatrixGridProps> = ({
             >
               <span>{chip.label}</span>
               <span
-                className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                className={`text-xs px-1.5 py-0.2 rounded-full font-mono ${
                   isActive
                     ? 'bg-slate-700 text-slate-100'
                     : 'bg-slate-100 text-slate-600'
@@ -154,7 +154,7 @@ export const RoomMatrixGrid: React.FC<RoomMatrixGridProps> = ({
             placeholder={t('matrix.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-8 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors font-sans"
+            className="w-full text-sm py-2 px-3.5 pl-9 pr-8 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors font-sans"
           />
           {searchQuery && (
             <button
@@ -219,10 +219,10 @@ export const RoomMatrixGrid: React.FC<RoomMatrixGridProps> = ({
               {/* Hairline Floor Section Divider */}
               <div className="flex items-center justify-between border-b border-slate-200 pb-1 pt-0.5">
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs font-semibold text-slate-700 tracking-wide uppercase">
+                  <span className="font-mono text-sm font-bold tracking-wider text-slate-700 uppercase">
                     {t('common.floor', { floor: group.floor })}
                   </span>
-                  <span className="text-[11px] font-mono text-slate-400">
+                  <span className="text-xs font-mono text-slate-400">
                     ({t('common.roomsCount', { count: group.rooms.length })})
                   </span>
                 </div>

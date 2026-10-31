@@ -11,9 +11,9 @@ describe('RoomCard Polish & Localization', () => {
     assert.doesNotMatch(code, /ว่างพร้อมใช้ \(Available\)/);
   });
 
-  it('configures bold 16px room numbers and subtle elevation hover lift in RoomCard', () => {
+  it('configures bold 18px room numbers and subtle elevation hover lift in RoomCard', () => {
     const code = fs.readFileSync(path.resolve(process.cwd(), 'apps/web/src/components/front-desk/RoomCard.tsx'), 'utf-8');
-    assert.match(code, /text-base font-bold text-slate-900/);
+    assert.match(code, /text-lg font-bold font-mono tracking-tight text-slate-900/);
     assert.match(code, /shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-150/);
     assert.match(code, /room\.status === 'occupied'/);
     assert.match(code, /displayGuest/);
