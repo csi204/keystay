@@ -86,7 +86,7 @@ export const CashierFolioPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-[11px] text-slate-500 font-mono tracking-tight hidden sm:inline">
+            <span className="text-[11px] text-slate-500 font-mono tabular-nums tracking-tight hidden sm:inline">
               {formatRelativeTime(lastRefreshed, locale)}
             </span>
             <button
@@ -109,8 +109,8 @@ export const CashierFolioPage: React.FC = () => {
         )}
 
         {/* Bill Selector Ribbon */}
-        <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-          <div className="relative max-w-xs w-full">
+        <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          <div className="relative w-full md:w-72 shrink-0">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
@@ -121,33 +121,47 @@ export const CashierFolioPage: React.FC = () => {
             />
           </div>
 
-          <div className="flex gap-2 overflow-x-auto no-scrollbar">
-            {filteredBills.map((b) => {
-              const isSelected = selectedBill?.id === b.id;
-              return (
-                <button
-                  key={b.id}
-                  onClick={() => loadBillDetails(b.id)}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs transition-colors whitespace-nowrap ${
-                    isSelected
-                      ? 'border-slate-900 bg-slate-900 text-white font-medium shadow-sm'
-                      : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                  }`}
-                >
-                  <span className="font-mono font-medium tracking-tight">{t('common.room')} {b.roomNumber || '—'}</span>
-                  <span className="opacity-80 truncate max-w-[100px]">{b.guestName || t('common.guest')}</span>
-                  <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-medium tracking-tight ${
-                      b.status === 'paid'
-                        ? 'bg-emerald-500/20 text-emerald-300'
-                        : 'bg-amber-500/20 text-amber-300'
+          <div className="flex gap-2 overflow-x-auto no-scrollbar py-0.5 flex-1 min-w-0">
+            {filteredBills.length === 0 ? (
+              <span className="text-xs text-slate-400 py-1.5 px-2 italic">
+                {t('res.noReservationsFound')}
+              </span>
+            ) : (
+              filteredBills.map((b) => {
+                const isSelected = selectedBill?.id === b.id;
+                return (
+                  <button
+                    key={b.id}
+                    onClick={() => loadBillDetails(b.id)}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs transition-colors whitespace-nowrap shrink-0 ${
+                      isSelected
+                        ? 'border-slate-900 bg-slate-900 text-white font-medium shadow-sm'
+                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                     }`}
                   >
-                    {b.status === 'paid' ? t('folio.paid') : t('folio.pending')}
-                  </span>
-                </button>
-              );
-            })}
+                    <span className="font-mono font-medium tabular-nums tracking-tight">
+                      {t('common.room')} {b.roomNumber || '—'}
+                    </span>
+                    <span className="opacity-80 truncate max-w-[110px]">
+                      {b.guestName || t('common.guest')}
+                    </span>
+                    <span
+                      className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono font-medium tabular-nums tracking-tight border ${
+                        isSelected
+                          ? b.status === 'paid'
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                            : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                          : b.status === 'paid'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : 'bg-amber-50 text-amber-700 border-amber-200'
+                      }`}
+                    >
+                      {b.status === 'paid' ? t('folio.paid') : t('folio.pending')}
+                    </span>
+                  </button>
+                );
+              })
+            )}
           </div>
         </div>
 

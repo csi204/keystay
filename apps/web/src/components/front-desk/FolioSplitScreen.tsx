@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { DetailedBill, BillItem } from '../../hooks/useBilling';
 import { useI18n } from '../../lib/i18n';
+import { localizeFolioDescription } from '../../lib/localizeMetadata';
+
+export { localizeFolioDescription };
 import {
   CreditCard,
   Banknote,
@@ -45,7 +48,7 @@ export function calculateItemTotal(item?: FolioItemLike | null): number {
   // 1. Check totalAmount
   if (item.totalAmount !== undefined && item.totalAmount !== null && item.totalAmount !== '') {
     const parsed = typeof item.totalAmount === 'number' ? item.totalAmount : parseFloat(String(item.totalAmount));
-    if (!Number.isNaN(parsed)) {
+    if (Number.isFinite(parsed) && !Number.isNaN(parsed)) {
       return parsed;
     }
   }
@@ -53,20 +56,22 @@ export function calculateItemTotal(item?: FolioItemLike | null): number {
   // 2. Check totalPrice
   if (item.totalPrice !== undefined && item.totalPrice !== null && item.totalPrice !== '') {
     const parsed = typeof item.totalPrice === 'number' ? item.totalPrice : parseFloat(String(item.totalPrice));
-    if (!Number.isNaN(parsed)) {
+    if (Number.isFinite(parsed) && !Number.isNaN(parsed)) {
       return parsed;
     }
   }
 
   // 3. Fallback: quantity * unitPrice
-  const qty = typeof item.quantity === 'number' ? item.quantity : parseFloat(String(item.quantity ?? 1));
-  const price = typeof item.unitPrice === 'number' ? item.unitPrice : parseFloat(String(item.unitPrice ?? 0));
+  const rawQty = item.quantity;
+  const parsedQty = typeof rawQty === 'number' ? rawQty : parseFloat(String(rawQty ?? 1));
+  const validQty = Number.isFinite(parsedQty) && parsedQty > 0 ? parsedQty : 0;
 
-  const validQty = Number.isNaN(qty) ? 1 : qty;
-  const validPrice = Number.isNaN(price) ? 0 : price;
+  const rawPrice = item.unitPrice;
+  const parsedPrice = typeof rawPrice === 'number' ? rawPrice : parseFloat(String(rawPrice ?? 0));
+  const validPrice = Number.isFinite(parsedPrice) && parsedPrice >= 0 ? parsedPrice : 0;
 
   const calculated = validQty * validPrice;
-  return Number.isNaN(calculated) ? 0 : calculated;
+  return Number.isFinite(calculated) && !Number.isNaN(calculated) ? calculated : 0;
 }
 
 /**
@@ -86,10 +91,10 @@ export function calculateFolioSummary(
     const parsedFallback = typeof fallbackSubtotal === 'number'
       ? fallbackSubtotal
       : parseFloat(String(fallbackSubtotal));
-    subtotal = Number.isNaN(parsedFallback) ? 0 : parsedFallback;
+    subtotal = Number.isFinite(parsedFallback) && parsedFallback > 0 ? parsedFallback : 0;
   }
 
-  if (Number.isNaN(subtotal) || subtotal < 0) {
+  if (!Number.isFinite(subtotal) || subtotal < 0) {
     subtotal = 0;
   }
 
@@ -99,16 +104,16 @@ export function calculateFolioSummary(
   const parsedDeposit = typeof deposit === 'number'
     ? deposit
     : parseFloat(String(deposit));
-  const depositDeduction = Number.isNaN(parsedDeposit) || parsedDeposit < 0 ? 0 : parsedDeposit;
+  const depositDeduction = Number.isFinite(parsedDeposit) && parsedDeposit > 0 ? parsedDeposit : 0;
 
   const netDue = Math.max(0, Math.round((totalWithVat - depositDeduction) * 100) / 100);
 
   return {
-    subtotal,
-    vat,
-    totalWithVat,
-    depositDeduction,
-    netDue,
+    subtotal: Number.isFinite(subtotal) ? subtotal : 0,
+    vat: Number.isFinite(vat) ? vat : 0,
+    totalWithVat: Number.isFinite(totalWithVat) ? totalWithVat : 0,
+    depositDeduction: Number.isFinite(depositDeduction) ? depositDeduction : 0,
+    netDue: Number.isFinite(netDue) ? netDue : 0,
   };
 }
 
@@ -129,7 +134,7 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
   onPay,
   onViewInvoice,
 }) => {
-  const { t, formatCurrency } = useI18n();
+  const { t, locale, formatCurrency } = useI18n();
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'credit_card' | 'qr_promptpay' | 'transfer'>('cash');
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
@@ -170,6 +175,15 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
     other: t('category.other'),
   };
 
+  const categoryBadgeStyles: Record<string, string> = {
+    room: 'bg-blue-50 text-blue-700 border-blue-200',
+    minibar: 'bg-amber-50 text-amber-700 border-amber-200',
+    laundry: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    damage: 'bg-rose-50 text-rose-700 border-rose-200',
+    service: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    other: 'bg-slate-100 text-slate-700 border-slate-200',
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
       {/* Left Pane: Itemized Folio Items (7 Cols) */}
@@ -181,7 +195,7 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
               <span>{t('folio.itemizedTitle')}</span>
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              {t('common.room')} <span className="font-mono font-medium tracking-tight">{bill.roomNumber || '—'}</span> · {t('common.guest')}: {bill.guestName || t('common.guest')}
+              {t('common.room')} <span className="font-mono font-medium tracking-tight tabular-nums">{bill.roomNumber || '—'}</span> · {t('common.guest')}: {bill.guestName || t('common.guest')}
             </p>
           </div>
 
@@ -200,13 +214,13 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
-                <th className="py-2 px-3">{t('folio.category')}</th>
-                <th className="py-2 px-3">{t('folio.item')}</th>
-                <th className="py-2 px-3 text-center font-mono font-medium tracking-tight">{t('folio.qty')}</th>
-                <th className="py-2 px-3 text-right font-mono font-medium tracking-tight">{t('folio.unitPrice')}</th>
-                <th className="py-2 px-3 text-right font-mono font-medium tracking-tight">{t('folio.amount')}</th>
-                {!isPaid && <th className="py-2 px-3 text-center">{t('common.delete')}</th>}
+              <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-600 font-semibold">
+                <th className="py-2.5 px-3">{t('folio.category')}</th>
+                <th className="py-2.5 px-3">{t('folio.item')}</th>
+                <th className="py-2.5 px-3 text-center font-mono font-medium tracking-tight tabular-nums">{t('folio.qty')}</th>
+                <th className="py-2.5 px-3 text-right font-mono font-medium tracking-tight tabular-nums">{t('folio.unitPrice')}</th>
+                <th className="py-2.5 px-3 text-right font-mono font-medium tracking-tight tabular-nums">{t('folio.amount')}</th>
+                {!isPaid && <th className="py-2.5 px-3 text-center">{t('common.delete')}</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -220,16 +234,20 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
                 items.map((it) => (
                   <tr key={it.id} className="hover:bg-slate-50/70 transition-colors">
                     <td className="py-2.5 px-3 text-slate-500">
-                      <span className="px-1.5 py-0.5 rounded text-[10px] bg-slate-100 text-slate-700 font-medium">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-medium border ${categoryBadgeStyles[it.category] || categoryBadgeStyles.other}`}>
                         {categoryLabels[it.category] || it.category}
                       </span>
                     </td>
-                    <td className="py-2.5 px-3 font-medium text-slate-900">{it.description}</td>
-                    <td className="py-2.5 px-3 text-center font-mono font-medium tracking-tight text-slate-600">{it.quantity}</td>
-                    <td className="py-2.5 px-3 text-right font-mono font-medium tracking-tight text-slate-600">
+                    <td className="py-2.5 px-3 font-medium text-slate-900">
+                      {localizeFolioDescription(it.description, locale)}
+                    </td>
+                    <td className="py-2.5 px-3 text-center font-mono font-medium tracking-tight tabular-nums text-slate-600">
+                      {it.quantity}
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-mono font-medium tracking-tight tabular-nums text-slate-600">
                       {formatCurrency(it.unitPrice || 0)}
                     </td>
-                    <td className="py-2.5 px-3 text-right font-mono font-medium tracking-tight text-slate-900">
+                    <td className="py-2.5 px-3 text-right font-mono font-medium tracking-tight tabular-nums text-slate-900">
                       {formatCurrency(calculateItemTotal(it))}
                     </td>
                     {!isPaid && (
@@ -275,7 +293,7 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
           )}
 
           {/* Money Breakdown */}
-          <div className="space-y-2 text-xs font-mono font-medium tracking-tight bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+          <div className="space-y-2 text-xs font-mono font-medium tracking-tight tabular-nums bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
             <div className="flex justify-between text-slate-600">
               <span>{t('folio.subtotal')}:</span>
               <span>{formatCurrency(summary.subtotal)}</span>
@@ -286,7 +304,7 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
             </div>
             <div className="flex justify-between text-slate-600">
               <span>{t('folio.totalAmount')}:</span>
-              <span className="font-semibold text-slate-800 font-mono font-medium tracking-tight">{formatCurrency(summary.totalWithVat)}</span>
+              <span className="font-semibold text-slate-800 font-mono font-medium tracking-tight tabular-nums">{formatCurrency(summary.totalWithVat)}</span>
             </div>
             <div className="flex justify-between text-emerald-700 font-medium pt-1.5 border-t border-slate-100">
               <span>{t('folio.depositDeducted')}:</span>
@@ -294,7 +312,7 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
             </div>
             <div className="flex justify-between text-base font-bold text-slate-900 pt-2 border-t border-slate-200">
               <span>{t('folio.netDue')}:</span>
-              <span className="text-lg text-emerald-800 font-mono font-medium tracking-tight">{formatCurrency(summary.netDue)}</span>
+              <span className="text-lg text-emerald-800 font-mono font-medium tracking-tight tabular-nums">{formatCurrency(summary.netDue)}</span>
             </div>
           </div>
 

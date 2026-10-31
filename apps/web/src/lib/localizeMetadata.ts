@@ -11,6 +11,41 @@ const AMENITIES_TH: Record<string, string> = {};
 const AMENITIES_EN: Record<string, string> = {};
 const ROOM_DESCRIPTIONS_TH: Record<string, string> = {};
 const ROOM_DESCRIPTIONS_EN: Record<string, string> = {};
+const FOLIO_ITEMS_TH: Record<string, string> = {
+  // Minibar
+  'Drinking Water': 'น้ำดื่ม',
+  'Singha Beer': 'เบียร์สิงห์',
+  'Chang Beer': 'เบียร์ช้าง',
+  'Canned Soft Drink / Coke': 'น้ำอัดลม / โค้ก',
+  'Soft Drink': 'น้ำอัดลม',
+  'Coke': 'โค้ก',
+  'Pringles Potato Chips': 'มันฝรั่งพริงเกิลส์',
+  'Mineral Water': 'น้ำแร่ธรรมชาติ',
+  // Laundry
+  'Express Laundry Service': 'บริการซักรีดด่วนพิเศษ',
+  'Shirt Washing & Ironing': 'ซักรีดเสื้อเชิ้ต',
+  'Trousers / Pants': 'ซักรีดกางเกง',
+  'Laundry Service': 'บริการซักรีด',
+  // Damage
+  'Lost Key Card Replacement': 'ค่าปรับคีย์การ์ดสูญหาย',
+  'Stained Bed Linen': 'ค่าซักทำความสะอาดผ้าปูที่นอนเปื้อน',
+  'Damaged Bath Towel': 'ค่าปรับผ้าเช็ดตัวเสียหาย',
+  'Damage Compensation': 'ค่าชดเชยความเสียหาย',
+  // Services
+  'Extra Bed with Breakfast': 'เตียงเสริมพร้อมอาหารเช้า',
+  'Extra Bed': 'เตียงเสริม',
+  'Airport Shuttle Transfer': 'รถรับส่งสนามบิน',
+  'Late Check-out Hourly Fee': 'ค่าธรรมเนียมเช็คเอาท์เกินเวลา (รายชั่วโมง)',
+  'Room Service: American Breakfast': 'รูมเซอร์วิส: อาหารเช้าอเมริกัน',
+  'Miscellaneous Charge': 'ค่าบริการเบ็ดเตล็ด',
+};
+const FOLIO_ITEMS_EN: Record<string, string> = {};
+
+for (const [enKey, thVal] of Object.entries(FOLIO_ITEMS_TH)) {
+  FOLIO_ITEMS_EN[thVal] = enKey;
+  FOLIO_ITEMS_EN[enKey] = enKey;
+  FOLIO_ITEMS_TH[thVal] = thVal;
+}
 
 // Index all metadata mappings from locales on initialization
 for (const [key, thVal] of Object.entries(th)) {
@@ -93,4 +128,39 @@ export function localizeAmenity(amenity: string | undefined | null, locale: Loca
     return AMENITIES_EN[trimmed] || en[`amenities.${trimmed}`] || trimmed;
   }
   return AMENITIES_TH[trimmed] || th[`amenities.${trimmed}`] || trimmed;
+}
+
+/**
+ * Localize folio item description (room charges, minibar, laundry, services, damage).
+ */
+export function localizeFolioDescription(desc: string | undefined | null, locale: Locale = 'th'): string {
+  if (!desc || !desc.trim()) return '';
+  const trimmed = desc.trim();
+
+  // 1. Direct dictionary match
+  if (locale === 'en') {
+    if (FOLIO_ITEMS_EN[trimmed]) return FOLIO_ITEMS_EN[trimmed];
+  } else {
+    if (FOLIO_ITEMS_TH[trimmed]) return FOLIO_ITEMS_TH[trimmed];
+  }
+
+  // 2. Room type direct match
+  const localizedRoom = localizeRoomType(trimmed, locale);
+  if (localizedRoom && localizedRoom !== trimmed) {
+    return localizedRoom;
+  }
+
+  // 3. Room type substring match, e.g. "Standard Room - 1 Night"
+  for (const [rtEn, rtTh] of Object.entries(ROOM_TYPES_TH)) {
+    if (trimmed.includes(rtEn)) {
+      const target = locale === 'en' ? (ROOM_TYPES_EN[rtEn] || rtEn) : rtTh;
+      return trimmed.replace(rtEn, target);
+    }
+    if (trimmed.includes(rtTh)) {
+      const target = locale === 'en' ? (ROOM_TYPES_EN[rtTh] || rtEn) : rtTh;
+      return trimmed.replace(rtTh, target);
+    }
+  }
+
+  return trimmed;
 }

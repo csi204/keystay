@@ -1,7 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DetailedBill } from '../../hooks/useBilling';
 import { useI18n } from '../../lib/i18n';
-import { calculateItemTotal, calculateFolioSummary } from './FolioSplitScreen';
+import { th } from '../../locales/th';
+import { en } from '../../locales/en';
+import { calculateItemTotal, calculateFolioSummary, localizeFolioDescription } from './FolioSplitScreen';
 import { X, Printer } from 'lucide-react';
 
 export interface ReceiptTaxInvoiceModalProps {
@@ -15,7 +17,14 @@ export const ReceiptTaxInvoiceModal: React.FC<ReceiptTaxInvoiceModalProps> = ({
   isOpen,
   onClose,
 }) => {
-  const { t, formatCurrency, formatDate } = useI18n();
+  const { locale, formatCurrency, formatDate } = useI18n();
+  const [invoiceLocale, setInvoiceLocale] = useState<'th' | 'en'>(locale);
+
+  useEffect(() => {
+    if (isOpen) {
+      setInvoiceLocale(locale);
+    }
+  }, [isOpen, locale]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -26,6 +35,11 @@ export const ReceiptTaxInvoiceModal: React.FC<ReceiptTaxInvoiceModalProps> = ({
   }, [isOpen, onClose]);
 
   if (!isOpen || !bill) return null;
+
+  const invT = (key: string): string => {
+    if (invoiceLocale === 'th') return th[key] || en[key] || key;
+    return en[key] || th[key] || key;
+  };
 
   const handlePrint = () => {
     window.print();
@@ -39,6 +53,21 @@ export const ReceiptTaxInvoiceModal: React.FC<ReceiptTaxInvoiceModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <style>{`
+        @media print {
+          @page {
+            size: A4 portrait;
+            margin: 12mm;
+          }
+          body {
+            background: white !important;
+            color: black !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+        }
+      `}</style>
+
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity print:hidden"
@@ -46,19 +75,48 @@ export const ReceiptTaxInvoiceModal: React.FC<ReceiptTaxInvoiceModalProps> = ({
       />
 
       {/* Modal Dialog */}
-      <div className="relative bg-white rounded-xl border border-slate-200 shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto z-10 p-8 print:p-0 print:border-none print:shadow-none animate-in fade-in zoom-in-95 duration-150">
+      <div className="relative bg-white rounded-xl border border-slate-200 shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto z-10 p-8 print:p-0 print:border-none print:shadow-none print:max-w-none print:w-full animate-in fade-in zoom-in-95 duration-150">
         {/* Top Control Bar (Hidden on print) */}
         <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-200 print:hidden">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            {t('invoice.preview')}
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              {invT('invoice.preview')}
+            </span>
+
+            {/* Bilingual preview/print toggle */}
+            <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
+              <button
+                type="button"
+                onClick={() => setInvoiceLocale('th')}
+                className={`px-2.5 py-0.5 rounded font-semibold transition-colors ${
+                  invoiceLocale === 'th'
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                TH
+              </button>
+              <button
+                type="button"
+                onClick={() => setInvoiceLocale('en')}
+                className={`px-2.5 py-0.5 rounded font-semibold transition-colors ${
+                  invoiceLocale === 'en'
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                EN
+              </button>
+            </div>
+          </div>
+
           <div className="flex items-center gap-2">
             <button
               onClick={handlePrint}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-md transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-md transition-colors shadow-sm"
             >
               <Printer className="w-3.5 h-3.5" />
-              <span>{t('invoice.print')}</span>
+              <span>{invT('invoice.print')}</span>
             </button>
             <button
               onClick={onClose}
@@ -74,40 +132,47 @@ export const ReceiptTaxInvoiceModal: React.FC<ReceiptTaxInvoiceModalProps> = ({
           {/* Header */}
           <div className="flex justify-between items-start pb-4 border-b-2 border-slate-900">
             <div>
-              <h1 className="text-xl font-bold tracking-tight">{t('invoice.hotelName')}</h1>
-              <p className="text-xs text-slate-500 mt-0.5">
-                {t('invoice.hotelAddress')}
+              <h1 className="text-xl font-bold tracking-tight">{invT('invoice.hotelName')}</h1>
+              <p className="text-xs text-slate-500 print:text-slate-700 mt-0.5">
+                {invT('invoice.hotelAddress')}
               </p>
-              <p className="text-xs text-slate-500 font-mono">{t('invoice.taxId')}</p>
+              <p className="text-xs text-slate-500 print:text-slate-700 font-mono tabular-nums tracking-tight mt-0.5">
+                {invT('invoice.taxId')}
+              </p>
             </div>
             <div className="text-right">
               <span className="text-base font-bold tracking-tight block">
-                {t('invoice.title')}
+                {invoiceLocale === 'th' ? 'ใบเสร็จรับเงิน/ใบกำกับภาษีอย่างย่อ' : invT('invoice.title')}
               </span>
-              <span className="text-xs text-slate-500 font-mono block mt-0.5">
-                {t('invoice.number')} {invoiceNumber}
+              <span className="text-[10px] text-slate-500 font-mono tracking-tight block uppercase">
+                {invoiceLocale === 'th' ? 'TAX INVOICE (ABB)' : 'ORIGINAL'}
               </span>
-              <span className="text-xs text-slate-500 font-mono block">{t('invoice.date')} {currentDate}</span>
+              <span className="text-xs text-slate-600 font-mono tabular-nums tracking-tight block mt-1">
+                {invT('invoice.number')} {invoiceNumber}
+              </span>
+              <span className="text-xs text-slate-600 font-mono tabular-nums tracking-tight block">
+                {invT('invoice.date')} {currentDate}
+              </span>
             </div>
           </div>
 
           {/* Guest / Bill Details */}
           <div className="grid grid-cols-2 gap-4 text-xs bg-slate-50 p-4 rounded-lg border border-slate-200 print:bg-transparent print:p-0 print:border-none">
             <div>
-              <span className="text-slate-500 block mb-0.5">{t('invoice.guestName')}</span>
-              <span className="font-semibold text-slate-900 text-sm">
-                {bill.guestName || t('invoice.walkInGuest')}
+              <span className="text-slate-500 print:text-slate-700 block mb-0.5">{invT('invoice.guestName')}</span>
+              <span className="font-semibold text-slate-900 print:text-black text-sm">
+                {bill.guestName || invT('invoice.walkInGuest')}
               </span>
-              <span className="text-slate-600 block text-[11px] mt-0.5">
-                {t('invoice.room')} {t('common.room')} {bill.roomNumber || '—'}
+              <span className="text-slate-600 print:text-slate-800 block text-[11px] mt-0.5">
+                {invT('invoice.room')} {invT('common.room')} <span className="font-mono font-medium tabular-nums tracking-tight">{bill.roomNumber || '—'}</span>
               </span>
             </div>
 
             <div className="text-right">
-              <span className="text-slate-500 block mb-0.5">{t('invoice.cashier')}</span>
-              <span className="font-semibold text-slate-900">{t('invoice.cashierName')}</span>
-              <span className="text-slate-600 font-mono block text-[11px] mt-0.5">
-                {t('common.status')}: {bill.status === 'paid' ? t('payment.success') : t('folio.pending')}
+              <span className="text-slate-500 print:text-slate-700 block mb-0.5">{invT('invoice.cashier')}</span>
+              <span className="font-semibold text-slate-900 print:text-black">{invT('invoice.cashierName')}</span>
+              <span className="text-slate-600 print:text-slate-800 font-mono tabular-nums tracking-tight block text-[11px] mt-0.5">
+                {invT('common.status')}: {bill.status === 'paid' ? invT('payment.success') : invT('folio.pending')}
               </span>
             </div>
           </div>
@@ -115,72 +180,74 @@ export const ReceiptTaxInvoiceModal: React.FC<ReceiptTaxInvoiceModalProps> = ({
           {/* Itemized Table */}
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="border-b border-slate-300 font-semibold text-slate-700">
-                <th className="py-2 font-mono">{t('invoice.seq')}</th>
-                <th className="py-2">{t('folio.item')}</th>
-                <th className="py-2 text-center font-mono">{t('folio.qty')}</th>
-                <th className="py-2 text-right font-mono">{t('folio.unitPrice')}</th>
-                <th className="py-2 text-right font-mono">{t('folio.amount')}</th>
+              <tr className="border-b border-slate-300 print:border-slate-900 font-semibold text-slate-700 print:text-black">
+                <th className="py-2 font-mono tabular-nums tracking-tight">{invT('invoice.seq')}</th>
+                <th className="py-2">{invT('folio.item')}</th>
+                <th className="py-2 text-center font-mono tabular-nums tracking-tight">{invT('folio.qty')}</th>
+                <th className="py-2 text-right font-mono tabular-nums tracking-tight">{invT('folio.unitPrice')}</th>
+                <th className="py-2 text-right font-mono tabular-nums tracking-tight">{invT('folio.amount')}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 print:divide-slate-300">
               {bill.items && bill.items.length > 0 ? (
                 bill.items.map((item, idx) => (
                   <tr key={item.id || idx}>
-                    <td className="py-2 font-mono text-slate-500">{idx + 1}</td>
-                    <td className="py-2 font-medium text-slate-900">{item.description}</td>
-                    <td className="py-2 text-center font-mono">{item.quantity}</td>
-                    <td className="py-2 text-right font-mono">
+                    <td className="py-2 font-mono tabular-nums tracking-tight text-slate-500 print:text-black">{idx + 1}</td>
+                    <td className="py-2 font-medium text-slate-900 print:text-black">
+                      {localizeFolioDescription(item.description, invoiceLocale)}
+                    </td>
+                    <td className="py-2 text-center font-mono tabular-nums tracking-tight">{item.quantity}</td>
+                    <td className="py-2 text-right font-mono tabular-nums tracking-tight">
                       {formatCurrency(item.unitPrice || 0)}
                     </td>
-                    <td className="py-2 text-right font-mono font-medium">
+                    <td className="py-2 text-right font-mono tabular-nums tracking-tight font-medium">
                       {formatCurrency(calculateItemTotal(item))}
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td className="py-2 font-mono text-slate-500">1</td>
-                  <td className="py-2 font-medium text-slate-900">{t('invoice.roomAndService')}</td>
-                  <td className="py-2 text-center font-mono">1</td>
-                  <td className="py-2 text-right font-mono">{formatCurrency(summary.subtotal)}</td>
-                  <td className="py-2 text-right font-mono font-medium">{formatCurrency(summary.subtotal)}</td>
+                  <td className="py-2 font-mono tabular-nums tracking-tight text-slate-500 print:text-black">1</td>
+                  <td className="py-2 font-medium text-slate-900 print:text-black">{invT('invoice.roomAndService')}</td>
+                  <td className="py-2 text-center font-mono tabular-nums tracking-tight">1</td>
+                  <td className="py-2 text-right font-mono tabular-nums tracking-tight">{formatCurrency(summary.subtotal)}</td>
+                  <td className="py-2 text-right font-mono tabular-nums tracking-tight font-medium">{formatCurrency(summary.subtotal)}</td>
                 </tr>
               )}
             </tbody>
           </table>
 
           {/* Calculation Box */}
-          <div className="pt-4 border-t border-slate-300 flex justify-end">
-            <div className="w-64 space-y-1.5 text-xs font-mono">
-              <div className="flex justify-between text-slate-600">
-                <span>{t('folio.subtotal')}:</span>
+          <div className="pt-4 border-t border-slate-300 print:border-slate-900 flex justify-end">
+            <div className="w-64 space-y-1.5 text-xs font-mono tabular-nums tracking-tight">
+              <div className="flex justify-between text-slate-600 print:text-black">
+                <span>{invT('folio.subtotal')}:</span>
                 <span>{formatCurrency(summary.subtotal)}</span>
               </div>
-              <div className="flex justify-between text-slate-600">
-                <span>{t('folio.vat')}:</span>
+              <div className="flex justify-between text-slate-600 print:text-black">
+                <span>{invT('folio.vat')}:</span>
                 <span>{formatCurrency(summary.vat)}</span>
               </div>
-              <div className="flex justify-between font-bold text-slate-900 text-sm pt-2 border-t border-slate-200">
-                <span>{t('invoice.netTotal')}</span>
+              <div className="flex justify-between font-bold text-slate-900 print:text-black text-sm pt-2 border-t border-slate-200 print:border-slate-800">
+                <span>{invT('invoice.netTotal')}</span>
                 <span>{formatCurrency(summary.totalWithVat)}</span>
               </div>
-              <div className="flex justify-between text-emerald-700 font-semibold pt-1">
-                <span>{t('invoice.paidAmount')}</span>
+              <div className="flex justify-between text-emerald-700 print:text-black font-semibold pt-1">
+                <span>{invT('invoice.paidAmount')}</span>
                 <span>{formatCurrency(paidAmount)}</span>
               </div>
             </div>
           </div>
 
           {/* Footer Signature */}
-          <div className="pt-12 grid grid-cols-2 gap-8 text-center text-xs text-slate-600">
+          <div className="pt-12 grid grid-cols-2 gap-8 text-center text-xs text-slate-600 print:text-black">
             <div>
-              <div className="border-b border-slate-400 w-48 mx-auto mb-1.5" />
-              <span>{t('invoice.guestSignature')}</span>
+              <div className="border-b border-slate-400 print:border-black w-48 mx-auto mb-1.5" />
+              <span>{invT('invoice.guestSignature')}</span>
             </div>
             <div>
-              <div className="border-b border-slate-400 w-48 mx-auto mb-1.5" />
-              <span>{t('invoice.cashierSignature')}</span>
+              <div className="border-b border-slate-400 print:border-black w-48 mx-auto mb-1.5" />
+              <span>{invT('invoice.cashierSignature')}</span>
             </div>
           </div>
         </div>
