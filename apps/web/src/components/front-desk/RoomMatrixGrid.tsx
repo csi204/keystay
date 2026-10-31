@@ -10,6 +10,8 @@ export interface RoomMatrixGridProps {
   selectedRoom: Room | null;
   onSelectRoom: (room: Room) => void;
   roomGuests?: Record<string, string>;
+  density?: 'compact' | 'comfortable';
+  groupByFloor?: boolean;
 }
 
 export const RoomMatrixGrid: React.FC<RoomMatrixGridProps> = ({
@@ -18,6 +20,8 @@ export const RoomMatrixGrid: React.FC<RoomMatrixGridProps> = ({
   selectedRoom,
   onSelectRoom,
   roomGuests,
+  density = 'compact',
+  groupByFloor = true,
 }) => {
   const { t } = useI18n();
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -75,6 +79,31 @@ export const RoomMatrixGrid: React.FC<RoomMatrixGridProps> = ({
     });
   }, [rooms, filterStatus, filterFloor, searchQuery, roomTypeMap]);
 
+  // Group rooms by floor when viewing all floors
+  const roomsByFloor = useMemo(() => {
+    const map = new Map<string, Room[]>();
+    floors.forEach((fl) => map.set(fl, []));
+
+    filteredRooms.forEach((r) => {
+      const fl = r.floor || '1';
+      const list = map.get(fl);
+      if (list) {
+        list.push(r);
+      } else {
+        map.set(fl, [r]);
+      }
+    });
+
+    return Array.from(map.entries())
+      .filter(([_, flRooms]) => flRooms.length > 0)
+      .map(([floor, floorRooms]) => ({
+        floor,
+        rooms: floorRooms.sort((a, b) =>
+          a.roomNumber.localeCompare(b.roomNumber, undefined, { numeric: true })
+        ),
+      }));
+  }, [floors, filteredRooms]);
+
   const statusChips = [
     { key: 'all', label: t('status.all'), count: statusCounts.all },
     { key: 'available', label: t('status.available'), count: statusCounts.available },
@@ -86,7 +115,7 @@ export const RoomMatrixGrid: React.FC<RoomMatrixGridProps> = ({
   ];
 
   return (
-    <div className="space-y-4">
+    <div className={density === 'compact' ? 'space-y-3' : 'space-y-4'}>
       {/* Status Summary & Filter Chips */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
         {statusChips.map((chip) => {
@@ -173,7 +202,7 @@ export const RoomMatrixGrid: React.FC<RoomMatrixGridProps> = ({
         )}
       </div>
 
-      {/* Room Cards Grid (High Density 2x5 or 3x4) */}
+      {/* Room Cards Grid (High Density 2x5 or grouped by floor) */}
       {filteredRooms.length === 0 ? (
         <div className="p-12 text-center bg-white rounded-lg border border-dashed border-slate-300 shadow-sm">
           <p className="text-sm font-medium text-slate-700">
@@ -183,8 +212,44 @@ export const RoomMatrixGrid: React.FC<RoomMatrixGridProps> = ({
             {t('matrix.noRoomsFoundHint')}
           </p>
         </div>
+      ) : filterFloor === 'all' && groupByFloor && roomsByFloor.length > 1 ? (
+        <div className={density === 'compact' ? 'space-y-3' : 'space-y-4'}>
+          {roomsByFloor.map((group) => (
+            <div key={group.floor} className="space-y-2">
+              {/* Hairline Floor Section Divider */}
+              <div className="flex items-center justify-between border-b border-slate-200 pb-1 pt-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs font-semibold text-slate-700 tracking-wide uppercase">
+                    {t('common.floor', { floor: group.floor })}
+                  </span>
+                  <span className="text-[11px] font-mono text-slate-400">
+                    ({t('common.roomsCount', { count: group.rooms.length })})
+                  </span>
+                </div>
+              </div>
+              {/* 5-column grid guarantees 5 rooms per row fit neatly */}
+              <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 ${
+                density === 'compact' ? 'gap-2.5 sm:gap-3' : 'gap-3.5'
+              }`}>
+                {group.rooms.map((room) => (
+                  <RoomCard
+                    key={room.id}
+                    room={room}
+                    roomType={roomTypeMap.get(room.roomTypeId)}
+                    guestName={roomGuests?.[room.id]}
+                    isSelected={selectedRoom?.id === room.id}
+                    onClick={onSelectRoom}
+                    density={density}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5">
+        <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 ${
+          density === 'compact' ? 'gap-2.5 sm:gap-3' : 'gap-3.5'
+        }`}>
           {filteredRooms.map((room) => (
             <RoomCard
               key={room.id}
@@ -193,6 +258,7 @@ export const RoomMatrixGrid: React.FC<RoomMatrixGridProps> = ({
               guestName={roomGuests?.[room.id]}
               isSelected={selectedRoom?.id === room.id}
               onClick={onSelectRoom}
+              density={density}
             />
           ))}
         </div>

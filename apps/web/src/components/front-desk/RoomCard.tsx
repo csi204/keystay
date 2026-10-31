@@ -9,6 +9,7 @@ export interface RoomCardProps {
   guestName?: string;
   isSelected?: boolean;
   onClick: (room: Room) => void;
+  density?: 'compact' | 'comfortable';
 }
 
 export const ROOM_STATUS_CONFIG: Record<
@@ -72,6 +73,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
   guestName,
   isSelected = false,
   onClick,
+  density = 'compact',
 }) => {
   const { t, formatCurrency } = useI18n();
 
@@ -90,22 +92,28 @@ export const RoomCard: React.FC<RoomCardProps> = ({
     ? formatCurrency(roomType.basePrice)
     : null;
 
+  const isCompact = density === 'compact';
+
   return (
     <div
       onClick={() => onClick(room)}
-      className={`group relative bg-white rounded-lg border p-4 text-left shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-150 cursor-pointer select-none ${
+      className={`group relative bg-white rounded-lg border text-left shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-150 cursor-pointer select-none ${
+        isCompact ? 'p-2.5 sm:p-3' : 'p-4'
+      } ${
         isSelected
           ? 'border-slate-900 ring-2 ring-slate-900/10 shadow-md'
           : 'border-slate-200'
       }`}
     >
       {/* Top Header: Room Number & Status Badge */}
-      <div className="flex items-center justify-between gap-2 mb-2">
+      <div className={`flex items-center justify-between gap-2 ${isCompact ? 'mb-1.5' : 'mb-2'}`}>
         <span className="font-mono text-base font-bold text-slate-900 group-hover:text-slate-800 tracking-tight">
           {room.roomNumber}
         </span>
         <span
-          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}
+          className={`inline-flex items-center gap-1.5 rounded-full font-medium border ${
+            isCompact ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-0.5 text-[11px]'
+          } ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}
         >
           <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
           <span>{localizedStatus}</span>
@@ -113,11 +121,13 @@ export const RoomCard: React.FC<RoomCardProps> = ({
       </div>
 
       {/* Room Type & Floor */}
-      <div className="space-y-1">
+      <div className={isCompact ? 'space-y-0.5' : 'space-y-1'}>
         <p className="text-xs font-medium text-slate-800 truncate">
           {roomType?.name || 'Standard Room'}
         </p>
-        <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono">
+        <div className={`flex items-center justify-between text-slate-500 font-mono ${
+          isCompact ? 'text-[10px]' : 'text-[11px]'
+        }`}>
           <span>{t('common.floor', { floor: room.floor || '1' })}</span>
           {formattedPrice && (
             <span className="text-slate-700 font-semibold">
@@ -129,15 +139,19 @@ export const RoomCard: React.FC<RoomCardProps> = ({
 
       {/* Prominent Guest Name when occupied */}
       {room.status === 'occupied' && (
-        <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center gap-1.5 text-xs font-semibold text-slate-800 bg-blue-50/70 px-2 py-1 rounded">
-          <User className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+        <div className={`border-t border-slate-100 flex items-center gap-1.5 font-semibold text-slate-800 bg-blue-50/70 rounded ${
+          isCompact ? 'mt-1.5 pt-1.5 px-1.5 py-0.5 text-[11px]' : 'mt-2.5 pt-2 px-2 py-1 text-xs'
+        }`}>
+          <User className={`${isCompact ? 'w-3 h-3' : 'w-3.5 h-3.5'} text-blue-600 shrink-0`} />
           <span className="truncate">{displayGuest || t('common.guest')}</span>
         </div>
       )}
 
       {/* Optional Note snippet if any and not occupied */}
       {room.notes && room.status !== 'occupied' && (
-        <div className="mt-2 pt-2 border-t border-slate-100 text-[10px] text-slate-500 truncate">
+        <div className={`border-t border-slate-100 text-slate-500 truncate ${
+          isCompact ? 'mt-1 pt-1 text-[9px]' : 'mt-2 pt-2 text-[10px]'
+        }`}>
           {room.notes}
         </div>
       )}

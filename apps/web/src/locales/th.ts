@@ -27,6 +27,7 @@ export const th: Record<string, string> = {
 
   // Table columns & Common
   'common.room': 'ห้อง',
+  'common.roomsCount': '{count} ห้อง',
   'common.roomNumber': 'หมายเลขห้อง',
   'common.roomType': 'ประเภทห้อง',
   'common.guest': 'ผู้เข้าพัก',
@@ -215,6 +216,10 @@ export const th: Record<string, string> = {
   'matrix.refresh': 'รีเฟรชผังห้อง',
   'matrix.lastUpdated': 'อัปเดตล่าสุด: {time}',
   'matrix.offlineNotice': 'ไม่สามารถเชื่อมต่อ API Gateway ได้ในขณะนี้ ข้อมูลที่แสดงอาจเป็นข้อมูลในแคช',
+  'matrix.compact': 'กะทัดรัด',
+  'matrix.comfortable': 'สบายตา',
+  'matrix.density': 'รูปแบบการแสดงผล',
+  'matrix.groupByFloor': 'จัดกลุ่มตามชั้น',
   'drawer.roomDetails': 'รายละเอียดห้องพัก',
   'drawer.guestInfo': 'ข้อมูลผู้เข้าพัก',
   'drawer.stayPeriod': 'ระยะเวลาการเข้าพัก',

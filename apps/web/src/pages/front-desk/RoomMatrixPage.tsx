@@ -9,6 +9,8 @@ import { useI18n } from '@/lib/i18n';
 import { Room } from '@keystay/types';
 import { RotateCw, AlertCircle, WifiOff } from 'lucide-react';
 
+const STORAGE_KEY_DENSITY = 'keystay_matrix_density';
+
 export const RoomMatrixPage: React.FC = () => {
   const navigate = useNavigate();
   const { t, locale } = useI18n();
@@ -19,6 +21,23 @@ export const RoomMatrixPage: React.FC = () => {
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [density, setDensity] = useState<'compact' | 'comfortable'>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_DENSITY);
+      return saved === 'comfortable' ? 'comfortable' : 'compact';
+    } catch {
+      return 'compact';
+    }
+  });
+
+  const handleDensityChange = (newDensity: 'compact' | 'comfortable') => {
+    setDensity(newDensity);
+    try {
+      localStorage.setItem(STORAGE_KEY_DENSITY, newDensity);
+    } catch {
+      // Ignore localStorage write error if sandboxed
+    }
+  };
 
   // Map active guest names by roomId
   const roomGuests = useMemo(() => {
@@ -94,6 +113,34 @@ export const RoomMatrixPage: React.FC = () => {
               {t('matrix.lastUpdated', { time: refreshTimeStr })}
             </span>
 
+            {/* View Density Switch [ Compact | Comfortable ] */}
+            <div className="inline-flex p-0.5 bg-slate-100 rounded-lg border border-slate-200/60 text-xs">
+              <button
+                type="button"
+                onClick={() => handleDensityChange('compact')}
+                className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+                  density === 'compact'
+                    ? 'bg-white text-slate-900 shadow-sm font-semibold'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                }`}
+                title={t('matrix.compact')}
+              >
+                {t('matrix.compact')}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDensityChange('comfortable')}
+                className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+                  density === 'comfortable'
+                    ? 'bg-white text-slate-900 shadow-sm font-semibold'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                }`}
+                title={t('matrix.comfortable')}
+              >
+                {t('matrix.comfortable')}
+              </button>
+            </div>
+
             {/* Selective Partial Refresh Button */}
             <button
               onClick={handleManualRefresh}
@@ -152,6 +199,7 @@ export const RoomMatrixPage: React.FC = () => {
             selectedRoom={selectedRoom}
             onSelectRoom={handleSelectRoom}
             roomGuests={roomGuests}
+            density={density}
           />
         )}
       </div>

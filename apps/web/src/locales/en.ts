@@ -27,6 +27,7 @@ export const en: Record<string, string> = {
 
   // Table columns & Common
   'common.room': 'Room',
+  'common.roomsCount': '{count} rooms',
   'common.roomNumber': 'Room Number',
   'common.roomType': 'Room Type',
   'common.guest': 'Guest',
@@ -215,6 +216,10 @@ export const en: Record<string, string> = {
   'matrix.refresh': 'Refresh Matrix',
   'matrix.lastUpdated': 'Last updated: {time}',
   'matrix.offlineNotice': 'Unable to connect to API Gateway. Displayed data might be cached.',
+  'matrix.compact': 'Compact',
+  'matrix.comfortable': 'Comfortable',
+  'matrix.density': 'Density',
+  'matrix.groupByFloor': 'Group by Floor',
   'drawer.roomDetails': 'Room Details',
   'drawer.guestInfo': 'Guest Information',
   'drawer.stayPeriod': 'Stay Period',
