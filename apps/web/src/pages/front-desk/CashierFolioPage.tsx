@@ -77,7 +77,7 @@ export const CashierFolioPage: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-slate-900">
+            <h1 className="text-2xl font-bold text-slate-900">
               {t('folio.title')}
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -133,9 +133,9 @@ export const CashierFolioPage: React.FC = () => {
                   <button
                     key={b.id}
                     onClick={() => loadBillDetails(b.id)}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs transition-colors whitespace-nowrap shrink-0 ${
+                    className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg border text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
                       isSelected
-                        ? 'border-slate-900 bg-slate-900 text-white font-medium shadow-sm'
+                        ? 'border-slate-900 bg-slate-900 text-white shadow-sm'
                         : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                     }`}
                   >

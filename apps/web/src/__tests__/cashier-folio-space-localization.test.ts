@@ -29,6 +29,12 @@ describe('Page 4 — Cashier Folio Split-Screen & Tax Invoice (Space & Localizat
 
     // Localize item descriptions via helper
     assert.match(code, /localizeFolioDescription/);
+
+    // Itemized table row typography scale upgrade
+    assert.match(code, /text-sm.*text-slate-800/);
+
+    // Net Due prominent hero scale
+    assert.match(code, /text-2xl sm:text-3xl font-mono font-bold text-slate-950/);
   });
 
   it('polishes CashierFolioPage ribbon fluid width, room selector chips, and search bar layout', () => {

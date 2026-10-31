@@ -132,7 +132,7 @@ export const ReceiptTaxInvoiceModal: React.FC<ReceiptTaxInvoiceModalProps> = ({
           {/* Header */}
           <div className="flex justify-between items-start pb-4 border-b-2 border-slate-900">
             <div>
-              <h1 className="text-xl font-bold tracking-tight">{invT('invoice.hotelName')}</h1>
+              <h1 className="text-xl font-bold tracking-tight text-slate-900">{invT('invoice.hotelName')}</h1>
               <p className="text-xs text-slate-500 print:text-slate-700 mt-0.5">
                 {invT('invoice.hotelAddress')}
               </p>
@@ -141,7 +141,7 @@ export const ReceiptTaxInvoiceModal: React.FC<ReceiptTaxInvoiceModalProps> = ({
               </p>
             </div>
             <div className="text-right">
-              <span className="text-base font-bold tracking-tight block">
+              <span className="text-base font-bold tracking-tight block text-slate-900">
                 {invoiceLocale === 'th' ? 'ใบเสร็จรับเงิน/ใบกำกับภาษีอย่างย่อ' : invT('invoice.title')}
               </span>
               <span className="text-[10px] text-slate-500 font-mono tracking-tight block uppercase">
@@ -178,40 +178,40 @@ export const ReceiptTaxInvoiceModal: React.FC<ReceiptTaxInvoiceModalProps> = ({
           </div>
 
           {/* Itemized Table */}
-          <table className="w-full text-left text-xs border-collapse">
+          <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-300 print:border-slate-900 font-semibold text-slate-700 print:text-black">
-                <th className="py-2 font-mono tabular-nums tracking-tight">{invT('invoice.seq')}</th>
-                <th className="py-2">{invT('folio.item')}</th>
-                <th className="py-2 text-center font-mono tabular-nums tracking-tight">{invT('folio.qty')}</th>
-                <th className="py-2 text-right font-mono tabular-nums tracking-tight">{invT('folio.unitPrice')}</th>
-                <th className="py-2 text-right font-mono tabular-nums tracking-tight">{invT('folio.amount')}</th>
+              <tr className="border-b border-slate-300 print:border-slate-900 font-semibold text-xs text-slate-700 print:text-black">
+                <th className="py-2.5 px-3 font-mono tabular-nums tracking-tight">{invT('invoice.seq')}</th>
+                <th className="py-2.5 px-3">{invT('folio.item')}</th>
+                <th className="py-2.5 px-3 text-center font-mono tabular-nums tracking-tight">{invT('folio.qty')}</th>
+                <th className="py-2.5 px-3 text-right font-mono tabular-nums tracking-tight">{invT('folio.unitPrice')}</th>
+                <th className="py-2.5 px-3 text-right font-mono tabular-nums tracking-tight">{invT('folio.amount')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 print:divide-slate-300">
               {bill.items && bill.items.length > 0 ? (
                 bill.items.map((item, idx) => (
                   <tr key={item.id || idx}>
-                    <td className="py-2 font-mono tabular-nums tracking-tight text-slate-500 print:text-black">{idx + 1}</td>
-                    <td className="py-2 font-medium text-slate-900 print:text-black">
+                    <td className="text-sm py-2 px-3 font-mono tabular-nums tracking-tight text-slate-500 print:text-black">{idx + 1}</td>
+                    <td className="text-sm py-2 px-3 font-medium text-slate-900 print:text-black">
                       {localizeFolioDescription(item.description, invoiceLocale)}
                     </td>
-                    <td className="py-2 text-center font-mono tabular-nums tracking-tight">{item.quantity}</td>
-                    <td className="py-2 text-right font-mono tabular-nums tracking-tight">
+                    <td className="text-sm py-2 px-3 text-center font-mono tabular-nums tracking-tight text-slate-900 print:text-black">{item.quantity}</td>
+                    <td className="text-sm py-2 px-3 text-right font-mono tabular-nums tracking-tight text-slate-900 print:text-black">
                       {formatCurrency(item.unitPrice || 0)}
                     </td>
-                    <td className="py-2 text-right font-mono tabular-nums tracking-tight font-medium">
+                    <td className="text-sm py-2 px-3 text-right font-mono tabular-nums tracking-tight font-medium text-slate-900 print:text-black">
                       {formatCurrency(calculateItemTotal(item))}
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td className="py-2 font-mono tabular-nums tracking-tight text-slate-500 print:text-black">1</td>
-                  <td className="py-2 font-medium text-slate-900 print:text-black">{invT('invoice.roomAndService')}</td>
-                  <td className="py-2 text-center font-mono tabular-nums tracking-tight">1</td>
-                  <td className="py-2 text-right font-mono tabular-nums tracking-tight">{formatCurrency(summary.subtotal)}</td>
-                  <td className="py-2 text-right font-mono tabular-nums tracking-tight font-medium">{formatCurrency(summary.subtotal)}</td>
+                  <td className="text-sm py-2 px-3 font-mono tabular-nums tracking-tight text-slate-500 print:text-black">1</td>
+                  <td className="text-sm py-2 px-3 font-medium text-slate-900 print:text-black">{invT('invoice.roomAndService')}</td>
+                  <td className="text-sm py-2 px-3 text-center font-mono tabular-nums tracking-tight text-slate-900 print:text-black">1</td>
+                  <td className="text-sm py-2 px-3 text-right font-mono tabular-nums tracking-tight text-slate-900 print:text-black">{formatCurrency(summary.subtotal)}</td>
+                  <td className="text-sm py-2 px-3 text-right font-mono tabular-nums tracking-tight font-medium text-slate-900 print:text-black">{formatCurrency(summary.subtotal)}</td>
                 </tr>
               )}
             </tbody>
@@ -219,7 +219,7 @@ export const ReceiptTaxInvoiceModal: React.FC<ReceiptTaxInvoiceModalProps> = ({
 
           {/* Calculation Box */}
           <div className="pt-4 border-t border-slate-300 print:border-slate-900 flex justify-end">
-            <div className="w-64 space-y-1.5 text-xs font-mono tabular-nums tracking-tight">
+            <div className="w-72 space-y-2 text-sm font-mono tabular-nums tracking-tight">
               <div className="flex justify-between text-slate-600 print:text-black">
                 <span>{invT('folio.subtotal')}:</span>
                 <span>{formatCurrency(summary.subtotal)}</span>
@@ -228,9 +228,9 @@ export const ReceiptTaxInvoiceModal: React.FC<ReceiptTaxInvoiceModalProps> = ({
                 <span>{invT('folio.vat')}:</span>
                 <span>{formatCurrency(summary.vat)}</span>
               </div>
-              <div className="flex justify-between font-bold text-slate-900 print:text-black text-sm pt-2 border-t border-slate-200 print:border-slate-800">
-                <span>{invT('invoice.netTotal')}</span>
-                <span>{formatCurrency(summary.totalWithVat)}</span>
+              <div className="flex justify-between items-baseline pt-2 border-t border-slate-200 print:border-slate-800">
+                <span className="font-bold text-slate-900 print:text-black">{invT('invoice.netTotal')}</span>
+                <span className="text-base sm:text-lg font-bold font-mono text-slate-950 print:text-black">{formatCurrency(summary.totalWithVat)}</span>
               </div>
               <div className="flex justify-between text-emerald-700 print:text-black font-semibold pt-1">
                 <span>{invT('invoice.paidAmount')}</span>

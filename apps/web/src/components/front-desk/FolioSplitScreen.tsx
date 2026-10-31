@@ -212,46 +212,46 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
 
         {/* Items Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
+          <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-600 font-semibold">
-                <th className="py-2.5 px-3">{t('folio.category')}</th>
-                <th className="py-2.5 px-3">{t('folio.item')}</th>
-                <th className="py-2.5 px-3 text-center font-mono font-medium tracking-tight tabular-nums">{t('folio.qty')}</th>
-                <th className="py-2.5 px-3 text-right font-mono font-medium tracking-tight tabular-nums">{t('folio.unitPrice')}</th>
-                <th className="py-2.5 px-3 text-right font-mono font-medium tracking-tight tabular-nums">{t('folio.amount')}</th>
-                {!isPaid && <th className="py-2.5 px-3 text-center">{t('common.delete')}</th>}
+              <tr className="bg-slate-50/80 border-b border-slate-200 text-xs font-bold text-slate-700 uppercase tracking-wider py-3">
+                <th className="py-3 px-4">{t('folio.category')}</th>
+                <th className="py-3 px-4">{t('folio.item')}</th>
+                <th className="py-3 px-4 text-center font-mono tracking-tight tabular-nums">{t('folio.qty')}</th>
+                <th className="py-3 px-4 text-right font-mono tracking-tight tabular-nums">{t('folio.unitPrice')}</th>
+                <th className="py-3 px-4 text-right font-mono tracking-tight tabular-nums">{t('folio.amount')}</th>
+                {!isPaid && <th className="py-3 px-4 text-center">{t('common.delete')}</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {items.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-400">
+                  <td colSpan={6} className="py-8 text-center text-sm text-slate-400">
                     {t('folio.empty')}
                   </td>
                 </tr>
               ) : (
                 items.map((it) => (
                   <tr key={it.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="py-2.5 px-3 text-slate-500">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-medium border ${categoryBadgeStyles[it.category] || categoryBadgeStyles.other}`}>
+                    <td className="text-sm py-3.5 px-4 text-slate-800">
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium border ${categoryBadgeStyles[it.category] || categoryBadgeStyles.other}`}>
                         {categoryLabels[it.category] || it.category}
                       </span>
                     </td>
-                    <td className="py-2.5 px-3 font-medium text-slate-900">
+                    <td className="text-sm py-3.5 px-4 font-medium text-slate-900">
                       {localizeFolioDescription(it.description, locale)}
                     </td>
-                    <td className="py-2.5 px-3 text-center font-mono font-medium tracking-tight tabular-nums text-slate-600">
+                    <td className="text-sm py-3.5 px-4 text-center font-mono tracking-tight tabular-nums text-slate-800">
                       {it.quantity}
                     </td>
-                    <td className="py-2.5 px-3 text-right font-mono font-medium tracking-tight tabular-nums text-slate-600">
+                    <td className="text-sm py-3.5 px-4 text-right font-semibold font-mono tracking-tight tabular-nums text-slate-900">
                       {formatCurrency(it.unitPrice || 0)}
                     </td>
-                    <td className="py-2.5 px-3 text-right font-mono font-medium tracking-tight tabular-nums text-slate-900">
+                    <td className="text-sm py-3.5 px-4 text-right font-semibold font-mono tracking-tight tabular-nums text-slate-900">
                       {formatCurrency(calculateItemTotal(it))}
                     </td>
                     {!isPaid && (
-                      <td className="py-2.5 px-3 text-center">
+                      <td className="text-sm py-3.5 px-4 text-center">
                         <button
                           onClick={() => onDeleteItem(it.id)}
                           className="p-1 text-slate-400 hover:text-red-600 rounded transition-colors"
@@ -293,26 +293,26 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
           )}
 
           {/* Money Breakdown */}
-          <div className="space-y-2 text-xs font-mono font-medium tracking-tight tabular-nums bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-            <div className="flex justify-between text-slate-600">
+          <div className="space-y-2.5 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+            <div className="flex justify-between text-sm font-medium text-slate-700 font-mono tracking-tight tabular-nums">
               <span>{t('folio.subtotal')}:</span>
               <span>{formatCurrency(summary.subtotal)}</span>
             </div>
-            <div className="flex justify-between text-slate-600">
+            <div className="flex justify-between text-sm font-medium text-slate-700 font-mono tracking-tight tabular-nums">
               <span>{t('folio.vat')}:</span>
               <span>{formatCurrency(summary.vat)}</span>
             </div>
-            <div className="flex justify-between text-slate-600">
+            <div className="flex justify-between text-sm font-medium text-slate-700 font-mono tracking-tight tabular-nums">
               <span>{t('folio.totalAmount')}:</span>
-              <span className="font-semibold text-slate-800 font-mono font-medium tracking-tight tabular-nums">{formatCurrency(summary.totalWithVat)}</span>
+              <span className="font-semibold text-slate-900">{formatCurrency(summary.totalWithVat)}</span>
             </div>
-            <div className="flex justify-between text-emerald-700 font-medium pt-1.5 border-t border-slate-100">
+            <div className="flex justify-between text-sm font-medium text-slate-700 font-mono tracking-tight tabular-nums pt-1.5 border-t border-slate-100">
               <span>{t('folio.depositDeducted')}:</span>
-              <span>-{formatCurrency(summary.depositDeduction)}</span>
+              <span className="text-emerald-700">-{formatCurrency(summary.depositDeduction)}</span>
             </div>
-            <div className="flex justify-between text-base font-bold text-slate-900 pt-2 border-t border-slate-200">
-              <span>{t('folio.netDue')}:</span>
-              <span className="text-lg text-emerald-800 font-mono font-medium tracking-tight tabular-nums">{formatCurrency(summary.netDue)}</span>
+            <div className="flex justify-between items-baseline pt-3 border-t border-slate-200">
+              <span className="text-base font-bold text-slate-900">{t('folio.netDue')}:</span>
+              <span className="text-2xl sm:text-3xl font-mono font-bold text-slate-950 tracking-tight tabular-nums">{formatCurrency(summary.netDue)}</span>
             </div>
           </div>
 
@@ -336,13 +336,13 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
                       key={m.key}
                       type="button"
                       onClick={() => setPaymentMethod(m.key as any)}
-                      className={`flex items-center gap-2 p-2 rounded-lg border text-xs font-medium transition-colors ${
+                      className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg border text-sm font-semibold transition-colors ${
                         isSelected
                           ? 'border-slate-900 bg-slate-900 text-white shadow-sm'
                           : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-100'
                       }`}
                     >
-                      <Icon className="w-3.5 h-3.5" />
+                      <Icon className="w-4 h-4" />
                       <span>{m.label}</span>
                     </button>
                   );
@@ -358,7 +358,7 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
             <button
               onClick={handleSettle}
               disabled={isProcessing}
-              className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-md shadow-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-md shadow-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <CheckCircle className="w-4 h-4" />
               <span>
@@ -368,7 +368,7 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
               </span>
             </button>
           ) : (
-            <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200 text-center text-xs text-emerald-800 font-semibold flex items-center justify-center gap-2">
+            <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200 text-center text-sm text-emerald-800 font-semibold flex items-center justify-center gap-2">
               <CheckCircle className="w-4 h-4 text-emerald-600" />
               <span>{t('payment.success')}</span>
             </div>
@@ -376,7 +376,7 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
 
           <button
             onClick={onViewInvoice}
-            className="w-full py-2 px-4 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 text-xs font-semibold rounded-md transition-colors flex items-center justify-center gap-2"
+            className="w-full py-3 px-4 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 text-sm font-semibold rounded-md transition-colors flex items-center justify-center gap-2"
           >
             <Printer className="w-3.5 h-3.5 text-slate-600" />
             <span>{t('folio.printInvoice')}</span>
