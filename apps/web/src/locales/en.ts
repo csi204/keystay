@@ -54,6 +54,7 @@ export const en: Record<string, string> = {
   'common.pricePerNight': '/night',
 
   // Daily operations
+  'ops.title': 'Daily Operations',
   'ops.arrivalsToday': 'Arrivals Today',
   'ops.departuresToday': 'Departures Today',
   'ops.checkIn': 'Check In',
@@ -67,6 +68,29 @@ export const en: Record<string, string> = {
   'ops.depositCollected': 'Keycard deposit collected',
   'ops.keyCardReturned': 'Keycard returned',
   'ops.keyCardLost': 'Keycard lost (deposit deducted)',
+  'ops.arrivalsDescription': 'Guests scheduled to check in today',
+  'ops.departuresDescription': 'Guests currently staying and scheduled to check out today',
+  'ops.totalItems': 'Total {count} items',
+
+  // Check-in Modal
+  'checkin.title': 'Record Check-in',
+  'checkin.bookingNumber': 'Booking No.:',
+  'checkin.guestName': 'Guest:',
+  'checkin.roomNumber': 'Room:',
+  'checkin.roomLabel': 'Room {room}',
+  'checkin.stayPeriod': 'Stay Period:',
+  'checkin.keyDeposit': 'Keycard Deposit:',
+  'checkin.idLabel': 'National ID or Passport Number *',
+  'checkin.idPlaceholder': 'Enter 13-digit Thai ID or Passport number',
+  'checkin.idHint': '* Required for hotel guest registry compliance under hospitality regulations',
+  'checkin.checklistTitle': 'Pre-handover Checklist:',
+  'checkin.checklist1': 'Verify original ID or Passport',
+  'checkin.checklist2': 'Collect keycard security deposit',
+  'checkin.checklist3': 'Inform stay policies & breakfast hours',
+  'checkin.confirmButton': 'Confirm Check-in & Hand Key',
+  'checkin.submitting': 'Saving...',
+  'checkin.errorRequired': 'Please specify guest National ID or Passport number',
+  'checkin.errorGeneral': 'An error occurred during check-in',
 
   // Cashier & Folio
   'folio.title': 'Bills & Cashier',

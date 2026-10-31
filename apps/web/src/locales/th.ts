@@ -54,6 +54,7 @@ export const th: Record<string, string> = {
   'common.pricePerNight': '/คืน',
 
   // Daily operations
+  'ops.title': 'การจัดการประจำวัน',
   'ops.arrivalsToday': 'รอเช็คอินวันนี้',
   'ops.departuresToday': 'รอเช็คเอาท์วันนี้',
   'ops.checkIn': 'เช็คอิน',
@@ -67,6 +68,29 @@ export const th: Record<string, string> = {
   'ops.depositCollected': 'เก็บมัดจำคีย์การ์ด',
   'ops.keyCardReturned': 'คืนคีย์การ์ดแล้ว',
   'ops.keyCardLost': 'คีย์การ์ดสูญหาย (หักมัดจำ)',
+  'ops.arrivalsDescription': 'รายการแขกที่จองไว้และมีกำหนดเช็คอินวันนี้',
+  'ops.departuresDescription': 'รายการแขกที่เข้าพักอยู่และมีกำหนดเช็คเอาท์วันนี้',
+  'ops.totalItems': 'ทั้งหมด {count} รายการ',
+
+  // Check-in Modal
+  'checkin.title': 'บันทึกเช็คอิน (Check-in)',
+  'checkin.bookingNumber': 'รหัสการจอง:',
+  'checkin.guestName': 'ผู้เข้าพัก:',
+  'checkin.roomNumber': 'ห้องพัก:',
+  'checkin.roomLabel': 'ห้อง {room}',
+  'checkin.stayPeriod': 'ช่วงวันที่พัก:',
+  'checkin.keyDeposit': 'เงินมัดจำกุญแจ:',
+  'checkin.idLabel': 'เลขประจำตัวประชาชน หรือเลขพาสปอร์ต *',
+  'checkin.idPlaceholder': 'ระบุเลขบัตรประชาชน 13 หลัก หรือเลขพาสปอร์ต',
+  'checkin.idHint': '* ข้อมูลนี้ใช้สำหรับบันทึกประวัติผู้เข้าพักตามข้อกำหนดกฎหมายโรงแรม',
+  'checkin.checklistTitle': 'เช็คลิสต์ก่อนส่งมอบกุญแจ:',
+  'checkin.checklist1': 'ตรวจสอบบัตรประชาชน/พาสปอร์ตตัวจริง',
+  'checkin.checklist2': 'รับเงินมัดจำกุญแจห้องพักครบถ้วน',
+  'checkin.checklist3': 'แจ้งกฎการเข้าพักและเวลารับประทานอาหารเช้า',
+  'checkin.confirmButton': 'ยืนยันเช็คอินและมอบกุญแจ',
+  'checkin.submitting': 'กำลังบันทึก...',
+  'checkin.errorRequired': 'กรุณาระบุเลขบัตรประชาชน หรือเลขพาสปอร์ตของแขก',
+  'checkin.errorGeneral': 'เกิดข้อผิดพลาดในการเช็คอิน',
 
   // Cashier & Folio
   'folio.title': 'แคชเชียร์และบิล',

@@ -1,31 +1,27 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FrontDeskLayout } from '@/components/front-desk/FrontDeskLayout';
-import { useReservations, ExtendedReservation } from '@/hooks/useReservations';
+import { useReservations, ExtendedReservation, resolveGuestName } from '@/hooks/useReservations';
 import { useRooms } from '@/hooks/useRooms';
+import { useI18n } from '@/lib/i18n';
 import { CheckInModal } from '@/components/front-desk/CheckInModal';
 import { RapidWalkInModal } from '@/components/front-desk/RapidWalkInModal';
 import {
-  UserCheck,
   UserPlus,
   LogIn,
   LogOut,
-  Calendar,
   RotateCw,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
   WifiOff,
 } from 'lucide-react';
 
 export const DailyOperationsPage: React.FC = () => {
   const navigate = useNavigate();
+  const { t, formatDate, formatDateRange, formatCurrency } = useI18n();
   const todayStr = new Date().toISOString().split('T')[0];
 
   const {
     reservations,
     loading,
-    error,
     isOffline,
     refresh,
     checkInReservation,
@@ -50,8 +46,8 @@ export const DailyOperationsPage: React.FC = () => {
     return rooms.filter((r) => r.status === 'available');
   }, [rooms]);
 
-  // Today's Arrivals: checkInDate === today or earlier and status is confirmed or pending
-  const todayArrivals = useMemo(() => {
+  // Today's Arrivals: checkInDate <= todayStr and status is confirmed or pending
+  const arrivals = useMemo(() => {
     return reservations.filter(
       (r) =>
         (r.status === 'confirmed' || r.status === 'pending') &&
@@ -60,7 +56,7 @@ export const DailyOperationsPage: React.FC = () => {
   }, [reservations, todayStr]);
 
   // Today's Departures: currently checked_in and checkOutDate <= todayStr
-  const todayDepartures = useMemo(() => {
+  const departures = useMemo(() => {
     return reservations.filter(
       (r) =>
         r.status === 'checked_in' &&
@@ -85,10 +81,12 @@ export const DailyOperationsPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
           <div>
             <h1 className="text-xl font-bold tracking-tight text-slate-900">
-              การจัดการประจำวัน (Today's Arrivals & Departures)
+              {t('ops.title')}
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
-              ประจำวันที่ {new Date().toLocaleDateString('th-TH', { dateStyle: 'long' })}
+              {t('ops.todayDate', {
+                date: formatDate(todayStr, 'long'),
+              })}
             </p>
           </div>
 
@@ -99,7 +97,7 @@ export const DailyOperationsPage: React.FC = () => {
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-md transition-colors shadow-sm disabled:opacity-50"
             >
               <RotateCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">รีเฟรช</span>
+              <span className="hidden sm:inline">{t('common.refresh')}</span>
             </button>
 
             <button
@@ -107,7 +105,7 @@ export const DailyOperationsPage: React.FC = () => {
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-md shadow-sm transition-colors"
             >
               <UserPlus className="w-4 h-4" />
-              <span>ลงทะเบียน Walk-in</span>
+              <span>{t('ops.walkIn')}</span>
             </button>
           </div>
         </div>
@@ -116,7 +114,7 @@ export const DailyOperationsPage: React.FC = () => {
         {isOffline && (
           <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2 text-xs text-amber-800">
             <WifiOff className="w-4 h-4 text-amber-600 flex-shrink-0" />
-            <span>โหมด Offline ข้อมูลอาจไม่อัปเดต</span>
+            <span>{t('folio.offlineNotice')}</span>
           </div>
         )}
 
@@ -131,9 +129,8 @@ export const DailyOperationsPage: React.FC = () => {
             }`}
           >
             <LogIn className="w-4 h-4 text-emerald-600" />
-            <span>รอเช็คอินวันนี้ (Arrivals)</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-emerald-100 text-emerald-800">
-              {todayArrivals.length}
+            <span>
+              {t('ops.arrivalsToday')} ({arrivals.length})
             </span>
           </button>
 
@@ -146,9 +143,8 @@ export const DailyOperationsPage: React.FC = () => {
             }`}
           >
             <LogOut className="w-4 h-4 text-blue-600" />
-            <span>รอเช็คเอาท์วันนี้ (Departures)</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-blue-100 text-blue-800">
-              {todayDepartures.length}
+            <span>
+              {t('ops.departuresToday')} ({departures.length})
             </span>
           </button>
         </div>
@@ -157,54 +153,56 @@ export const DailyOperationsPage: React.FC = () => {
         {activeSubTab === 'arrivals' ? (
           <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
             <div className="p-3 bg-emerald-50/50 border-b border-emerald-100 flex items-center justify-between text-xs text-emerald-900 font-medium">
-              <span>รายการแขกที่จองไว้และมีกำหนดเช็คอินวันนี้</span>
-              <span className="font-mono text-[11px] text-emerald-700">ทั้งหมด {todayArrivals.length} รายการ</span>
+              <span>{t('ops.arrivalsDescription')}</span>
+              <span className="font-mono text-[11px] text-emerald-700">
+                {t('ops.totalItems', { count: arrivals.length })}
+              </span>
             </div>
 
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
-                    <th className="py-2.5 px-4 font-mono">รหัสจอง</th>
-                    <th className="py-2.5 px-4">ชื่อผู้เข้าพัก</th>
-                    <th className="py-2.5 px-4 font-mono">ห้อง</th>
-                    <th className="py-2.5 px-4 font-mono">กำหนดพัก</th>
-                    <th className="py-2.5 px-4 text-right font-mono">มัดจำ</th>
-                    <th className="py-2.5 px-4 text-right">ดำเนินการ</th>
+                    <th className="py-2.5 px-4 font-mono">{t('res.bookingNumber')}</th>
+                    <th className="py-2.5 px-4">{t('common.guestName')}</th>
+                    <th className="py-2.5 px-4 font-mono">{t('common.room')}</th>
+                    <th className="py-2.5 px-4 font-mono">{t('common.dates')}</th>
+                    <th className="py-2.5 px-4 text-right font-mono">{t('common.deposit')}</th>
+                    <th className="py-2.5 px-4 text-right">{t('common.actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {todayArrivals.length === 0 ? (
+                  {arrivals.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="py-12 text-center text-slate-400">
-                        ไม่มีแขกที่ต้องเช็คอินในวันนี้
+                        {t('ops.noArrivals')}
                       </td>
                     </tr>
                   ) : (
-                    todayArrivals.map((res) => (
+                    arrivals.map((res) => (
                       <tr key={res.id} className="hover:bg-slate-50 transition-colors">
                         <td className="py-2.5 px-4 font-mono font-medium text-slate-900">
                           {res.bookingNumber || res.id.slice(0, 8)}
                         </td>
                         <td className="py-2.5 px-4 font-medium text-slate-800">
-                          {res.guestName || 'แขกผู้เข้าพัก'}
+                          {resolveGuestName(res) || res.guestName || res.guest?.fullName || '—'}
                         </td>
                         <td className="py-2.5 px-4 font-mono font-bold text-slate-900">
                           {res.roomNumber || '—'}
                         </td>
                         <td className="py-2.5 px-4 font-mono text-slate-600">
-                          {res.checkInDate} → {res.checkOutDate} ({res.totalNights} คืน)
+                          {formatDateRange(res.checkInDate, res.checkOutDate, res.totalNights)}
                         </td>
                         <td className="py-2.5 px-4 text-right font-mono text-emerald-700 font-medium">
-                          ฿{Number(res.depositAmount || '0').toLocaleString()}
+                          {formatCurrency(res.depositAmount || '0')}
                         </td>
                         <td className="py-2.5 px-4 text-right">
                           <button
                             onClick={() => setCheckInTarget(res)}
-                            className="inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded shadow-sm transition-colors"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-md shadow-sm transition-colors"
                           >
                             <LogIn className="w-3.5 h-3.5" />
-                            <span>เช็คอิน</span>
+                            <span>{t('ops.checkIn')}</span>
                           </button>
                         </td>
                       </tr>
@@ -217,54 +215,56 @@ export const DailyOperationsPage: React.FC = () => {
         ) : (
           <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
             <div className="p-3 bg-blue-50/50 border-b border-blue-100 flex items-center justify-between text-xs text-blue-900 font-medium">
-              <span>รายการแขกที่เข้าพักอยู่และมีกำหนดเช็คเอาท์วันนี้</span>
-              <span className="font-mono text-[11px] text-blue-700">ทั้งหมด {todayDepartures.length} รายการ</span>
+              <span>{t('ops.departuresDescription')}</span>
+              <span className="font-mono text-[11px] text-blue-700">
+                {t('ops.totalItems', { count: departures.length })}
+              </span>
             </div>
 
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
-                    <th className="py-2.5 px-4 font-mono">รหัสจอง</th>
-                    <th className="py-2.5 px-4">ชื่อผู้เข้าพัก</th>
-                    <th className="py-2.5 px-4 font-mono">ห้อง</th>
-                    <th className="py-2.5 px-4 font-mono">วันเข้าพัก</th>
-                    <th className="py-2.5 px-4 text-right font-mono">ยอดรวมห้อง</th>
-                    <th className="py-2.5 px-4 text-right">ดำเนินการ</th>
+                    <th className="py-2.5 px-4 font-mono">{t('res.bookingNumber')}</th>
+                    <th className="py-2.5 px-4">{t('common.guestName')}</th>
+                    <th className="py-2.5 px-4 font-mono">{t('common.room')}</th>
+                    <th className="py-2.5 px-4 font-mono">{t('common.dates')}</th>
+                    <th className="py-2.5 px-4 text-right font-mono">{t('common.total')}</th>
+                    <th className="py-2.5 px-4 text-right">{t('common.actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {todayDepartures.length === 0 ? (
+                  {departures.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="py-12 text-center text-slate-400">
-                        ไม่มีแขกที่ต้องเช็คเอาท์ในวันนี้
+                        {t('ops.noDepartures')}
                       </td>
                     </tr>
                   ) : (
-                    todayDepartures.map((res) => (
+                    departures.map((res) => (
                       <tr key={res.id} className="hover:bg-slate-50 transition-colors">
                         <td className="py-2.5 px-4 font-mono font-medium text-slate-900">
                           {res.bookingNumber || res.id.slice(0, 8)}
                         </td>
                         <td className="py-2.5 px-4 font-medium text-slate-800">
-                          {res.guestName || 'แขกผู้เข้าพัก'}
+                          {resolveGuestName(res) || res.guestName || res.guest?.fullName || '—'}
                         </td>
                         <td className="py-2.5 px-4 font-mono font-bold text-slate-900">
                           {res.roomNumber || '—'}
                         </td>
                         <td className="py-2.5 px-4 font-mono text-slate-600">
-                          เข้าพัก: {res.checkInDate}
+                          {formatDateRange(res.checkInDate, res.checkOutDate, res.totalNights)}
                         </td>
                         <td className="py-2.5 px-4 text-right font-mono text-slate-900 font-semibold">
-                          ฿{Number(res.totalAmount || '0').toLocaleString()}
+                          {formatCurrency(res.totalAmount || '0')}
                         </td>
                         <td className="py-2.5 px-4 text-right">
                           <button
                             onClick={() => handleGoToBilling(res)}
-                            className="inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded shadow-sm transition-colors"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded-md shadow-sm transition-colors"
                           >
-                            <LogOut className="w-3.5 h-3.5" />
-                            <span>เช็คเอาท์และเคลียร์บิล</span>
+                            <LogOut className="w-3.5 h-3.5 text-slate-500" />
+                            <span>{t('ops.checkOut')}</span>
                           </button>
                         </td>
                       </tr>
@@ -298,4 +298,3 @@ export const DailyOperationsPage: React.FC = () => {
 };
 
 export default DailyOperationsPage;
-
