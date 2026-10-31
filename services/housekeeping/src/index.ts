@@ -5,6 +5,7 @@ import { staffRoute, staffAssignmentsRoute } from './routes/staff';
 import { issuesRoute } from './routes/issues';
 import { scheduleRoute } from './routes/schedule';
 import { webhooksRoute } from './routes/webhooks';
+import { outsourceContactsRoute, mapOutsourceContact, type OutsourceContactDTO } from './routes/outsource-contacts';
 
 export interface Env {
   DB: D1Database;
@@ -49,6 +50,7 @@ app.get('/', (c) => {
       '68. PUT /housekeeping/staff/:id/zone',
       '69. POST /housekeeping/tasks/:id/report-issue',
       '70. GET /housekeeping/schedule',
+      '101. GET /housekeeping/outsource-contacts',
     ],
   });
 });
@@ -81,6 +83,10 @@ app.route('/schedule', scheduleRoute);
 app.route('/housekeeping/webhooks', webhooksRoute);
 app.route('/webhooks', webhooksRoute);
 
+// 8. Mount Outsource Contacts Routes (API #101)
+app.route('/housekeeping/outsource-contacts', outsourceContactsRoute);
+app.route('/outsource-contacts', outsourceContactsRoute);
+
 // Global Error Handler
 app.onError((err, c) => {
   console.error('[Housekeeping Service Error]:', err);
@@ -107,3 +113,4 @@ app.notFound((c) => {
 });
 
 export default app;
+export { outsourceContactsRoute, mapOutsourceContact, type OutsourceContactDTO } from './routes/outsource-contacts';
