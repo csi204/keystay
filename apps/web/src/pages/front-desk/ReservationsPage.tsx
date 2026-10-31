@@ -2,9 +2,10 @@ import React, { useState, useMemo } from 'react';
 import { FrontDeskLayout } from '@/components/front-desk/FrontDeskLayout';
 import { useReservations, ExtendedReservation, resolveGuestName } from '@/hooks/useReservations';
 import { useRooms } from '@/hooks/useRooms';
-import { NewReservationModal } from '@/components/front-desk/NewReservationModal';
+import { NewBookingModal } from '@/components/front-desk/NewBookingModal';
 import { CheckInModal } from '@/components/front-desk/CheckInModal';
 import { useI18n } from '@/lib/i18n';
+import { localizeRoomType } from '@/lib/localizeMetadata';
 import { ReservationStatus } from '@keystay/types';
 import {
   CalendarDays,
@@ -12,8 +13,6 @@ import {
   Plus,
   RotateCw,
   LogIn,
-  Eye,
-  AlertCircle,
   WifiOff,
 } from 'lucide-react';
 
@@ -87,7 +86,7 @@ export const ReservationsPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-[11px] text-slate-500 font-mono tracking-tight hidden sm:inline">
+            <span className="text-[11px] text-slate-500 font-mono tabular-nums tracking-tight hidden sm:inline">
               {formatRelativeTime(lastRefreshed, locale)}
             </span>
             <button
@@ -157,6 +156,7 @@ export const ReservationsPage: React.FC = () => {
                   <th className="py-3 px-4 font-mono font-medium tracking-tight">{t('res.bookingNumber')}</th>
                   <th className="py-3 px-4">{t('common.guestName')}</th>
                   <th className="py-3 px-4 font-mono font-medium tracking-tight">{t('common.room')}</th>
+                  <th className="py-3 px-4">{t('common.roomType')}</th>
                   <th className="py-3 px-4 font-mono font-medium tracking-tight">{t('common.dates')}</th>
                   <th className="py-3 px-4 text-center font-mono font-medium tracking-tight">{t('common.nights')}</th>
                   <th className="py-3 px-4 text-right font-mono font-medium tracking-tight">{t('common.total')}</th>
@@ -168,14 +168,26 @@ export const ReservationsPage: React.FC = () => {
               <tbody className="divide-y divide-slate-100">
                 {loading && reservations.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="py-8 text-center text-slate-400">
+                    <td colSpan={10} className="py-12 text-center text-slate-400 font-medium">
                       {t('res.loadingReservations')}
                     </td>
                   </tr>
                 ) : filteredReservations.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="py-12 text-center text-slate-400">
-                      {t('res.noReservationsFound')}
+                    <td colSpan={10} className="py-16 text-center">
+                      <div className="flex flex-col items-center justify-center max-w-sm mx-auto text-center space-y-3">
+                        <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                          <CalendarDays className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-slate-800">
+                            {t('res.noReservationsFound')}
+                          </p>
+                          <p className="text-xs text-slate-500 mt-1">
+                            {searchQuery ? t('common.noData') : t('res.subtitle')}
+                          </p>
+                        </div>
+                      </div>
                     </td>
                   </tr>
                 ) : (
@@ -186,30 +198,35 @@ export const ReservationsPage: React.FC = () => {
                       border: 'border-slate-200',
                     };
                     const room = rooms.find((r) => r.id === res.roomId);
+                    const roomType = roomTypes.find((rt) => rt.id === room?.roomTypeId);
                     const roomNum = res.roomNumber || room?.roomNumber || '—';
+                    const roomTypeName = localizeRoomType(roomType?.name, locale) || '—';
                     const guestDisplayName = res.guestName || resolveGuestName(res);
 
                     return (
                       <tr key={res.id} className="hover:bg-slate-50/70 transition-colors">
-                        <td className="py-3 px-4 font-mono font-medium tracking-tight text-slate-900">
+                        <td className="py-3 px-4 font-mono font-medium tabular-nums tracking-tight text-slate-900">
                           {res.bookingNumber || res.id.slice(0, 8)}
                         </td>
                         <td className="py-3 px-4 font-medium text-slate-800">
                           {guestDisplayName}
                         </td>
-                        <td className="py-3 px-4 font-mono font-medium tracking-tight text-slate-900">
+                        <td className="py-3 px-4 font-mono font-medium tabular-nums tracking-tight text-slate-900">
                           {roomNum}
                         </td>
-                        <td className="py-3 px-4 font-mono font-medium tracking-tight text-slate-600">
+                        <td className="py-3 px-4 text-slate-700">
+                          {roomTypeName}
+                        </td>
+                        <td className="py-3 px-4 font-mono tabular-nums tracking-tight text-slate-600">
                           {formatDateRange(res.checkInDate, res.checkOutDate, res.totalNights)}
                         </td>
-                        <td className="py-3 px-4 text-center font-mono font-medium tracking-tight text-slate-700">
+                        <td className="py-3 px-4 text-center font-mono tabular-nums tracking-tight text-slate-700">
                           {res.totalNights || '1'}
                         </td>
-                        <td className="py-3 px-4 text-right font-mono font-medium tracking-tight text-slate-900">
+                        <td className="py-3 px-4 text-right font-mono tabular-nums tracking-tight text-slate-900">
                           {formatCurrency(res.totalAmount || '0')}
                         </td>
-                        <td className="py-3 px-4 text-right font-mono font-medium tracking-tight text-emerald-700">
+                        <td className="py-3 px-4 text-right font-mono tabular-nums tracking-tight text-emerald-700">
                           {formatCurrency(res.depositAmount || '0')}
                         </td>
                         <td className="py-3 px-4 text-center">
@@ -242,8 +259,8 @@ export const ReservationsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* New Reservation Modal */}
-      <NewReservationModal
+      {/* New Booking Modal */}
+      <NewBookingModal
         isOpen={isNewModalOpen}
         rooms={rooms}
         roomTypes={roomTypes}
