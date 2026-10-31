@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { getAuthRole, getAuthUser, clearAuthSession } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
+import { QuickEmergencyDrawer } from './QuickEmergencyDrawer';
 
 interface FrontDeskLayoutProps {
   children: React.ReactNode;
@@ -26,6 +27,7 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
   const location = useLocation();
   const navigate = useNavigate();
   const { locale, setLocale, t } = useI18n();
+  const [isEmergencyOpen, setIsEmergencyOpen] = useState<boolean>(false);
 
   // Retrieve user
   const user = getAuthUser();
@@ -104,6 +106,18 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
 
           {/* Right Header Controls */}
           <div className="flex items-center gap-2.5">
+            {/* Quick Emergency Outsource Contact Button */}
+            <button
+              type="button"
+              onClick={() => setIsEmergencyOpen(true)}
+              className="px-2.5 py-1.5 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100/90 rounded-lg border border-rose-200 transition-colors flex items-center gap-1.5 shadow-xs"
+              title={t('emergency.buttonTitle')}
+              aria-label={t('emergency.buttonTitle')}
+            >
+              <span role="img" aria-label="alert">🚨</span>
+              <span className="hidden sm:inline">{t('emergency.buttonTitle')}</span>
+            </button>
+
             {/* Segmented Language Switcher [ TH | EN ] */}
             <div
               role="group"
@@ -211,6 +225,12 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">
         {children}
       </main>
+
+      {/* Quick Emergency Outsource Contact Drawer */}
+      <QuickEmergencyDrawer
+        isOpen={isEmergencyOpen}
+        onClose={() => setIsEmergencyOpen(false)}
+      />
     </div>
   );
 };
