@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useI18n } from '../../lib/i18n';
 import { X, Plus, AlertCircle, ShoppingBag } from 'lucide-react';
 
 export interface AddExtraChargeModalProps {
@@ -22,6 +23,7 @@ export const AddExtraChargeModal: React.FC<AddExtraChargeModalProps> = ({
   onClose,
   onSubmit,
 }) => {
+  const { t, formatCurrency } = useI18n();
   const [category, setCategory] = useState<
     'minibar' | 'laundry' | 'damage' | 'service' | 'other'
   >('minibar');
@@ -55,15 +57,15 @@ export const AddExtraChargeModal: React.FC<AddExtraChargeModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!description.trim()) {
-      setError('กรุณาระบุรายละเอียดรายการ');
+      setError(t('folio.errorDescription'));
       return;
     }
     if (quantity <= 0) {
-      setError('จำนวนต้องมากกว่า 0');
+      setError(t('folio.errorQuantity'));
       return;
     }
     if (parseFloat(unitPrice) < 0) {
-      setError('ราคาต่อหน่วยต้องไม่ติดลบ');
+      setError(t('folio.errorUnitPrice'));
       return;
     }
 
@@ -80,7 +82,7 @@ export const AddExtraChargeModal: React.FC<AddExtraChargeModalProps> = ({
     if (result.success) {
       onClose();
     } else {
-      setError(result.error || 'เกิดข้อผิดพลาดในการเพิ่มรายการ');
+      setError(result.error || t('folio.errorAddCharge'));
     }
   };
 
@@ -96,7 +98,7 @@ export const AddExtraChargeModal: React.FC<AddExtraChargeModalProps> = ({
           <div className="flex items-center gap-2">
             <ShoppingBag className="w-4 h-4 text-slate-900" />
             <h2 className="text-sm font-bold text-slate-900">
-              เพิ่มรายการค่าใช้จ่ายเสริม (Add Extra Charge)
+              {t('folio.addExtraChargeTitle')}
             </h2>
           </div>
           <button
@@ -117,7 +119,7 @@ export const AddExtraChargeModal: React.FC<AddExtraChargeModalProps> = ({
 
           <div>
             <label className="block text-xs font-medium text-slate-700 mb-1">
-              หมวดหมู่ค่าใช้จ่าย *
+              {t('folio.chargeCategory')} *
             </label>
             <select
               value={category}
@@ -128,22 +130,22 @@ export const AddExtraChargeModal: React.FC<AddExtraChargeModalProps> = ({
               }
               className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"
             >
-              <option value="minibar">มินิบาร์และเครื่องดื่ม (Minibar)</option>
-              <option value="laundry">บริการซักรีด (Laundry)</option>
-              <option value="service">บริการเสริม / เตียงเสริม (Extra Service)</option>
-              <option value="damage">ค่าเสียหาย / ทรัพย์สินชำรุด (Damage Fee)</option>
-              <option value="other">อื่นๆ (Other)</option>
+              <option value="minibar">{t('category.minibar')}</option>
+              <option value="laundry">{t('category.laundry')}</option>
+              <option value="service">{t('category.service')}</option>
+              <option value="damage">{t('category.damage')}</option>
+              <option value="other">{t('category.other')}</option>
             </select>
           </div>
 
           <div>
             <label className="block text-xs font-medium text-slate-700 mb-1">
-              ชื่อรายการ / รายละเอียด *
+              {t('folio.chargeDescription')} *
             </label>
             <input
               type="text"
               required
-              placeholder="เช่น น้ำอัดลมกระป๋อง, ผ้าเช็ดตัวสูญหาย, เบียร์สิงห์"
+              placeholder={t('folio.chargeDescriptionPlaceholder')}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"
@@ -153,7 +155,7 @@ export const AddExtraChargeModal: React.FC<AddExtraChargeModalProps> = ({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-slate-700 mb-1">
-                จำนวน *
+                {t('folio.chargeQuantity')} *
               </label>
               <input
                 type="number"
@@ -167,7 +169,7 @@ export const AddExtraChargeModal: React.FC<AddExtraChargeModalProps> = ({
 
             <div>
               <label className="block text-xs font-medium text-slate-700 mb-1">
-                ราคาต่อหน่วย (บาท) *
+                {t('folio.chargeUnitPrice')} *
               </label>
               <input
                 type="number"
@@ -182,8 +184,8 @@ export const AddExtraChargeModal: React.FC<AddExtraChargeModalProps> = ({
           </div>
 
           <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between text-xs font-mono">
-            <span className="text-slate-500">รวมค่าใช้จ่ายรายการนี้:</span>
-            <span className="font-bold text-slate-900 text-sm">฿{Number(total).toLocaleString()}</span>
+            <span className="text-slate-500">{t('folio.chargeTotal')}:</span>
+            <span className="font-bold text-slate-900 text-sm">{formatCurrency(total)}</span>
           </div>
 
           <div className="pt-2 flex justify-end gap-2 border-t border-slate-100">
@@ -192,7 +194,7 @@ export const AddExtraChargeModal: React.FC<AddExtraChargeModalProps> = ({
               onClick={onClose}
               className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-md transition-colors"
             >
-              ยกเลิก
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
@@ -200,7 +202,7 @@ export const AddExtraChargeModal: React.FC<AddExtraChargeModalProps> = ({
               className="px-4 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-md shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>{isSubmitting ? 'กำลังบันทึก...' : 'เพิ่มรายการเข้าบิล'}</span>
+              <span>{isSubmitting ? t('res.submitting') : t('folio.addChargeSubmit')}</span>
             </button>
           </div>
         </form>
@@ -208,4 +210,3 @@ export const AddExtraChargeModal: React.FC<AddExtraChargeModalProps> = ({
     </div>
   );
 };
-

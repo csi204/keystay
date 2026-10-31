@@ -5,15 +5,15 @@ import { useBilling, DetailedBill } from '@/hooks/useBilling';
 import { FolioSplitScreen } from '@/components/front-desk/FolioSplitScreen';
 import { AddExtraChargeModal } from '@/components/front-desk/AddExtraChargeModal';
 import { ReceiptTaxInvoiceModal } from '@/components/front-desk/ReceiptTaxInvoiceModal';
+import { useI18n } from '@/lib/i18n';
 import {
-  ReceiptText,
   RotateCw,
   Search,
   WifiOff,
-  AlertCircle,
 } from 'lucide-react';
 
 export const CashierFolioPage: React.FC = () => {
+  const { t } = useI18n();
   const location = useLocation();
   const navState = location.state as {
     reservationId?: string;
@@ -78,10 +78,10 @@ export const CashierFolioPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
           <div>
             <h1 className="text-xl font-bold tracking-tight text-slate-900">
-              แคชเชียร์และบิลโฟลิโอ (Bills & Cashier)
+              {t('folio.title')}
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
-              หน้าต่างแยกสองฝั่ง (Split Screen) จัดการค่าใช้จ่าย มินิบาร์ หักเงินมัดจำ และออกใบเสร็จ
+              {t('folio.subtitle')}
             </p>
           </div>
 
@@ -92,7 +92,7 @@ export const CashierFolioPage: React.FC = () => {
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-md transition-colors shadow-sm disabled:opacity-50"
             >
               <RotateCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">รีเฟรชบิล</span>
+              <span className="hidden sm:inline">{t('folio.refreshBills')}</span>
             </button>
           </div>
         </div>
@@ -101,7 +101,7 @@ export const CashierFolioPage: React.FC = () => {
         {isOffline && (
           <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2 text-xs text-amber-800">
             <WifiOff className="w-4 h-4 text-amber-600 flex-shrink-0" />
-            <span>โหมด Offline ข้อมูลอาจไม่อัปเดต</span>
+            <span>{t('folio.offlineNotice')}</span>
           </div>
         )}
 
@@ -111,7 +111,7 @@ export const CashierFolioPage: React.FC = () => {
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="ค้นหาเลขห้อง หรือชื่อแขก..."
+              placeholder={t('folio.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-sans"
@@ -131,8 +131,8 @@ export const CashierFolioPage: React.FC = () => {
                       : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                   }`}
                 >
-                  <span className="font-mono font-bold">ห้อง {b.roomNumber || '—'}</span>
-                  <span className="opacity-80 truncate max-w-[100px]">{b.guestName || 'ผู้เข้าพัก'}</span>
+                  <span className="font-mono font-bold">{t('common.room')} {b.roomNumber || '—'}</span>
+                  <span className="opacity-80 truncate max-w-[100px]">{b.guestName || t('common.guest')}</span>
                   <span
                     className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
                       b.status === 'paid'
@@ -140,7 +140,7 @@ export const CashierFolioPage: React.FC = () => {
                         : 'bg-amber-500/20 text-amber-300'
                     }`}
                   >
-                    {b.status === 'paid' ? 'ชำระแล้ว' : 'ค้างชำระ'}
+                    {b.status === 'paid' ? t('folio.paid') : t('folio.pending')}
                   </span>
                 </button>
               );
