@@ -61,7 +61,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
       if (response.ok && data?.token) {
         const userObj = data.user || { email, role: 'front_desk' };
         setAuthSession(data.token, userObj, userObj.role || 'front_desk');
-        navigate('/');
+        const r = userObj.role || 'front_desk';
+        navigate(
+          r === 'admin'
+            ? '/admin/dashboard'
+            : r === 'manager'
+            ? '/manager/dashboard'
+            : r === 'front_desk'
+            ? '/front-desk/room-matrix'
+            : '/'
+        );
         return;
       }
 
@@ -85,7 +94,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
           : 'front_desk';
         const fallbackUser = { email: email.trim(), role: inferredRole, firstName: 'ผู้ใช้งาน', lastName: 'ทดสอบ' };
         setAuthSession('dev-jwt-token-fallback', fallbackUser, inferredRole);
-        navigate('/');
+        navigate(
+          inferredRole === 'admin'
+            ? '/admin/dashboard'
+            : inferredRole === 'manager'
+            ? '/manager/dashboard'
+            : inferredRole === 'front_desk'
+            ? '/front-desk/room-matrix'
+            : '/'
+        );
       } else {
         setErrorMessage('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
       }
@@ -117,7 +134,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
       if (response.ok && data?.token) {
         const userObj = data.user || { email: demoEmail, role: targetRole };
         setAuthSession(data.token, userObj, targetRole);
-        navigate(targetRole === 'admin' ? '/admin/dashboard' : targetRole === 'manager' ? '/manager/dashboard' : '/');
+        const dest =
+          targetRole === 'admin'
+            ? '/admin/dashboard'
+            : targetRole === 'manager'
+            ? '/manager/dashboard'
+            : targetRole === 'front_desk'
+            ? '/front-desk/room-matrix'
+            : '/';
+        navigate(dest);
         return;
       }
     } catch {
@@ -132,7 +157,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
       role: targetRole,
     };
     setAuthSession('dev-jwt-token-fallback', fallbackUser, targetRole);
-    navigate(targetRole === 'admin' ? '/admin/dashboard' : targetRole === 'manager' ? '/manager/dashboard' : '/');
+    const dest =
+      targetRole === 'admin'
+        ? '/admin/dashboard'
+        : targetRole === 'manager'
+        ? '/manager/dashboard'
+        : targetRole === 'front_desk'
+        ? '/front-desk/room-matrix'
+        : '/';
+    navigate(dest);
   };
 
   const isFailed = Boolean(errorMessage);

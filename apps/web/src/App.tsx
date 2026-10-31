@@ -176,13 +176,15 @@ export const App: React.FC = () => {
           }
         >
           <Routes>
-          {/* หน้าภายใน: ต้องล็อกอินเท่านั้น หากแอบพิมพ์ URL เข้ามาจะเจอหน้า 404 ทันที */}
+          {/* หน้าหลัก: หากยังไม่ล็อกอิน ให้ไปที่หน้า /login อัตโนมัติ */}
           <Route
             path="/"
             element={
-              <RequireAuth>
+              getAuthToken() ? (
                 <AuthenticatedHome />
-              </RequireAuth>
+              ) : (
+                <Navigate to="/login" replace />
+              )
             }
           />
           {/* หน้า Front Desk & Cashier Portal (เดียร์ @allmusgus) */}
