@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { apiFetch, getAuthRole } from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import {
   BarChart3,
@@ -26,6 +27,7 @@ type ReportTopic = 'daily_stats' | 'room_performance' | 'monthly_revenue';
 type ExportFormat = 'pdf' | 'csv';
 
 export const ReportsAnalyticsPage: React.FC = () => {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState<boolean>(true);
   const [isOffline, setIsOffline] = useState<boolean>(false);
   const [isExporting, setIsExporting] = useState<boolean>(false);
@@ -407,17 +409,17 @@ export const ReportsAnalyticsPage: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
-              <span>หน้าหลัก</span>
+              <span>{t('nav.home')}</span>
               <span>/</span>
-              <span>วิเคราะห์และรายงาน</span>
+              <span>{t('nav.reports')}</span>
               <span>/</span>
-              <span className="font-semibold text-slate-800">รายงานผู้บริหาร</span>
+              <span className="font-semibold text-slate-800">{t('nav.reports')}</span>
             </div>
             <h1 className="text-xl font-bold tracking-tight text-slate-900">
-              รายงานผลประกอบการและส่งออกข้อมูล (Executive Analytics & Exports)
+              {t('header.reports.title')}
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
-              ข้อมูลสรุปตัวชี้วัดรายวัน ประสิทธิภาพห้องพัก และส่งออกไฟล์ตามมาตรฐานบัญชี
+              {t('header.reports.desc')}
             </p>
           </div>
 
@@ -437,7 +439,7 @@ export const ReportsAnalyticsPage: React.FC = () => {
             <Button
               size="sm"
               onClick={() => setIsModalOpen(true)}
-              className="text-xs font-semibold gap-2 h-9 bg-slate-900 hover:bg-slate-800 text-white shadow-2xs"
+              className="text-xs font-semibold gap-2 h-9 bg-[#F97316] hover:bg-orange-600 text-white shadow-2xs"
             >
               <Printer className="w-3.5 h-3.5 text-white" />
               <span>พิมพ์รายงาน PDF / ส่งออกข้อมูล</span>

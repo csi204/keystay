@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { apiFetch, getAuthRole } from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import {
   Users,
   Search,
@@ -18,6 +19,7 @@ import {
   Save,
   AlertTriangle,
   CheckCircle2,
+  RefreshCw,
 } from 'lucide-react';
 
 export interface UserItem {
@@ -31,6 +33,7 @@ export interface UserItem {
 }
 
 export const UsersManagementPage: React.FC = () => {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState<boolean>(true);
   const [isOffline, setIsOffline] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -95,29 +98,35 @@ export const UsersManagementPage: React.FC = () => {
   });
 
   const [deletingUser, setDeletingUser] = useState<UserItem | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshSuccess, setRefreshSuccess] = useState(false);
+
+  const loadUsers = async () => {
+    setLoading(true);
+    const res = await apiFetch<UserItem[]>('/api/auth/users');
+    if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+      setIsOffline(false);
+      setUsers(res.data);
+    } else {
+      setIsOffline(res.isOffline);
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
-    let isMounted = true;
-    async function loadUsers() {
-      setLoading(true);
-      const res = await apiFetch<UserItem[]>('/api/auth/users');
-      if (!isMounted) return;
-
-      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-        setIsOffline(false);
-        setUsers(res.data);
-      } else {
-        setIsOffline(res.isOffline);
-      }
-      setLoading(false);
-    }
     loadUsers();
-    return () => {
-      isMounted = false;
-    };
   }, []);
 
   // 1. Create User
+  const handleRefresh = async () => {
+    if (isOffline || refreshing) return;
+    setRefreshing(true);
+    await loadUsers();
+    setRefreshing(false);
+    setRefreshSuccess(true);
+    setTimeout(() => setRefreshSuccess(false), 2500);
+  };
+
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!createForm.firstName || !createForm.lastName || !createForm.email || !createForm.password) return;
@@ -225,19 +234,6 @@ export const UsersManagementPage: React.FC = () => {
     );
   };
 
-  const roleBadgeStyle = (role: string) => {
-    switch (role) {
-      case 'owner':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'front_desk':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'housekeeping':
-        return 'bg-amber-100 text-amber-800 border-amber-200';
-      default:
-        return 'bg-slate-100 text-slate-800 border-slate-200';
-    }
-  };
-
   const filteredUsers = users.filter((u) => {
     const name = `${u.firstName} ${u.lastName}`.toLowerCase();
     const matchesSearch =
@@ -254,21 +250,31 @@ export const UsersManagementPage: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
-              <span>หน้าหลัก</span>
+              <span>{t('nav.home')}</span>
               <span>/</span>
-              <span>ความปลอดภัยและสิทธิ์</span>
+              <span>{t('nav.management')}</span>
               <span>/</span>
-              <span className="font-semibold text-slate-800">ผู้ใช้และสิทธิ์</span>
+              <span className="font-semibold text-slate-800">{t('nav.usersRoles')}</span>
             </div>
             <h1 className="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-              <span>การบริหารจัดการผู้ใช้และสิทธิ์การเข้าถึง (RBAC)</span>
+              <span>{t('header.users.title')}</span>
             </h1>
             <p className="text-xs text-slate-500 mt-1">
-              กำหนดสิทธิ์ 3 บทบาทหลัก: Owner, Front Desk, Housekeeping
+              {t('header.users.desc')}
             </p>
           </div>
 
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isOffline || refreshing}
+              onClick={handleRefresh}
+              className="text-xs font-semibold gap-1.5 h-9 px-3 bg-white hover:bg-slate-50 border-slate-300 text-slate-700 shadow-2xs"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-[#F97316]' : 'text-slate-600'}`} />
+              <span>{refreshSuccess ? t('action.refreshSuccess') : t('action.refresh')}</span>
+            </Button>
             <Button
               size="sm"
               disabled={isOffline}
@@ -346,12 +352,17 @@ export const UsersManagementPage: React.FC = () => {
                       </td>
                       <td className="py-3 px-3 text-slate-600 font-mono">{u.email}</td>
                       <td className="py-3 px-3 text-center">
-                        <span
-                          className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase ${roleBadgeStyle(
-                            u.role
-                          )}`}
-                        >
-                          {u.role.replace('_', ' ')}
+                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-800">
+                          <span
+                            className={`w-2 h-2 rounded-full shrink-0 `}
+                          />
+                          <span>
+                            {u.role === 'owner'
+                              ? 'Owner'
+                              : u.role === 'front_desk'
+                              ? 'Front Desk'
+                              : 'Housekeeping'}
+                          </span>
                         </span>
                       </td>
                       <td className="py-3 px-3 text-center">

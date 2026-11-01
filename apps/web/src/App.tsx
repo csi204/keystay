@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
+import { I18nProvider } from './lib/i18n';
 import { LoginPage } from './pages/auth/LoginPage';
 import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
@@ -156,7 +157,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <>
+    <I18nProvider>
       {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
 
       <BrowserRouter
@@ -269,7 +270,7 @@ export const App: React.FC = () => {
         </Routes>
         </React.Suspense>
       </BrowserRouter>
-    </>
+    </I18nProvider>
   );
 };
 

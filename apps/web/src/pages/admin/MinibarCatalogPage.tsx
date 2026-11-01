@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useTranslation } from '@/lib/i18n';
 import {
   ShoppingCart,
   Plus,
@@ -14,6 +15,7 @@ import {
   X,
   AlertTriangle,
   Package,
+  RefreshCw,
 } from 'lucide-react';
 
 // ============================================================================
@@ -52,6 +54,7 @@ const EMPTY_FORM: Omit<MinibarItem, 'id'> = {
 // Component
 // ============================================================================
 export const MinibarCatalogPage: React.FC = () => {
+  const { t } = useTranslation();
   const [items, setItems] = useState<MinibarItem[]>(SEED_ITEMS);
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState('ทั้งหมด');
@@ -59,6 +62,7 @@ export const MinibarCatalogPage: React.FC = () => {
   const [editItem, setEditItem] = useState<MinibarItem | null>(null);
   const [form, setForm] = useState<Omit<MinibarItem, 'id'>>(EMPTY_FORM);
   const [deleteTarget, setDeleteTarget] = useState<MinibarItem | null>(null);
+  const [refreshSuccess, setRefreshSuccess] = useState(false);
 
   const filtered = items.filter((it) => {
     const matchSearch = it.name.toLowerCase().includes(search.toLowerCase());
@@ -106,14 +110,25 @@ export const MinibarCatalogPage: React.FC = () => {
           <div>
             <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2">
               <ShoppingCart className="w-5 h-5 text-orange-500" />
-              รายการมินิบาร์ (Minibar Catalog)
+              {t('header.minibar.title')}
             </h1>
-            <p className="text-xs text-slate-500 mt-0.5">กำหนดราคาสินค้าในมินิบาร์ — Owner จัดการ, Front Desk ใช้ตอน checkout</p>
+            <p className="text-xs text-slate-500 mt-0.5">{t('header.minibar.desc')}</p>
           </div>
-          <Button onClick={openCreate} className="bg-orange-500 hover:bg-orange-600 text-white text-sm px-3 py-2 flex items-center gap-1.5">
-            <Plus className="w-4 h-4" />
-            เพิ่มสินค้า
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { setRefreshSuccess(true); setTimeout(() => setRefreshSuccess(false), 2500); }}
+              className="text-xs font-semibold gap-1.5 h-9 px-3 bg-white hover:bg-slate-50 border-slate-300 text-slate-700 shadow-2xs"
+            >
+              <RefreshCw className="w-3.5 h-3.5 text-slate-600" />
+              <span>{refreshSuccess ? t('action.refreshSuccess') : t('action.refresh')}</span>
+            </Button>
+            <Button onClick={openCreate} className="bg-orange-500 hover:bg-orange-600 text-white text-sm px-3 h-9 flex items-center gap-1.5 font-semibold">
+              <Plus className="w-4 h-4" />
+              {t('action.addItem')}
+            </Button>
+          </div>
         </div>
 
         {/* API notice */}
