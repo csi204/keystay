@@ -69,10 +69,10 @@
 ระบบควบคุมการเข้าถึงด้วย **Role-Based Access Control (RBAC) 4 บทบาทหลัก**:
 *   **พนักงานต้อนรับและแคชเชียร์ (Front Desk Staff & Cashier — `role=front_desk`):** รวมหน้าที่ต้อนรับและการเงินเข้าด้วยกันสำหรับโรงแรมขนาดเล็ก (5–10 ห้อง) — เช็คห้องว่าง, จัดการการจองล่วงหน้า, เช็คอิน, เช็คเอาท์, รับ Walk-in, ขยายเวลาพัก, อัปเกรดห้อง, คิดเงินค่าห้อง/มินิบาร์, หักเงินมัดจำ, ออกใบเสร็จรับเงิน และดำเนินการคืนเงิน *(ไม่มี Role พนักงานบัญชีแยกต่างหาก เพื่อความคล่องตัวในการปฏิบัติงานหน้าเคาน์เตอร์)* พร้อมสิทธิ์ **Read-Only สำหรับสมุดเบอร์ติดต่อ Outsource ฉุกเฉิน 24 ชม.** เพื่อโทรเรียกช่างซ่อมบำรุงด่วน (แอร์เสีย, ส้วมตัน, ท่อแตก) ได้ทันทีเมื่อแขกร้องเรียน[cite: 1, 6, 7]
 *   **พนักงานแม่บ้าน (Housekeeping Staff — `role=housekeeping`):** รับมอบหมายงานทำความสะอาด, เปลี่ยนสถานะงาน, ตรวจสอบสภาพห้อง, รายงานสิ่งของชำรุด พร้อมสิทธิ์ **Read-Only สำหรับสมุดเบอร์ช่าง Outsource เฉพาะทาง** เพื่อประสานงานซ่อมหน้างานควบคู่กับการเปิดใบงาน Issue[cite: 7]
-*   **ผู้จัดการ (Manager — `role=manager`):** ตรวจสอบภาพรวมการดำเนินงาน, จัดการประเภทห้องพักและอัตราค่าบริการ, ติดตาม Occupancy Rate และรายงานรายได้[cite: 7]
-*   **ผู้ดูแลระบบ (Admin — `role=admin`):** กำหนดสิทธิ์และบัญชีผู้ใช้งาน, ตั้งค่าระบบความปลอดภัย, ดูแลภาพรวมของระบบทั้งหมด โดย **Admin เป็นผู้มีสิทธิ์ Full CRUD จัดการ Master Data ข้อมูลคู่ค้าและช่าง Outsource ภายนอก** (เพิ่ม, แก้ไข, ระงับการใช้งาน `is_active = 0`) เพื่อป้องกันข้อมูลเบอร์ติดต่อสูญหายหรือถูกแก้ไขโดยไม่ได้รับอนุญาต[cite: 7]
+*   **ผู้จัดการ (Manager — `role=front_desk`):** ตรวจสอบภาพรวมการดำเนินงาน, จัดการประเภทห้องพักและอัตราค่าบริการ, ติดตาม Occupancy Rate และรายงานรายได้[cite: 7]
+*   **ผู้ดูแลระบบ (Owner — `role=owner`):** กำหนดสิทธิ์และบัญชีผู้ใช้งาน, ตั้งค่าระบบความปลอดภัย, ดูแลภาพรวมของระบบทั้งหมด โดย **Admin เป็นผู้มีสิทธิ์ Full CRUD จัดการ Master Data ข้อมูลคู่ค้าและช่าง Outsource ภายนอก** (เพิ่ม, แก้ไข, ระงับการใช้งาน `is_active = 0`) เพื่อป้องกันข้อมูลเบอร์ติดต่อสูญหายหรือถูกแก้ไขโดยไม่ได้รับอนุญาต[cite: 7]
 
-1.  **ระบบสิทธิ์ และการยืนยันตัวตน (Auth & User Management):** ระบบเข้าสู่ระบบจุดเดียว (Single Portal `/login` for all roles) พร้อมฟังก์ชัน **Remember Me (จำฉันไว้ในระบบ)** ที่จดจำ Email/Username และขยายอายุ Refresh Token เป็น 30 วัน, ล็อกอินด้วย JWT, รีเฟรชโทเค็น, รีเซ็ตรหัสผ่าน, นำทางผู้ใช้ไปยัง Portal ตามบทบาทอัตโนมัติ (Role-Based Redirection: Admin/Manager ➡️ `/admin`, Front Desk ➡️ `/front-desk`, Housekeeping ➡️ `/housekeeping`), กำหนดสิทธิ์แบบ Role-Based Access Control (4 Roles) แคชผ่าน Cloudflare KV[cite: 1, 6, 7]
+1.  **ระบบสิทธิ์ และการยืนยันตัวตน (Auth & User Management):** ระบบเข้าสู่ระบบจุดเดียว (Single Portal `/login` for all roles) พร้อมฟังก์ชัน **Remember Me (จำฉันไว้ในระบบ)** ที่จดจำ Email/Username และขยายอายุ Refresh Token เป็น 30 วัน, ล็อกอินด้วย JWT, รีเฟรชโทเค็น, รีเซ็ตรหัสผ่าน, นำทางผู้ใช้ไปยัง Portal ตามบทบาทอัตโนมัติ (Role-Based Redirection: Owner ➡️ `/admin`, Front Desk ➡️ `/front-desk`, Housekeeping ➡️ `/housekeeping`), กำหนดสิทธิ์แบบ Role-Based Access Control (3 Roles) แคชผ่าน Cloudflare KV[cite: 1, 6, 7]
 2.  **ระบบห้องพักและสิ่งอำนวยความสะดวก (Room Inventory Management):** จัดการห้องพัก, ประเภทห้อง (Standard, Deluxe, Suite, Presidential), ชั้น, สิ่งอำนวยความสะดวก และประวัติการเปลี่ยนแปลง[cite: 1, 7]
 3.  **ระบบวงจรชีวิตสถานะห้องพัก (Room Lifecycle State Machine):** จัดการและควบคุมการเปลี่ยนสถานะของห้องพักทั้ง 7 สถานะอย่างเป็นระบบตามเงื่อนไขทางธุรกิจ[cite: 7]
 4.  **ระบบการจองห้องพัก (Reservation Management):** สร้างการจองล่วงหน้า (ตรวจสอบ Date Range Overlap โดยยังไม่เปลี่ยน `rooms.status` ทันที), บันทึกประวัติแขก (Guest Profiles) และรองรับการ Walk-in[cite: 3, 7]
@@ -131,7 +131,7 @@
 
 | สมาชิก | บทบาทหลักในทีม | Service Backend ที่รับผิดชอบ | จำนวน API | หน้าจอ Frontend | ภาระงานหลักอื่น ๆ |
 |---|---|---|:---:|---|---|
-| **คน A (เขตโสภณ)** | **PM + Infra/DevOps Lead** | • API Gateway<br/>• Auth/User (12)<br/>• Report/Analytics (14) | **26** + Gateway | **Manager & Admin Portal** (`/admin`)<br/>• KPI Dashboard<br/>• User Management<br/>• Outsource Contacts Management (Admin UI)<br/>• Export Reports | วางโครงสร้าง Monorepo, ติดตั้ง Cloudflare Stack (6 D1, KV, R2), ออกแบบ API Gateway & RBAC, ติดตั้ง Upstash QStash Event Broker, ดูแล Master Data Outsource (Admin UI), CI/CD Deploy Pipeline |
+| **คน A (เขตโสภณ)** | **PM + Infra/DevOps Lead** | • API Gateway<br/>• Auth/User (12)<br/>• Report/Analytics (14) | **26** + Gateway | **Owner Portal** (`/admin`)<br/>• KPI Dashboard<br/>• User Management<br/>• Outsource Contacts Management (Admin UI)<br/>• Export Reports | วางโครงสร้าง Monorepo, ติดตั้ง Cloudflare Stack (6 D1, KV, R2), ออกแบบ API Gateway & RBAC, ติดตั้ง Upstash QStash Event Broker, ดูแล Master Data Outsource (Admin UI), CI/CD Deploy Pipeline |
 | **คน B (ธีรภัทร)** | **SA Lead + Core Dev** | • Reservation (24)<br/>• Billing (16) | **40** | **Front Desk & Cashier Portal** (`/front-desk`)<br/>• Room Matrix Grid (5–10 ห้อง)<br/>• Check-in / Check-out<br/>• Cashier & Split Screen Invoices<br/>• Quick Emergency Contact Drawer | System Analyst, วิเคราะห์ State Machine, ออกแบบ D1 Schemas & Outbox Pattern, กำหนด Event Contracts (`packages/events`), ดูแล Flow เงินมัดจำ/มินิบาร์/คิดเงิน และช่องทางติดต่อช่างด่วน |
 | **คน C (ปวริศ)** | **QA Lead + Core Dev** | • Room Inventory (18)<br/>• Housekeeping (21) | **39** | **Housekeeping Portal** (`/housekeeping`)<br/>• Cleaning Kanban Board<br/>• Task Execution & Inspection<br/>• Report Room Issue<br/>• Outsource Contacts CRUD & Quick Contact Dialog | ออกแบบ Test Plan / 24 UAT Test Cases, ทำ Automated Postman Collection, ดูแล D1 Schema และ APIs งานแม่บ้านและ Outsource Contacts, ควบคุม State เปลี่ยนผ่านงานแม่บ้านและผังห้อง |
 
@@ -191,7 +191,7 @@
 ---
 
 ### 📊 Persona 3 — Hotel General Manager: "วิชัย" (ผู้จัดการทั่วไป)
-*   **อายุ:** 45 ปี | ผู้บริหารระดับสูง | **บทบาทในระบบ:** `role=manager`
+*   **อายุ:** 45 ปี | ผู้บริหารระดับสูง | **บทบาทในระบบ:** `role=front_desk`
 *   **เป้าหมาย:** ติดตามผลประกอบการ ภาพรวมอัตราการเข้าพัก (Occupancy Rate) และควบคุมต้นทุนการดำเนินงาน[cite: 7]
 *   **Pain Points:** ในโรงแรมขนาดเล็กเดิมที่ไม่มีระบบรวมศูนย์ ผู้จัดการต้องรอรวบรวมข้อมูลสิ้นวัน ทำให้ไม่สามารถตัดสินใจปรับราคาห้องพักได้ทันต่อสถานการณ์[cite: 7]
 *   **Needs & Motivations:** Dashboard แสดง Occupancy Rate, รายได้รวม และสถิติเช็คอิน/เช็คเอาท์แบบ Real-time พร้อมส่งออกรายงาน PDF/CSV ในคลิกเดียว[cite: 7]
@@ -287,7 +287,7 @@ flowchart LR
     subgraph AdminUC["Manager & Admin Operations"]
         direction TB
         UC_AdminDashboard(("View KPI Dashboard"))
-        UC_ManageUsers(("Manage User Accounts & Roles (4 Roles)"))
+        UC_ManageUsers(("Manage User Accounts & Roles (3 Roles)"))
         UC_ManageRoomTypes(("Manage Room Types & Rates"))
         UC_ManageOutsource(("Manage Outsource Master Data (CRUD)"))
         UC_ViewReports(("Generate Occupancy & Revenue Reports"))
@@ -469,7 +469,7 @@ flowchart TD
 ```mermaid
 flowchart TD
     subgraph ADMIN [" 👤 ผู้ดูแลระบบ / ผู้จัดการ (Admin / Manager) "]
-        A4(["เริ่มต้น: มีคู่ค้าหรือช่างภายนอกรายใหม่ / ต่อสัญญา"]) --> B4["เข้าสู่ระบบด้วยสิทธิ์ Admin ที่ /login"]
+        A4(["เริ่มต้น: มีคู่ค้าหรือช่างภายนอกรายใหม่ / ต่อสัญญา"]) --> B4["เข้าสู่ระบบด้วยสิทธิ์ Owner ที่ /login"]
         B4 --> C4["เข้าสู่ Admin Portal เมนู 'คู่ค้า & ช่างภายนอก' (/admin/outsource)"]
         C4 --> D4{"เลือกการดำเนินการ"}
         D4 -->|เพิ่มช่างใหม่| E4["คลิกปุ่ม '+ เพิ่มคู่ค้า Outsource'"]
@@ -497,7 +497,7 @@ flowchart TD
     end
 
     subgraph HIGHLIGHTS4 [" 💡 สถาปัตยกรรม & จุดเด่นสำคัญ (Key Highlights) "]
-        H4_BOX["• <b>Role-Based Access Control (RBAC):</b> เฉพาะสิทธิ์ Admin/Manager เท่านั้นที่เข้าถึงการจัดการ Master Data คู่ค้าได้<br/>• <b>Safe Soft-Delete Pattern:</b> ระงับการจ้างด้วย is_active = 0 เพื่อเก็บรักษาประวัติความสัมพันธ์ ไม่ลบแถวข้อมูลจริง<br/>• <b>Real-time Front Desk Sync:</b> ช่างที่ถูกระงับจะหายจากแถบ Quick Emergency Drawer ของพนักงานต้อนรับทันที ป้องกันโทรผิดพลาด"]
+        H4_BOX["• <b>Role-Based Access Control (RBAC):</b> เฉพาะสิทธิ์ Owner/Manager เท่านั้นที่เข้าถึงการจัดการ Master Data คู่ค้าได้<br/>• <b>Safe Soft-Delete Pattern:</b> ระงับการจ้างด้วย is_active = 0 เพื่อเก็บรักษาประวัติความสัมพันธ์ ไม่ลบแถวข้อมูลจริง<br/>• <b>Real-time Front Desk Sync:</b> ช่างที่ถูกระงับจะหายจากแถบ Quick Emergency Drawer ของพนักงานต้อนรับทันที ป้องกันโทรผิดพลาด"]
     end
     style HIGHLIGHTS4 fill:#fffbeb,stroke:#f59e0b,stroke-width:1.5px,color:#92400e
     style H4_BOX fill:#ffffff,stroke:#fde68a,color:#78350f,text-align:left
@@ -1223,7 +1223,7 @@ sequenceDiagram
 6. `GET /users/:id` — ดึงข้อมูลผู้ใช้รายบุคคล[cite: 7]
 7. `PUT /users/:id` — แก้ไขข้อมูลผู้ใช้งาน[cite: 7]
 8. `DELETE /users/:id` — ปิดการใช้งานผู้ใช้ (Soft Delete)[cite: 7]
-9. `PUT /users/:id/role` — เปลี่ยนบทบาทผู้ใช้ (4 Roles)[cite: 7]
+9. `PUT /users/:id/role` — เปลี่ยนบทบาทผู้ใช้ (3 Roles)[cite: 7]
 10. `GET /users/:id/permissions` — ดูรายการสิทธิ์ของผู้ใช้[cite: 7]
 11. `POST /forgot-password` — ขอกู้คืนรหัสผ่าน[cite: 7]
 12. `POST /reset-password` — ตั้งรหัสผ่านใหม่[cite: 7]

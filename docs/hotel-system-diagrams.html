@@ -996,7 +996,7 @@
         desc: 'แผนภาพกิจกรรมที่ Admin เพิ่ม/แก้ไข/ระงับคู่ค้าช่างภายนอก (CRUD Master Data) และผลกระทบต่อ Quick Emergency Drawer ของ Front Desk ทันที',
         code: `flowchart TD
     subgraph ADMIN [" 👤 ผู้ดูแลระบบ / ผู้จัดการ (Admin / Manager) "]
-        A4(["เริ่มต้น: มีคู่ค้าหรือช่างภายนอกรายใหม่ / ต่อสัญญา"]) --> B4["เข้าสู่ระบบด้วยสิทธิ์ Admin ที่ /login"]
+        A4(["เริ่มต้น: มีคู่ค้าหรือช่างภายนอกรายใหม่ / ต่อสัญญา"]) --> B4["เข้าสู่ระบบด้วยสิทธิ์ Owner ที่ /login"]
         B4 --> C4["เข้าสู่ Admin Portal เมนู 'คู่ค้า & ช่างภายนอก' (/admin/outsource)"]
         C4 --> D4{"เลือกการดำเนินการ"}
         D4 -->|เพิ่มช่างใหม่| E4["คลิกปุ่ม '+ เพิ่มคู่ค้า Outsource'"]
@@ -1024,7 +1024,7 @@
     end
 
     subgraph HIGHLIGHTS4 [" 💡 สถาปัตยกรรม & จุดเด่นสำคัญ (Key Highlights) "]
-        H4_BOX["• <b>Role-Based Access Control (RBAC):</b> เฉพาะสิทธิ์ Admin/Manager เท่านั้นที่เข้าถึงการจัดการ Master Data คู่ค้าได้<br/>• <b>Safe Soft-Delete Pattern:</b> ระงับการจ้างด้วย is_active = 0 เพื่อเก็บรักษาประวัติความสัมพันธ์ ไม่ลบแถวข้อมูลจริง<br/>• <b>Real-time Front Desk Sync:</b> ช่างที่ถูกระงับจะหายจากแถบ Quick Emergency Drawer ของพนักงานต้อนรับทันที ป้องกันโทรผิดพลาด"]
+        H4_BOX["• <b>Role-Based Access Control (RBAC):</b> เฉพาะสิทธิ์ Owner/Manager เท่านั้นที่เข้าถึงการจัดการ Master Data คู่ค้าได้<br/>• <b>Safe Soft-Delete Pattern:</b> ระงับการจ้างด้วย is_active = 0 เพื่อเก็บรักษาประวัติความสัมพันธ์ ไม่ลบแถวข้อมูลจริง<br/>• <b>Real-time Front Desk Sync:</b> ช่างที่ถูกระงับจะหายจากแถบ Quick Emergency Drawer ของพนักงานต้อนรับทันที ป้องกันโทรผิดพลาด"]
     end
     style HIGHLIGHTS4 fill:#fffbeb,stroke:#f59e0b,stroke-width:1.5px,color:#92400e
     style H4_BOX fill:#ffffff,stroke:#fde68a,color:#78350f,text-align:left`

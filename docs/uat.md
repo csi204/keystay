@@ -711,7 +711,7 @@
 | **Front Desk Portal** | 7 | 7 | 0 | 0 | 100% |
 | **Housekeeping Portal** | 5 | 5 | 0 | 0 | 100% |
 | **Billing & Cashier Portal** | 4 | 4 | 0 | 0 | 100% |
-| **Manager & Admin Portal** | 5 | 5 | 0 | 0 | 100% |
+| **Owner Portal** | 5 | 5 | 0 | 0 | 100% |
 | **Event Fan-out 1:4 & DLQ** | 3 | 3 | 0 | 0 | 100% |
 | **รวมทั้งหมด** | **24** | **24** | **0** | **0** | **100%** |
 

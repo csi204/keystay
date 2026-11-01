@@ -25,14 +25,14 @@ export interface UserItem {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'admin' | 'manager' | 'front_desk' | 'housekeeping';
+  role: 'owner' | 'front_desk' | 'housekeeping';
   isActive: boolean;
   createdAt: string;
 }
 
 export const UsersManagementPage: React.FC = () => {
   const currentRole = getAuthRole();
-  const isManager = currentRole === 'manager';
+  const isOwner = currentRole === 'owner';
 
   const [loading, setLoading] = useState<boolean>(true);
   const [isOffline, setIsOffline] = useState<boolean>(false);
@@ -45,7 +45,7 @@ export const UsersManagementPage: React.FC = () => {
       email: 'khet.admin@keystay.io',
       firstName: 'เขต',
       lastName: 'โสภณ',
-      role: 'admin',
+      role: 'owner',
       isActive: true,
       createdAt: '2026-09-01',
     },
@@ -54,7 +54,7 @@ export const UsersManagementPage: React.FC = () => {
       email: 'manager.bkk@keystay.io',
       firstName: 'วรพจน์',
       lastName: 'วิริยะกุล',
-      role: 'manager',
+      role: 'front_desk',
       isActive: true,
       createdAt: '2026-09-10',
     },
@@ -85,7 +85,7 @@ export const UsersManagementPage: React.FC = () => {
     lastName: '',
     email: '',
     password: '',
-    role: 'front_desk' as 'admin' | 'manager' | 'front_desk' | 'housekeeping',
+    role: 'front_desk' as 'owner' | 'front_desk' | 'housekeeping',
   });
 
   const [editingUser, setEditingUser] = useState<UserItem | null>(null);
@@ -93,7 +93,7 @@ export const UsersManagementPage: React.FC = () => {
     firstName: '',
     lastName: '',
     email: '',
-    role: 'front_desk' as 'admin' | 'manager' | 'front_desk' | 'housekeeping',
+    role: 'front_desk' as 'owner' | 'front_desk' | 'housekeeping',
     isActive: true,
   });
 
@@ -222,7 +222,7 @@ export const UsersManagementPage: React.FC = () => {
 
   // 5. Toggle Active
   const handleToggleActive = (id: string) => {
-    if (isOffline || isManager) return;
+    if (isOffline || isOwner) return;
     setUsers((prev) =>
       prev.map((u) => (u.id === id ? { ...u, isActive: !u.isActive } : u))
     );
@@ -230,9 +230,9 @@ export const UsersManagementPage: React.FC = () => {
 
   const roleBadgeStyle = (role: string) => {
     switch (role) {
-      case 'admin':
+      case 'owner':
         return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'manager':
+      case 'front_desk':
         return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'front_desk':
         return 'bg-emerald-100 text-emerald-800 border-emerald-200';
@@ -267,7 +267,7 @@ export const UsersManagementPage: React.FC = () => {
             </div>
             <h1 className="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
               <span>การบริหารจัดการผู้ใช้และสิทธิ์การเข้าถึง (RBAC)</span>
-              {isManager && (
+              {isOwner && (
                 <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-xs">
                   โหมดดูข้อมูลเท่านั้น (Read-Only)
                 </Badge>
@@ -279,7 +279,7 @@ export const UsersManagementPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            {!isManager && (
+            {!isOwner && (
               <Button
                 size="sm"
                 disabled={isOffline}
@@ -296,7 +296,7 @@ export const UsersManagementPage: React.FC = () => {
 
       <div className="px-4 pb-6 space-y-4">
         {/* Manager Notice */}
-        {isManager && (
+        {isOwner && (
           <div className="p-4 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center gap-3">
             <Lock className="w-5 h-5 text-amber-600 shrink-0" />
             <div>
@@ -357,7 +357,7 @@ export const UsersManagementPage: React.FC = () => {
                     <th className="py-3 px-3 text-center">บทบาท (ROLE)</th>
                     <th className="py-3 px-3 text-center">สถานะ</th>
                     <th className="py-3 px-3">วันที่สร้าง</th>
-                    {!isManager && <th className="py-3 px-4 text-center">การจัดการ</th>}
+                    {!isOwner && <th className="py-3 px-4 text-center">การจัดการ</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -395,7 +395,7 @@ export const UsersManagementPage: React.FC = () => {
                       <td className="py-3 px-3 text-slate-500 font-mono text-[11px]">
                         {u.createdAt}
                       </td>
-                      {!isManager && (
+                      {!isOwner && (
                         <td className="py-3 px-4 text-center">
                           <div className="flex items-center justify-center gap-1.5">
                             {/* 1. Edit User Modal Button */}
@@ -415,7 +415,7 @@ export const UsersManagementPage: React.FC = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              disabled={isOffline || u.role === 'admin'}
+                              disabled={isOffline || u.role === 'owner'}
                               onClick={() => handleToggleActive(u.id)}
                               className="h-7 text-[11px] px-2 border-slate-300 text-slate-700"
                             >
@@ -426,7 +426,7 @@ export const UsersManagementPage: React.FC = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              disabled={isOffline || u.role === 'admin'}
+                              disabled={isOffline || u.role === 'owner'}
                               onClick={() => setDeletingUser(u)}
                               title="ลบบัญชีผู้ใช้"
                               className="h-7 text-[11px] px-2 border-red-200 text-red-600 hover:bg-red-50"

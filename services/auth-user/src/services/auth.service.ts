@@ -13,7 +13,7 @@ export interface RegisterDTO {
   password: string;
   firstName: string;
   lastName: string;
-  role: 'admin' | 'manager' | 'front_desk' | 'housekeeping';
+  role: 'owner' | 'front_desk' | 'housekeeping';
 }
 
 export interface LoginDTO {

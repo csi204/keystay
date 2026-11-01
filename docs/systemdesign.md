@@ -30,7 +30,7 @@ flowchart TB
 
     subgraph EDGE["Cloudflare Edge Network"]
         KV[("<b>Cloudflare KV</b><br/>Session Store · Roles & Permissions Cache")]
-        GW["<b>API Gateway (Cloudflare Worker)</b><br/>• Reverse Proxy & Routing<br/>• JWT Authentication & RBAC (4 Roles)<br/>• Rate Limiting & CORS Enforcement<br/>• Request Validation & Logging"]
+        GW["<b>API Gateway (Cloudflare Worker)</b><br/>• Reverse Proxy & Routing<br/>• JWT Authentication & RBAC (3 Roles)<br/>• Rate Limiting & CORS Enforcement<br/>• Request Validation & Logging"]
 
         subgraph MICROSERVICES["Microservices Layer (6 Independent Workers · 105 APIs)"]
             SVC_AUTH["<b>#1 Auth/User Service</b><br/>12 APIs · JWT, Users & RBAC"]

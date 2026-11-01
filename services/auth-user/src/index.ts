@@ -29,7 +29,7 @@ const registerSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters'),
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
-  role: z.enum(['admin', 'manager', 'front_desk', 'housekeeping']).default('front_desk'),
+  role: z.enum(['owner', 'front_desk', 'housekeeping']).default('front_desk'),
 });
 
 const loginSchema = z.object({
@@ -49,7 +49,7 @@ const updateUserSchema = z.object({
 });
 
 const updateRoleSchema = z.object({
-  role: z.enum(['admin', 'manager', 'front_desk', 'housekeeping']),
+  role: z.enum(['owner', 'front_desk', 'housekeeping']),
 });
 
 const changePasswordSchema = z.object({

@@ -21,6 +21,8 @@ const ManagerDashboardPage = React.lazy(() => import('./pages/admin/ManagerDashb
 const RoomsPricingPage = React.lazy(() => import('./pages/admin/RoomsPricingPage'));
 const UsersManagementPage = React.lazy(() => import('./pages/admin/UsersManagementPage'));
 const ReportsAnalyticsPage = React.lazy(() => import('./pages/admin/ReportsAnalyticsPage'));
+const MinibarCatalogPage = React.lazy(() => import('./pages/admin/MinibarCatalogPage'));
+const HousekeepingTasksPage = React.lazy(() => import('./pages/admin/HousekeepingTasksPage'));
 
 // ============================================================================
 // ENTERPRISE ROUTE GUARDS (ความปลอดภัยระดับสูง แยกตาม Tab Session)
@@ -52,18 +54,17 @@ const AuthenticatedHome: React.FC = () => {
   const role = getAuthRole();
 
   // If user is Admin or Manager, seamlessly forward to their portal dashboard
-  if (role === 'admin') {
+  if (role === 'owner') {
     return <Navigate to="/admin/dashboard" replace />;
   }
-  if (role === 'manager') {
+  if (role === 'front_desk') {
     return <Navigate to="/manager/dashboard" replace />;
   }
 
   const user = getAuthUser();
 
   const roleLabels: Record<string, string> = {
-    admin: 'ผู้ดูแลระบบ (Admin)',
-    manager: 'ผู้จัดการ (Manager)',
+    owner: 'เจ้าของ (Owner)',
     front_desk: 'พนักงานต้อนรับ (Front Desk)',
     housekeeping: 'แผนกแม่บ้าน (Housekeeping)',
   };
@@ -223,8 +224,24 @@ export const App: React.FC = () => {
               </RequireAuth>
             }
           />
+          <Route
+            path="/admin/minibar"
+            element={
+              <RequireAuth>
+                <MinibarCatalogPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/admin/housekeeping"
+            element={
+              <RequireAuth>
+                <HousekeepingTasksPage />
+              </RequireAuth>
+            }
+          />
 
-          {/* หน้า Manager Portal (สำหรับผู้จัดการ Manager) */}
+          {/* หน้า Manager/Front Desk Portal */}
           <Route
             path="/manager"
             element={<Navigate to="/manager/dashboard" replace />}
@@ -250,6 +267,14 @@ export const App: React.FC = () => {
             element={
               <RequireAuth>
                 <ReportsAnalyticsPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/manager/housekeeping"
+            element={
+              <RequireAuth>
+                <HousekeepingTasksPage />
               </RequireAuth>
             }
           />

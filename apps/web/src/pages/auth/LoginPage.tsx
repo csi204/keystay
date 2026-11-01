@@ -8,7 +8,7 @@ import { apiUrl, setAuthSession } from '@/lib/api';
 export interface AuthUser {
   id: string;
   email: string;
-  role: 'admin' | 'manager' | 'front_desk' | 'housekeeping';
+  role: 'owner' | 'front_desk' | 'housekeeping';
   firstName?: string;
   lastName?: string;
 }
@@ -76,10 +76,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
     } catch {
       // Dev local fallback (เมื่อไม่ได้รัน Cloudflare Worker Backend แยก)
       if (password === 'Keystay@2026' || password === 'password123') {
-        const inferredRole = email.includes('admin')
-          ? 'admin'
-          : email.includes('manager')
-          ? 'manager'
+        const inferredRole = email.includes('owner')
+          ? 'owner'
+          : email.includes('front_desk')
+          ? 'front_desk'
           : email.includes('housekeep')
           ? 'housekeeping'
           : 'front_desk';
@@ -98,7 +98,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
   // FAST LOGIN HELPER (DEMO ACCOUNTS) — คลิกเพื่อเข้าสู่ระบบตาม Role ทันที
   // =========================================================================
   const handleFastLogin = async (
-    targetRole: 'admin' | 'manager' | 'front_desk' | 'housekeeping',
+    targetRole: 'owner' | 'front_desk' | 'housekeeping',
     demoEmail: string
   ) => {
     setEmail(demoEmail);
@@ -117,7 +117,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
       if (response.ok && data?.token) {
         const userObj = data.user || { email: demoEmail, role: targetRole };
         setAuthSession(data.token, userObj, targetRole);
-        navigate(targetRole === 'admin' ? '/admin/dashboard' : targetRole === 'manager' ? '/manager/dashboard' : '/');
+        navigate(targetRole === 'owner' ? '/admin/dashboard' : targetRole === 'front_desk' ? '/manager/dashboard' : '/');
         return;
       }
     } catch {
@@ -127,12 +127,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
     // Direct Login fallback
     const fallbackUser = {
       email: demoEmail,
-      firstName: targetRole === 'admin' ? 'เขต' : targetRole === 'manager' ? 'วรพจน์' : 'พนักงาน',
-      lastName: targetRole === 'admin' ? 'โสภณ' : 'ผู้จัดการ',
+      firstName: targetRole === 'owner' ? 'เขต' : targetRole === 'front_desk' ? 'วรพจน์' : 'พนักงาน',
+      lastName: targetRole === 'owner' ? 'โสภณ' : 'ผู้จัดการ',
       role: targetRole,
     };
     setAuthSession('dev-jwt-token-fallback', fallbackUser, targetRole);
-    navigate(targetRole === 'admin' ? '/admin/dashboard' : targetRole === 'manager' ? '/manager/dashboard' : '/');
+    navigate(targetRole === 'owner' ? '/admin/dashboard' : targetRole === 'front_desk' ? '/manager/dashboard' : '/');
   };
 
   const isFailed = Boolean(errorMessage);
@@ -269,16 +269,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
             <button
               type="button"
               disabled={isLoading}
-              onClick={() => handleFastLogin('manager', 'manager@keystay.com')}
+              onClick={() => handleFastLogin('front_desk', 'owner@keystay.com')}
               className="px-2 py-1.5 rounded border border-blue-200 bg-blue-50/50 hover:bg-blue-100/70 text-slate-700 text-left transition-colors truncate cursor-pointer"
             >
               <div className="font-medium text-blue-900 font-bold">👔 Manager</div>
-              <div className="text-[10px] text-blue-600 font-mono truncate">manager@keystay.com</div>
+              <div className="text-[10px] text-blue-600 font-mono truncate">owner@keystay.com</div>
             </button>
             <button
               type="button"
               disabled={isLoading}
-              onClick={() => handleFastLogin('admin', 'admin@keystay.com')}
+              onClick={() => handleFastLogin('owner', 'admin@keystay.com')}
               className="px-2 py-1.5 rounded border border-purple-200 bg-purple-50/50 hover:bg-purple-100/70 text-slate-700 text-left transition-colors truncate cursor-pointer"
             >
               <div className="font-medium text-purple-900 font-bold">🔑 Admin</div>
