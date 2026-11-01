@@ -18,6 +18,7 @@ import {
   X,
   Save,
   AlertTriangle,
+  Bath,
 } from 'lucide-react';
 
 export interface RoomTypeItem {
@@ -28,6 +29,7 @@ export interface RoomTypeItem {
   maxOccupancy: number;
   bedType: string;
   sizeSqm: number;
+  bathrooms?: number;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -50,6 +52,7 @@ export const RoomsPricingPage: React.FC = () => {
       maxOccupancy: 2,
       bedType: 'King Bed',
       sizeSqm: 28,
+      bathrooms: 1,
     },
     {
       id: 'rt-dlx',
@@ -59,6 +62,7 @@ export const RoomsPricingPage: React.FC = () => {
       maxOccupancy: 2,
       bedType: 'King Bed / Twin',
       sizeSqm: 36,
+      bathrooms: 1,
     },
     {
       id: 'rt-ste',
@@ -68,6 +72,7 @@ export const RoomsPricingPage: React.FC = () => {
       maxOccupancy: 4,
       bedType: 'King Bed',
       sizeSqm: 54,
+      bathrooms: 2,
     },
   ]);
 
@@ -80,6 +85,7 @@ export const RoomsPricingPage: React.FC = () => {
     maxOccupancy: '2',
     bedType: 'King Bed',
     sizeSqm: '28',
+    bathrooms: '1',
   });
 
   const [editingType, setEditingType] = useState<RoomTypeItem | null>(null);
@@ -90,6 +96,7 @@ export const RoomsPricingPage: React.FC = () => {
     maxOccupancy: '2',
     bedType: 'King Bed',
     sizeSqm: '28',
+    bathrooms: '1',
   });
 
   const [deletingType, setDeletingType] = useState<RoomTypeItem | null>(null);
@@ -123,6 +130,7 @@ export const RoomsPricingPage: React.FC = () => {
       maxOccupancy: parseInt(createForm.maxOccupancy, 10) || 2,
       bedType: createForm.bedType,
       sizeSqm: parseFloat(createForm.sizeSqm) || 28,
+      bathrooms: parseInt(createForm.bathrooms, 10) || 1,
     };
 
     const res = await apiFetch('/api/room-types', {
@@ -148,6 +156,7 @@ export const RoomsPricingPage: React.FC = () => {
       maxOccupancy: '2',
       bedType: 'King Bed',
       sizeSqm: '28',
+      bathrooms: '1',
     });
   };
 
@@ -161,6 +170,7 @@ export const RoomsPricingPage: React.FC = () => {
       maxOccupancy: item.maxOccupancy.toString(),
       bedType: item.bedType,
       sizeSqm: item.sizeSqm.toString(),
+      bathrooms: (item.bathrooms || 1).toString(),
     });
   };
 
@@ -176,6 +186,7 @@ export const RoomsPricingPage: React.FC = () => {
       maxOccupancy: parseInt(editForm.maxOccupancy, 10) || 2,
       bedType: editForm.bedType,
       sizeSqm: parseFloat(editForm.sizeSqm) || 28,
+      bathrooms: parseInt(editForm.bathrooms, 10) || 1,
     };
 
     await apiFetch(`/api/room-types/${editingType.id}`, {
@@ -211,7 +222,7 @@ export const RoomsPricingPage: React.FC = () => {
   return (
     <AdminLayout activePath={`${roleBase}/rooms`} isBackendOffline={isOffline}>
       {/* Header */}
-      <div className="bg-white border-b border-slate-200/90 px-6 py-4 mb-6 shadow-sm">
+      <div className="bg-white border-b border-slate-200/80 px-4 py-3.5 mb-4 shadow-2xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
@@ -248,7 +259,7 @@ export const RoomsPricingPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="px-6 space-y-6">
+      <div className="px-4 pb-6 space-y-4">
         {/* Manager Notice */}
         {isManager && (
           <div className="p-4 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center gap-3">
@@ -294,7 +305,7 @@ export const RoomsPricingPage: React.FC = () => {
                   {t.description || 'ไม่มีรายละเอียดเพิ่มเติม'}
                 </p>
 
-                <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 text-[11px] text-slate-600">
+                <div className="grid grid-cols-4 gap-1.5 pt-2 border-t border-slate-100 text-[11px] text-slate-600">
                   <div className="flex items-center gap-1">
                     <Users className="w-3.5 h-3.5 text-slate-400" />
                     <span>{t.maxOccupancy} ท่าน</span>
@@ -302,6 +313,10 @@ export const RoomsPricingPage: React.FC = () => {
                   <div className="flex items-center gap-1">
                     <Maximize2 className="w-3.5 h-3.5 text-slate-400" />
                     <span>{t.sizeSqm} ตร.ม.</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Bath className="w-3.5 h-3.5 text-slate-400" />
+                    <span>{t.bathrooms || 1} ห้องน้ำ</span>
                   </div>
                   <div className="truncate text-right text-slate-500 font-medium" title={t.bedType}>
                     {t.bedType}
@@ -351,6 +366,7 @@ export const RoomsPricingPage: React.FC = () => {
                     <th className="py-3 px-4">ชื่อประเภทห้องพัก</th>
                     <th className="py-3 px-3">เตียงนอน</th>
                     <th className="py-3 px-3 text-center">ขนาด (ตร.ม.)</th>
+                    <th className="py-3 px-3 text-center">ห้องน้ำ</th>
                     <th className="py-3 px-3 text-center">ผู้เข้าพักสูงสุด</th>
                     <th className="py-3 px-3 text-right">ราคาพื้นฐาน (Base Price)</th>
                     {!isManager && <th className="py-3 px-4 text-center">การจัดการ</th>}
@@ -365,6 +381,7 @@ export const RoomsPricingPage: React.FC = () => {
                       </td>
                       <td className="py-3 px-3 text-slate-700">{t.bedType}</td>
                       <td className="py-3 px-3 text-center font-mono text-slate-600">{t.sizeSqm}</td>
+                      <td className="py-3 px-3 text-center font-mono text-slate-600">{t.bathrooms || 1} ห้อง</td>
                       <td className="py-3 px-3 text-center font-mono text-slate-600">{t.maxOccupancy} ท่าน</td>
                       <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
                         ฿{t.basePrice.toLocaleString()}
@@ -476,10 +493,10 @@ export const RoomsPricingPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-2">
                 <div>
                   <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    ประเภทเตียงนอน *
+                    เตียงนอน *
                   </label>
                   <Select
                     value={createForm.bedType}
@@ -493,13 +510,27 @@ export const RoomsPricingPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    ขนาดห้อง (ตร.ม.) *
+                    ขนาด (ตร.ม.) *
                   </label>
                   <Input
                     required
                     type="number"
                     value={createForm.sizeSqm}
                     onChange={(e) => setCreateForm({ ...createForm, sizeSqm: e.target.value })}
+                    className="text-xs font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    ห้องน้ำ *
+                  </label>
+                  <Input
+                    required
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={createForm.bathrooms}
+                    onChange={(e) => setCreateForm({ ...createForm, bathrooms: e.target.value })}
                     className="text-xs font-mono"
                   />
                 </div>
@@ -599,10 +630,10 @@ export const RoomsPricingPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-2">
                 <div>
                   <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    ประเภทเตียงนอน *
+                    เตียงนอน *
                   </label>
                   <Select
                     value={editForm.bedType}
@@ -616,13 +647,27 @@ export const RoomsPricingPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    ขนาดห้อง (ตร.ม.) *
+                    ขนาด (ตร.ม.) *
                   </label>
                   <Input
                     required
                     type="number"
                     value={editForm.sizeSqm}
                     onChange={(e) => setEditForm({ ...editForm, sizeSqm: e.target.value })}
+                    className="text-xs font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    ห้องน้ำ *
+                  </label>
+                  <Input
+                    required
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={editForm.bathrooms}
+                    onChange={(e) => setEditForm({ ...editForm, bathrooms: e.target.value })}
                     className="text-xs font-mono"
                   />
                 </div>

@@ -127,7 +127,7 @@ export const ManagerDashboardPage: React.FC = () => {
   return (
     <AdminLayout activePath={`${roleBase}/dashboard`} isBackendOffline={isOffline}>
       {/* 1. Executive Context Header */}
-      <div className="bg-white border-b border-slate-200/80 px-6 py-5 mb-6 shadow-2xs">
+      <div className="bg-white border-b border-slate-200/80 px-4 py-3.5 mb-4 shadow-2xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs text-slate-500 mb-1.5">
@@ -163,11 +163,11 @@ export const ManagerDashboardPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="px-6 space-y-6">
+      <div className="px-4 pb-6 space-y-4">
         {/* 2. Unified 4 Core Metric Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
           {/* Metric 1: Occupancy Rate */}
-          <div className="bg-white rounded-xl border border-slate-200/90 p-6 min-h-[140px] shadow-2xs hover:border-slate-300 transition-all flex flex-col justify-between">
+          <div className="bg-white rounded-xl border border-slate-200/90 p-4 min-h-[120px] shadow-2xs hover:border-slate-300 transition-all flex flex-col justify-between">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-semibold text-slate-500">อัตราการเข้าพักวันนี้</span>
               <div className="w-8 h-8 rounded-lg bg-orange-50 text-[#F97316] flex items-center justify-center">
@@ -186,7 +186,7 @@ export const ManagerDashboardPage: React.FC = () => {
           </div>
 
           {/* Metric 2: Today's Revenue */}
-          <div className="bg-white rounded-xl border border-slate-200/90 p-6 min-h-[140px] shadow-2xs hover:border-slate-300 transition-all flex flex-col justify-between">
+          <div className="bg-white rounded-xl border border-slate-200/90 p-4 min-h-[120px] shadow-2xs hover:border-slate-300 transition-all flex flex-col justify-between">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-semibold text-slate-500">รายได้รวมวันนี้</span>
               <div className="w-8 h-8 rounded-lg bg-slate-50 text-slate-700 flex items-center justify-center border border-slate-200/60">
@@ -204,7 +204,7 @@ export const ManagerDashboardPage: React.FC = () => {
           </div>
 
           {/* Metric 3: ADR (MTD) */}
-          <div className="bg-white rounded-xl border border-slate-200/90 p-6 min-h-[140px] shadow-2xs hover:border-slate-300 transition-all flex flex-col justify-between">
+          <div className="bg-white rounded-xl border border-slate-200/90 p-4 min-h-[120px] shadow-2xs hover:border-slate-300 transition-all flex flex-col justify-between">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-semibold text-slate-500">ราคาเฉลี่ยต่อห้อง (ADR)</span>
               <div className="w-8 h-8 rounded-lg bg-slate-50 text-slate-700 flex items-center justify-center border border-slate-200/60">
@@ -222,7 +222,7 @@ export const ManagerDashboardPage: React.FC = () => {
           </div>
 
           {/* Metric 4: RevPAR (MTD) */}
-          <div className="bg-white rounded-xl border border-slate-200/90 p-6 min-h-[140px] shadow-2xs hover:border-slate-300 transition-all flex flex-col justify-between">
+          <div className="bg-white rounded-xl border border-slate-200/90 p-4 min-h-[120px] shadow-2xs hover:border-slate-300 transition-all flex flex-col justify-between">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-semibold text-slate-500">รายได้ต่อห้องพร้อมขาย (RevPAR)</span>
               <div className="w-8 h-8 rounded-lg bg-orange-50 text-[#F97316] flex items-center justify-center">
@@ -241,9 +241,9 @@ export const ManagerDashboardPage: React.FC = () => {
         </div>
 
         {/* 3. Middle Section: Operational Breakdown & Monthly MTD */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5">
           {/* Left: Live Room Inventory & Guest Flow */}
-          <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200/90 shadow-2xs p-6 flex flex-col justify-between space-y-6">
+          <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200/90 shadow-2xs p-4 flex flex-col justify-between space-y-4">
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -332,7 +332,7 @@ export const ManagerDashboardPage: React.FC = () => {
           </div>
 
           {/* Right: Monthly MTD Card */}
-          <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs p-6 flex flex-col justify-between">
+          <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs p-4 flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
                 <h2 className="text-sm font-bold text-slate-900">สรุปสะสมประจำเดือน</h2>

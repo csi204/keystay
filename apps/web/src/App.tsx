@@ -12,7 +12,7 @@ import { ShieldCheck, LogOut, KeyRound, UserCheck } from 'lucide-react';
 // ENTERPRISE ROUTE GUARDS (ความปลอดภัยระดับสูง)
 // ============================================================================
 
-import { getAuthToken, getAuthRole, getAuthUser, clearAuthSession } from './lib/api';
+import { getAuthToken, getAuthRole, getAuthUser, clearAuthSession, apiUrl } from './lib/api';
 
 // ============================================================================
 // ENTERPRISE LAZY LOADING (Code Splitting ตามเอกสาร)
@@ -26,11 +26,11 @@ const ReportsAnalyticsPage = React.lazy(() => import('./pages/admin/ReportsAnaly
 // ENTERPRISE ROUTE GUARDS (ความปลอดภัยระดับสูง แยกตาม Tab Session)
 // ============================================================================
 
-// Guard 1: ห้ามคนนอกแอบพิมพ์ URL เข้าหน้าภายในโดยตรง (ถ้าไม่มี token จะส่งไป 404 เสมือนไม่มีหน้านี้)
+// Guard 1: ห้ามคนนอกแอบพิมพ์ URL เข้าหน้าภายในโดยตรง (ถ้าไม่มี token จะส่งกลับหน้า /login)
 const RequireAuth: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const token = getAuthToken();
   if (!token) {
-    return <NotFound404Page />;
+    return <Navigate to="/login" replace />;
   }
   return <>{children}</>;
 };
@@ -68,11 +68,19 @@ const AuthenticatedHome: React.FC = () => {
     housekeeping: 'แผนกแม่บ้าน (Housekeeping)',
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('keystay_token');
-    localStorage.removeItem('keystay_user');
-    localStorage.removeItem('keystay_role');
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await fetch(apiUrl('/api/auth/logout'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(getAuthToken() ? { Authorization: `Bearer ${getAuthToken()}` } : {}),
+        },
+      }).catch(() => {});
+    } finally {
+      clearAuthSession();
+      navigate('/login', { replace: true });
+    }
   };
 
   return (

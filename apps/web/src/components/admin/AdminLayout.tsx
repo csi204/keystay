@@ -18,7 +18,7 @@ import {
   ArrowLeftRight,
 } from 'lucide-react';
 
-import { getAuthRole, getAuthUser, clearAuthSession } from '@/lib/api';
+import { getAuthRole, getAuthUser, clearAuthSession, getAuthToken, apiUrl } from '@/lib/api';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -84,9 +84,20 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
     return () => clearInterval(timer);
   }, []);
 
-  const handleLogout = () => {
-    clearAuthSession();
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      const token = getAuthToken();
+      await fetch(apiUrl('/api/auth/logout'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      }).catch(() => {});
+    } finally {
+      clearAuthSession();
+      navigate('/login', { replace: true });
+    }
   };
 
   const navItems = [
@@ -237,7 +248,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       {/* 2. MAIN CONTENT AREA: Scrolls independently, NEVER stretches sidebar */}
       <div className="flex-1 h-screen overflow-y-auto flex flex-col min-w-0">
         {/* Top Header Bar */}
-        <header className="h-14 bg-white border-b border-slate-200 px-6 flex items-center justify-between shrink-0 sticky top-0 z-10 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+        {/* <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between shrink-0 sticky top-0 z-10 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
           <div className="flex items-center gap-2 text-xs text-slate-500">
             <span className="font-semibold text-slate-700">ระบบจัดการ</span>
             <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
@@ -252,7 +263,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
               </div>
             )}
 
-            {/* User Name & Role Badge positioned on Top-Right */}
+            User Name & Role Badge positioned on Top-Right
             <div className="flex items-center gap-2 pr-3 border-r border-slate-200">
               <span className="text-xs text-slate-400">{userName}<span className='text-xs text-slate-400 lowercase'> - {isAdmin ? 'ADMIN' : 'MANAGER'}</span></span>
             </div>
@@ -262,7 +273,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
               <span>{currentTime}</span>
             </div>
           </div>
-        </header>
+        </header> */}
 
         {/* Backend Offline Warning Banner if Offline */}
         {isBackendOffline && (
@@ -277,7 +288,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
         )}
 
         {/* Page Content Container */}
-        <main className="p-6 md:p-8 flex-1">{children}</main>
+        <main className="bg-white flex-1 m-0">{children}</main>
       </div>
     </div>
   );

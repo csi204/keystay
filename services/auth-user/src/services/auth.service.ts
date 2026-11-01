@@ -80,7 +80,7 @@ export class AuthService {
     const accessToken = await signJwt(
       { sub: userId, email: dto.email.toLowerCase(), role: dto.role },
       this.jwtSecret,
-      900
+      86400 // 24 hours
     );
 
     return {
@@ -97,7 +97,7 @@ export class AuthService {
         accessToken,
         refreshToken,
         tokenType: 'Bearer',
-        expiresIn: 900,
+        expiresIn: 86400,
       },
     };
   }
@@ -154,7 +154,7 @@ export class AuthService {
     const accessToken = await signJwt(
       { sub: user.id, email: user.email, role: user.role },
       this.jwtSecret,
-      900
+      86400 // 24 hours
     );
 
     return {
@@ -171,7 +171,7 @@ export class AuthService {
         accessToken,
         refreshToken,
         tokenType: 'Bearer',
-        expiresIn: 900,
+        expiresIn: 86400,
       },
     };
   }
@@ -215,7 +215,7 @@ export class AuthService {
     const accessToken = await signJwt(
       { sub: user.id, email: user.email, role: user.role },
       this.jwtSecret,
-      900
+      86400 // 24 hours
     );
 
     return {
@@ -223,7 +223,7 @@ export class AuthService {
         accessToken,
         refreshToken: newRefreshToken,
         tokenType: 'Bearer',
-        expiresIn: 900,
+        expiresIn: 86400,
       },
     };
   }

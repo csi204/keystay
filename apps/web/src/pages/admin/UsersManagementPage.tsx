@@ -255,7 +255,7 @@ export const UsersManagementPage: React.FC = () => {
   return (
     <AdminLayout activePath="/admin/users" isBackendOffline={isOffline}>
       {/* Context Header */}
-      <div className="bg-white border-b border-slate-200/90 px-6 py-4 mb-6 shadow-sm">
+      <div className="bg-white border-b border-slate-200/90 px-4 py-3.5 mb-4 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
@@ -294,7 +294,7 @@ export const UsersManagementPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="px-6 space-y-6">
+      <div className="px-4 pb-6 space-y-4">
         {/* Manager Notice */}
         {isManager && (
           <div className="p-4 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center gap-3">
