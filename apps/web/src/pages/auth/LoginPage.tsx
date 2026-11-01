@@ -117,7 +117,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
       if (response.ok && data?.token) {
         const userObj = data.user || { email: demoEmail, role: targetRole };
         setAuthSession(data.token, userObj, targetRole);
-        navigate(targetRole === 'owner' ? '/admin/dashboard' : targetRole === 'front_desk' ? '/manager/dashboard' : '/');
+        navigate(targetRole === 'owner' ? '/admin/dashboard' : targetRole === 'front_desk' ? '/front-desk/dashboard' : '/');
         return;
       }
     } catch {
@@ -127,12 +127,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
     // Direct Login fallback
     const fallbackUser = {
       email: demoEmail,
-      firstName: targetRole === 'owner' ? 'เขต' : targetRole === 'front_desk' ? 'วรพจน์' : 'พนักงาน',
-      lastName: targetRole === 'owner' ? 'โสภณ' : 'ผู้จัดการ',
+      firstName: targetRole === 'owner' ? 'เขต' : targetRole === 'front_desk' ? 'สมศรี' : 'สมหวัง',
+      lastName: targetRole === 'owner' ? 'โสภณ (เจ้าของ)' : targetRole === 'front_desk' ? 'ใจบริการ' : 'งานสะอาด',
       role: targetRole,
     };
     setAuthSession('dev-jwt-token-fallback', fallbackUser, targetRole);
-    navigate(targetRole === 'owner' ? '/admin/dashboard' : targetRole === 'front_desk' ? '/manager/dashboard' : '/');
+    navigate(targetRole === 'owner' ? '/admin/dashboard' : targetRole === 'front_desk' ? '/front-desk/dashboard' : '/');
   };
 
   const isFailed = Boolean(errorMessage);
@@ -247,42 +247,33 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
             <span>FAST LOGIN (DEMO ACCOUNTS)</span>
             <span className="font-mono text-[9px] text-slate-400">DEV HELPER</span>
           </div>
-          <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+          <div className="grid grid-cols-3 gap-1.5 text-[11px]">
+            <button
+              type="button"
+              disabled={isLoading}
+              onClick={() => handleFastLogin('owner', 'owner@keystay.com')}
+              className="px-2 py-1.5 rounded border border-purple-200 bg-purple-50/50 hover:bg-purple-100/70 text-slate-700 text-left transition-colors truncate cursor-pointer"
+            >
+              <div className="font-medium text-purple-900 font-bold">👑 Owner</div>
+              <div className="text-[10px] text-purple-600 font-mono truncate">owner@keystay.com</div>
+            </button>
             <button
               type="button"
               disabled={isLoading}
               onClick={() => handleFastLogin('front_desk', 'frontdesk@keystay.com')}
-              className="px-2 py-1.5 rounded border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-left transition-colors truncate cursor-pointer"
+              className="px-2 py-1.5 rounded border border-blue-200 bg-blue-50/50 hover:bg-blue-100/70 text-slate-700 text-left transition-colors truncate cursor-pointer"
             >
-              <div className="font-medium text-slate-900">Front Desk</div>
-              <div className="text-[10px] text-slate-500 font-mono truncate">frontdesk@keystay.com</div>
+              <div className="font-medium text-blue-900 font-bold">🛎️ Front Desk</div>
+              <div className="text-[10px] text-blue-600 font-mono truncate">frontdesk@keystay.com</div>
             </button>
             <button
               type="button"
               disabled={isLoading}
               onClick={() => handleFastLogin('housekeeping', 'housekeeping@keystay.com')}
-              className="px-2 py-1.5 rounded border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-left transition-colors truncate cursor-pointer"
+              className="px-2 py-1.5 rounded border border-amber-200 bg-amber-50/50 hover:bg-amber-100/70 text-slate-700 text-left transition-colors truncate cursor-pointer"
             >
-              <div className="font-medium text-slate-900">Housekeeping</div>
-              <div className="text-[10px] text-slate-500 font-mono truncate">housekeeping@keystay.com</div>
-            </button>
-            <button
-              type="button"
-              disabled={isLoading}
-              onClick={() => handleFastLogin('front_desk', 'owner@keystay.com')}
-              className="px-2 py-1.5 rounded border border-blue-200 bg-blue-50/50 hover:bg-blue-100/70 text-slate-700 text-left transition-colors truncate cursor-pointer"
-            >
-              <div className="font-medium text-blue-900 font-bold">👔 Manager</div>
-              <div className="text-[10px] text-blue-600 font-mono truncate">owner@keystay.com</div>
-            </button>
-            <button
-              type="button"
-              disabled={isLoading}
-              onClick={() => handleFastLogin('owner', 'admin@keystay.com')}
-              className="px-2 py-1.5 rounded border border-purple-200 bg-purple-50/50 hover:bg-purple-100/70 text-slate-700 text-left transition-colors truncate cursor-pointer"
-            >
-              <div className="font-medium text-purple-900 font-bold">🔑 Admin</div>
-              <div className="text-[10px] text-purple-600 font-mono truncate">admin@keystay.com</div>
+              <div className="font-medium text-amber-900 font-bold">🧹 Housekeep</div>
+              <div className="text-[10px] text-amber-600 font-mono truncate">housekeeping@...</div>
             </button>
           </div>
           <div className="text-[10px] text-slate-400 text-center mt-2 font-mono">

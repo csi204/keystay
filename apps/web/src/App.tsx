@@ -58,7 +58,7 @@ const AuthenticatedHome: React.FC = () => {
     return <Navigate to="/admin/dashboard" replace />;
   }
   if (role === 'front_desk') {
-    return <Navigate to="/manager/dashboard" replace />;
+    return <Navigate to="/front-desk/dashboard" replace />;
   }
 
   const user = getAuthUser();
@@ -241,13 +241,13 @@ export const App: React.FC = () => {
             }
           />
 
-          {/* หน้า Manager/Front Desk Portal */}
+          {/* หน้า Front Desk Portal */}
           <Route
-            path="/manager"
-            element={<Navigate to="/manager/dashboard" replace />}
+            path="/front-desk"
+            element={<Navigate to="/front-desk/dashboard" replace />}
           />
           <Route
-            path="/manager/dashboard"
+            path="/front-desk/dashboard"
             element={
               <RequireAuth>
                 <ManagerDashboardPage />
@@ -255,7 +255,7 @@ export const App: React.FC = () => {
             }
           />
           <Route
-            path="/manager/rooms"
+            path="/front-desk/rooms"
             element={
               <RequireAuth>
                 <RoomsPricingPage />
@@ -263,7 +263,7 @@ export const App: React.FC = () => {
             }
           />
           <Route
-            path="/manager/reports"
+            path="/front-desk/reports"
             element={
               <RequireAuth>
                 <ReportsAnalyticsPage />
@@ -271,7 +271,7 @@ export const App: React.FC = () => {
             }
           />
           <Route
-            path="/manager/housekeeping"
+            path="/front-desk/housekeeping"
             element={
               <RequireAuth>
                 <HousekeepingTasksPage />

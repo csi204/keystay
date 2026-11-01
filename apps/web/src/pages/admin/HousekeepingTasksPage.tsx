@@ -150,7 +150,7 @@ export const HousekeepingTasksPage: React.FC = () => {
     setDeleteTarget(null);
   };
 
-  const activePath = currentRole === 'owner' ? '/admin/housekeeping' : '/manager/housekeeping';
+  const activePath = currentRole === 'owner' ? '/admin/housekeeping' : '/front-desk/housekeeping';
 
   return (
     <AdminLayout activePath={activePath} isBackendOffline={false}>

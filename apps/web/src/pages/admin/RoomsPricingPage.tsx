@@ -37,7 +37,7 @@ export interface RoomTypeItem {
 export const RoomsPricingPage: React.FC = () => {
   const currentRole = getAuthRole();
   const isOwner = currentRole === 'owner';
-  const roleBase = isOwner ? '/admin' : '/manager';
+  const roleBase = isOwner ? '/admin' : '/front-desk';
 
   const [loading, setLoading] = useState<boolean>(true);
   const [isOffline, setIsOffline] = useState<boolean>(false);
@@ -234,7 +234,7 @@ export const RoomsPricingPage: React.FC = () => {
             </div>
             <h1 className="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
               <span>ประเภทห้องพักและอัตราค่าบริการพื้นฐาน</span>
-              {isOwner && (
+              {!isOwner && (
                 <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-xs">
                   โหมดดูข้อมูลเท่านั้น (Read-Only)
                 </Badge>
@@ -245,7 +245,7 @@ export const RoomsPricingPage: React.FC = () => {
             </p>
           </div>
 
-          {!isOwner && (
+          {isOwner && (
             <Button
               size="sm"
               disabled={isOffline}
@@ -260,12 +260,12 @@ export const RoomsPricingPage: React.FC = () => {
       </div>
 
       <div className="px-4 pb-6 space-y-4">
-        {/* Manager Notice */}
-        {isOwner && (
+        {/* Front Desk Notice */}
+        {!isOwner && (
           <div className="p-4 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center gap-3">
             <Lock className="w-5 h-5 text-amber-600 shrink-0" />
             <div>
-              <span className="font-bold">สิทธิ์บทบาท Manager:</span> สามารถตรวจสอบข้อมูลประเภทห้องพักและราคาพื้นฐานได้ แต่การเพิ่ม แก้ไข หรือลบประเภทห้องพักต้องได้รับสิทธิ์จากผู้ดูแลระบบ (Admin)
+              <span className="font-bold">สิทธิ์บทบาท Front Desk:</span> สามารถตรวจสอบข้อมูลประเภทห้องพักและราคาพื้นฐานได้ แต่การเพิ่ม แก้ไข หรือลบประเภทห้องพักต้องได้รับสิทธิ์จากเจ้าของ (Owner)
             </div>
           </div>
         )}
@@ -323,7 +323,7 @@ export const RoomsPricingPage: React.FC = () => {
                   </div>
                 </div>
 
-                {!isOwner && (
+                {isOwner && (
                   <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
                     <Button
                       variant="outline"
@@ -369,7 +369,7 @@ export const RoomsPricingPage: React.FC = () => {
                     <th className="py-3 px-3 text-center">ห้องน้ำ</th>
                     <th className="py-3 px-3 text-center">ผู้เข้าพักสูงสุด</th>
                     <th className="py-3 px-3 text-right">ราคาพื้นฐาน (Base Price)</th>
-                    {!isOwner && <th className="py-3 px-4 text-center">การจัดการ</th>}
+                    {isOwner && <th className="py-3 px-4 text-center">การจัดการ</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -386,7 +386,7 @@ export const RoomsPricingPage: React.FC = () => {
                       <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
                         ฿{t.basePrice.toLocaleString()}
                       </td>
-                      {!isOwner && (
+                      {isOwner && (
                         <td className="py-3 px-4 text-center">
                           <div className="flex items-center justify-center gap-1.5">
                             <Button

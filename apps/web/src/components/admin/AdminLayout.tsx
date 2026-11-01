@@ -53,7 +53,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   // Retrieve user & role from session (per tab)
   const currentRole = getAuthRole();
   const isOwner = currentRole === 'owner';
-  const roleBase = isOwner ? '/admin' : '/manager';
+  const roleBase = isOwner ? '/admin' : '/front-desk';
 
   const user = getAuthUser();
 
@@ -199,8 +199,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
             )}
 
             {navItems.map((item) => {
-              // Rule: For Manager, completely HIDE Admin-only items (No Lock badge!)
-              if (isOwner && item.adminOnly) {
+              // Rule: For non-Owner, completely HIDE Owner-only items (No Lock badge!)
+              if (!isOwner && item.adminOnly) {
                 return null;
               }
 

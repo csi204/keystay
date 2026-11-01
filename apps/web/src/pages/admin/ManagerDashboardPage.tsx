@@ -52,7 +52,7 @@ interface DashboardSummaryData {
 export const ManagerDashboardPage: React.FC = () => {
   const currentRole = getAuthRole();
   const isOwner = currentRole === 'owner';
-  const roleBase = isOwner ? '/admin' : '/manager';
+  const roleBase = isOwner ? '/admin' : '/front-desk';
 
   const [loading, setLoading] = useState<boolean>(true);
   const [isOffline, setIsOffline] = useState<boolean>(false);

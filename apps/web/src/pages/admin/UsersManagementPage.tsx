@@ -222,7 +222,7 @@ export const UsersManagementPage: React.FC = () => {
 
   // 5. Toggle Active
   const handleToggleActive = (id: string) => {
-    if (isOffline || isOwner) return;
+    if (isOffline || !isOwner) return;
     setUsers((prev) =>
       prev.map((u) => (u.id === id ? { ...u, isActive: !u.isActive } : u))
     );
@@ -234,8 +234,6 @@ export const UsersManagementPage: React.FC = () => {
         return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'front_desk':
         return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'front_desk':
-        return 'bg-emerald-100 text-emerald-800 border-emerald-200';
       case 'housekeeping':
         return 'bg-amber-100 text-amber-800 border-amber-200';
       default:
@@ -267,19 +265,19 @@ export const UsersManagementPage: React.FC = () => {
             </div>
             <h1 className="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
               <span>การบริหารจัดการผู้ใช้และสิทธิ์การเข้าถึง (RBAC)</span>
-              {isOwner && (
+              {!isOwner && (
                 <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-xs">
                   โหมดดูข้อมูลเท่านั้น (Read-Only)
                 </Badge>
               )}
             </h1>
             <p className="text-xs text-slate-500 mt-1">
-              กำหนดสิทธิ์ 4 บทบาทหลัก: Admin, Manager, Front Desk, Housekeeping
+              กำหนดสิทธิ์ 3 บทบาทหลัก: Owner, Front Desk, Housekeeping
             </p>
           </div>
 
           <div className="flex items-center gap-2">
-            {!isOwner && (
+            {isOwner && (
               <Button
                 size="sm"
                 disabled={isOffline}
@@ -295,12 +293,12 @@ export const UsersManagementPage: React.FC = () => {
       </div>
 
       <div className="px-4 pb-6 space-y-4">
-        {/* Manager Notice */}
-        {isOwner && (
+        {/* Front Desk Notice */}
+        {!isOwner && (
           <div className="p-4 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center gap-3">
             <Lock className="w-5 h-5 text-amber-600 shrink-0" />
             <div>
-              <span className="font-bold">สิทธิ์จำกัดสำหรับบทบาท Manager:</span> คุณสามารถตรวจสอบรายชื่อและบทบาทของผู้ปฏิบัติงานได้ แต่ไม่สามารถแก้ไขสิทธิ์ ลบบัญชี หรือเพิ่มผู้ดูแลระบบได้
+              <span className="font-bold">สิทธิ์จำกัดสำหรับบทบาท Front Desk:</span> คุณสามารถตรวจสอบรายชื่อและบทบาทของผู้ปฏิบัติงานได้ แต่ไม่สามารถแก้ไขสิทธิ์ ลบบัญชี หรือเพิ่มผู้ใช้งานได้
             </div>
           </div>
         )}
@@ -357,7 +355,7 @@ export const UsersManagementPage: React.FC = () => {
                     <th className="py-3 px-3 text-center">บทบาท (ROLE)</th>
                     <th className="py-3 px-3 text-center">สถานะ</th>
                     <th className="py-3 px-3">วันที่สร้าง</th>
-                    {!isOwner && <th className="py-3 px-4 text-center">การจัดการ</th>}
+                    {isOwner && <th className="py-3 px-4 text-center">การจัดการ</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -395,7 +393,7 @@ export const UsersManagementPage: React.FC = () => {
                       <td className="py-3 px-3 text-slate-500 font-mono text-[11px]">
                         {u.createdAt}
                       </td>
-                      {!isOwner && (
+                      {isOwner && (
                         <td className="py-3 px-4 text-center">
                           <div className="flex items-center justify-center gap-1.5">
                             {/* 1. Edit User Modal Button */}
