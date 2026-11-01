@@ -407,7 +407,7 @@ export const ReportsAnalyticsPage: React.FC = () => {
   return (
     <AdminLayout activePath={`${roleBase}/reports`} isBackendOffline={isOffline}>
       {/* 1. Context Header */}
-      <div className="bg-white border-b border-slate-200/90 px-6 py-4.5 mb-6 shadow-2xs">
+      <div className="bg-white border-b border-slate-200/80 px-4 py-3.5 mb-4 shadow-2xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
@@ -450,7 +450,7 @@ export const ReportsAnalyticsPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="px-6 space-y-6 pb-8">
+      <div className="px-4 pb-6 space-y-4 pb-8">
         {/* 2. Unified 4 Core KPI Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white rounded-xl border border-slate-200/90 p-5 shadow-2xs hover:border-slate-300 transition-all flex flex-col justify-between">
