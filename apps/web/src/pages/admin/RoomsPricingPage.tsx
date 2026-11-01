@@ -35,10 +35,6 @@ export interface RoomTypeItem {
 }
 
 export const RoomsPricingPage: React.FC = () => {
-  const currentRole = getAuthRole();
-  const isOwner = currentRole === 'owner';
-  const roleBase = isOwner ? '/admin' : '/front-desk';
-
   const [loading, setLoading] = useState<boolean>(true);
   const [isOffline, setIsOffline] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -220,7 +216,7 @@ export const RoomsPricingPage: React.FC = () => {
   });
 
   return (
-    <AdminLayout activePath={`${roleBase}/rooms`} isBackendOffline={isOffline}>
+    <AdminLayout activePath="/admin/rooms" isBackendOffline={isOffline}>
       {/* Header */}
       <div className="bg-white border-b border-slate-200/80 px-4 py-3.5 mb-4 shadow-2xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -234,42 +230,25 @@ export const RoomsPricingPage: React.FC = () => {
             </div>
             <h1 className="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
               <span>ประเภทห้องพักและอัตราค่าบริการพื้นฐาน</span>
-              {!isOwner && (
-                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-xs">
-                  โหมดดูข้อมูลเท่านั้น (Read-Only)
-                </Badge>
-              )}
             </h1>
             <p className="text-xs text-slate-500 mt-1">
               กำหนดราคาต่อคืน (Base Price) จำนวนผู้เข้าพัก ขนาดห้อง และเตียงนอนที่ให้บริการ
             </p>
           </div>
 
-          {isOwner && (
-            <Button
-              size="sm"
-              disabled={isOffline}
-              onClick={() => setIsCreateOpen(true)}
-              className="text-xs font-semibold gap-1.5 h-9 bg-[#F97316] hover:bg-[#ea580c] text-white"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>เพิ่มประเภทห้อง</span>
-            </Button>
-          )}
+          <Button
+            size="sm"
+            disabled={isOffline}
+            onClick={() => setIsCreateOpen(true)}
+            className="text-xs font-semibold gap-1.5 h-9 bg-[#F97316] hover:bg-[#ea580c] text-white"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>เพิ่มประเภทห้อง</span>
+          </Button>
         </div>
       </div>
 
       <div className="px-4 pb-6 space-y-4">
-        {/* Front Desk Notice */}
-        {!isOwner && (
-          <div className="p-4 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center gap-3">
-            <Lock className="w-5 h-5 text-amber-600 shrink-0" />
-            <div>
-              <span className="font-bold">สิทธิ์บทบาท Front Desk:</span> สามารถตรวจสอบข้อมูลประเภทห้องพักและราคาพื้นฐานได้ แต่การเพิ่ม แก้ไข หรือลบประเภทห้องพักต้องได้รับสิทธิ์จากเจ้าของ (Owner)
-            </div>
-          </div>
-        )}
-
         {/* Toolbar */}
         <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="relative flex-1 max-w-sm">
@@ -323,29 +302,27 @@ export const RoomsPricingPage: React.FC = () => {
                   </div>
                 </div>
 
-                {isOwner && (
-                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={isOffline}
-                      onClick={() => openEditModal(t)}
-                      className="h-7 text-xs px-2.5 border-slate-300 text-slate-700 gap-1"
-                    >
-                      <Pencil className="w-3 h-3 text-slate-500" />
-                      <span>แก้ไข</span>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={isOffline}
-                      onClick={() => setDeletingType(t)}
-                      className="h-7 text-xs px-2 border-red-200 text-red-600 hover:bg-red-50"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </div>
-                )}
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={isOffline}
+                    onClick={() => openEditModal(t)}
+                    className="h-7 text-xs px-2.5 border-slate-300 text-slate-700 gap-1"
+                  >
+                    <Pencil className="w-3 h-3 text-slate-500" />
+                    <span>แก้ไข</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={isOffline}
+                    onClick={() => setDeletingType(t)}
+                    className="h-7 text-xs px-2 border-red-200 text-red-600 hover:bg-red-50"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
@@ -369,7 +346,7 @@ export const RoomsPricingPage: React.FC = () => {
                     <th className="py-3 px-3 text-center">ห้องน้ำ</th>
                     <th className="py-3 px-3 text-center">ผู้เข้าพักสูงสุด</th>
                     <th className="py-3 px-3 text-right">ราคาพื้นฐาน (Base Price)</th>
-                    {isOwner && <th className="py-3 px-4 text-center">การจัดการ</th>}
+                    <th className="py-3 px-4 text-center">การจัดการ</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -386,31 +363,29 @@ export const RoomsPricingPage: React.FC = () => {
                       <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
                         ฿{t.basePrice.toLocaleString()}
                       </td>
-                      {isOwner && (
-                        <td className="py-3 px-4 text-center">
-                          <div className="flex items-center justify-center gap-1.5">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              disabled={isOffline}
-                              onClick={() => openEditModal(t)}
-                              className="h-7 text-xs px-2.5 border-slate-300 text-slate-700 gap-1 font-medium"
-                            >
-                              <Pencil className="w-3 h-3 text-slate-500" />
-                              <span>แก้ไข</span>
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              disabled={isOffline}
-                              onClick={() => setDeletingType(t)}
-                              className="h-7 text-xs px-2 border-red-200 text-red-600 hover:bg-red-50"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        </td>
-                      )}
+                      <td className="py-3 px-4 text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={isOffline}
+                            onClick={() => openEditModal(t)}
+                            className="h-7 text-xs px-2.5 border-slate-300 text-slate-700 gap-1 font-medium"
+                          >
+                            <Pencil className="w-3 h-3 text-slate-500" />
+                            <span>แก้ไข</span>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={isOffline}
+                            onClick={() => setDeletingType(t)}
+                            className="h-7 text-xs px-2 border-red-200 text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

@@ -31,9 +31,6 @@ export interface UserItem {
 }
 
 export const UsersManagementPage: React.FC = () => {
-  const currentRole = getAuthRole();
-  const isOwner = currentRole === 'owner';
-
   const [loading, setLoading] = useState<boolean>(true);
   const [isOffline, setIsOffline] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -222,7 +219,7 @@ export const UsersManagementPage: React.FC = () => {
 
   // 5. Toggle Active
   const handleToggleActive = (id: string) => {
-    if (isOffline || !isOwner) return;
+    if (isOffline) return;
     setUsers((prev) =>
       prev.map((u) => (u.id === id ? { ...u, isActive: !u.isActive } : u))
     );
@@ -265,11 +262,6 @@ export const UsersManagementPage: React.FC = () => {
             </div>
             <h1 className="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
               <span>การบริหารจัดการผู้ใช้และสิทธิ์การเข้าถึง (RBAC)</span>
-              {!isOwner && (
-                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-xs">
-                  โหมดดูข้อมูลเท่านั้น (Read-Only)
-                </Badge>
-              )}
             </h1>
             <p className="text-xs text-slate-500 mt-1">
               กำหนดสิทธิ์ 3 บทบาทหลัก: Owner, Front Desk, Housekeeping
@@ -277,32 +269,20 @@ export const UsersManagementPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            {isOwner && (
-              <Button
-                size="sm"
-                disabled={isOffline}
-                onClick={() => setIsCreateOpen(true)}
-                className="text-xs font-semibold gap-1.5 h-9 bg-[#F97316] hover:bg-[#ea580c] text-white"
-              >
-                <UserPlus className="w-3.5 h-3.5" />
-                <span>เพิ่มผู้ใช้งานใหม่</span>
-              </Button>
-            )}
+            <Button
+              size="sm"
+              disabled={isOffline}
+              onClick={() => setIsCreateOpen(true)}
+              className="text-xs font-semibold gap-1.5 h-9 bg-[#F97316] hover:bg-[#ea580c] text-white"
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              <span>เพิ่มผู้ใช้งานใหม่</span>
+            </Button>
           </div>
         </div>
       </div>
 
       <div className="px-4 pb-6 space-y-4">
-        {/* Front Desk Notice */}
-        {!isOwner && (
-          <div className="p-4 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center gap-3">
-            <Lock className="w-5 h-5 text-amber-600 shrink-0" />
-            <div>
-              <span className="font-bold">สิทธิ์จำกัดสำหรับบทบาท Front Desk:</span> คุณสามารถตรวจสอบรายชื่อและบทบาทของผู้ปฏิบัติงานได้ แต่ไม่สามารถแก้ไขสิทธิ์ ลบบัญชี หรือเพิ่มผู้ใช้งานได้
-            </div>
-          </div>
-        )}
-
         {/* Toolbar */}
         <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex flex-1 items-center gap-3">
@@ -355,7 +335,7 @@ export const UsersManagementPage: React.FC = () => {
                     <th className="py-3 px-3 text-center">บทบาท (ROLE)</th>
                     <th className="py-3 px-3 text-center">สถานะ</th>
                     <th className="py-3 px-3">วันที่สร้าง</th>
-                    {isOwner && <th className="py-3 px-4 text-center">การจัดการ</th>}
+                    <th className="py-3 px-4 text-center">การจัดการ</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -393,47 +373,45 @@ export const UsersManagementPage: React.FC = () => {
                       <td className="py-3 px-3 text-slate-500 font-mono text-[11px]">
                         {u.createdAt}
                       </td>
-                      {isOwner && (
-                        <td className="py-3 px-4 text-center">
-                          <div className="flex items-center justify-center gap-1.5">
-                            {/* 1. Edit User Modal Button */}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              disabled={isOffline}
-                              onClick={() => openEditModal(u)}
-                              title="แก้ไขข้อมูลและสิทธิ์"
-                              className="h-7 text-[11px] px-2.5 border-slate-300 text-slate-700 hover:bg-slate-100 gap-1 font-medium"
-                            >
-                              <Pencil className="w-3 h-3 text-slate-500" />
-                              <span>แก้ไข</span>
-                            </Button>
+                      <td className="py-3 px-4 text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          {/* 1. Edit User Modal Button */}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={isOffline}
+                            onClick={() => openEditModal(u)}
+                            title="แก้ไขข้อมูลและสิทธิ์"
+                            className="h-7 text-[11px] px-2.5 border-slate-300 text-slate-700 hover:bg-slate-100 gap-1 font-medium"
+                          >
+                            <Pencil className="w-3 h-3 text-slate-500" />
+                            <span>แก้ไข</span>
+                          </Button>
 
-                            {/* 2. Toggle Active Status */}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              disabled={isOffline || u.role === 'owner'}
-                              onClick={() => handleToggleActive(u.id)}
-                              className="h-7 text-[11px] px-2 border-slate-300 text-slate-700"
-                            >
-                              {u.isActive ? 'ระงับ' : 'เปิด'}
-                            </Button>
+                          {/* 2. Toggle Active Status */}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={isOffline || u.role === 'owner'}
+                            onClick={() => handleToggleActive(u.id)}
+                            className="h-7 text-[11px] px-2 border-slate-300 text-slate-700"
+                          >
+                            {u.isActive ? 'ระงับ' : 'เปิด'}
+                          </Button>
 
-                            {/* 3. Delete User Button */}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              disabled={isOffline || u.role === 'owner'}
-                              onClick={() => setDeletingUser(u)}
-                              title="ลบบัญชีผู้ใช้"
-                              className="h-7 text-[11px] px-2 border-red-200 text-red-600 hover:bg-red-50"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        </td>
-                      )}
+                          {/* 3. Delete User Button */}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={isOffline || u.role === 'owner'}
+                            onClick={() => setDeletingUser(u)}
+                            title="ลบบัญชีผู้ใช้"
+                            className="h-7 text-[11px] px-2 border-red-200 text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

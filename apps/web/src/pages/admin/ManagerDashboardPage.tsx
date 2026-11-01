@@ -50,10 +50,6 @@ interface DashboardSummaryData {
 }
 
 export const ManagerDashboardPage: React.FC = () => {
-  const currentRole = getAuthRole();
-  const isOwner = currentRole === 'owner';
-  const roleBase = isOwner ? '/admin' : '/front-desk';
-
   const [loading, setLoading] = useState<boolean>(true);
   const [isOffline, setIsOffline] = useState<boolean>(false);
   const [data, setData] = useState<DashboardSummaryData>({
@@ -125,7 +121,7 @@ export const ManagerDashboardPage: React.FC = () => {
   const maintPct = Math.max(0, 100 - occPct - availPct - resvPct);
 
   return (
-    <AdminLayout activePath={`${roleBase}/dashboard`} isBackendOffline={isOffline}>
+    <AdminLayout activePath="/admin/dashboard" isBackendOffline={isOffline}>
       {/* 1. Executive Context Header */}
       <div className="bg-white border-b border-slate-200/80 px-4 py-3.5 mb-4 shadow-2xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

@@ -22,7 +22,6 @@ const RoomsPricingPage = React.lazy(() => import('./pages/admin/RoomsPricingPage
 const UsersManagementPage = React.lazy(() => import('./pages/admin/UsersManagementPage'));
 const ReportsAnalyticsPage = React.lazy(() => import('./pages/admin/ReportsAnalyticsPage'));
 const MinibarCatalogPage = React.lazy(() => import('./pages/admin/MinibarCatalogPage'));
-const HousekeepingTasksPage = React.lazy(() => import('./pages/admin/HousekeepingTasksPage'));
 
 // ============================================================================
 // ENTERPRISE ROUTE GUARDS (ความปลอดภัยระดับสูง แยกตาม Tab Session)
@@ -53,12 +52,9 @@ const AuthenticatedHome: React.FC = () => {
   const navigate = useNavigate();
   const role = getAuthRole();
 
-  // If user is Admin or Manager, seamlessly forward to their portal dashboard
+  // If user is Owner, seamlessly forward to owner portal dashboard
   if (role === 'owner') {
     return <Navigate to="/admin/dashboard" replace />;
-  }
-  if (role === 'front_desk') {
-    return <Navigate to="/front-desk/dashboard" replace />;
   }
 
   const user = getAuthUser();
@@ -229,52 +225,6 @@ export const App: React.FC = () => {
             element={
               <RequireAuth>
                 <MinibarCatalogPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/admin/housekeeping"
-            element={
-              <RequireAuth>
-                <HousekeepingTasksPage />
-              </RequireAuth>
-            }
-          />
-
-          {/* หน้า Front Desk Portal */}
-          <Route
-            path="/front-desk"
-            element={<Navigate to="/front-desk/dashboard" replace />}
-          />
-          <Route
-            path="/front-desk/dashboard"
-            element={
-              <RequireAuth>
-                <ManagerDashboardPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/front-desk/rooms"
-            element={
-              <RequireAuth>
-                <RoomsPricingPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/front-desk/reports"
-            element={
-              <RequireAuth>
-                <ReportsAnalyticsPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/front-desk/housekeeping"
-            element={
-              <RequireAuth>
-                <HousekeepingTasksPage />
               </RequireAuth>
             }
           />

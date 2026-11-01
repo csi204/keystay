@@ -26,10 +26,6 @@ type ReportTopic = 'daily_stats' | 'room_performance' | 'monthly_revenue';
 type ExportFormat = 'pdf' | 'csv';
 
 export const ReportsAnalyticsPage: React.FC = () => {
-  const currentRole = getAuthRole();
-  const isOwner = currentRole === 'owner';
-  const roleBase = isOwner ? '/admin' : '/front-desk';
-
   const [loading, setLoading] = useState<boolean>(true);
   const [isOffline, setIsOffline] = useState<boolean>(false);
   const [isExporting, setIsExporting] = useState<boolean>(false);
@@ -405,7 +401,7 @@ export const ReportsAnalyticsPage: React.FC = () => {
   }, [monthlyRevenueList]);
 
   return (
-    <AdminLayout activePath={`${roleBase}/reports`} isBackendOffline={isOffline}>
+    <AdminLayout activePath="/admin/reports" isBackendOffline={isOffline}>
       {/* 1. Context Header */}
       <div className="bg-white border-b border-slate-200/80 px-4 py-3.5 mb-4 shadow-2xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

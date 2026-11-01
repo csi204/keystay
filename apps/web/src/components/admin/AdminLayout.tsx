@@ -17,7 +17,6 @@ import {
   PanelLeft,
   ArrowLeftRight,
   ShoppingCart,
-  ClipboardList,
 } from 'lucide-react';
 
 import { getAuthRole, getAuthUser, clearAuthSession, getAuthToken, apiUrl } from '@/lib/api';
@@ -53,7 +52,6 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   // Retrieve user & role from session (per tab)
   const currentRole = getAuthRole();
   const isOwner = currentRole === 'owner';
-  const roleBase = isOwner ? '/admin' : '/front-desk';
 
   const user = getAuthUser();
 
@@ -104,39 +102,28 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   const navItems = [
     {
       title: 'ภาพรวม',
-      path: `${roleBase}/dashboard`,
+      path: '/admin/dashboard',
       icon: LayoutDashboard,
-      adminOnly: false,
     },
     {
       title: 'ห้องและราคา',
-      path: `${roleBase}/rooms`,
+      path: '/admin/rooms',
       icon: BedDouble,
-      adminOnly: false,
     },
     {
       title: 'มินิบาร์',
-      path: `/admin/minibar`,
+      path: '/admin/minibar',
       icon: ShoppingCart,
-      adminOnly: true, // owner only
-    },
-    {
-      title: 'งานแม่บ้าน',
-      path: `${roleBase}/housekeeping`,
-      icon: ClipboardList,
-      adminOnly: false,
     },
     {
       title: 'รายงาน',
-      path: `${roleBase}/reports`,
+      path: '/admin/reports',
       icon: BarChart3,
-      adminOnly: false,
     },
     {
       title: 'ผู้ใช้และสิทธิ์',
-      path: `/admin/users`,
+      path: '/admin/users',
       icon: Users,
-      adminOnly: true,
     },
   ];
 
@@ -170,7 +157,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
                     KEYSTAY
                   </span>
                   <span className="block text-[9px] font-semibold tracking-widest text-[#F97316] uppercase -mt-0.5">
-                    {isOwner ? 'OWNER PORTAL' : 'FRONT DESK PORTAL'}
+                    OWNER PORTAL
                   </span>
                 </div>
               )}
@@ -199,15 +186,9 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
             )}
 
             {navItems.map((item) => {
-              // Rule: For non-Owner, completely HIDE Owner-only items (No Lock badge!)
-              if (!isOwner && item.adminOnly) {
-                return null;
-              }
-
               const isActive =
                 currentPath === item.path ||
-                (item.path.includes('dashboard') && currentPath === roleBase) ||
-                (item.path.includes('dashboard') && currentPath === `${roleBase}/`);
+                (item.path === '/admin/dashboard' && (currentPath === '/admin' || currentPath === '/admin/'));
 
               return (
                 <Link
@@ -278,7 +259,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
 
             User Name & Role Badge positioned on Top-Right
             <div className="flex items-center gap-2 pr-3 border-r border-slate-200">
-              <span className="text-xs text-slate-400">{userName}<span className='text-xs text-slate-400 lowercase'> - {isOwner ? 'OWNER' : 'FRONT DESK'}</span></span>
+              <span className="text-xs text-slate-400">{userName}<span className='text-xs text-slate-400 lowercase'> - owner</span></span>
             </div>
 
             <div className="flex items-center gap-1.5 text-xs text-slate-500 font-mono">
