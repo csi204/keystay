@@ -1,5 +1,7 @@
 export const en: Record<string, string> = {
   // Navigation
+  'nav.matrixAndReservations': 'Room Matrix & Reservations',
+  'nav.operationsAndCashier': 'Operations & Cashier',
   'nav.roomMatrix': 'Room Matrix',
   'nav.reservations': 'Reservations',
   'nav.dailyOperations': 'Daily Operations',

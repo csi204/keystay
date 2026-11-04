@@ -1,5 +1,7 @@
 export const th: Record<string, string> = {
   // Navigation
+  'nav.matrixAndReservations': 'ผังห้องพัก & รายการจอง',
+  'nav.operationsAndCashier': 'เช็คอิน/เอาต์ & แคชเชียร์',
   'nav.roomMatrix': 'ผังห้องพัก',
   'nav.reservations': 'รายการจอง',
   'nav.dailyOperations': 'เช็คอิน / เช็คเอาท์ วันนี้',
