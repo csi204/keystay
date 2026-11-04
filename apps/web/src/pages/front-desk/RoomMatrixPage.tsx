@@ -490,14 +490,14 @@ export const RoomMatrixPage: React.FC = () => {
         {/* Offline / Error Banner */}
         {isOffline && (
           <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2 text-xs text-amber-800">
-            <WifiOff className="w-4 h-4 text-amber-600 flex-shrink-0" />
+            <WifiOff className="w-4 h-4 text-amber-600 flex-shrink-0" aria-hidden="true" />
             <span>{t('matrix.offlineNotice')}</span>
           </div>
         )}
 
         {error && !isOffline && (
           <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-xs text-red-800">
-            <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+            <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" aria-hidden="true" />
             <span>{error}</span>
           </div>
         )}
@@ -506,8 +506,8 @@ export const RoomMatrixPage: React.FC = () => {
         {activeSubTab === 'grid' && (
           <>
             {loading && rooms.length === 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5">
-                {Array.from({ length: 10 }).map((_, idx) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {Array.from({ length: 8 }).map((_, idx) => (
                   <div
                     key={idx}
                     className="h-28 bg-white border border-slate-200 rounded-lg p-4 animate-pulse flex flex-col justify-between"
@@ -591,7 +591,7 @@ export const RoomMatrixPage: React.FC = () => {
                       <td colSpan={10} className="py-16 text-center">
                         <div className="flex flex-col items-center justify-center max-w-sm mx-auto text-center space-y-3">
                           <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
-                            <CalendarDays className="w-6 h-6" />
+                            <CalendarDays className="w-6 h-6" aria-hidden="true" />
                           </div>
                           <div>
                             <p className="text-sm font-semibold text-slate-800">
