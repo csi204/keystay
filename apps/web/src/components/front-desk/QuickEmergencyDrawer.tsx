@@ -148,7 +148,7 @@ export const QuickEmergencyDrawer: React.FC<QuickEmergencyDrawerProps> = ({
               <div className="space-y-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h2 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-1.5">
-                    <span role="img" aria-label="alert">🚨</span>
+                    <ShieldAlert className="w-5 h-5 text-rose-600 shrink-0" strokeWidth={1.75} aria-hidden="true" />
                     <span>{t('emergency.drawerTitle')}</span>
                   </h2>
                   {/* 24-Hour Alert Badge */}

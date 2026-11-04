@@ -796,7 +796,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                       <>
                         <Zap className="w-3.5 h-3.5 text-amber-400" />
                         <span>
-                          {locale === 'th' ? '⚡ ยืนยันเปิดห้อง / ยืนยันการจอง' : '⚡ Confirm Walk-In / Booking'}
+                          {locale === 'th' ? 'ยืนยันเปิดห้อง / ยืนยันการจอง' : 'Confirm Walk-In / Booking'}
                         </span>
                       </>
                     )}

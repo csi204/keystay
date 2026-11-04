@@ -317,7 +317,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
               onClick={() => handleFastLogin('manager', 'manager@keystay.com')}
               className="px-2 py-1.5 rounded border border-blue-200 bg-blue-50/50 hover:bg-blue-100/70 text-slate-700 text-left transition-colors truncate cursor-pointer"
             >
-              <div className="font-medium text-blue-900 font-bold">👔 Manager</div>
+              <div className="font-medium text-blue-900 font-bold">Manager</div>
               <div className="text-[10px] text-blue-600 font-mono truncate">manager@keystay.com</div>
             </button>
             <button
@@ -326,7 +326,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
               onClick={() => handleFastLogin('admin', 'admin@keystay.com')}
               className="px-2 py-1.5 rounded border border-purple-200 bg-purple-50/50 hover:bg-purple-100/70 text-slate-700 text-left transition-colors truncate cursor-pointer"
             >
-              <div className="font-medium text-purple-900 font-bold">🔑 Admin</div>
+              <div className="font-medium text-purple-900 font-bold">Admin</div>
               <div className="text-[10px] text-purple-600 font-mono truncate">admin@keystay.com</div>
             </button>
           </div>
