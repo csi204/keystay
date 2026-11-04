@@ -16,9 +16,12 @@ import {
   PanelLeftClose,
   PanelLeft,
   ArrowLeftRight,
+  ShoppingCart,
+  Globe,
 } from 'lucide-react';
 
 import { getAuthRole, getAuthUser, clearAuthSession, getAuthToken, apiUrl } from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -34,6 +37,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   const location = useLocation();
   const navigate = useNavigate();
   const currentPath = activePath || location.pathname;
+  const { t, language, toggleLanguage } = useTranslation();
 
   // Sidebar Collapsible state (remember in localStorage)
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
@@ -50,9 +54,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
 
   // Retrieve user & role from session (per tab)
   const currentRole = getAuthRole();
-  const isManager = currentRole === 'manager';
-  const isAdmin = currentRole === 'admin';
-  const roleBase = isManager ? '/manager' : '/admin';
+  const isOwner = currentRole === 'owner';
 
   const user = getAuthUser();
 
@@ -102,28 +104,29 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
 
   const navItems = [
     {
-      title: 'ภาพรวม',
-      path: `${roleBase}/dashboard`,
+      title: t('nav.overview'),
+      path: '/admin/dashboard',
       icon: LayoutDashboard,
-      adminOnly: false,
     },
     {
-      title: 'ห้องและราคา',
-      path: `${roleBase}/rooms`,
+      title: t('nav.roomsPricing'),
+      path: '/admin/rooms',
       icon: BedDouble,
-      adminOnly: false,
     },
     {
-      title: 'รายงาน',
-      path: `${roleBase}/reports`,
+      title: t('nav.minibar'),
+      path: '/admin/minibar',
+      icon: ShoppingCart,
+    },
+    {
+      title: t('nav.reports'),
+      path: '/admin/reports',
       icon: BarChart3,
-      adminOnly: false,
     },
     {
-      title: 'ผู้ใช้และสิทธิ์',
-      path: `/admin/users`,
+      title: t('nav.usersRoles'),
+      path: '/admin/users',
       icon: Users,
-      adminOnly: true,
     },
   ];
 
@@ -157,7 +160,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
                     KEYSTAY
                   </span>
                   <span className="block text-[9px] font-semibold tracking-widest text-[#F97316] uppercase -mt-0.5">
-                    {isAdmin ? 'ADMIN PORTAL' : 'MANAGER PORTAL'}
+                    OWNER PORTAL
                   </span>
                 </div>
               )}
@@ -186,15 +189,9 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
             )}
 
             {navItems.map((item) => {
-              // Rule: For Manager, completely HIDE Admin-only items (No Lock badge!)
-              if (isManager && item.adminOnly) {
-                return null;
-              }
-
               const isActive =
                 currentPath === item.path ||
-                (item.path.includes('dashboard') && currentPath === roleBase) ||
-                (item.path.includes('dashboard') && currentPath === `${roleBase}/`);
+                (item.path === '/admin/dashboard' && (currentPath === '/admin' || currentPath === '/admin/'));
 
               return (
                 <Link
@@ -223,12 +220,36 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
           </nav>
         </div>
 
-        {/* User Card at Bottom: Only Logout button */}
-        <div className="p-3 border-t border-slate-200/80 bg-white shrink-0">
+        {/* User Card at Bottom: Language Switcher & Logout button */}
+        <div className="p-3 border-t border-slate-200/80 bg-white shrink-0 space-y-2">
+          {/* Global Language Switcher */}
+          {isCollapsed ? (
+            <button
+              onClick={toggleLanguage}
+              title={language === 'th' ? 'Switch to English' : 'เปลี่ยนเป็นภาษาไทย'}
+              className="w-full flex items-center justify-center p-2 text-slate-600 hover:text-[#F97316] hover:bg-orange-50 rounded-lg border border-slate-200 transition-colors"
+            >
+              <Globe className="w-4 h-4 text-[#F97316]" />
+            </button>
+          ) : (
+            <button
+              onClick={toggleLanguage}
+              className="w-full flex items-center justify-between py-1.5 px-2.5 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors shadow-2xs"
+            >
+              <div className="flex items-center gap-2">
+                <Globe className="w-3.5 h-3.5 text-[#F97316]" />
+                <span>{t('nav.switchLang')}</span>
+              </div>
+              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-700 font-bold uppercase">
+                {language === 'th' ? 'EN' : 'TH'}
+              </span>
+            </button>
+          )}
+
           {isCollapsed ? (
             <button
               onClick={handleLogout}
-              title="ออกจากระบบ"
+              title={t('nav.logout')}
               className="w-full flex items-center justify-center p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg border border-slate-200 transition-colors"
             >
               <LogOut className="w-4 h-4 text-red-500" />
@@ -239,7 +260,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
               className="w-full flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold text-red-600 hover:text-red-700 bg-red-50/70 hover:bg-red-100/70 rounded-lg border border-red-200/80 transition-colors shadow-2xs"
             >
               <LogOut className="w-3.5 h-3.5 text-red-500" />
-              <span>ออกจากระบบ</span>
+              <span>{t('nav.logout')}</span>
             </button>
           )}
         </div>
@@ -265,7 +286,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
 
             User Name & Role Badge positioned on Top-Right
             <div className="flex items-center gap-2 pr-3 border-r border-slate-200">
-              <span className="text-xs text-slate-400">{userName}<span className='text-xs text-slate-400 lowercase'> - {isAdmin ? 'ADMIN' : 'MANAGER'}</span></span>
+              <span className="text-xs text-slate-400">{userName}<span className='text-xs text-slate-400 lowercase'> - owner</span></span>
             </div>
 
             <div className="flex items-center gap-1.5 text-xs text-slate-500 font-mono">

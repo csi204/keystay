@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { apiFetch, getAuthRole } from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import {
   TrendingUp,
   BedDouble,
@@ -50,11 +51,9 @@ interface DashboardSummaryData {
 }
 
 export const ManagerDashboardPage: React.FC = () => {
-  const currentRole = getAuthRole();
-  const isManager = currentRole === 'manager';
-  const roleBase = isManager ? '/manager' : '/admin';
-
+  const { t } = useTranslation();
   const [loading, setLoading] = useState<boolean>(true);
+  const [refreshSuccess, setRefreshSuccess] = useState<boolean>(false);
   const [isOffline, setIsOffline] = useState<boolean>(false);
   const [data, setData] = useState<DashboardSummaryData>({
     date: '2026-10-04',
@@ -113,6 +112,13 @@ export const ManagerDashboardPage: React.FC = () => {
     setLoading(false);
   };
 
+  const handleRefresh = async () => {
+    if (isOffline) return;
+    await loadData();
+    setRefreshSuccess(true);
+    setTimeout(() => setRefreshSuccess(false), 2500);
+  };
+
   useEffect(() => {
     loadData();
   }, []);
@@ -125,26 +131,26 @@ export const ManagerDashboardPage: React.FC = () => {
   const maintPct = Math.max(0, 100 - occPct - availPct - resvPct);
 
   return (
-    <AdminLayout activePath={`${roleBase}/dashboard`} isBackendOffline={isOffline}>
+    <AdminLayout activePath="/admin/dashboard" isBackendOffline={isOffline}>
       {/* 1. Executive Context Header */}
       <div className="bg-white border-b border-slate-200/80 px-4 py-3.5 mb-4 shadow-2xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs text-slate-500 mb-1.5">
-              <span>หน้าหลัก</span>
+              <span>{t('nav.home')}</span>
               <span>/</span>
-              <span className="font-semibold text-slate-800">แดชบอร์ดผู้บริหาร</span>
+              <span className="font-semibold text-slate-800">{t('nav.overview')}</span>
             </div>
             <div className="flex items-center gap-3">
               <h1 className="text-xl font-bold tracking-tight text-slate-900">
-                ภาพรวมการดำเนินงานโรงแรม (Executive Dashboard)
+                {t('header.dashboard.title')}
               </h1>
               <Badge variant="outline" className="bg-slate-100/80 text-slate-700 border-slate-200 font-mono text-[11px] px-2 py-0.5">
                 {data.date}
               </Badge>
             </div>
             <p className="text-xs text-slate-500 mt-1">
-              สรุปข้อมูลตัวชี้วัดรายวัน ประสิทธิภาพห้องพัก และรายได้สะสมประจำเดือน
+              {t('header.dashboard.desc')}
             </p>
           </div>
 
@@ -152,12 +158,12 @@ export const ManagerDashboardPage: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={loadData}
-              disabled={loading}
-              className="text-xs font-medium gap-1.5 h-8.5 px-3 bg-white hover:bg-slate-50 border-slate-300 text-slate-700"
+              onClick={handleRefresh}
+              disabled={loading || isOffline}
+              className="text-xs font-semibold gap-1.5 h-9 px-3 bg-white hover:bg-slate-50 border-slate-300 text-slate-700 shadow-2xs"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#F97316]' : 'text-slate-500'}`} />
-              <span>อัปเดตข้อมูล</span>
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#F97316]' : 'text-slate-600'}`} />
+              <span>{refreshSuccess ? t('action.refreshSuccess') : t('action.refresh')}</span>
             </Button>
           </div>
         </div>

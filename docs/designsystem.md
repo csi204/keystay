@@ -1,6 +1,6 @@
 # 🎨 designsystem.md — "KEYSTAY Minimalist" Design System (Anti-AI & shadcn/ui Standard)
 
-> **กฎเหล็กสำหรับ UI ของ KEYSTAY:** ทุกหน้าจอ (Front Desk & Cashier, Housekeeping, Manager & Admin, Unified Login) ต้องยึดมั่นในสไตล์ **"Enterprise Minimalist & Operational Clarity"**  
+> **กฎเหล็กสำหรับ UI ของ KEYSTAY:** ทุกหน้าจอ (Front Desk & Cashier, Housekeeping, Owner Portal, Unified Login) ต้องยึดมั่นในสไตล์ **"Enterprise Minimalist & Operational Clarity"**  
 > ⚠️ **คำเตือนสำคัญ:** ห้ามใช้ AI Template, ห้ามใส่ลูกเล่นแฟนซีที่ดูเป็น AI-Generated ทั่วไปโดยเด็ดขาด **ต้องสร้าง UI จาก Primitive Components มาตรฐานของ shadcn/ui เท่านั้น**
 
 ---
@@ -57,7 +57,7 @@ apps/web/src/
    - `Badge` (variant: `cleaning`, `maintenance`) สำหรับแสดงระดับความเร่งด่วนและประเภทงาน
    - `Button` ขนาดใหญ่พอดีนิ้วสัมผัส (Touch Target ≥ 44px)
    - `Dialog` / `Sheet` สำหรับหน้าต่าง **Quick Contact (ดูเบอร์ช่าง)** ประสานงานซ่อมหน้างาน
-3. **Manager & Admin Portal:**
+3. **Owner Portal:**
    - `Card` สำหรับ Executive KPI Tiles (Occupancy, Revenue, ADR, RevPAR)
    - `Table` สำหรับรายการพนักงาน, ตารางประวัติแขก (CRM), งบการเงิน, และ **ตารางบริหารจัดการ Outsource Master Data (`/admin/outsource`)**
    - `Dialog` สำหรับแบบฟอร์มเพิ่ม/แก้ไขคู่ค้าและช่าง Outsource
@@ -161,7 +161,7 @@ export function RoomCard({ roomNumber, roomType, status }: RoomProps) {
 - **Cleaning Task Card:** ใช้ `Card` พร้อม Checkbox เช็คลิสต์ 4 รายการ และปุ่ม `Button` สไตล์มินิมอล
 - **Touch Targets:** ปุ่มกว้างพอดีนิ้วสัมผัส `h-10 text-sm` พร้อมรูปถ่ายห้องชำรุดส่งเข้า Cloudflare R2
 
-### 3. Manager & Admin Portal — เขต (`@hazeco`)
+### 3. Owner Portal — เขต (`@hazeco`)
 - **Executive KPI Tiles:** การ์ดสีขาว ขอบ 1px พร้อมตัวเลข `font-mono text-2xl`
 - **ตารางสรุปงบการเงินและลูกค้า:** ใช้ `Table`, `TableHeader`, `TableRow`, `TableCell` จาก `@/components/ui/table` เพื่อความกระชับและเป็นระเบียบระดับ Enterprise
 
@@ -175,7 +175,7 @@ export function RoomCard({ roomNumber, roomType, status }: RoomProps) {
          ▼ (กดปุ่มไอคอน Refresh บนการ์ด)
 [POST /api/reports/refresh?section=kpi]
          │
-         ├──> API Gateway ตรวจสอบสิทธิ์ (JWT Role: Manager/Admin)
+         ├──> API Gateway ตรวจสอบสิทธิ์ (JWT Role: Owner)
          ├──> Forward ไปยัง report-analytics Worker
          ├──> คำนวณสรุปเฉพาะยอดขายจาก D1 db_report
          │

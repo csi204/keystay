@@ -75,7 +75,7 @@
 | Package | หมวด | เหตุผล |
 |---|---|---|
 | `react`, `react-dom` | dependency | UI library |
-| `react-router-dom` | dependency | Route ระหว่าง 3 Portals (front-desk, housekeeping, manager-admin) |
+| `react-router-dom` | dependency | Route ระหว่าง 3 Portals (front-desk, housekeeping, owner) |
 | `vite`, `@vitejs/plugin-react` | devDependency | Dev server + build |
 | `typescript` | devDependency | Type safety |
 | `tailwindcss`, `postcss`, `autoprefixer` | devDependency | ตาม `designsystem.md` (Status-Color System) |

@@ -127,7 +127,7 @@ export class UserService {
    * เปลี่ยนบทบาทหน้าที่ (Role) ของผู้ใช้งาน
    * อัปเดต role ในตาราง users พร้อมบันทึก Outbox Event สำหรับ audit trail
    */
-  async updateRole(id: string, role: 'admin' | 'manager' | 'front_desk' | 'housekeeping') {
+  async updateRole(id: string, role: 'owner' | 'front_desk' | 'housekeeping') {
     const user = await this.db.select().from(users).where(eq(users.id, id)).get();
     if (!user) {
       throw { status: 404, code: 'USER_NOT_FOUND', message: 'User not found' };

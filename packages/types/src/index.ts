@@ -3,7 +3,7 @@ import { z } from 'zod';
 // ==========================================
 // 1. Auth & User Types (4 Roles)
 // ==========================================
-export const UserRoleSchema = z.enum(['admin', 'manager', 'front_desk', 'housekeeping']);
+export const UserRoleSchema = z.enum(['owner', 'front_desk', 'housekeeping']);
 export type UserRole = z.infer<typeof UserRoleSchema>;
 
 export interface User {

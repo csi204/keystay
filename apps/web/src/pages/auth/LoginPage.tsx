@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Logo } from '@/components/common/Logo';
-import { Eye, EyeOff, AlertCircle, ArrowRight, Shield } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, ShieldCheck, ConciergeBell, Sparkles } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { apiUrl, setAuthSession } from '@/lib/api';
@@ -8,7 +8,7 @@ import { apiUrl, setAuthSession } from '@/lib/api';
 export interface AuthUser {
   id: string;
   email: string;
-  role: 'admin' | 'manager' | 'front_desk' | 'housekeeping';
+  role: 'owner' | 'front_desk' | 'housekeeping';
   firstName?: string;
   lastName?: string;
 }
@@ -76,10 +76,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
     } catch {
       // Dev local fallback (เมื่อไม่ได้รัน Cloudflare Worker Backend แยก)
       if (password === 'Keystay@2026' || password === 'password123') {
-        const inferredRole = email.includes('admin')
-          ? 'admin'
-          : email.includes('manager')
-          ? 'manager'
+        const inferredRole = email.includes('owner')
+          ? 'owner'
+          : email.includes('front_desk')
+          ? 'front_desk'
           : email.includes('housekeep')
           ? 'housekeeping'
           : 'front_desk';
@@ -98,7 +98,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
   // FAST LOGIN HELPER (DEMO ACCOUNTS) — คลิกเพื่อเข้าสู่ระบบตาม Role ทันที
   // =========================================================================
   const handleFastLogin = async (
-    targetRole: 'admin' | 'manager' | 'front_desk' | 'housekeeping',
+    targetRole: 'owner' | 'front_desk' | 'housekeeping',
     demoEmail: string
   ) => {
     setEmail(demoEmail);
@@ -117,7 +117,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
       if (response.ok && data?.token) {
         const userObj = data.user || { email: demoEmail, role: targetRole };
         setAuthSession(data.token, userObj, targetRole);
-        navigate(targetRole === 'admin' ? '/admin/dashboard' : targetRole === 'manager' ? '/manager/dashboard' : '/');
+        navigate(targetRole === 'owner' ? '/admin/dashboard' : '/');
         return;
       }
     } catch {
@@ -127,12 +127,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
     // Direct Login fallback
     const fallbackUser = {
       email: demoEmail,
-      firstName: targetRole === 'admin' ? 'เขต' : targetRole === 'manager' ? 'วรพจน์' : 'พนักงาน',
-      lastName: targetRole === 'admin' ? 'โสภณ' : 'ผู้จัดการ',
+      firstName: targetRole === 'owner' ? 'เขต' : targetRole === 'front_desk' ? 'สมศรี' : 'สมหวัง',
+      lastName: targetRole === 'owner' ? 'โสภณ (เจ้าของ)' : targetRole === 'front_desk' ? 'ใจบริการ' : 'งานสะอาด',
       role: targetRole,
     };
     setAuthSession('dev-jwt-token-fallback', fallbackUser, targetRole);
-    navigate(targetRole === 'admin' ? '/admin/dashboard' : targetRole === 'manager' ? '/manager/dashboard' : '/');
+    navigate(targetRole === 'owner' ? '/admin/dashboard' : '/');
   };
 
   const isFailed = Boolean(errorMessage);
@@ -166,7 +166,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
               type="email"
               value={email}
               onChange={(e) => { setEmail(e.target.value); setErrorMessage(null); }}
-              placeholder="admin@keystay.com"
+              placeholder="owner@keystay.com"
               className={`w-full h-9 px-3 text-xs rounded-md bg-white border transition-colors outline-none focus:ring-1 ${
                 isFailed
                   ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 text-red-950'
@@ -247,42 +247,42 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
             <span>FAST LOGIN (DEMO ACCOUNTS)</span>
             <span className="font-mono text-[9px] text-slate-400">DEV HELPER</span>
           </div>
-          <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+          <div className="grid grid-cols-3 gap-2 text-[11px]">
+            <button
+              type="button"
+              disabled={isLoading}
+              onClick={() => handleFastLogin('owner', 'owner@keystay.com')}
+              className="group px-1.5 py-2 rounded-md border border-slate-200 hover:border-slate-300 bg-slate-50/50 hover:bg-white text-left transition-all cursor-pointer hover:shadow-xs focus:outline-none focus:ring-1 focus:ring-slate-400"
+            >
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-slate-600 group-hover:text-slate-900 transition-colors" strokeWidth={1.75} aria-hidden="true" />
+                <span className="font-semibold text-xs text-slate-900">Owner</span>
+              </div>
+              <div className="text-[10px] text-slate-500 font-mono truncate">owner@keystay.com</div>
+            </button>
             <button
               type="button"
               disabled={isLoading}
               onClick={() => handleFastLogin('front_desk', 'frontdesk@keystay.com')}
-              className="px-2 py-1.5 rounded border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-left transition-colors truncate cursor-pointer"
+              className="group px-1.5 py-2 rounded-md border border-slate-200 hover:border-slate-300 bg-slate-50/50 hover:bg-white text-left transition-all cursor-pointer hover:shadow-xs focus:outline-none focus:ring-1 focus:ring-slate-400"
             >
-              <div className="font-medium text-slate-900">Front Desk</div>
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <ConciergeBell className="w-3.5 h-3.5 shrink-0 text-slate-600 group-hover:text-slate-900 transition-colors" strokeWidth={1.75} aria-hidden="true" />
+                <span className="font-semibold text-xs text-slate-900">Front Desk</span>
+              </div>
               <div className="text-[10px] text-slate-500 font-mono truncate">frontdesk@keystay.com</div>
             </button>
             <button
               type="button"
               disabled={isLoading}
               onClick={() => handleFastLogin('housekeeping', 'housekeeping@keystay.com')}
-              className="px-2 py-1.5 rounded border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-left transition-colors truncate cursor-pointer"
+              className="group px-1.5 py-2 rounded-md border border-slate-200 hover:border-slate-300 bg-slate-50/50 hover:bg-white text-left transition-all cursor-pointer hover:shadow-xs focus:outline-none focus:ring-1 focus:ring-slate-400"
             >
-              <div className="font-medium text-slate-900">Housekeeping</div>
+              <div className="flex items-center gap-1.5 mb-0.5 min-w-0">
+                <Sparkles className="w-3.5 h-3.5 shrink-0 text-slate-600 group-hover:text-slate-900 transition-colors" strokeWidth={1.75} aria-hidden="true" />
+                <span className="font-semibold text-xs text-slate-900">Housekeep</span>
+              </div>
               <div className="text-[10px] text-slate-500 font-mono truncate">housekeeping@keystay.com</div>
-            </button>
-            <button
-              type="button"
-              disabled={isLoading}
-              onClick={() => handleFastLogin('manager', 'manager@keystay.com')}
-              className="px-2 py-1.5 rounded border border-blue-200 bg-blue-50/50 hover:bg-blue-100/70 text-slate-700 text-left transition-colors truncate cursor-pointer"
-            >
-              <div className="font-medium text-blue-900 font-bold">👔 Manager</div>
-              <div className="text-[10px] text-blue-600 font-mono truncate">manager@keystay.com</div>
-            </button>
-            <button
-              type="button"
-              disabled={isLoading}
-              onClick={() => handleFastLogin('admin', 'admin@keystay.com')}
-              className="px-2 py-1.5 rounded border border-purple-200 bg-purple-50/50 hover:bg-purple-100/70 text-slate-700 text-left transition-colors truncate cursor-pointer"
-            >
-              <div className="font-medium text-purple-900 font-bold">🔑 Admin</div>
-              <div className="text-[10px] text-purple-600 font-mono truncate">admin@keystay.com</div>
             </button>
           </div>
           <div className="text-[10px] text-slate-400 text-center mt-2 font-mono">

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
+import { I18nProvider } from './lib/i18n';
 import { LoginPage } from './pages/auth/LoginPage';
 import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
@@ -21,6 +22,7 @@ const ManagerDashboardPage = React.lazy(() => import('./pages/admin/ManagerDashb
 const RoomsPricingPage = React.lazy(() => import('./pages/admin/RoomsPricingPage'));
 const UsersManagementPage = React.lazy(() => import('./pages/admin/UsersManagementPage'));
 const ReportsAnalyticsPage = React.lazy(() => import('./pages/admin/ReportsAnalyticsPage'));
+const MinibarCatalogPage = React.lazy(() => import('./pages/admin/MinibarCatalogPage'));
 
 // ============================================================================
 // ENTERPRISE ROUTE GUARDS (ความปลอดภัยระดับสูง แยกตาม Tab Session)
@@ -51,19 +53,15 @@ const AuthenticatedHome: React.FC = () => {
   const navigate = useNavigate();
   const role = getAuthRole();
 
-  // If user is Admin or Manager, seamlessly forward to their portal dashboard
-  if (role === 'admin') {
+  // If user is Owner, seamlessly forward to owner portal dashboard
+  if (role === 'owner') {
     return <Navigate to="/admin/dashboard" replace />;
-  }
-  if (role === 'manager') {
-    return <Navigate to="/manager/dashboard" replace />;
   }
 
   const user = getAuthUser();
 
   const roleLabels: Record<string, string> = {
-    admin: 'ผู้ดูแลระบบ (Admin)',
-    manager: 'ผู้จัดการ (Manager)',
+    owner: 'เจ้าของ (Owner)',
     front_desk: 'พนักงานต้อนรับ (Front Desk)',
     housekeeping: 'แผนกแม่บ้าน (Housekeeping)',
   };
@@ -159,7 +157,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <>
+    <I18nProvider>
       {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
 
       <BrowserRouter
@@ -223,33 +221,11 @@ export const App: React.FC = () => {
               </RequireAuth>
             }
           />
-
-          {/* หน้า Manager Portal (สำหรับผู้จัดการ Manager) */}
           <Route
-            path="/manager"
-            element={<Navigate to="/manager/dashboard" replace />}
-          />
-          <Route
-            path="/manager/dashboard"
+            path="/admin/minibar"
             element={
               <RequireAuth>
-                <ManagerDashboardPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/manager/rooms"
-            element={
-              <RequireAuth>
-                <RoomsPricingPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/manager/reports"
-            element={
-              <RequireAuth>
-                <ReportsAnalyticsPage />
+                <MinibarCatalogPage />
               </RequireAuth>
             }
           />
@@ -294,7 +270,7 @@ export const App: React.FC = () => {
         </Routes>
         </React.Suspense>
       </BrowserRouter>
-    </>
+    </I18nProvider>
   );
 };
 
