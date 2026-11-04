@@ -166,7 +166,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
               type="email"
               value={email}
               onChange={(e) => { setEmail(e.target.value); setErrorMessage(null); }}
-              placeholder="admin@keystay.com"
+              placeholder="owner@keystay.com"
               className={`w-full h-9 px-3 text-xs rounded-md bg-white border transition-colors outline-none focus:ring-1 ${
                 isFailed
                   ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 text-red-950'

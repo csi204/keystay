@@ -1,6 +1,6 @@
 # 🎨 designsystem.md — "KEYSTAY Minimalist" Design System (Anti-AI & shadcn/ui Standard)
 
-> **กฎเหล็กสำหรับ UI ของ KEYSTAY:** ทุกหน้าจอ (Front Desk & Cashier, Housekeeping, Manager & Admin, Unified Login) ต้องยึดมั่นในสไตล์ **"Enterprise Minimalist & Operational Clarity"**  
+> **กฎเหล็กสำหรับ UI ของ KEYSTAY:** ทุกหน้าจอ (Front Desk & Cashier, Housekeeping, Owner Portal, Unified Login) ต้องยึดมั่นในสไตล์ **"Enterprise Minimalist & Operational Clarity"**  
 > ⚠️ **คำเตือนสำคัญ:** ห้ามใช้ AI Template, ห้ามใส่ลูกเล่นแฟนซีที่ดูเป็น AI-Generated ทั่วไปโดยเด็ดขาด **ต้องสร้าง UI จาก Primitive Components มาตรฐานของ shadcn/ui เท่านั้น**
 
 ---
@@ -175,7 +175,7 @@ export function RoomCard({ roomNumber, roomType, status }: RoomProps) {
          ▼ (กดปุ่มไอคอน Refresh บนการ์ด)
 [POST /api/reports/refresh?section=kpi]
          │
-         ├──> API Gateway ตรวจสอบสิทธิ์ (JWT Role: Manager/Admin)
+         ├──> API Gateway ตรวจสอบสิทธิ์ (JWT Role: Owner)
          ├──> Forward ไปยัง report-analytics Worker
          ├──> คำนวณสรุปเฉพาะยอดขายจาก D1 db_report
          │

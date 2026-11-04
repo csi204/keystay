@@ -268,17 +268,26 @@ interface I18nContextType {
 
 const I18nContext = createContext<I18nContextType | null>(null);
 
-const STORAGE_KEY = 'keystay_app_lang';
+export type Locale = Language;
+
+const STORAGE_KEYS = ['keystay_app_lang', 'keystay_locale', 'keystay_language'];
 
 export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    return saved === 'en' || saved === 'th' ? saved : 'th';
+    try {
+      for (const k of STORAGE_KEYS) {
+        const val = localStorage.getItem(k);
+        if (val === 'en' || val === 'th') return val;
+      }
+    } catch {}
+    return 'th';
   });
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
-    localStorage.setItem(STORAGE_KEY, lang);
+    try {
+      STORAGE_KEYS.forEach((k) => localStorage.setItem(k, lang));
+    } catch {}
   };
 
   const toggleLanguage = () => {
@@ -321,4 +330,13 @@ export const useTranslation = () => {
     };
   }
   return context;
+};
+
+export const useI18n = () => {
+  const ctx = useTranslation();
+  return {
+    ...ctx,
+    locale: ctx.language,
+    setLocale: ctx.setLanguage,
+  };
 };

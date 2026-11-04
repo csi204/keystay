@@ -134,8 +134,7 @@ pnpm --filter @keystay/reservation dev
 
 | Email | Password | Role | สิทธิ์ / หน้าจอที่เปิดได้ |
 |---|---|---|---|
-| `admin@keystay.com` | `Keystay@2026` | `admin` | Owner Portal (`/admin`) — สิทธิ์เต็ม |
-| `manager@keystay.com` | `Keystay@2026` | `manager` | Owner Portal (`/admin`) — ดู KPI, คุมราคา |
+| `owner@keystay.com` | `Keystay@2026` | `owner` | Owner Portal (`/admin`) — สิทธิ์เต็ม (บริหาร + จัดการระบบ) |
 | `frontdesk@keystay.com` | `Keystay@2026` | `front_desk` | Front Desk & Cashier Portal (`/front-desk`) |
 | `housekeeping@keystay.com` | `Keystay@2026` | `housekeeping` | Housekeeping Portal (`/housekeeping`) |
 

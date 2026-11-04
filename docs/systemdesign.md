@@ -98,7 +98,7 @@ flowchart TB
 
 | เซอร์วิส (Service) | หน้าที่หลัก (Domain Responsibility) | ข้อมูลที่ดูแล (Data Owned) | เจ้าของ |
 |---|---|---|---|
-| **1. Auth/User Service** | ยืนยันตัวตน, จัดการโทเค็น JWT, ควบคุมสิทธิ์การเข้าถึง (RBAC 4 Roles), บริหารผู้ใช้ | Users, Roles, Sessions, Password Tokens | เขต |
+| **1. Auth/User Service** | ยืนยันตัวตน, จัดการโทเค็น JWT, ควบคุมสิทธิ์การเข้าถึง (RBAC 3 Roles), บริหารผู้ใช้ | Users, Roles, Sessions, Password Tokens | เขต |
 | **2. Room Inventory Service** | คลังห้องพัก, ประเภทห้อง, ชั้น, สิ่งอำนวยความสะดวก, สถานะห้องจริง ณ ปัจจุบัน | Rooms, Room Types, Floors, Amenities | บุญ |
 | **3. Reservation Service** | การจองล่วงหน้า (Date Range), Walk-in, Check-in, Check-out, ประวัติการจอง | Reservations, Guests, Booking History | เดียร์ |
 | **4. Housekeeping Service** | งานทำความสะอาด, ตารางกะแม่บ้าน, มอบหมายงาน, แจ้งสิ่งของชำรุด, สมุดเบอร์ติดต่อและคู่ค้า Outsource (ช่าง/คนสวน/งานบริการภายนอก) | Staff, Tasks, Issues, Schedules, Outsource Contacts | บุญ |
@@ -513,7 +513,7 @@ sequenceDiagram
 
 ## 8. รายการ API ทั้ง 105 Endpoints จำแนกรายเซอร์วิส
 
-> **RBAC 4 Roles:** `admin` · `manager` · `front_desk` (รวม Cashier/Billing) · `housekeeping`  
+> **RBAC 3 Roles:** `owner` (รวม Admin/Manager) · `front_desk` (รวม Cashier/Billing) · `housekeeping`  
 > **DTO Rule:** ทุก Request/Response ส่งเป็น string เท่านั้น Backend parse ด้วย `z.coerce.number()` / `.transform()`
 
 ### 🔐 8.1 Service #1: Auth/User Service (12 APIs) — เจ้าของ: เขต
@@ -646,7 +646,7 @@ sequenceDiagram
 ### 9.1 ความปลอดภัย (Security Architecture)
 
 - **JWT with Short Expiration:** Access Token มีอายุ 15 นาที Refresh Token มีอายุ 7 วัน จัดเก็บใน Cloudflare KV พร้อมกลไก Revocation
-- **RBAC 4 Roles:** `admin`, `manager`, `front_desk` (รวม Cashiering), `housekeeping` — API Gateway ตรวจสอบก่อนส่งต่อ ไม่มี Role `billing` แยกต่างหาก
+- **RBAC 3 Roles:** `owner`, `front_desk` (รวม Cashiering), `housekeeping` — API Gateway ตรวจสอบก่อนส่งต่อ ไม่มี Role `billing` แยกต่างหาก
 - **QStash Webhook Signature Verification:** ทุก Webhook Consumer ต้อง verify `upstash-signature` header ด้วย `@upstash/qstash` ก่อนประมวลผล ป้องกัน Spoofed HTTP calls
 - **Input Validation:** ใช้ Zod validate Request Body ทุก endpoint — DTO เป็น string เท่านั้น
 

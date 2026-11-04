@@ -343,12 +343,31 @@ export const RoomsPricingPage: React.FC = () => {
 
   const loadRooms = async () => {
     setUnitsLoading(true);
-    const [roomsRes, floorsRes] = await Promise.all([
+    const [roomsRes, floorsRes, typesRes] = await Promise.all([
       apiFetch<RoomUnit[]>('/api/rooms'),
       apiFetch<FloorItem[]>('/api/floors'),
+      roomTypes.length > 0 ? Promise.resolve({ data: roomTypes, isOffline: false }) : apiFetch<RoomTypeItem[]>('/api/room-types'),
     ]);
+
+    const currentTypes = (typesRes.data && typesRes.data.length > 0) ? typesRes.data : roomTypes;
+    const typeMap = new Map<string, RoomTypeItem>();
+    currentTypes.forEach((t) => typeMap.set(t.id, t));
+
+    const currentFloors = (floorsRes.data && Array.isArray(floorsRes.data) && floorsRes.data.length > 0) ? floorsRes.data : floors;
+    const floorMap = new Map<string, FloorItem>();
+    currentFloors.forEach((f) => floorMap.set(f.id, f));
+
     if (roomsRes.data && Array.isArray(roomsRes.data) && roomsRes.data.length > 0) {
-      setRooms(roomsRes.data);
+      const enriched = roomsRes.data.map((r) => {
+        const rt = r.roomType || typeMap.get(r.roomTypeId);
+        const fl = r.floor || floorMap.get(r.floorId);
+        return {
+          ...r,
+          roomType: rt ? { id: rt.id, name: rt.name, basePrice: rt.basePrice } : undefined,
+          floor: fl ? { id: fl.id, floorNumber: fl.floorNumber, name: fl.name } : undefined,
+        };
+      });
+      setRooms(enriched);
       setIsOffline(false);
     } else {
       setIsOffline(roomsRes.isOffline);
@@ -401,13 +420,15 @@ export const RoomsPricingPage: React.FC = () => {
     const res = await apiFetch('/api/rooms', { method: 'POST', body: JSON.stringify(payload) });
     const floor = floors.find((f) => f.id === payload.floorId);
     const roomType = roomTypes.find((rt) => rt.id === payload.roomTypeId);
-    const newRoom: RoomUnit = res.data ?? {
-      id: `room-${Date.now()}`,
-      ...payload,
-      status: 'available',
-      isActive: 1,
-      floor: floor ? { id: floor.id, floorNumber: floor.floorNumber, name: floor.name } : undefined,
-      roomType: roomType ? { id: roomType.id, name: roomType.name, basePrice: roomType.basePrice } : undefined,
+    const newRoom: RoomUnit = {
+      ...(res.data ?? {
+        id: `room-${Date.now()}`,
+        ...payload,
+        status: 'available',
+        isActive: 1,
+      }),
+      floor: floor ? { id: floor.id, floorNumber: floor.floorNumber, name: floor.name } : (res.data?.floor ?? undefined),
+      roomType: roomType ? { id: roomType.id, name: roomType.name, basePrice: roomType.basePrice } : (res.data?.roomType ?? undefined),
     };
     setRooms((prev) => [...prev, newRoom]);
     setIsCreateRoomOpen(false);

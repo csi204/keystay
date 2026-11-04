@@ -16,7 +16,7 @@
 3. [กลุ่มที่ 1: Front Desk Portal (UAT-FD01 ถึง UAT-FD07)](#กลุ่มที่-1-front-desk-portal)
 4. [กลุ่มที่ 2: Housekeeping Portal (UAT-HK01 ถึง UAT-HK05)](#กลุ่มที่-2-housekeeping-portal)
 5. [กลุ่มที่ 3: Billing & Cashier Portal (UAT-BL01 ถึง UAT-BL04)](#กลุ่มที่-3-billing--cashier-front-desk-portal)
-6. [กลุ่มที่ 4: Manager & Admin Dashboard (UAT-MGR01 ถึง UAT-MGR05)](#กลุ่มที่-4-manager--admin-dashboard)
+6. [กลุ่มที่ 4: Owner Portal & Executive Dashboard (UAT-MGR01 ถึง UAT-MGR05)](#กลุ่มที่-4-owner-portal--executive-dashboard)
 7. [กลุ่มที่ 5: การทดสอบ Asynchronous Event Fan-out 1:4 (UAT-INT01 ถึง UAT-INT03)](#กลุ่มที่-5-การทดสอบ-asynchronous-event-fan-out-14)
 8. [แบบฟอร์มบันทึกสรุปผลและรายงานข้อผิดพลาด (Defect Log)](#8-แบบฟอร์มบันทึกสรุปผลและรายงานข้อผิดพลาด)
 
@@ -530,12 +530,12 @@
 
 ---
 
-## กลุ่มที่ 4: Manager & Admin Dashboard
+## กลุ่มที่ 4: Owner Portal & Executive Dashboard
 
 ### UAT-MGR01: การแสดงผล Dashboard ผู้บริหารและสถิติ Real-time
 * **รหัสกรณีทดสอบ:** UAT-MGR01
 * **ผู้ทดสอบ:** บุญ (ปวริศ) / เขต (เขตโสภณ)
-* **บทบาท:** Manager (`USR-MGR`)
+* **บทบาท:** Owner (`USR-OWNER`)
 * **วัตถุประสงค์:** ตรวจสอบความถูกต้องของ KPI Dashboard (Occupancy Rate, รายได้รวม, จำนวนการจอง)
 * **เงื่อนไขเริ่มต้น (Preconditions):**
   1. มีการทำรายการจอง เช็คอิน เช็คเอาท์ และชำระเงินในระบบแล้ว
@@ -582,7 +582,7 @@
 ### UAT-MGR03: การส่งออกรายงานรายได้ประจำเดือนเป็น CSV (Export CSV)
 * **รหัสกรณีทดสอบ:** UAT-MGR03
 * **ผู้ทดสอบ:** บุญ (ปวริศ)
-* **บทบาท:** Manager (`USR-MGR`)
+* **บทบาท:** Owner (`USR-OWNER`)
 * **วัตถุประสงค์:** ดาวน์โหลดรายงานสรุปรายได้และสถิติในรูปแบบไฟล์ CSV
 * **เงื่อนไขเริ่มต้น (Preconditions):**
   1. มีข้อมูลธุรกรรมใน `report-analytics` อย่างน้อย 1 เดือน
@@ -600,7 +600,7 @@
 ### UAT-MGR04: การส่งออกรายงานสรุปเป็น PDF (Export PDF)
 * **รหัสกรณีทดสอบ:** UAT-MGR04
 * **ผู้ทดสอบ:** บุญ (ปวริศ)
-* **บทบาท:** Manager (`USR-MGR`)
+* **บทบาท:** Owner (`USR-OWNER`)
 * **วัตถุประสงค์:** ดาวน์โหลดรายงานผลการดำเนินงานและสถิติแม่บ้านในรูปแบบ PDF
 * **เงื่อนไขเริ่มต้น (Preconditions):**
   1. มีข้อมูลงานแม่บ้านและสถิติห้องพัก
@@ -616,7 +616,7 @@
 ### UAT-MGR05: การจัดการข้อมูลคู่ค้าและช่าง Outsource (Full CRUD & Status Deactivation)
 * **รหัสกรณีทดสอบ:** UAT-MGR05
 * **ผู้ทดสอบ:** เขต (เขตโสภณ)
-* **บทบาท:** Admin (`USR-ADMIN`)
+* **บทบาท:** Owner (`USR-OWNER`)
 * **วัตถุประสงค์:** ทดสอบว่าผู้ดูแลระบบ (Admin) มีสิทธิ์ Full CRUD ในการเพิ่ม, แก้ไข, ลบ/ระงับการใช้งาน (`is_active = 0`) ข้อมูล Outsource ผ่าน Admin Portal เพื่อควบคุมความถูกต้องของ Master Data
 * **เงื่อนไขเริ่มต้น (Preconditions):**
   1. เข้าสู่ระบบด้วยบัญชี Admin (`USR-ADMIN`) สำเร็จ
