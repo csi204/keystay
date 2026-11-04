@@ -323,7 +323,7 @@ export const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ mode = 're
                   <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] ${
                     hasMinLength ? 'bg-emerald-100 text-emerald-700 font-bold' : 'bg-slate-100 text-slate-400'
                   }`}>
-                    {hasMinLength ? '✓' : '•'}
+                    {hasMinLength ? <Check className="w-2.5 h-2.5 stroke-[2.5]" aria-hidden="true" /> : <span className="w-1 h-1 rounded-full bg-slate-300" aria-hidden="true" />}
                   </span>
                   <span className={hasMinLength ? 'text-slate-900 font-medium' : 'text-slate-500'}>
                     ความยาวอย่างน้อย 8 ตัวอักษร
@@ -334,7 +334,7 @@ export const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ mode = 're
                   <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] ${
                     hasUpperCase ? 'bg-emerald-100 text-emerald-700 font-bold' : 'bg-slate-100 text-slate-400'
                   }`}>
-                    {hasUpperCase ? '✓' : '•'}
+                    {hasUpperCase ? <Check className="w-2.5 h-2.5 stroke-[2.5]" aria-hidden="true" /> : <span className="w-1 h-1 rounded-full bg-slate-300" aria-hidden="true" />}
                   </span>
                   <span className={hasUpperCase ? 'text-slate-900 font-medium' : 'text-slate-500'}>
                     มีตัวอักษรพิมพ์ใหญ่
@@ -345,7 +345,7 @@ export const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ mode = 're
                   <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] ${
                     hasNumber ? 'bg-emerald-100 text-emerald-700 font-bold' : 'bg-slate-100 text-slate-400'
                   }`}>
-                    {hasNumber ? '✓' : '•'}
+                    {hasNumber ? <Check className="w-2.5 h-2.5 stroke-[2.5]" aria-hidden="true" /> : <span className="w-1 h-1 rounded-full bg-slate-300" aria-hidden="true" />}
                   </span>
                   <span className={hasNumber ? 'text-slate-900 font-medium' : 'text-slate-500'}>
                     มีตัวเลข
@@ -356,7 +356,7 @@ export const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ mode = 're
                   <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] ${
                     hasSpecial ? 'bg-emerald-100 text-emerald-700 font-bold' : 'bg-slate-100 text-slate-400'
                   }`}>
-                    {hasSpecial ? '✓' : '•'}
+                    {hasSpecial ? <Check className="w-2.5 h-2.5 stroke-[2.5]" aria-hidden="true" /> : <span className="w-1 h-1 rounded-full bg-slate-300" aria-hidden="true" />}
                   </span>
                   <span className={hasSpecial ? 'text-slate-900 font-medium' : 'text-slate-500'}>
                     มีอักขระพิเศษ

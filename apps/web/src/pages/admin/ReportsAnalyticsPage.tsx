@@ -21,6 +21,7 @@ import {
   FileText,
   Loader2,
   AlertTriangle,
+  Check,
 } from 'lucide-react';
 
 type ReportTopic = 'daily_stats' | 'room_performance' | 'monthly_revenue';
@@ -431,8 +432,12 @@ export const ReportsAnalyticsPage: React.FC = () => {
               onClick={handleRefresh}
               className="text-xs font-semibold gap-1.5 h-9 bg-white hover:bg-slate-50 border-slate-300 text-slate-700"
             >
-              <RefreshCw className="w-3.5 h-3.5 text-slate-600" />
-              <span>{refreshSuccess ? 'อัปเดตเรียบร้อย ✓' : 'รีเฟรชข้อมูล'}</span>
+              {refreshSuccess ? (
+                <Check className="w-3.5 h-3.5 text-emerald-600" />
+              ) : (
+                <RefreshCw className="w-3.5 h-3.5 text-slate-600" />
+              )}
+              <span>{refreshSuccess ? 'อัปเดตเรียบร้อย' : 'รีเฟรชข้อมูล'}</span>
             </Button>
 
             {/* Single Primary Action: Opens Print & Export Modal */}

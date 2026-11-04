@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Logo } from '@/components/common/Logo';
-import { Eye, EyeOff, AlertCircle, ArrowRight, Shield } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, ShieldCheck, ConciergeBell, Sparkles } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { apiUrl, setAuthSession } from '@/lib/api';
@@ -247,33 +247,42 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
             <span>FAST LOGIN (DEMO ACCOUNTS)</span>
             <span className="font-mono text-[9px] text-slate-400">DEV HELPER</span>
           </div>
-          <div className="grid grid-cols-3 gap-1.5 text-[11px]">
+          <div className="grid grid-cols-3 gap-2 text-[11px]">
             <button
               type="button"
               disabled={isLoading}
               onClick={() => handleFastLogin('owner', 'owner@keystay.com')}
-              className="px-2 py-1.5 rounded border border-purple-200 bg-purple-50/50 hover:bg-purple-100/70 text-slate-700 text-left transition-colors truncate cursor-pointer"
+              className="group px-1.5 py-2 rounded-md border border-slate-200 hover:border-slate-300 bg-slate-50/50 hover:bg-white text-left transition-all cursor-pointer hover:shadow-xs focus:outline-none focus:ring-1 focus:ring-slate-400"
             >
-              <div className="font-medium text-purple-900 font-bold">👑 Owner</div>
-              <div className="text-[10px] text-purple-600 font-mono truncate">owner@keystay.com</div>
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-slate-600 group-hover:text-slate-900 transition-colors" strokeWidth={1.75} aria-hidden="true" />
+                <span className="font-semibold text-xs text-slate-900">Owner</span>
+              </div>
+              <div className="text-[10px] text-slate-500 font-mono truncate">owner@keystay.com</div>
             </button>
             <button
               type="button"
               disabled={isLoading}
               onClick={() => handleFastLogin('front_desk', 'frontdesk@keystay.com')}
-              className="px-2 py-1.5 rounded border border-blue-200 bg-blue-50/50 hover:bg-blue-100/70 text-slate-700 text-left transition-colors truncate cursor-pointer"
+              className="group px-1.5 py-2 rounded-md border border-slate-200 hover:border-slate-300 bg-slate-50/50 hover:bg-white text-left transition-all cursor-pointer hover:shadow-xs focus:outline-none focus:ring-1 focus:ring-slate-400"
             >
-              <div className="font-medium text-blue-900 font-bold">🛎️ Front Desk</div>
-              <div className="text-[10px] text-blue-600 font-mono truncate">frontdesk@keystay.com</div>
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <ConciergeBell className="w-3.5 h-3.5 shrink-0 text-slate-600 group-hover:text-slate-900 transition-colors" strokeWidth={1.75} aria-hidden="true" />
+                <span className="font-semibold text-xs text-slate-900">Front Desk</span>
+              </div>
+              <div className="text-[10px] text-slate-500 font-mono truncate">frontdesk@keystay.com</div>
             </button>
             <button
               type="button"
               disabled={isLoading}
               onClick={() => handleFastLogin('housekeeping', 'housekeeping@keystay.com')}
-              className="px-2 py-1.5 rounded border border-amber-200 bg-amber-50/50 hover:bg-amber-100/70 text-slate-700 text-left transition-colors truncate cursor-pointer"
+              className="group px-1.5 py-2 rounded-md border border-slate-200 hover:border-slate-300 bg-slate-50/50 hover:bg-white text-left transition-all cursor-pointer hover:shadow-xs focus:outline-none focus:ring-1 focus:ring-slate-400"
             >
-              <div className="font-medium text-amber-900 font-bold">🧹 Housekeep</div>
-              <div className="text-[10px] text-amber-600 font-mono truncate">housekeeping@...</div>
+              <div className="flex items-center gap-1.5 mb-0.5 min-w-0">
+                <Sparkles className="w-3.5 h-3.5 shrink-0 text-slate-600 group-hover:text-slate-900 transition-colors" strokeWidth={1.75} aria-hidden="true" />
+                <span className="font-semibold text-xs text-slate-900">Housekeep</span>
+              </div>
+              <div className="text-[10px] text-slate-500 font-mono truncate">housekeeping@keystay.com</div>
             </button>
           </div>
           <div className="text-[10px] text-slate-400 text-center mt-2 font-mono">
