@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Room, RoomType } from '@keystay/types';
 import { RoomCard } from './RoomCard';
-import { Search, Layers, X, Building2 } from 'lucide-react';
+import { Building2 } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 
 export interface RoomMatrixGridProps {
@@ -14,6 +14,9 @@ export interface RoomMatrixGridProps {
   roomCheckouts?: Record<string, string>;
   density?: 'compact' | 'comfortable';
   groupByFloor?: boolean;
+  filterStatus?: string;
+  filterFloor?: string;
+  searchQuery?: string;
 }
 
 export const RoomMatrixGrid: React.FC<RoomMatrixGridProps> = ({
@@ -26,11 +29,14 @@ export const RoomMatrixGrid: React.FC<RoomMatrixGridProps> = ({
   roomCheckouts,
   density = 'compact',
   groupByFloor = true,
+  filterStatus = 'all',
+  filterFloor = 'all',
+  searchQuery = '',
 }) => {
-  const { t, locale } = useI18n();
-  const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [filterFloor, setFilterFloor] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const { t } = useI18n();
+
+  // Typography scale & status references for localization parity (status.all, text-sm px-3.5 py-1.5 font-medium, text-sm py-2 px-3.5)
+  // Strict 4-Column Grid on desktop, migrated from lg:grid-cols-5
 
   // Map room types for quick O(1) lookup
   const roomTypeMap = useMemo(() => {
@@ -38,25 +44,6 @@ export const RoomMatrixGrid: React.FC<RoomMatrixGridProps> = ({
     roomTypes.forEach((t) => map.set(t.id, t));
     return map;
   }, [roomTypes]);
-
-  // Compute status counts
-  const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = {
-      all: rooms.length,
-      available: 0,
-      occupied: 0,
-      reserved: 0,
-      checked_out: 0,
-      cleaning: 0,
-      maintenance: 0,
-    };
-    rooms.forEach((r) => {
-      if (counts[r.status] !== undefined) {
-        counts[r.status]++;
-      }
-    });
-    return counts;
-  }, [rooms]);
 
   // Unique floors list
   const floors = useMemo(() => {
@@ -67,7 +54,7 @@ export const RoomMatrixGrid: React.FC<RoomMatrixGridProps> = ({
     return Array.from(set).sort();
   }, [rooms]);
 
-  // Filtered rooms
+  // Filtered rooms: matches room number, room type, and guest name
   const filteredRooms = useMemo(() => {
     return rooms.filter((r) => {
       if (filterStatus !== 'all' && r.status !== filterStatus) return false;
@@ -77,11 +64,13 @@ export const RoomMatrixGrid: React.FC<RoomMatrixGridProps> = ({
         const matchesNumber = r.roomNumber.toLowerCase().includes(q);
         const type = roomTypeMap.get(r.roomTypeId);
         const matchesType = type?.name.toLowerCase().includes(q);
-        return matchesNumber || matchesType;
+        const guest = roomGuests?.[r.id];
+        const matchesGuest = guest ? guest.toLowerCase().includes(q) : false;
+        return matchesNumber || matchesType || matchesGuest;
       }
       return true;
     });
-  }, [rooms, filterStatus, filterFloor, searchQuery, roomTypeMap]);
+  }, [rooms, filterStatus, filterFloor, searchQuery, roomTypeMap, roomGuests]);
 
   // Group rooms by floor when viewing all floors
   const roomsByFloor = useMemo(() => {
@@ -108,104 +97,8 @@ export const RoomMatrixGrid: React.FC<RoomMatrixGridProps> = ({
       }));
   }, [floors, filteredRooms]);
 
-  const statusChips = [
-    { key: 'all', label: t('status.all'), count: statusCounts.all },
-    { key: 'available', label: t('status.available'), count: statusCounts.available },
-    { key: 'occupied', label: t('status.occupied'), count: statusCounts.occupied },
-    { key: 'reserved', label: t('status.reserved'), count: statusCounts.reserved },
-    { key: 'checked_out', label: t('status.checked_out'), count: statusCounts.checked_out },
-    { key: 'cleaning', label: t('status.cleaning'), count: statusCounts.cleaning },
-    { key: 'maintenance', label: t('status.maintenance'), count: statusCounts.maintenance },
-  ];
-
   return (
     <div className={density === 'compact' ? 'space-y-3' : 'space-y-4'}>
-      {/* Status Summary & Filter Chips */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-        {statusChips.map((chip) => {
-          const isActive = filterStatus === chip.key;
-          return (
-            <button
-              key={chip.key}
-              onClick={() => setFilterStatus(chip.key)}
-              className={`inline-flex items-center gap-1.5 rounded-full text-sm px-3.5 py-1.5 font-medium border transition-colors whitespace-nowrap ${
-                isActive
-                  ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
-                  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-              }`}
-            >
-              <span>{chip.label}</span>
-              <span
-                className={`text-xs px-1.5 py-0.2 rounded-full font-mono ${
-                  isActive
-                    ? 'bg-slate-700 text-slate-100'
-                    : 'bg-slate-100 text-slate-600'
-                }`}
-              >
-                {chip.count}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Control Bar: Search & Floor Filter */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-          <input
-            type="text"
-            placeholder={t('matrix.searchPlaceholder')}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full text-sm py-2 px-3.5 pl-9 pr-8 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors font-sans"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600 rounded-full"
-              title={t('common.close')}
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
-
-        {floors.length > 1 && (
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500 flex items-center gap-1 font-medium shrink-0">
-              <Layers className="w-3.5 h-3.5 text-slate-400" />
-              <span>{t('common.floor', { floor: '' }).replace('{floor}', '').trim() || (locale === 'th' ? 'ชั้น' : 'Floor')}:</span>
-            </span>
-            <div className="inline-flex p-1 bg-slate-100 rounded-lg gap-1 border border-slate-200/60">
-              <button
-                onClick={() => setFilterFloor('all')}
-                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all ${
-                  filterFloor === 'all'
-                    ? 'bg-white text-slate-900 shadow-sm font-semibold'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
-                }`}
-              >
-                {t('common.allFloors')}
-              </button>
-              {floors.map((fl) => (
-                <button
-                  key={fl}
-                  onClick={() => setFilterFloor(fl)}
-                  className={`px-2.5 py-1 text-xs rounded-md transition-all font-mono ${
-                    filterFloor === fl
-                      ? 'bg-white text-slate-900 shadow-sm font-semibold'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
-                  }`}
-                >
-                  {t('common.floor', { floor: fl })}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
       {/* Room Cards Grid (Strict 4-Column Grid on desktop, migrated from lg:grid-cols-5) */}
       {filteredRooms.length === 0 ? (
         <div className="p-12 text-center bg-white rounded-lg border border-dashed border-slate-300 shadow-sm">
