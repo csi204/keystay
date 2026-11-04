@@ -227,17 +227,17 @@ export const RoomCard: React.FC<RoomCardProps> = ({
 
       {/* Hover Quick Action Walk-In Button for Available Rooms */}
       {room.status === 'available' && onQuickBook && (
-        <div className="absolute inset-x-2 bottom-2 opacity-0 group-hover:opacity-100 transition-all duration-150 flex items-center justify-center gap-1.5 z-10">
+        <div className="absolute inset-x-2 bottom-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-within:opacity-100 transition-all duration-150 flex items-center justify-center gap-1.5 z-10">
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               onQuickBook(room);
             }}
-            className="w-full py-1.5 px-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-md shadow-md flex items-center justify-center gap-1 cursor-pointer"
+            className="w-full py-2 px-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-md shadow-md flex items-center justify-center gap-1 cursor-pointer min-h-[44px] focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-1"
           >
             <Zap className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" />
-            <span>เปิดห้องทันที (Walk-In)</span>
+            <span>{locale === 'th' ? 'เปิดห้องทันที (Walk-In)' : 'Quick Walk-In'}</span>
           </button>
         </div>
       )}

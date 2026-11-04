@@ -21,10 +21,6 @@ import {
   WifiOff,
   Search,
   Printer,
-  CreditCard,
-  Banknote,
-  QrCode,
-  Building2,
 } from 'lucide-react';
 
 export const DailyOperationsPage: React.FC = () => {

@@ -107,6 +107,14 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // Nights calculation
+  const nightsCount = useMemo(() => {
+    const start = new Date(checkInDate);
+    const end = new Date(checkOutDate);
+    const diff = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    return diff > 0 ? diff : 0;
+  }, [checkInDate, checkOutDate]);
+
   // Sync mode and form fields when opened or initialMode changes
   useEffect(() => {
     if (isOpen) {
@@ -146,14 +154,6 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
 
   const localizedStatus = t(`status.${room.status}`);
   const formattedPrice = roomType?.basePrice ? formatCurrency(roomType.basePrice) : null;
-
-  // Nights calculation
-  const nightsCount = useMemo(() => {
-    const start = new Date(checkInDate);
-    const end = new Date(checkOutDate);
-    const diff = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    return diff > 0 ? diff : 0;
-  }, [checkInDate, checkOutDate]);
 
   // Estimated Pricing
   const nightlyRate = Number(roomType?.basePrice) || 0;
@@ -250,7 +250,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
       <div
         className={`relative bg-white rounded-2xl shadow-2xl border border-slate-200/80 overflow-hidden w-full transition-all duration-300 ease-out z-10 my-auto ${
           mode === 'booking'
-            ? 'max-w-4xl grid grid-cols-1 md:grid-cols-12 gap-0 max-h-[92vh]'
+            ? 'max-w-4xl grid grid-cols-1 md:grid-cols-12 gap-0 max-h-[92vh] overflow-y-auto md:overflow-hidden'
             : 'max-w-lg'
         }`}
       >
@@ -276,7 +276,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-lg transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center"
+                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                 title={t('common.close')}
               >
                 <X className="w-5 h-5" />
@@ -460,7 +460,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
         {mode === 'booking' && (
           <>
             {/* Left Pane (5 Columns): Room Summary & Pricing */}
-            <div className="md:col-span-5 bg-slate-50/90 border-r border-slate-200/80 p-5 sm:p-6 flex flex-col justify-between overflow-y-auto">
+            <div className="md:col-span-5 bg-slate-50/90 border-b md:border-b-0 md:border-r border-slate-200/80 p-5 sm:p-6 flex flex-col justify-between overflow-y-auto">
               <div className="space-y-4">
                 {/* Header Badge */}
                 <div>
@@ -590,7 +590,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                   <button
                     type="button"
                     onClick={onClose}
-                    className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center"
+                    className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                     title={t('common.close')}
                   >
                     <X className="w-5 h-5" />

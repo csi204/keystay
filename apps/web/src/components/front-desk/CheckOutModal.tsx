@@ -6,7 +6,7 @@ import { useI18n } from '@/lib/i18n';
 import { localizeRoomType, localizeFolioDescription } from '@/lib/localizeMetadata';
 import { calculateFolioSummary, FolioItemLike } from '@/components/front-desk/FolioSplitScreen';
 import { AddExtraChargeModal } from '@/components/front-desk/AddExtraChargeModal';
-import { ReceiptTaxInvoiceModal, TaxInvoiceAbbModal } from '@/components/front-desk/ReceiptTaxInvoiceModal';
+import { ReceiptTaxInvoiceModal } from '@/components/front-desk/ReceiptTaxInvoiceModal';
 import { apiFetch } from '@/lib/api';
 import {
   X,
@@ -24,7 +24,6 @@ import {
   Plus,
   Trash2,
   Printer,
-  Sparkles,
 } from 'lucide-react';
 
 export interface CheckOutModalProps {

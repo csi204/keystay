@@ -156,18 +156,20 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
             <button
               type="button"
               onClick={() => setLocale('th')}
-              className={`px-2 py-1 rounded transition-colors ${
-                locale === 'th' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'
+              className={`px-2.5 py-1.5 rounded-md min-h-[44px] min-w-[40px] flex items-center justify-center transition-colors ${
+                locale === 'th' ? 'bg-white text-slate-900 shadow-xs font-bold' : 'text-slate-500 hover:text-slate-800'
               }`}
+              aria-pressed={locale === 'th'}
             >
               TH
             </button>
             <button
               type="button"
               onClick={() => setLocale('en')}
-              className={`px-2 py-1 rounded transition-colors ${
-                locale === 'en' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'
+              className={`px-2.5 py-1.5 rounded-md min-h-[44px] min-w-[40px] flex items-center justify-center transition-colors ${
+                locale === 'en' ? 'bg-white text-slate-900 shadow-xs font-bold' : 'text-slate-500 hover:text-slate-800'
               }`}
+              aria-pressed={locale === 'en'}
             >
               EN
             </button>
