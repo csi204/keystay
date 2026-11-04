@@ -255,3 +255,8 @@ export const ReceiptTaxInvoiceModal: React.FC<ReceiptTaxInvoiceModalProps> = ({
     </div>
   );
 };
+
+export const TaxInvoiceAbbModal = ReceiptTaxInvoiceModal;
+export type TaxInvoiceAbbModalProps = ReceiptTaxInvoiceModalProps;
+
+export default ReceiptTaxInvoiceModal;
