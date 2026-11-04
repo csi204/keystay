@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Room, RoomType } from '@keystay/types';
 import { RoomCard } from './RoomCard';
-import { Search, Layers, X } from 'lucide-react';
+import { Search, Layers, X, Building2 } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 
 export interface RoomMatrixGridProps {
@@ -9,7 +9,9 @@ export interface RoomMatrixGridProps {
   roomTypes: RoomType[];
   selectedRoom: Room | null;
   onSelectRoom: (room: Room) => void;
+  onQuickBook?: (room: Room) => void;
   roomGuests?: Record<string, string>;
+  roomCheckouts?: Record<string, string>;
   density?: 'compact' | 'comfortable';
   groupByFloor?: boolean;
 }
@@ -19,7 +21,9 @@ export const RoomMatrixGrid: React.FC<RoomMatrixGridProps> = ({
   roomTypes,
   selectedRoom,
   onSelectRoom,
+  onQuickBook,
   roomGuests,
+  roomCheckouts,
   density = 'compact',
   groupByFloor = true,
 }) => {
@@ -202,7 +206,7 @@ export const RoomMatrixGrid: React.FC<RoomMatrixGridProps> = ({
         )}
       </div>
 
-      {/* Room Cards Grid (High Density 2x5 or grouped by floor) */}
+      {/* Room Cards Grid (Strict 4-Column Grid on desktop, migrated from lg:grid-cols-5) */}
       {filteredRooms.length === 0 ? (
         <div className="p-12 text-center bg-white rounded-lg border border-dashed border-slate-300 shadow-sm">
           <p className="text-sm font-medium text-slate-700">
@@ -216,29 +220,31 @@ export const RoomMatrixGrid: React.FC<RoomMatrixGridProps> = ({
         <div className={density === 'compact' ? 'space-y-3' : 'space-y-4'}>
           {roomsByFloor.map((group) => (
             <div key={group.floor} className="space-y-2">
-              {/* Hairline Floor Section Divider */}
-              <div className="flex items-center justify-between border-b border-slate-200 pb-1 pt-0.5">
+              {/* Floor Header with Building2 icon, Floor Name, Room Count badge, and Separator Line */}
+              <div className="flex items-center justify-between pb-1 pt-1">
                 <div className="flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-slate-500 shrink-0" aria-hidden="true" />
                   <span className="font-mono text-sm font-bold tracking-wider text-slate-700 uppercase">
                     {t('common.floor', { floor: group.floor })}
                   </span>
-                  <span className="text-xs font-mono text-slate-400">
-                    ({t('common.roomsCount', { count: group.rooms.length })})
+                  <span className="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200/60">
+                    {t('common.roomsCount', { count: group.rooms.length })}
                   </span>
                 </div>
+                <div className="h-px bg-slate-200/80 flex-1 ml-3" />
               </div>
-              {/* 5-column grid guarantees 5 rooms per row fit neatly */}
-              <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 ${
-                density === 'compact' ? 'gap-2.5 sm:gap-3' : 'gap-3.5'
-              }`}>
+              {/* Strictly 4-column grid on desktop */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {group.rooms.map((room) => (
                   <RoomCard
                     key={room.id}
                     room={room}
                     roomType={roomTypeMap.get(room.roomTypeId)}
                     guestName={roomGuests?.[room.id]}
+                    checkoutDate={roomCheckouts?.[room.id]}
                     isSelected={selectedRoom?.id === room.id}
                     onClick={onSelectRoom}
+                    onQuickBook={onQuickBook}
                     density={density}
                   />
                 ))}
@@ -247,17 +253,17 @@ export const RoomMatrixGrid: React.FC<RoomMatrixGridProps> = ({
           ))}
         </div>
       ) : (
-        <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 ${
-          density === 'compact' ? 'gap-2.5 sm:gap-3' : 'gap-3.5'
-        }`}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           {filteredRooms.map((room) => (
             <RoomCard
               key={room.id}
               room={room}
               roomType={roomTypeMap.get(room.roomTypeId)}
               guestName={roomGuests?.[room.id]}
+              checkoutDate={roomCheckouts?.[room.id]}
               isSelected={selectedRoom?.id === room.id}
               onClick={onSelectRoom}
+              onQuickBook={onQuickBook}
               density={density}
             />
           ))}
