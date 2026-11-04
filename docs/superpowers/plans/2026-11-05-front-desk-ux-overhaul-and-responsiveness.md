@@ -23,6 +23,15 @@
 - Touch targets on Tablet/Mobile must be at least 44px (`min-h-[44px]`).
 - Desktop Room Grid must strictly render 4 columns (`lg:grid-cols-4 xl:grid-cols-4`).
 
+## Required Skills & Tooling Integration
+
+Every implementer and reviewer subagent assigned to tasks in this plan MUST invoke and apply the following 5 specialized skills:
+1. **`taste-skill` & `frontend-design`:** Enforce studio-grade, anti-AI art direction. Choose thoughtful palettes, clear typographic rhythm, and avoid predictable cliché SaaS templates.
+2. **`lucide-icons`:** Reference the icon dictionary in `lucide-icons` skill. Use exact PascalCase icon imports (e.g. `Zap`, `Building2`, `Sparkles`, `ShieldCheck`, `BedDouble`, `Bath`, `Users`), proper sizing scale (`w-3.5` to `w-5`), `currentColor`, and `aria-hidden` attributes.
+3. **`simple-icons`:** When rendering payment, provider, or brand logos (Visa, Mastercard, PromptPay, Cloudflare), use official brand SVGs and colors from the `simple-icons` guidelines.
+4. **`impeccable`:** Audit interface polish, eliminate visual noise (cards inside cards, muddy borders), ensure strict WCAG contrast compliance, and enforce balanced negative space.
+5. **`playwright` & `verification-before-completion`:** Use Playwright screenshot inspection across viewports (Mobile 375px, Tablet 768px, Desktop 1280px, Wide PC 1600px) to verify rendered appearance before concluding tasks. Evidence before assertions.
+
 ## Review Focus
 
 1. **Auto-Refresh State Safety:** Ensure silent 30s background polling or tab-focus refetching never wipes out form state or resets active modal inputs.
@@ -34,6 +43,7 @@
 ---
 
 ### Task 1: Collapsible Left Sidebar & 2-Menu Navigation Layout (`FrontDeskLayout.tsx`)
+**Active Skills:** `lucide-icons`, `impeccable`
 
 **Files:**
 - Modify: `apps/web/src/components/front-desk/FrontDeskLayout.tsx`
@@ -75,6 +85,7 @@
 ---
 
 ### Task 2: Redesigned Room Card with 4-Column Grid, Tempered Glass Status & Hover Action (`RoomCard.tsx` & `RoomMatrixGrid.tsx`)
+**Active Skills:** `taste-skill`, `frontend-design`, `lucide-icons`, `impeccable`
 
 **Files:**
 - Modify: `apps/web/src/components/front-desk/RoomCard.tsx`
@@ -132,6 +143,7 @@
 ---
 
 ### Task 3: Unified Search, Status & Floor Filter Dropdown, and Silent Auto-Refresh Toolbar (`RoomMatrixPage.tsx`)
+**Active Skills:** `impeccable`, `lucide-icons`
 
 **Files:**
 - Modify: `apps/web/src/pages/front-desk/RoomMatrixPage.tsx`
@@ -176,6 +188,7 @@
 ---
 
 ### Task 4: Center Room Details & Split-Pane Booking Modal (`RoomDetailsModal.tsx`)
+**Active Skills:** `taste-skill`, `frontend-design`, `simple-icons`, `impeccable`
 
 **Files:**
 - Create: `apps/web/src/components/front-desk/RoomDetailsModal.tsx`
@@ -223,6 +236,7 @@
 ---
 
 ### Task 5: Consolidated Daily Operations & Cashier Settlement Flow (`DailyOperationsPage.tsx`)
+**Active Skills:** `simple-icons`, `lucide-icons`, `impeccable`
 
 **Files:**
 - Modify: `apps/web/src/pages/front-desk/DailyOperationsPage.tsx`
@@ -259,6 +273,7 @@
 ---
 
 ### Task 6: Responsive Polish (Mobile, Tablet, PC) & Visual Verification
+**Active Skills:** `playwright`, `verification-before-completion`, `impeccable`
 
 **Files:**
 - Modify: `apps/web/src/components/front-desk/FrontDeskLayout.tsx`
@@ -292,3 +307,4 @@
 - [ ] **Step 5: Commit Task 6**
   `git add apps/web/ scripts/visual-verify-frontdesk.mjs`
   `git commit -m "chore(frontdesk): responsive polish across tablet and pc with visual verification"`
+
