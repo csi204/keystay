@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FrontDeskLayout } from '@/components/front-desk/FrontDeskLayout';
 import { RoomMatrixGrid } from '@/components/front-desk/RoomMatrixGrid';
-import { RoomDetailsDrawer } from '@/components/front-desk/RoomDetailsDrawer';
+import { RoomDetailsModal, FastBookingFormData } from '@/components/front-desk/RoomDetailsModal';
 import { NewBookingModal } from '@/components/front-desk/NewBookingModal';
 import { CheckInModal } from '@/components/front-desk/CheckInModal';
 import { useRooms } from '@/hooks/useRooms';
@@ -38,7 +38,7 @@ const RESERVATION_STATUS_STYLES: Record<
 
 export const RoomMatrixPage: React.FC = () => {
   const navigate = useNavigate();
-  const { t, locale, formatDateRange, formatCurrency } = useI18n();
+  const { t, locale, formatDateRange, formatCurrency, formatRelativeTime } = useI18n();
 
   const {
     rooms,
@@ -63,9 +63,10 @@ export const RoomMatrixPage: React.FC = () => {
   // Sub-tab: 'grid' = Matrix Grid, 'table' = Reservations Table
   const [activeSubTab, setActiveSubTab] = useState<'grid' | 'table'>('grid');
 
-  // Drawer & Modals state
+  // Room Details & Fast Booking Modal state
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
-  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [modalMode, setModalMode] = useState<'details' | 'booking'>('details');
   const [isNewModalOpen, setIsNewModalOpen] = useState<boolean>(false);
   const [checkInReservationTarget, setCheckInReservationTarget] =
     useState<ExtendedReservation | null>(null);
@@ -168,24 +169,25 @@ export const RoomMatrixPage: React.FC = () => {
 
   const handleSelectRoom = (room: Room) => {
     setSelectedRoom(room);
-    setIsDrawerOpen(true);
+    setModalMode('details');
+    setIsModalOpen(true);
   };
 
-  const handleCloseDrawer = () => {
-    setIsDrawerOpen(false);
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
   };
 
   const handleQuickBook = (room: Room) => {
-    navigate('/front-desk/daily-operations', {
-      state: { roomId: room.id, action: 'walkin' },
-    });
+    setSelectedRoom(room);
+    setModalMode('booking');
+    setIsModalOpen(true);
   };
 
-  const handleDrawerAction = (
-    action: 'checkin' | 'checkout' | 'charge' | 'walkin' | 'clean',
+  const handleModalAction = (
+    action: 'checkin' | 'checkout' | 'charge' | 'walkin' | 'clean' | 'extend',
     room: Room
   ) => {
-    setIsDrawerOpen(false);
+    setIsModalOpen(false);
     if (action === 'checkin' || action === 'walkin') {
       navigate('/front-desk/daily-operations', { state: { roomId: room.id, action } });
     } else if (action === 'checkout' || action === 'charge') {
@@ -193,6 +195,21 @@ export const RoomMatrixPage: React.FC = () => {
     } else if (action === 'clean') {
       refreshRooms();
     }
+  };
+
+  const handleFastBookingSubmit = async (data: FastBookingFormData) => {
+    const res = await createReservation({
+      guestName: data.guestName,
+      phone: data.phone,
+      roomId: data.roomId,
+      checkInDate: data.checkInDate,
+      checkOutDate: data.checkOutDate,
+      depositAmount: data.depositAmount,
+    });
+    if (res.success) {
+      await Promise.all([refreshRooms(), refreshReservations()]);
+    }
+    return res;
   };
 
   const selectedRoomType = selectedRoom
@@ -207,6 +224,8 @@ export const RoomMatrixPage: React.FC = () => {
       second: '2-digit',
     }
   );
+  // Micro-UX relative refresh tracker: formatRelativeTime
+  const _relativeRefresh = formatRelativeTime ? formatRelativeTime(lastRefreshed, locale) : refreshTimeStr;
 
   return (
     <FrontDeskLayout activeTab="matrix">
@@ -677,13 +696,15 @@ export const RoomMatrixPage: React.FC = () => {
         )}
       </div>
 
-      {/* Slide-over Drawer for Room Details */}
-      <RoomDetailsDrawer
+      {/* Centered Dialog & Split-Pane Fast Booking Modal for Room Details */}
+      <RoomDetailsModal
         room={selectedRoom}
         roomType={selectedRoomType}
-        isOpen={isDrawerOpen}
-        onClose={handleCloseDrawer}
-        onAction={handleDrawerAction}
+        isOpen={isModalOpen}
+        initialMode={modalMode}
+        onClose={handleCloseModal}
+        onAction={handleModalAction}
+        onSubmitBooking={handleFastBookingSubmit}
       />
 
       {/* New Booking Modal for embedded reservations */}
