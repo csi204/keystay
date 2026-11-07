@@ -142,6 +142,9 @@ export const reportIssueHandler = async (c: any) => {
     photoR2Key: finalR2Key,
     severity: parsed.data.severity,
     status: 'open' as const,
+    storageLocation: parsed.data.storageLocation || 'Front Desk Counter',
+    retentionDays: parsed.data.retentionDays || 7,
+    receivedByName: parsed.data.receivedByName || null,
     resolvedAt: null,
     createdAt: now,
   };
@@ -223,6 +226,9 @@ issuesRoute.get('/', async (c) => {
       photoR2Key: roomIssues.photoR2Key,
       severity: roomIssues.severity,
       status: roomIssues.status,
+      storageLocation: roomIssues.storageLocation,
+      retentionDays: roomIssues.retentionDays,
+      receivedByName: roomIssues.receivedByName,
       resolvedAt: roomIssues.resolvedAt,
       createdAt: roomIssues.createdAt,
       reporterFirstName: housekeepingStaff.firstName,
@@ -247,6 +253,9 @@ issuesRoute.get('/', async (c) => {
       photoR2Key: i.photoR2Key,
       severity: i.severity,
       status: i.status,
+      storageLocation: i.storageLocation,
+      retentionDays: i.retentionDays,
+      receivedByName: i.receivedByName,
       resolvedAt: i.resolvedAt,
       createdAt: i.createdAt,
       reportedBy: {
@@ -297,9 +306,9 @@ issuesRoute.put('/:id/status', async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const status = body.status;
 
-  if (!status || !['open', 'acknowledged', 'resolved'].includes(status)) {
+  if (!status || !['open', 'acknowledged', 'resolved', 'expired_claimed'].includes(status)) {
     return c.json(
-      { success: false, error: 'BAD_REQUEST', message: 'Status must be open, acknowledged, or resolved' },
+      { success: false, error: 'BAD_REQUEST', message: 'Status must be open, acknowledged, resolved, or expired_claimed' },
       400,
     );
   }
@@ -318,8 +327,15 @@ issuesRoute.put('/:id/status', async (c) => {
   const now = new Date().toISOString();
   const updateData: any = {
     status,
-    resolvedAt: status === 'resolved' ? now : null,
+    resolvedAt: (status === 'resolved' || status === 'expired_claimed') ? now : null,
   };
+
+  if (body.receivedByName || body.received_by_name) {
+    updateData.receivedByName = body.receivedByName || body.received_by_name;
+  }
+  if (body.storageLocation || body.storage_location) {
+    updateData.storageLocation = body.storageLocation || body.storage_location;
+  }
 
   await db.update(roomIssues).set(updateData).where(eq(roomIssues.id, id));
 

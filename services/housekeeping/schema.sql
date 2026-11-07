@@ -37,11 +37,14 @@ CREATE TABLE IF NOT EXISTS room_issues (
     task_id TEXT REFERENCES housekeeping_tasks(id),
     room_id TEXT NOT NULL,
     reported_by TEXT NOT NULL REFERENCES housekeeping_staff(id),
-    issue_type TEXT NOT NULL CHECK(issue_type IN ('damage', 'missing_item', 'malfunction', 'hygiene')),
+    issue_type TEXT NOT NULL CHECK(issue_type IN ('damage', 'missing_item', 'malfunction', 'hygiene', 'lost_and_found')),
     description TEXT NOT NULL,
     photo_r2_key TEXT,
     severity TEXT NOT NULL DEFAULT 'medium' CHECK(severity IN ('low', 'medium', 'high', 'critical')),
-    status TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open', 'acknowledged', 'resolved')),
+    status TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open', 'acknowledged', 'resolved', 'expired_claimed')),
+    storage_location TEXT DEFAULT 'Front Desk Counter',
+    retention_days INTEGER DEFAULT 7,
+    received_by_name TEXT,
     resolved_at TEXT,
     created_at TEXT NOT NULL
 );
@@ -88,6 +91,19 @@ CREATE TABLE IF NOT EXISTS outsource_contacts (
     updated_at TEXT NOT NULL
 );
 
+-- 7. Task Templates (แม่แบบงานมาตรฐาน SOP สำหรับแม่บ้าน - กำหนดโดย Front Desk & Owner)
+CREATE TABLE IF NOT EXISTS task_templates (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    task_type TEXT NOT NULL CHECK(task_type IN ('checkout_clean', 'stayover_clean', 'deep_clean', 'inspection')),
+    default_priority TEXT NOT NULL DEFAULT 'normal' CHECK(default_priority IN ('urgent', 'high', 'normal', 'low')),
+    estimated_minutes INTEGER NOT NULL DEFAULT 30,
+    description TEXT,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_tasks_room ON housekeeping_tasks(room_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON housekeeping_tasks(status);
@@ -98,3 +114,5 @@ CREATE INDEX IF NOT EXISTS idx_room_issues_status ON room_issues(status);
 CREATE INDEX IF NOT EXISTS idx_outsource_category ON outsource_contacts(category);
 CREATE INDEX IF NOT EXISTS idx_outsource_is_active ON outsource_contacts(is_active);
 CREATE INDEX IF NOT EXISTS idx_outsource_is_emergency ON outsource_contacts(is_emergency);
+CREATE INDEX IF NOT EXISTS idx_task_templates_task_type ON task_templates(task_type);
+CREATE INDEX IF NOT EXISTS idx_task_templates_is_active ON task_templates(is_active);

@@ -117,7 +117,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
       if (response.ok && data?.token) {
         const userObj = data.user || { email: demoEmail, role: targetRole };
         setAuthSession(data.token, userObj, targetRole);
-        navigate(targetRole === 'admin' ? '/admin/dashboard' : targetRole === 'manager' ? '/manager/dashboard' : '/');
+        navigate(targetRole === 'admin' ? '/admin/dashboard' : targetRole === 'manager' ? '/manager/dashboard' : targetRole === 'housekeeping' ? '/housekeeping' : '/');
         return;
       }
     } catch {
@@ -132,7 +132,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
       role: targetRole,
     };
     setAuthSession('dev-jwt-token-fallback', fallbackUser, targetRole);
-    navigate(targetRole === 'admin' ? '/admin/dashboard' : targetRole === 'manager' ? '/manager/dashboard' : '/');
+    navigate(targetRole === 'admin' ? '/admin/dashboard' : targetRole === 'manager' ? '/manager/dashboard' : targetRole === 'housekeeping' ? '/housekeeping' : '/');
   };
 
   const isFailed = Boolean(errorMessage);

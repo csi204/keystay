@@ -17,6 +17,8 @@
     "test:auth": "tsx scripts/run-mocha.ts auth-user",
     "test:reports": "tsx scripts/run-mocha.ts report-analytics",
     "test:gateway": "tsx scripts/run-mocha.ts api-gateway",
+    "test:housekeeping": "tsx scripts/run-mocha.ts housekeeping-outsource",
+    "test:boon": "tsx scripts/run-mocha.ts housekeeping-outsource",
     "test:khet": "tsx scripts/run-mocha.ts",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
     "setup:r2": "powershell -ExecutionPolicy Bypass -File ./scripts/setup-r2.ps1",
@@ -30,6 +32,7 @@
     "db:seed:prod": "node ./scripts/seed-d1.js --remote"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250224.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/chai": "^5.2.3",
     "@types/mocha": "^10.0.10",

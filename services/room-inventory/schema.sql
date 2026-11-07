@@ -63,6 +63,18 @@ CREATE TABLE IF NOT EXISTS outbox_events (
     created_at TEXT NOT NULL
 );
 
+-- 7. Minibar Items (รายการสินค้าในมินิบาร์)
+CREATE TABLE IF NOT EXISTS minibar_items (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    category TEXT NOT NULL CHECK(category IN ('เครื่องดื่ม', 'แอลกอฮอล์', 'ขนม', 'อื่นๆ')),
+    price_per_unit REAL NOT NULL,
+    unit TEXT NOT NULL,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_rooms_room_number ON rooms(room_number);
 CREATE INDEX IF NOT EXISTS idx_rooms_status ON rooms(status);
@@ -70,3 +82,5 @@ CREATE INDEX IF NOT EXISTS idx_rooms_type_id ON rooms(room_type_id);
 CREATE INDEX IF NOT EXISTS idx_rooms_floor_id ON rooms(floor_id);
 CREATE INDEX IF NOT EXISTS idx_room_history_room_id ON room_status_history(room_id);
 CREATE INDEX IF NOT EXISTS idx_room_amenities_room_id ON room_amenities(room_id);
+CREATE INDEX IF NOT EXISTS idx_minibar_items_category ON minibar_items(category);
+CREATE INDEX IF NOT EXISTS idx_minibar_items_is_active ON minibar_items(is_active);

@@ -368,6 +368,18 @@ app.all('/api/floors/*', async (c) => {
 app.all('/api/floors', async (c) => {
   return forwardRequest(c.env.ROOM_INVENTORY_SERVICE, c, '/api');
 });
+app.all('/api/room-inventory/*', async (c) => {
+  return forwardRequest(c.env.ROOM_INVENTORY_SERVICE, c, '/api');
+});
+app.all('/api/room-inventory', async (c) => {
+  return forwardRequest(c.env.ROOM_INVENTORY_SERVICE, c, '/api');
+});
+app.all('/api/minibar-items/*', async (c) => {
+  return forwardRequest(c.env.ROOM_INVENTORY_SERVICE, c, '/api');
+});
+app.all('/api/minibar-items', async (c) => {
+  return forwardRequest(c.env.ROOM_INVENTORY_SERVICE, c, '/api');
+});
 
 // Service #3: Reservation
 app.all('/api/reservations/*', async (c) => {

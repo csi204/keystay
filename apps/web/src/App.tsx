@@ -21,16 +21,17 @@ const ManagerDashboardPage = React.lazy(() => import('./pages/admin/ManagerDashb
 const RoomsPricingPage = React.lazy(() => import('./pages/admin/RoomsPricingPage'));
 const UsersManagementPage = React.lazy(() => import('./pages/admin/UsersManagementPage'));
 const ReportsAnalyticsPage = React.lazy(() => import('./pages/admin/ReportsAnalyticsPage'));
+const HousekeepingPortalPage = React.lazy(() => import('./pages/housekeeping/HousekeepingPortalPage'));
 
 // ============================================================================
 // ENTERPRISE ROUTE GUARDS (ความปลอดภัยระดับสูง แยกตาม Tab Session)
 // ============================================================================
 
-// Guard 1: ห้ามคนนอกแอบพิมพ์ URL เข้าหน้าภายในโดยตรง (ถ้าไม่มี token จะส่งไป 404 เสมือนไม่มีหน้านี้)
+// Guard 1: ตรวจสอบการยืนยันตัวตน (ถ้าไม่มี token จะส่งไปหน้า /login ตั้งแต่เริ่มโหลดเพจทันที)
 const RequireAuth: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const token = getAuthToken();
   if (!token) {
-    return <NotFound404Page />;
+    return <Navigate to="/login" replace />;
   }
   return <>{children}</>;
 };
@@ -58,6 +59,9 @@ const AuthenticatedHome: React.FC = () => {
   if (role === 'manager') {
     return <Navigate to="/manager/dashboard" replace />;
   }
+  if (role === 'housekeeping') {
+    return <Navigate to="/housekeeping" replace />;
+  }
 
   const user = getAuthUser();
 
@@ -69,10 +73,8 @@ const AuthenticatedHome: React.FC = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('keystay_token');
-    localStorage.removeItem('keystay_user');
-    localStorage.removeItem('keystay_role');
-    navigate('/login');
+    clearAuthSession();
+    navigate('/login', { replace: true });
   };
 
   return (
@@ -169,13 +171,15 @@ export const App: React.FC = () => {
           }
         >
           <Routes>
-          {/* หน้าภายใน: ต้องล็อกอินเท่านั้น หากแอบพิมพ์ URL เข้ามาจะเจอหน้า 404 ทันที */}
+          {/* หน้าแรก: ถ้ามี token ให้ส่งต่อไปยังหน้าตามบทบาท ถ้าไม่มี token ส่งไป /login ตั้งแต่เริ่มโหลดเพจทันที */}
           <Route
             path="/"
             element={
-              <RequireAuth>
+              getAuthToken() ? (
                 <AuthenticatedHome />
-              </RequireAuth>
+              ) : (
+                <Navigate to="/login" replace />
+              )
             }
           />
           {/* หน้า Admin Portal (สำหรับผู้ดูแลระบบ Admin) */}
@@ -242,6 +246,16 @@ export const App: React.FC = () => {
             element={
               <RequireAuth>
                 <ReportsAnalyticsPage />
+              </RequireAuth>
+            }
+          />
+
+          {/* Housekeeping Portal */}
+          <Route
+            path="/housekeeping"
+            element={
+              <RequireAuth>
+                <HousekeepingPortalPage />
               </RequireAuth>
             }
           />

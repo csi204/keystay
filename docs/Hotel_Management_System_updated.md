@@ -1451,11 +1451,31 @@ erDiagram
         text published_at
         text created_at
     }
+    minibar_items {
+        text id PK "mb-001 หรือ UUID"
+        text name "ชื่อสินค้า เช่น น้ำดื่ม, โค้ก"
+        text category "เครื่องดื่ม | แอลกอฮอล์ | ขนม | อื่นๆ"
+        real price_per_unit "ราคาต่อหน่วย"
+        text unit "ขวด | กระป๋อง | ถุง | แท่ง | ซอง"
+        boolean is_active "1=พร้อมขาย, 0=ระงับขาย"
+        text created_at
+        text updated_at
+    }
     room_types ||--o{ rooms : "defines"
     floors ||--o{ rooms : "contains"
     rooms ||--o{ room_amenities : "has"
     rooms ||--o{ room_status_history : "tracks"
 ```
+
+> 💡 **สำหรับเดียร์ (`@allmusgus` - หน้า Checkout & Billing Integration):**
+> * **การดึงรายการมินิบาร์:** เรียก `GET /api/room-inventory/minibar-items?isActive=true` เพื่อนำชื่อสินค้า ราคาต่อหน่วย (`pricePerUnit`) และหน่วย (`unit`) ไปแสดงในโมดอลตรวจนับตอนเช็คเอาท์
+> * **การบันทึกลงบิล:** นำรายการที่แขกบริโภคไปบันทึกลงในตาราง `bill_items` ของ Service Billing โดยระบุ:
+>   * `item_type`: `'minibar'`
+>   * `description`: ชื่อสินค้ามินิบาร์ (เช่น `"โค้ก 330ml"`)
+>   * `quantity`: จำนวนชิ้นที่ทาน
+>   * `unit_price`: ราคาต่อหน่วยจากแค็ตตาล็อก (เช่น `35.00`)
+>   * `total_price`: `quantity * unit_price`
+
 
 ### 3. Reservation Service (`D1: reserve`)
 ```mermaid
@@ -1558,12 +1578,27 @@ erDiagram
         text task_id FK "→ housekeeping_tasks.id"
         text room_id "Soft ref → Room"
         text reported_by FK "→ housekeeping_staff.id"
-        text issue_type "damage | missing_item | malfunction | hygiene"
+        text issue_type "damage | missing_item | malfunction | hygiene | lost_and_found"
         text description
+        text photo_r2_key "Cloudflare R2 Key รูปถ่ายหลักฐาน"
         text severity "low | medium | high | critical"
-        text status "open | acknowledged | resolved"
+        text status "open | acknowledged | resolved | expired_claimed"
+        text storage_location "เคาน์เตอร์ Front Desk | ตู้เซฟ | ห้องแม่บ้าน"
+        integer retention_days "กำหนดเก็บรักษา เช่น 7 วัน (ทั่วไป), 30 วัน (ของมีค่า)"
+        text received_by_name "ชื่อผู้มารับของคืน (หลักฐานส่งมอบ ป้องกันทุจริต)"
         text resolved_at
         text created_at
+    }
+    task_templates {
+        text id PK "UUID v4 / tt-001"
+        text name "ชื่อแม่แบบงาน SOP"
+        text task_type "checkout_clean | stayover_clean | deep_clean | inspection"
+        text default_priority "urgent | high | normal | low"
+        integer estimated_minutes "เวลามาตรฐาน (นาที)"
+        text description "Checklist & รายละเอียด SOP"
+        boolean is_active "1=เปิดใช้งาน, 0=ระงับใช้งาน"
+        text created_at
+        text updated_at
     }
     housekeeping_schedule {
         text id PK "UUID v4"
@@ -1609,6 +1644,19 @@ erDiagram
     housekeeping_tasks ||--o{ room_issues : "discovers"
     room_issues ||--o{ outsource_contacts : "coordinates repairs"
 ```
+
+> 💡 **สำหรับเดียร์ (`@allmusgus` - หน้า Front Desk & Lost & Found Integration):**
+> * **การติดตามของที่ลูกค้าลืมไว้ (Lost & Found):** 
+>   * ดึงรายการปัญหาประเภท `issue_type: 'lost_and_found'` ผ่าน `GET /api/housekeeping/issues?issueType=lost_and_found`
+>   * เมื่อแขกติดต่อขอรับของคืน ให้เรียก `PUT /api/housekeeping/issues/:id/status` โดยส่ง payload:
+>     ```json
+>     { "status": "resolved", "receivedByName": "ชื่อแขกผู้มารับคืน (พร้อมระบุการตรวจบัตร ปชช.)" }
+>     ```
+>   * หากเกินกำหนด `retention_days` (ค่าเริ่มต้น 7 วันสำหรับของทั่วไป) สามารถเปลี่ยนสถานะเป็น `"expired_claimed"` เพื่อยึดของเข้าเป็นทรัพย์สินส่วนกลางของโรงแรม
+> * **การเชื่อมโยง Task Templates:**
+>   * ตาราง `task_templates` เป็นแม่แบบ SOP สำหรับ Front Desk และ Owner ปรับแก้เวลาและคำอธิบาย
+>   * เมื่อแขก Check-out สำเร็จ ระบบจะอิงข้อมูลจากแม่แบบ `task_type: 'checkout_clean'` ในการสร้าง Daily Task ให้แม่บ้านอัตโนมัติ
+
 
 ### 5. Billing Service (`D1: bill`)
 ```mermaid

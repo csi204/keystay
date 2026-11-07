@@ -88,6 +88,18 @@ export const outboxEvents = sqliteTable('outbox_events', {
   createdAt: text('created_at').notNull(),
 });
 
+// 7. Minibar Items Table (รายการสินค้าในมินิบาร์)
+export const minibarItems = sqliteTable('minibar_items', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  category: text('category').notNull(), // 'เครื่องดื่ม' | 'แอลกอฮอล์' | 'ขนม' | 'อื่นๆ'
+  pricePerUnit: real('price_per_unit').notNull(),
+  unit: text('unit').notNull(),
+  isActive: integer('is_active').notNull().default(1),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
+
 export type RoomType = typeof roomTypes.$inferSelect;
 export type NewRoomType = typeof roomTypes.$inferInsert;
 
@@ -105,3 +117,6 @@ export type NewRoomStatusHistory = typeof roomStatusHistory.$inferInsert;
 
 export type OutboxEvent = typeof outboxEvents.$inferSelect;
 export type NewOutboxEvent = typeof outboxEvents.$inferInsert;
+
+export type MinibarItem = typeof minibarItems.$inferSelect;
+export type NewMinibarItem = typeof minibarItems.$inferInsert;
