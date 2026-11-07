@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash TEXT NOT NULL,
     first_name TEXT NOT NULL,
     last_name TEXT NOT NULL,
-    role TEXT NOT NULL CHECK(role IN ('admin', 'manager', 'front_desk', 'housekeeping')),
+    role TEXT NOT NULL CHECK(role IN ('owner', 'front_desk', 'housekeeping')),
     is_active INTEGER NOT NULL DEFAULT 1,
     last_login_at TEXT,
     created_at TEXT NOT NULL,

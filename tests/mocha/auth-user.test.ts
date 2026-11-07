@@ -49,7 +49,7 @@ describe('Auth & User Service (Khet - @hazeco)', () => {
         password: 'Password123!',
         firstName: 'Khetsophon',
         lastName: 'Ainautoon',
-        role: 'admin',
+        role: 'owner',
       };
 
       const res = await app.request(
@@ -66,7 +66,7 @@ describe('Auth & User Service (Khet - @hazeco)', () => {
       const json = await res.json();
       expect(json.success).to.be.true;
       expect(json.data.user.email).to.equal('admin@keystay.local');
-      expect(json.data.user.role).to.equal('admin');
+      expect(json.data.user.role).to.equal('owner');
       expect(json.data.tokens.accessToken).to.be.a('string');
       expect(json.data.tokens.refreshToken).to.be.a('string');
     });
@@ -168,7 +168,7 @@ describe('Auth & User Service (Khet - @hazeco)', () => {
             password: 'CorrectPassword123!',
             firstName: 'Login',
             lastName: 'Test',
-            role: 'manager',
+            role: 'front_desk',
           }),
         },
         env
@@ -462,7 +462,7 @@ describe('Auth & User Service (Khet - @hazeco)', () => {
             password: 'Password123!',
             firstName: 'User',
             lastName: 'One',
-            role: 'admin',
+            role: 'owner',
           }),
         },
         env
@@ -670,20 +670,20 @@ describe('Auth & User Service (Khet - @hazeco)', () => {
       createdUserId = json.data.user.id;
     });
 
-    it('SUCCESS: updates user role to manager', async () => {
+    it('SUCCESS: updates user role to front_desk', async () => {
       const res = await app.request(
         `/users/${createdUserId}/role`,
         {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ role: 'manager' }),
+          body: JSON.stringify({ role: 'front_desk' }),
         },
         env
       );
 
       expect(res.status).to.equal(200);
       const json = await res.json();
-      expect(json.data.role).to.equal('manager');
+      expect(json.data.role).to.equal('front_desk');
     });
 
     it('BAD: returns 400 when invalid role string is supplied', async () => {
@@ -706,7 +706,7 @@ describe('Auth & User Service (Khet - @hazeco)', () => {
         {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ role: 'admin' }),
+          body: JSON.stringify({ role: 'owner' }),
         },
         env
       );
@@ -729,7 +729,7 @@ describe('Auth & User Service (Khet - @hazeco)', () => {
             password: 'OldPassword123!',
             firstName: 'Pass',
             lastName: 'Change',
-            role: 'manager',
+            role: 'front_desk',
           }),
         },
         env

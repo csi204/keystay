@@ -153,7 +153,7 @@ describe('API Gateway Service (Khet - @hazeco)', () => {
       const revokedToken = await createTestToken({
         sub: 'user-1',
         email: 'user1@keystay.local',
-        role: 'admin',
+        role: 'owner',
         jti,
       });
 
@@ -173,11 +173,11 @@ describe('API Gateway Service (Khet - @hazeco)', () => {
   });
 
   describe('Role-Based Access Control (RBAC) Enforcement', () => {
-    it('SUCCESS: ADMIN has unrestricted access across all routes and services', async () => {
+    it('SUCCESS: ADMIN has unrestricted access across all routes and services (OWNER role)', async () => {
       const adminToken = await createTestToken({
         sub: 'admin-1',
         email: 'admin@keystay.local',
-        role: 'admin',
+        role: 'owner',
       });
 
       const resReports = await app.request(
@@ -276,11 +276,11 @@ describe('API Gateway Service (Khet - @hazeco)', () => {
       expect(json.error.code).to.equal('FORBIDDEN');
     });
 
-    it('SUCCESS: MANAGER can access reports and reservations', async () => {
+    it('BAD: FRONT_DESK is denied access (403 FORBIDDEN) to reports (formerly MANAGER test)', async () => {
       const mgrToken = await createTestToken({
-        sub: 'mgr-1',
-        email: 'manager@keystay.local',
-        role: 'manager',
+        sub: 'fd-2',
+        email: 'frontdesk2@keystay.local',
+        role: 'front_desk',
       });
 
       const res = await app.request(
@@ -288,14 +288,16 @@ describe('API Gateway Service (Khet - @hazeco)', () => {
         { method: 'GET', headers: { Authorization: `Bearer ${mgrToken}` } },
         env
       );
-      expect(res.status).to.equal(200);
+      expect(res.status).to.equal(403);
+      const json = await res.json();
+      expect(json.error.code).to.equal('FORBIDDEN');
     });
 
-    it('BAD: MANAGER is denied access (403 FORBIDDEN) to alter user roles', async () => {
+    it('BAD: FRONT_DESK is denied access (403 FORBIDDEN) to alter user roles', async () => {
       const mgrToken = await createTestToken({
-        sub: 'mgr-1',
-        email: 'manager@keystay.local',
-        role: 'manager',
+        sub: 'fd-2',
+        email: 'frontdesk2@keystay.local',
+        role: 'front_desk',
       });
 
       const res = await app.request(
@@ -308,11 +310,11 @@ describe('API Gateway Service (Khet - @hazeco)', () => {
       expect(json.error.code).to.equal('FORBIDDEN');
     });
 
-    it('BAD: MANAGER is denied access (403 FORBIDDEN) to delete user accounts', async () => {
+    it('BAD: FRONT_DESK is denied access (403 FORBIDDEN) to delete user accounts', async () => {
       const mgrToken = await createTestToken({
-        sub: 'mgr-1',
-        email: 'manager@keystay.local',
-        role: 'manager',
+        sub: 'fd-2',
+        email: 'frontdesk2@keystay.local',
+        role: 'front_desk',
       });
 
       const res = await app.request(

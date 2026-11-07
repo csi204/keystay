@@ -20,6 +20,16 @@ export interface SelectProps {
   children?: React.ReactNode;
 }
 
+const extractLabel = (node: React.ReactNode): string => {
+  if (node === null || node === undefined) return '';
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(extractLabel).join('');
+  if (React.isValidElement(node) && (node.props as { children?: React.ReactNode })?.children) {
+    return extractLabel((node.props as { children?: React.ReactNode }).children);
+  }
+  return '';
+};
+
 export const Select = React.forwardRef<HTMLDivElement, SelectProps>(
   (
     {
@@ -44,9 +54,10 @@ export const Select = React.forwardRef<HTMLDivElement, SelectProps>(
       const list: SelectOption[] = [];
       React.Children.forEach(children, (child) => {
         if (React.isValidElement(child) && child.type === 'option') {
+          const rawLabel = child.props.children ?? child.props.value ?? '';
           list.push({
             value: String(child.props.value ?? ''),
-            label: String(child.props.children ?? child.props.value ?? ''),
+            label: extractLabel(rawLabel),
           });
         }
       });

@@ -231,12 +231,12 @@ app.use('/api/*', async (c, next) => {
 
 /**
  * [Middleware 5] RBAC (Role-Based Access Control)
- * ควบคุมสิทธิ์ตาม role: admin เข้าได้ทั้งหมด, manager ห้ามเปลี่ยน role/ลบ user,
+ * ควบคุมสิทธิ์ตาม role: owner เข้าได้ทั้งหมด (full power),
  * front_desk ห้ามเข้าถึงรายงาน/dashboard/สิทธิ์การเงิน, housekeeping เข้าได้เฉพาะส่วนงานแม่บ้าน
  * หากไม่มีสิทธิ์จะปฏิเสธด้วย 403 Forbidden
  */
-  // Admin has access to everything
-  if (role === 'admin') {
+  // Owner (was: admin) has access to everything
+  if (role === 'owner') {
     return next();
   }
 
@@ -278,23 +278,6 @@ app.use('/api/*', async (c, next) => {
           error: {
             code: 'FORBIDDEN',
             message: 'Access denied: Front Desk role cannot access management or financial resources',
-          },
-        },
-        403
-      );
-    }
-  }
-
-  // Manager restrictions
-  if (role === 'manager') {
-    // Manager cannot manage admin roles or delete users
-    if (path.includes('/role') || (path.startsWith('/api/auth/users') && c.req.method === 'DELETE')) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: 'FORBIDDEN',
-            message: 'Access denied: Manager cannot alter roles or delete user accounts',
           },
         },
         403
