@@ -278,8 +278,8 @@ const ALLOWED_TRANSITIONS: Record<string, string[]> = {
   out_of_order: ['maintenance', 'available'],
 };
 
-// API #19: PUT /rooms/:id/status - ปรับปรุงสถานะห้องพักตาม State Machine พร้อมบันทึกประวัติ (Atomic db.batch)
-roomsRoute.put('/:id/status', async (c) => {
+// API #19: PUT & PATCH /rooms/:id/status - ปรับปรุงสถานะห้องพักตาม State Machine พร้อมบันทึกประวัติ (Atomic db.batch)
+const updateRoomStatusHandler = async (c: any) => {
   const id = c.req.param('id');
   const body = await c.req.json();
   const parsed = UpdateRoomStatusSchema.safeParse(body);
@@ -361,7 +361,11 @@ roomsRoute.put('/:id/status', async (c) => {
       updatedAt: now,
     },
   });
-});
+};
+
+roomsRoute.put('/:id/status', updateRoomStatusHandler);
+roomsRoute.patch('/:id/status', updateRoomStatusHandler);
+
 
 // API #27: PUT /rooms/:id/maintenance - ปรับห้องเข้าโหมดซ่อมบำรุง หรือปลดจากการซ่อมบำรุงกลับมาใช้งาน
 roomsRoute.put('/:id/maintenance', async (c) => {
