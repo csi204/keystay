@@ -316,3 +316,4 @@ taskTemplatesRoute.delete('/:id', requireWritePermission, async (c) => {
     },
   });
 });
+

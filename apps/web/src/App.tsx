@@ -24,6 +24,7 @@ const UsersManagementPage = React.lazy(() => import('./pages/admin/UsersManageme
 const ReportsAnalyticsPage = React.lazy(() => import('./pages/admin/ReportsAnalyticsPage'));
 const HousekeepingPortalPage = React.lazy(() => import('./pages/housekeeping/HousekeepingPortalPage'));
 const MinibarCatalogPage = React.lazy(() => import('./pages/admin/MinibarCatalogPage'));
+const HousekeepingTasksPage = React.lazy(() => import('./pages/admin/HousekeepingTasksPage'));
 
 // ============================================================================
 // ENTERPRISE ROUTE GUARDS (ความปลอดภัยระดับสูง แยกตาม Tab Session)
@@ -232,6 +233,14 @@ export const App: React.FC = () => {
             element={
               <RequireAuth>
                 <MinibarCatalogPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/admin/tasks"
+            element={
+              <RequireAuth>
+                <HousekeepingTasksPage />
               </RequireAuth>
             }
           />

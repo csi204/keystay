@@ -17,6 +17,7 @@ import {
   PanelLeft,
   ArrowLeftRight,
   ShoppingCart,
+  ClipboardList,
   Globe,
 } from 'lucide-react';
 
@@ -117,6 +118,11 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       title: t('nav.minibar'),
       path: '/admin/minibar',
       icon: ShoppingCart,
+    },
+    {
+      title: 'งานแม่บ้าน (Task Templates)',
+      path: '/admin/tasks',
+      icon: ClipboardList,
     },
     {
       title: t('nav.reports'),

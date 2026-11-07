@@ -41,3 +41,4 @@ export const TaskTemplateQuerySchema = z.object({
 export type CreateTaskTemplateInput = z.infer<typeof CreateTaskTemplateSchema>;
 export type UpdateTaskTemplateInput = z.infer<typeof UpdateTaskTemplateSchema>;
 export type TaskTemplateQueryInput = z.infer<typeof TaskTemplateQuerySchema>;
+

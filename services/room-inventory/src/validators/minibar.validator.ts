@@ -32,3 +32,4 @@ export const MinibarQuerySchema = z.object({
 export type CreateMinibarItemInput = z.infer<typeof CreateMinibarItemSchema>;
 export type UpdateMinibarItemInput = z.infer<typeof UpdateMinibarItemSchema>;
 export type MinibarQueryInput = z.infer<typeof MinibarQuerySchema>;
+

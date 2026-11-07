@@ -33,6 +33,7 @@ import {
   ExternalLink,
   MessageSquare,
   SlidersHorizontal,
+  ClipboardList,
   ArrowLeft,
   Coffee,
   Maximize2,
