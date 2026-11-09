@@ -5,7 +5,8 @@
   "compatibility_date": "2026-06-21",
   "compatibility_flags": ["nodejs_compat"],
   "dev": {
-    "port": 8788
+    "port": 8788,
+    "inspector_port": 9230
   },
   "d1_databases": [
     {

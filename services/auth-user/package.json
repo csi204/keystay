@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "pnpm dlx wrangler dev --port 8788",
+    "dev": "pnpm dlx wrangler dev --port 8788 --inspector-port 9230",
     "deploy": "pnpm dlx wrangler deploy",
     "typecheck": "tsc --noEmit",
     "lint": "echo 'auth-user lint ok'",
