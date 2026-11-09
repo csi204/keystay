@@ -124,7 +124,7 @@
             ▼
 [ Frontend Shell (apps/web) ดักอ่าน Role ]
             │
-            ├── role: 'admin' | 'manager'  ──► Redirect สู่ /admin (Manager & Admin Portal)
+            ├── role: 'owner'              ──► Redirect สู่ /admin (Owner Portal)
             ├── role: 'front_desk'         ──► Redirect สู่ /front-desk (Front Desk Portal)
             └── role: 'housekeeping'       ──► Redirect สู่ /housekeeping (Housekeeping Portal)
 ```

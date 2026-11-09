@@ -13,6 +13,9 @@ import {
 export class ReportService {
   constructor(private db: Database) {}
 
+  /**
+   * ดึงสรุปภาพรวมสำหรับ Executive Dashboard (KPI วันนี้, ยอดสะสม MTD ของเดือน, 3 ห้องที่สร้างรายได้สูงสุด)
+   */
   async getDashboardSummary(today: string) {
     let todayRecord: any = await this.db
       .select()
@@ -94,6 +97,9 @@ export class ReportService {
     };
   }
 
+  /**
+   * ดึงแนวโน้มรายได้รายวันย้อนหลัง (รวมรายได้ห้องพัก และมินิบาร์) พร้อมคำนวณรายได้เฉลี่ยต่อวัน
+   */
   async getRevenueDaily(limit: number) {
     const rows = await this.db
       .select({
@@ -122,6 +128,9 @@ export class ReportService {
     };
   }
 
+  /**
+   * ดึงสถิติรายวัน (ห้องว่าง, ห้องไม่ว่าง, อัตราเข้าพัก, จำนวนเช็คอิน/เช็คเอาท์) รองรับการกรองช่วงวันที่ (startDate, endDate)
+   */
   async getDailyStats(limit: number, startDate?: string, endDate?: string) {
     let warning: string | null = null;
     let start = startDate;
@@ -168,6 +177,9 @@ export class ReportService {
     };
   }
 
+  /**
+   * ดึงสรุปรายได้รายเดือน (รายได้รวม, รายได้สุทธิ, อัตราเข้าพักเฉลี่ย, ADR, RevPAR) รองรับการกรองช่วงเดือน (startMonth, endMonth)
+   */
   async getRevenueMonthly(limit: number, startMonth?: string, endMonth?: string) {
     let warning: string | null = null;
     let start = startMonth;
@@ -223,6 +235,9 @@ export class ReportService {
     };
   }
 
+  /**
+   * ดึงรายงานอัตราการเข้าพัก (Occupancy Rate) รายวัน พร้อมคำนวณอัตราเข้าพักเฉลี่ยของช่วงเวลา
+   */
   async getOccupancyReport(limit: number) {
     const rows = await this.db
       .select({
@@ -250,6 +265,9 @@ export class ReportService {
     };
   }
 
+  /**
+   * ดึงสถิติประสิทธิภาพรายห้องในเดือนที่ระบุ (จำนวนบุ๊กกิ้ง, คืนที่ขายได้, รายได้รวม)
+   */
   async getRoomPerformance(yearMonth: string, limit: number) {
     const rows = await this.db
       .select({
@@ -274,6 +292,9 @@ export class ReportService {
     };
   }
 
+  /**
+   * ดึงสถิติประวัติการยกเลิกห้องพักรายวัน พร้อมคำนวณอัตราการยกเลิกภาพรวม (Overall Cancellation Rate)
+   */
   async getCancellations(limit: number) {
     const rows = await this.db
       .select({
@@ -302,6 +323,9 @@ export class ReportService {
     };
   }
 
+  /**
+   * ดึงข้อมูลประชากรศาสตร์ของแขกที่เข้าพักตามสัญชาติในเดือนที่ระบุ (จำนวนแขก, รายได้, จำนวนคืนเฉลี่ย)
+   */
   async getGuestDemographics(yearMonth: string) {
     const rows = await this.db
       .select({
@@ -321,6 +345,9 @@ export class ReportService {
     };
   }
 
+  /**
+   * ดึงสถิติประสิทธิภาพการทำงานของแผนกแม่บ้านในวันที่ระบุ (จำนวนงานที่สำเร็จ, เวลาเฉลี่ย, ปัญหาที่รายงาน)
+   */
   async getHousekeepingEfficiency(recordDate: string) {
     const rows = await this.db
       .select({
@@ -340,6 +367,9 @@ export class ReportService {
     };
   }
 
+  /**
+   * ดึงรายการบันทึกประวัติการตรวจสอบกิจกรรมในระบบ (Audit Logs)
+   */
   async getAuditLogs(limit: number) {
     const rows = await this.db
       .select()
@@ -350,6 +380,9 @@ export class ReportService {
     return rows;
   }
 
+  /**
+   * บันทึก Audit Event สำหรับติดตามกิจกรรมสำคัญในระบบ
+   */
   async recordAuditEvent(event: {
     eventType: string;
     sourceService: string;

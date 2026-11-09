@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
+import { I18nProvider } from './lib/i18n';
 import { LoginPage } from './pages/auth/LoginPage';
 import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
@@ -12,8 +13,7 @@ import { ShieldCheck, LogOut, KeyRound, UserCheck } from 'lucide-react';
 // ENTERPRISE ROUTE GUARDS (ความปลอดภัยระดับสูง)
 // ============================================================================
 
-import { getAuthToken, getAuthRole, getAuthUser, clearAuthSession } from './lib/api';
-import { I18nProvider } from './lib/i18n';
+import { getAuthToken, getAuthRole, getAuthUser, clearAuthSession, apiUrl } from './lib/api';
 
 // ============================================================================
 // ENTERPRISE LAZY LOADING (Code Splitting ตามเอกสาร)
@@ -22,6 +22,7 @@ const ManagerDashboardPage = React.lazy(() => import('./pages/admin/ManagerDashb
 const RoomsPricingPage = React.lazy(() => import('./pages/admin/RoomsPricingPage'));
 const UsersManagementPage = React.lazy(() => import('./pages/admin/UsersManagementPage'));
 const ReportsAnalyticsPage = React.lazy(() => import('./pages/admin/ReportsAnalyticsPage'));
+const MinibarCatalogPage = React.lazy(() => import('./pages/admin/MinibarCatalogPage'));
 const RoomMatrixPage = React.lazy(() => import('./pages/front-desk/RoomMatrixPage'));
 const ReservationsPage = React.lazy(() => import('./pages/front-desk/ReservationsPage'));
 const DailyOperationsPage = React.lazy(() => import('./pages/front-desk/DailyOperationsPage'));
@@ -31,11 +32,11 @@ const CashierFolioPage = React.lazy(() => import('./pages/front-desk/CashierFoli
 // ENTERPRISE ROUTE GUARDS (ความปลอดภัยระดับสูง แยกตาม Tab Session)
 // ============================================================================
 
-// Guard 1: ห้ามคนนอกแอบพิมพ์ URL เข้าหน้าภายในโดยตรง (ถ้าไม่มี token จะส่งไป 404 เสมือนไม่มีหน้านี้)
+// Guard 1: ห้ามคนนอกแอบพิมพ์ URL เข้าหน้าภายในโดยตรง (ถ้าไม่มี token จะส่งกลับหน้า /login)
 const RequireAuth: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const token = getAuthToken();
   if (!token) {
-    return <NotFound404Page />;
+    return <Navigate to="/login" replace />;
   }
   return <>{children}</>;
 };
@@ -56,12 +57,9 @@ const AuthenticatedHome: React.FC = () => {
   const navigate = useNavigate();
   const role = getAuthRole();
 
-  // If user is Admin or Manager, seamlessly forward to their portal dashboard
-  if (role === 'admin') {
+  // If user is Owner, seamlessly forward to owner portal dashboard
+  if (role === 'owner') {
     return <Navigate to="/admin/dashboard" replace />;
-  }
-  if (role === 'manager') {
-    return <Navigate to="/manager/dashboard" replace />;
   }
   if (role === 'front_desk') {
     return <Navigate to="/front-desk/room-matrix" replace />;
@@ -70,17 +68,24 @@ const AuthenticatedHome: React.FC = () => {
   const user = getAuthUser();
 
   const roleLabels: Record<string, string> = {
-    admin: 'ผู้ดูแลระบบ (Admin)',
-    manager: 'ผู้จัดการ (Manager)',
+    owner: 'เจ้าของ (Owner)',
     front_desk: 'พนักงานต้อนรับ (Front Desk)',
     housekeeping: 'แผนกแม่บ้าน (Housekeeping)',
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('keystay_token');
-    localStorage.removeItem('keystay_user');
-    localStorage.removeItem('keystay_role');
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await fetch(apiUrl('/api/auth/logout'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(getAuthToken() ? { Authorization: `Bearer ${getAuthToken()}` } : {}),
+        },
+      }).catch(() => {});
+    } finally {
+      clearAuthSession();
+      navigate('/login', { replace: true });
+    }
   };
 
   return (
@@ -262,33 +267,11 @@ export const App: React.FC = () => {
               </RequireAuth>
             }
           />
-
-          {/* หน้า Manager Portal (สำหรับผู้จัดการ Manager) */}
           <Route
-            path="/manager"
-            element={<Navigate to="/manager/dashboard" replace />}
-          />
-          <Route
-            path="/manager/dashboard"
+            path="/admin/minibar"
             element={
               <RequireAuth>
-                <ManagerDashboardPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/manager/rooms"
-            element={
-              <RequireAuth>
-                <RoomsPricingPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/manager/reports"
-            element={
-              <RequireAuth>
-                <ReportsAnalyticsPage />
+                <MinibarCatalogPage />
               </RequireAuth>
             }
           />
