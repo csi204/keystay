@@ -58,10 +58,23 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
         }
       }
 
-      if (response.ok && data?.token) {
-        const userObj = data.user || { email, role: 'front_desk' };
-        setAuthSession(data.token, userObj, userObj.role || 'front_desk');
-        navigate('/');
+      const accessToken =
+        data?.data?.tokens?.accessToken ||
+        data?.tokens?.accessToken ||
+        data?.token ||
+        data?.accessToken;
+      const userObj = data?.data?.user || data?.user || { email, role: 'front_desk' };
+
+      if (response.ok && accessToken) {
+        setAuthSession(accessToken, userObj, userObj.role || 'front_desk');
+        const r = userObj.role || 'front_desk';
+        navigate(
+          r === 'owner'
+            ? '/admin/dashboard'
+            : r === 'front_desk'
+            ? '/front-desk/room-matrix'
+            : '/'
+        );
         return;
       }
 
@@ -85,7 +98,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
           : 'front_desk';
         const fallbackUser = { email: email.trim(), role: inferredRole, firstName: 'ผู้ใช้งาน', lastName: 'ทดสอบ' };
         setAuthSession('dev-jwt-token-fallback', fallbackUser, inferredRole);
-        navigate('/');
+        navigate(
+          inferredRole === 'owner'
+            ? '/admin/dashboard'
+            : inferredRole === 'front_desk'
+            ? '/front-desk/room-matrix'
+            : '/'
+        );
       } else {
         setErrorMessage('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
       }
@@ -114,10 +133,22 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
       });
       const data = await response.json().catch(() => null);
 
-      if (response.ok && data?.token) {
-        const userObj = data.user || { email: demoEmail, role: targetRole };
-        setAuthSession(data.token, userObj, targetRole);
-        navigate(targetRole === 'owner' ? '/admin/dashboard' : '/');
+      const accessToken =
+        data?.data?.tokens?.accessToken ||
+        data?.tokens?.accessToken ||
+        data?.token ||
+        data?.accessToken;
+      const userObj = data?.data?.user || data?.user || { email: demoEmail, role: targetRole };
+
+      if (response.ok && accessToken) {
+        setAuthSession(accessToken, userObj, targetRole);
+        const dest =
+          targetRole === 'owner'
+            ? '/admin/dashboard'
+            : targetRole === 'front_desk'
+            ? '/front-desk/room-matrix'
+            : '/';
+        navigate(dest);
         return;
       }
     } catch {
@@ -132,7 +163,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
       role: targetRole,
     };
     setAuthSession('dev-jwt-token-fallback', fallbackUser, targetRole);
-    navigate(targetRole === 'owner' ? '/admin/dashboard' : '/');
+    const dest =
+      targetRole === 'owner'
+        ? '/admin/dashboard'
+        : targetRole === 'front_desk'
+        ? '/front-desk/room-matrix'
+        : '/';
+    navigate(dest);
   };
 
   const isFailed = Boolean(errorMessage);
@@ -284,6 +321,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
               </div>
               <div className="text-[10px] text-slate-500 font-mono truncate">housekeeping@keystay.com</div>
             </button>
+
           </div>
           <div className="text-[10px] text-slate-400 text-center mt-2 font-mono">
             คลิกที่ปุ่มเพื่อเข้าใช้งานในฐานะบทบาทนั้นๆ ได้ทันที 1-Click

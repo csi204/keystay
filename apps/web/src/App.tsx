@@ -23,6 +23,10 @@ const RoomsPricingPage = React.lazy(() => import('./pages/admin/RoomsPricingPage
 const UsersManagementPage = React.lazy(() => import('./pages/admin/UsersManagementPage'));
 const ReportsAnalyticsPage = React.lazy(() => import('./pages/admin/ReportsAnalyticsPage'));
 const MinibarCatalogPage = React.lazy(() => import('./pages/admin/MinibarCatalogPage'));
+const RoomMatrixPage = React.lazy(() => import('./pages/front-desk/RoomMatrixPage'));
+const ReservationsPage = React.lazy(() => import('./pages/front-desk/ReservationsPage'));
+const DailyOperationsPage = React.lazy(() => import('./pages/front-desk/DailyOperationsPage'));
+const CashierFolioPage = React.lazy(() => import('./pages/front-desk/CashierFolioPage'));
 
 // ============================================================================
 // ENTERPRISE ROUTE GUARDS (ความปลอดภัยระดับสูง แยกตาม Tab Session)
@@ -56,6 +60,9 @@ const AuthenticatedHome: React.FC = () => {
   // If user is Owner, seamlessly forward to owner portal dashboard
   if (role === 'owner') {
     return <Navigate to="/admin/dashboard" replace />;
+  }
+  if (role === 'front_desk') {
+    return <Navigate to="/front-desk/room-matrix" replace />;
   }
 
   const user = getAuthUser();
@@ -175,12 +182,51 @@ export const App: React.FC = () => {
           }
         >
           <Routes>
-          {/* หน้าภายใน: ต้องล็อกอินเท่านั้น หากแอบพิมพ์ URL เข้ามาจะเจอหน้า 404 ทันที */}
+          {/* หน้าหลัก: หากยังไม่ล็อกอิน ให้ไปที่หน้า /login อัตโนมัติ */}
           <Route
             path="/"
             element={
-              <RequireAuth>
+              getAuthToken() ? (
                 <AuthenticatedHome />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          {/* หน้า Front Desk & Cashier Portal (เดียร์ @allmusgus) */}
+          <Route
+            path="/front-desk"
+            element={<Navigate to="/front-desk/room-matrix" replace />}
+          />
+          <Route
+            path="/front-desk/room-matrix"
+            element={
+              <RequireAuth>
+                <RoomMatrixPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/front-desk/reservations"
+            element={
+              <RequireAuth>
+                <ReservationsPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/front-desk/daily-operations"
+            element={
+              <RequireAuth>
+                <DailyOperationsPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/front-desk/billing"
+            element={
+              <RequireAuth>
+                <CashierFolioPage />
               </RequireAuth>
             }
           />

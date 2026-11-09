@@ -4,7 +4,7 @@
  * - Local Development (.env / .env.development): empty string '' to leverage Vite proxy (/api -> localhost:8787)
  * - Production (.env.production): e.g. https://keystay-api-gateway.khetsophon-ain.workers.dev
  */
-export const API_BASE_URL: string = (import.meta.env.VITE_API_BASE_URL as string) || '';
+export const API_BASE_URL: string = (import.meta?.env?.VITE_API_BASE_URL as string) || '';
 
 /**
  * Returns full URL for an API endpoint
@@ -22,16 +22,28 @@ export interface ApiResponse<T = any> {
 }
 
 export const getAuthToken = (): string | null => {
-  return sessionStorage.getItem('keystay_token') || localStorage.getItem('keystay_token');
+  try {
+    return sessionStorage.getItem('keystay_token') || localStorage.getItem('keystay_token');
+  } catch {
+    return null;
+  }
 };
 
 export const getAuthRole = (): string => {
-  return (sessionStorage.getItem('keystay_role') || localStorage.getItem('keystay_role') || 'front_desk').toLowerCase();
+  try {
+    return (
+      sessionStorage.getItem('keystay_role') ||
+      localStorage.getItem('keystay_role') ||
+      'front_desk'
+    ).toLowerCase();
+  } catch {
+    return 'front_desk';
+  }
 };
 
 export const getAuthUser = (): any => {
-  const raw = sessionStorage.getItem('keystay_user') || localStorage.getItem('keystay_user');
   try {
+    const raw = sessionStorage.getItem('keystay_user') || localStorage.getItem('keystay_user');
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
@@ -39,18 +51,29 @@ export const getAuthUser = (): any => {
 };
 
 export const setAuthSession = (token: string, user: any, role: string) => {
-  sessionStorage.setItem('keystay_token', token);
-  sessionStorage.setItem('keystay_user', typeof user === 'string' ? user : JSON.stringify(user));
-  sessionStorage.setItem('keystay_role', role);
+  try {
+    sessionStorage.setItem('keystay_token', token);
+    sessionStorage.setItem('keystay_user', typeof user === 'string' ? user : JSON.stringify(user));
+    sessionStorage.setItem('keystay_role', role);
+    localStorage.setItem('keystay_token', token);
+    localStorage.setItem('keystay_user', typeof user === 'string' ? user : JSON.stringify(user));
+    localStorage.setItem('keystay_role', role);
+  } catch (e) {
+    console.warn('Storage setItem failed:', e);
+  }
 };
 
 export const clearAuthSession = () => {
-  sessionStorage.removeItem('keystay_token');
-  sessionStorage.removeItem('keystay_user');
-  sessionStorage.removeItem('keystay_role');
-  localStorage.removeItem('keystay_token');
-  localStorage.removeItem('keystay_user');
-  localStorage.removeItem('keystay_role');
+  try {
+    sessionStorage.removeItem('keystay_token');
+    sessionStorage.removeItem('keystay_user');
+    sessionStorage.removeItem('keystay_role');
+    localStorage.removeItem('keystay_token');
+    localStorage.removeItem('keystay_user');
+    localStorage.removeItem('keystay_role');
+  } catch (e) {
+    console.warn('Storage removeItem failed:', e);
+  }
 };
 
 /**
@@ -87,6 +110,9 @@ export async function apiFetch<T = any>(
     const json = await res.json().catch(() => null);
 
     if (!res.ok) {
+      if (res.status === 401) {
+        clearAuthSession();
+      }
       const isGatewayDown =
         res.status >= 500 &&
         (!json || json?.code === 'ECONNREFUSED' || typeof json !== 'object');
