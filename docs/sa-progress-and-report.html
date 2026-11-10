@@ -434,9 +434,10 @@ Available ──(จองล่วงหน้า)──► Reserved ──(Che
           </p>
 
           <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2 pt-2">
-            <span>🔹 4.3 แผนงานขั้นตอนถัดไปจนถึงสัปดาห์ปิดจ็อบโครงงาน</span>
+            <span>🔹 4.3 แผนงานขั้นตอนถัดไปและฟีเจอร์ใหม่ที่ได้รับมอบหมาย (Next Milestones & Feature Spec)</span>
           </h3>
           <ul class="list-disc list-inside space-y-1.5 text-xs text-slate-600">
+            <li><strong>สัปดาห์ปัจจุบัน (11 พ.ย. 2569):</strong> จัดทำสเปกระบบ <a href="FEATURE_SPEC_DYNAMIC_PRICING_AND_EXTRAS.md" class="text-orange-600 font-bold hover:underline">SPEC-2026-004</a> ครอบคลุม Dynamic Pricing (ปรับ ±5%), ช่องทางจอง + แนบสลิป (Walk-in/Phone/Facebook), แคตตาล็อกของใช้ฟรีและคิดเงิน (วิ่งลงบิล Folio อัตโนมัติ), และระบบภาษี VAT 7% พร้อมส่งมอบให้ทีมเริ่มพัฒนา Sprint ถัดไป</li>
             <li><strong>สัปดาห์ที่ 1 ถัดไป:</strong> ดำเนินการทดสอบ Acceptance Test ร่วมกับบุญ (QA) ครบทั้ง 24 UAT Scenarios บนระบบ Cloudflare Staging ที่ Deploy จริง</li>
             <li><strong>สัปดาห์ที่ 2 ถัดไป:</strong> ร่วมกับเขต (Infra) ทำการทดสอบ Stress/Concurrency Test เพื่อจำลองการกดจองห้องพักพร้อมกันในช่วงเทศกาล</li>
             <li><strong>สัปดาห์สุดท้าย:</strong> จัดทำคู่มือผู้ใช้งาน (User Manual) และเอกสารฉบับสมบูรณ์เพื่อนำเสนอปิดโครงงาน CSI400</li>
@@ -741,6 +742,24 @@ Available ──(จองล่วงหน้า)──► Reserved ──(Che
             </div>
           </div>
 
+          <!-- Q6: New Requirements from Ajarn Top -->
+          <div class="p-4 rounded-lg bg-orange-50/60 border border-orange-200 space-y-2">
+            <h3 class="font-bold text-slate-900 text-sm sm:text-base flex items-start gap-2">
+              <span class="text-orange-600 font-mono">Q6:</span>
+              <span>"อาจารย์ถาม: ระบบรองรับการปรับราคาตามช่วงเทศกาล (Dynamic Pricing), การแนบสลิป, ขอของใช้ฟรี/เสียเงิน และคิด VAT 7% อย่างไร?"</span>
+            </h3>
+            <div class="text-slate-700 space-y-1.5 pl-6 text-xs sm:text-sm leading-relaxed">
+              <p><strong>💡 แนวทางการตอบ (อ้างอิงตาม SPEC-2026-004):</strong></p>
+              <p>
+                <em>"ระบบเรารองรับครบถ้วนตามข้อเสนอแนะของอาจารย์ครับ โดยผมได้จัดทำข้อกำหนด <strong>SPEC-2026-004</strong> ไว้เรียบร้อยแล้ว:
+                <br>1) <strong>Dynamic Pricing:</strong> เราคง Base Price ไว้ไม่เปลี่ยน แต่ใช้ Dynamic Rules ปรับ ±5% หรือระบุจำนวนบาท ครอบคลุมทั้งรายวัน, ช่วงวัน และตารางแมตช์เดือน (High/Low/Regular)
+                <br>2) <strong>Booking Channels & Slip:</strong> รองรับ Walk-in, Phone, และ Facebook โดยระบบให้แนบได้ทั้งไฟล์รูปภาพสลิปจริง (จัดเก็บบน R2) และเลขอ้างอิงสลิป
+                <br>3) <strong>Extra Amenities:</strong> แยกเป็นของฟรี (หมอน, ผ้าเช็ดตัว) ซึ่งไม่คิดเงิน และของเสียเงิน (เตียงเสริม 300 บาท/คืน) ซึ่งระบบจะลงบิล Folio ของห้องพักนั้นให้อัตโนมัติ
+                <br>4) <strong>VAT 7%:</strong> คำนวณภาษี 7% ณ จุดชำระเงิน และมีคอลัมน์แจกแจง Subtotal, VAT 7%, และ Grand Total ในรายงานส่งออกของ Owner ครบถ้วนครับ"</em>
+              </p>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -809,3 +828,4 @@ Available ──(จองล่วงหน้า)──► Reserved ──(Che
   </script>
 </body>
 </html>
+

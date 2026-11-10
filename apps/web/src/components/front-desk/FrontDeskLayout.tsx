@@ -157,7 +157,7 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
               type="button"
               onClick={() => setLocale('th')}
               className={`px-2.5 py-1.5 rounded-md min-h-[44px] min-w-[40px] flex items-center justify-center transition-colors ${
-                locale === 'th' ? 'bg-white text-slate-900 shadow-xs font-bold' : 'text-slate-500 hover:text-slate-800'
+                locale === 'th' ? 'bg-white text-[#F97316] shadow-xs font-bold' : 'text-slate-500 hover:text-slate-800'
               }`}
               aria-pressed={locale === 'th'}
             >
@@ -167,7 +167,7 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
               type="button"
               onClick={() => setLocale('en')}
               className={`px-2.5 py-1.5 rounded-md min-h-[44px] min-w-[40px] flex items-center justify-center transition-colors ${
-                locale === 'en' ? 'bg-white text-slate-900 shadow-xs font-bold' : 'text-slate-500 hover:text-slate-800'
+                locale === 'en' ? 'bg-white text-[#F97316] shadow-xs font-bold' : 'text-slate-500 hover:text-slate-800'
               }`}
               aria-pressed={locale === 'en'}
             >
@@ -440,7 +440,7 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
                 onClick={() => setLocale('th')}
                 className={`flex-1 py-1 rounded text-center transition-colors font-semibold ${
                   locale === 'th'
-                    ? 'bg-slate-900 text-white shadow-2xs'
+                    ? 'bg-[#F97316] text-white shadow-2xs'
                     : 'text-slate-500 hover:text-slate-800'
                 }`}
                 aria-pressed={locale === 'th'}
@@ -452,7 +452,7 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
                 onClick={() => setLocale('en')}
                 className={`flex-1 py-1 rounded text-center transition-colors font-semibold ${
                   locale === 'en'
-                    ? 'bg-slate-900 text-white shadow-2xs'
+                    ? 'bg-[#F97316] text-white shadow-2xs'
                     : 'text-slate-500 hover:text-slate-800'
                 }`}
                 aria-pressed={locale === 'en'}
