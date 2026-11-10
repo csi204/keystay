@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>PROGRESS_PRESENTATION_GUIDE.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="%F0%9F%8E%AF-%E0%B8%84%E0%B8%B9%E0%B9%88%E0%B8%A1%E0%B8%B7%E0%B8%AD%E0%B8%99%E0%B8%B3%E0%B9%80%E0%B8%AA%E0%B8%99%E0%B8%AD%E0%B8%84%E0%B8%A7%E0%B8%B2%E0%B8%A1%E0%B8%84%E0%B8%B7%E0%B8%9A%E0%B8%AB%E0%B8%99%E0%B9%89%E0%B8%B2%E0%B9%82%E0%B8%9B%E0%B8%A3%E0%B9%80%E0%B8%88%E0%B8%81%E0%B8%95%E0%B9%8C-keystay--csi400-senior-project">🎯 คู่มือนำเสนอความคืบหน้าโปรเจกต์ KEYSTAY — CSI400 Senior Project</h1>
+<h2 id="%E0%B8%A3%E0%B8%B0%E0%B8%9A%E0%B8%9A%E0%B8%9A%E0%B8%A3%E0%B8%B4%E0%B8%AB%E0%B8%B2%E0%B8%A3%E0%B8%88%E0%B8%B1%E0%B8%94%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B9%82%E0%B8%A3%E0%B8%87%E0%B9%81%E0%B8%A3%E0%B8%A1%E0%B8%82%E0%B8%99%E0%B8%B2%E0%B8%94%E0%B9%80%E0%B8%A5%E0%B9%87%E0%B8%81-5%E2%80%9310-%E0%B8%AB%E0%B9%89%E0%B8%AD%E0%B8%87-%E0%B8%94%E0%B9%89%E0%B8%A7%E0%B8%A2-cloudflare-edge-microservices--event-driven-architecture">ระบบบริหารจัดการโรงแรมขนาดเล็ก (5–10 ห้อง) ด้วย Cloudflare Edge Microservices &amp; Event-Driven Architecture</h2>
+<blockquote>
+<p><strong>เอกสารฉบับนี้จัดทำขึ้นสำหรับการนำเสนอความคืบหน้า (Progress Presentation) โดยเฉพาะ</strong><br>
+มุ่งเน้นการแสดง <strong>&quot;หลักฐานเชิงประจักษ์ที่ตรวจสอบได้จริง (Verifiable Evidence)&quot;</strong> ตามเกณฑ์ประเมิน 7 ข้อของ <strong>อาจารย์ท็อป (อ.ท็อป)</strong><br>
+โดยแบ่งหัวข้อตามความรับผิดชอบของสมาชิกแต่ละคนในทีม และจัดเรียงการนำเสนอเป็นลำดับขั้นตอนแบบ <strong>Step-by-Step Flow</strong> ตามจังหวะเวลาจริงของการดำเนินงานโรงแรม (Operational Real-time Boundary)</p>
+</blockquote>
+<hr>
+<h2 id="%F0%9F%91%A5-%E0%B8%82%E0%B9%89%E0%B8%AD%E0%B8%A1%E0%B8%B9%E0%B8%A5%E0%B8%AA%E0%B8%A1%E0%B8%B2%E0%B8%8A%E0%B8%B4%E0%B8%81%E0%B9%83%E0%B8%99%E0%B8%97%E0%B8%B5%E0%B8%A1%E0%B9%81%E0%B8%A5%E0%B8%B0%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B9%81%E0%B8%9A%E0%B9%88%E0%B8%87%E0%B8%84%E0%B8%A7%E0%B8%B2%E0%B8%A1%E0%B8%A3%E0%B8%B1%E0%B8%9A%E0%B8%9C%E0%B8%B4%E0%B8%94%E0%B8%8A%E0%B8%AD%E0%B8%9A%E0%B8%AB%E0%B8%A5%E0%B8%B1%E0%B8%81">👥 ข้อมูลสมาชิกในทีมและการแบ่งความรับผิดชอบหลัก</h2>
+<table>
+<thead>
+<tr>
+<th>สมาชิก</th>
+<th>รหัสนักศึกษา / GitHub</th>
+<th>ตำแหน่งในทีม</th>
+<th>ส่วนงานที่รับผิดชอบหลัก</th>
+<th>สัดส่วน APIs ที่ดูแล</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>เขต (เขตโสภณ)</strong></td>
+<td><code>@hazeco</code></td>
+<td><strong>Project &amp; Infra Lead</strong></td>
+<td>Cloudflare Edge, API Gateway, Auth/User, Security, Report/Analytics, Project Status</td>
+<td><strong>26 APIs</strong> + Gateway</td>
+</tr>
+<tr>
+<td><strong>เดียร์ (ธีรภัทร)</strong></td>
+<td><code>@allmusgus</code></td>
+<td><strong>SA Lead</strong></td>
+<td>Reservation, Billing, Room State Machine, Atomic Outbox D1 Batch, Front Desk Portal</td>
+<td><strong>40 APIs</strong></td>
+</tr>
+<tr>
+<td><strong>บุญ (ปวริศ)</strong></td>
+<td><code>@Legxcy77</code></td>
+<td><strong>QA Lead</strong></td>
+<td>Room Inventory, Housekeeping, Outsource Maintenance, Quality Assurance, Test Automation</td>
+<td><strong>39 APIs</strong></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="%F0%9F%93%8B-%E0%B9%81%E0%B8%9C%E0%B8%99%E0%B8%9C%E0%B8%B1%E0%B8%87%E0%B8%84%E0%B8%A7%E0%B8%B2%E0%B8%A1%E0%B8%AA%E0%B8%AD%E0%B8%94%E0%B8%84%E0%B8%A5%E0%B9%89%E0%B8%AD%E0%B8%87%E0%B8%81%E0%B8%B1%E0%B8%9A-7-%E0%B9%80%E0%B8%81%E0%B8%93%E0%B8%91%E0%B9%8C%E0%B8%9B%E0%B8%A3%E0%B8%B0%E0%B9%80%E0%B8%A1%E0%B8%B4%E0%B8%99%E0%B8%82%E0%B8%AD%E0%B8%87-%E0%B8%AD%E0%B8%97%E0%B9%87%E0%B8%AD%E0%B8%9B-evaluation-criteria-mapping-matrix">📋 แผนผังความสอดคล้องกับ 7 เกณฑ์ประเมินของ อ.ท็อป (Evaluation Criteria Mapping Matrix)</h2>
+<pre class="hljs"><code><div>┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                   7 เกณฑ์ประเมินความคืบหน้า CSI400 (อาจารย์ท็อป)                     │
+└────────────────────────────────────┬───────────────────────────────────────────────────┘
+                                     │
+         ┌───────────────────────────┼───────────────────────────┐
+         ▼                           ▼                           ▼
+┌──────────────────┐        ┌──────────────────┐        ┌──────────────────┐
+│  เขต (@hazeco)   │        │ เดียร์ (@allmusgus)│        │ บุญ (@Legxcy77)  │
+│  Project &amp; Infra │        │  System Analyst  │        │  QA &amp; Operations │
+├──────────────────┤        ├──────────────────┤        ├──────────────────┤
+│ 1. Architecture  │        │ 2. API Impl.     │        │ 4. Integration   │
+│    (Edge Gateway │        │    (Walk-in,     │        │    (HK Task &amp;    │
+│     &amp; Topology)  │        │     Check-in/out,│        │     R2 Photo)    │
+│ 5. Security      │        │     Billing)     │        │ 6. Testing       │
+│    (JWT &amp; RBAC   │        │ 3. Database      │        │    (Automated    │
+│     Middleware)  │        │    (D1 SQLite &amp;  │        │     Test Suites &amp;│
+│ 7. Project Status│        │     Batch Atomic)│        │     Error Cases) │
+│    (Roadmap &amp;    │        │ 4. Integration   │        │ 1. Architecture  │
+│     Issues #1-#13│        │    (Fan-out 1:4) │        │    (Outsource)   │
+└──────────────────┘        └──────────────────┘        └──────────────────┘
+</div></code></pre>
+<table>
+<thead>
+<tr>
+<th>เกณฑ์ประเมินของ อ.ท็อป</th>
+<th>สิ่งที่ต้องแสดงเป็นหลักฐาน</th>
+<th>ผู้รับผิดชอบหลัก</th>
+<th>ส่วนที่นำเสนอในเอกสารนี้</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1. Architecture</strong></td>
+<td>แผนผังบริการ, หน้าที่ของแต่ละ Service, เส้นทางข้อมูล (Data Path)</td>
+<td><strong>เขต</strong> &amp; <strong>บุญ</strong></td>
+<td>หมวดที่ 1 (Flow 1.1) และ หมวดที่ 3 (Flow 3.2)</td>
+</tr>
+<tr>
+<td><strong>2. API Implementation</strong></td>
+<td>Endpoints ครบถ้วน (GET, POST, PUT, DELETE) พร้อม Payload</td>
+<td><strong>เดียร์</strong> &amp; ทุกคน</td>
+<td>หมวดที่ 2 (Flow 2.1, 2.2) และ หมวดที่ 3 (Flow 3.1, 3.2)</td>
+</tr>
+<tr>
+<td><strong>3. Database</strong></td>
+<td>โครงสร้าง D1 Schemas, Foreign Keys, ข้อมูลบันทึกจริง (Real Record Proof)</td>
+<td><strong>เดียร์</strong></td>
+<td>หมวดที่ 2 (Database Evidence)</td>
+</tr>
+<tr>
+<td><strong>4. Integration</strong></td>
+<td>การเชื่อมโยง Frontend ↔ Gateway ↔ Backend ↔ Upstash QStash 1:4 Fan-out</td>
+<td><strong>เขต</strong> &amp; <strong>เดียร์</strong></td>
+<td>หมวดที่ 1 (Flow 1.1) และ หมวดที่ 2 (Flow 2.2)</td>
+</tr>
+<tr>
+<td><strong>5. Security</strong></td>
+<td>การตรวจสอบ JWT Bearer, สิทธิ์ตาม 4 บทบาท (RBAC), การซ่อนหน้า (404 Obscurity)</td>
+<td><strong>เขต</strong></td>
+<td>หมวดที่ 1 (Flow 1.2)</td>
+</tr>
+<tr>
+<td><strong>6. Testing</strong></td>
+<td>ผลการทดสอบ API Happy Path (200, 201) และ Error Cases (400, 401, 403, 404, 409)</td>
+<td><strong>บุญ</strong> &amp; <strong>เดียร์</strong></td>
+<td>หมวดที่ 2 (Flow 2.3) และ หมวดที่ 3 (Flow 3.3)</td>
+</tr>
+<tr>
+<td><strong>7. Project Status</strong></td>
+<td>สรุปงานที่เสร็จ, กำลังทำ, ปัญหาที่พบ, แผนงานถัดไปบน GitHub Projects</td>
+<td><strong>เขต</strong></td>
+<td>หมวดที่ 1 (Flow 1.3)</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="%F0%9F%97%82%EF%B8%8F-%E0%B8%A5%E0%B8%B4%E0%B8%87%E0%B8%81%E0%B9%8C%E0%B9%80%E0%B8%AD%E0%B8%81%E0%B8%AA%E0%B8%B2%E0%B8%A3%E0%B8%AD%E0%B9%89%E0%B8%B2%E0%B8%87%E0%B8%AD%E0%B8%B4%E0%B8%87%E0%B9%81%E0%B8%A5%E0%B8%B0%E0%B9%80%E0%B8%84%E0%B8%A3%E0%B8%B7%E0%B9%88%E0%B8%AD%E0%B8%87%E0%B8%A1%E0%B8%B7%E0%B8%AD%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%80%E0%B8%81%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%A7%E0%B8%82%E0%B9%89%E0%B8%AD%E0%B8%87%E0%B9%83%E0%B8%99%E0%B9%82%E0%B8%9B%E0%B8%A3%E0%B9%80%E0%B8%88%E0%B8%81%E0%B8%95%E0%B9%8C">🗂️ ลิงก์เอกสารอ้างอิงและเครื่องมือที่เกี่ยวข้องในโปรเจกต์</h2>
+<ul>
+<li>📊 <strong>Interactive System Diagrams (HTML):</strong> [hotel-system-diagrams.html](file:///e:/MyWork/PJ_P3_1/keystay/docs/hotel-system-diagrams.html)</li>
+<li>📖 <strong>System Specification &amp; Architecture:</strong> [Hotel_Management_System_updated.md](file:///e:/MyWork/PJ_P3_1/keystay/docs/Hotel_Management_System_updated.md)</li>
+<li>🛡️ <strong>Security Policy &amp; Rules:</strong> [SECURITY.md](file:///e:/MyWork/PJ_P3_1/keystay/docs/SECURITY.md)</li>
+<li>🧪 <strong>24 UAT Scenarios:</strong> [uat.md](file:///e:/MyWork/PJ_P3_1/keystay/docs/uat.md)</li>
+<li>📜 <strong>Reservation Test Script (Phase 2):</strong> [test-reservation-phase2.js](file:///e:/MyWork/PJ_P3_1/keystay/scripts/test-reservation-phase2.js)</li>
+<li>📜 <strong>Billing Test Script (Phase 2):</strong> [test-billing-phase2.js](file:///e:/MyWork/PJ_P3_1/keystay/scripts/test-billing-phase2.js)</li>
+<li>📦 <strong>Shared Type Definitions:</strong> [packages/types/src/index.ts](file:///e:/MyWork/PJ_P3_1/keystay/packages/types/src/index.ts)</li>
+</ul>
+<hr>
+<h1 id="%F0%9F%93%8C-%E0%B8%AB%E0%B8%A1%E0%B8%A7%E0%B8%94%E0%B8%97%E0%B8%B5%E0%B9%88-1-%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%99%E0%B8%B3%E0%B9%80%E0%B8%AA%E0%B8%99%E0%B8%AD%E0%B8%82%E0%B8%AD%E0%B8%87-%22%E0%B9%80%E0%B8%82%E0%B8%95%22-hazeco--project--infra-lead">📌 หมวดที่ 1: การนำเสนอของ &quot;เขต&quot; (@hazeco — Project &amp; Infra Lead)</h1>
+<h3 id="%E0%B8%AB%E0%B8%B1%E0%B8%A7%E0%B8%82%E0%B9%89%E0%B8%AD%E0%B8%AB%E0%B8%A5%E0%B8%B1%E0%B8%81-edge-architecture-zero-trust-security-api-gateway--project-management">หัวข้อหลัก: Edge Architecture, Zero-Trust Security, API Gateway &amp; Project Management</h3>
+<hr>
+<h3 id="%F0%9F%94%B9-flow-11-%E0%B8%AA%E0%B8%96%E0%B8%B2%E0%B8%9B%E0%B8%B1%E0%B8%95%E0%B8%A2%E0%B8%81%E0%B8%A3%E0%B8%A3%E0%B8%A1%E0%B8%A3%E0%B8%A7%E0%B8%A1%E0%B9%81%E0%B8%A5%E0%B8%B0%E0%B9%80%E0%B8%AA%E0%B9%89%E0%B8%99%E0%B8%97%E0%B8%B2%E0%B8%87%E0%B8%82%E0%B9%89%E0%B8%AD%E0%B8%A1%E0%B8%B9%E0%B8%A5%E0%B8%A3%E0%B8%B0%E0%B8%94%E0%B8%B1%E0%B8%9A-edge-end-to-end-edge-architecture-flow">🔹 Flow 1.1: สถาปัตยกรรมรวมและเส้นทางข้อมูลระดับ Edge (End-to-End Edge Architecture Flow)</h3>
+<p><em>ตอบโจทย์เกณฑ์: <strong>1. Architecture</strong> &amp; <strong>4. Integration</strong></em></p>
+<pre class="hljs"><code><div>[ Client: Browser / Web App ]
+            │  HTTPS / TLS 1.3
+            ▼
+[ Cloudflare Global Anycast Network + WAF ]
+            │  DDoS Protection, SSL Termination (&lt;5ms edge latency)
+            ▼
+[ Central API Gateway Worker (apps/api-gateway) ]
+     ├── 1. CORS Validation &amp; Security Headers (Strict CSP, X-Frame-Options)
+     ├── 2. JWT Verification via Cloudflare KV (Check Blacklist &amp; Expiry)
+     ├── 3. Role-Based Access Control (RBAC) Guard
+     ├── 4. Request Header Enrichment (x-user-id, x-user-role, x-internal-service-key)
+     └── 5. Reverse Proxy Routing via Cloudflare Service Bindings
+            │
+            ├──► /api/v1/auth/*        ──► [ auth-user Worker ] ──► (D1: db_auth_user)
+            ├──► /api/v1/rooms/*       ──► [ room-inventory Worker ] ──► (D1: db_room)
+            ├──► /api/v1/reservations/*──► [ reservation Worker ] ──► (D1: db_reservation)
+            ├──► /api/v1/housekeeping/*──► [ housekeeping Worker ] ──► (D1: db_housekeeping + R2)
+            ├──► /api/v1/billing/*     ──► [ billing Worker ] ──► (D1: db_billing)
+            └──► /api/v1/reports/*     ──► [ report-analytics Worker ] ──► (D1: db_report)
+</div></code></pre>
+<h4 id="%F0%9F%8E%AF-1-%E0%B8%82%E0%B8%AD%E0%B8%9A%E0%B9%80%E0%B8%82%E0%B8%95%E0%B9%81%E0%B8%A5%E0%B8%B0%E0%B8%AB%E0%B8%99%E0%B9%89%E0%B8%B2%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%97%E0%B8%B3%E0%B8%87%E0%B8%B2%E0%B8%99-scope--responsibilities">🎯 1. ขอบเขตและหน้าที่การทำงาน (Scope &amp; Responsibilities)</h4>
+<ul>
+<li>รับผิดชอบโครงสร้างพื้นฐานระดับ Serverless Edge ทั้งหมดบน <strong>Cloudflare Workers</strong> (V8 Isolates) ไร้ภาระเรื่อง OS Patching หรือ Container Boot Time</li>
+<li>Central API Gateway ทำหน้าที่เป็นจุดรับ Traffic ทางเดียว (Single Entry Point) โดยบังคับตรวจสอบความถูกต้องของ Token ก่อนส่งต่อไปยัง Microservices</li>
+<li>การติดต่อระหว่าง Gateway และ Microservices ภายใน ใช้ <strong>Cloudflare Service Bindings</strong> ซึ่งเป็นการเรียกข้าม Isolate ในหน่วยความจำเดียวกัน (Zero Network Overhead Latency ~0ms)</li>
+</ul>
+<h4 id="%F0%9F%92%A1-2-%E0%B8%88%E0%B8%B8%E0%B8%94%E0%B9%80%E0%B8%94%E0%B9%88%E0%B8%99%E0%B8%97%E0%B8%B2%E0%B8%87%E0%B9%80%E0%B8%97%E0%B8%84%E0%B8%99%E0%B8%B4%E0%B8%84%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%82%E0%B8%8A%E0%B8%A7%E0%B9%8C%E0%B8%AD%E0%B8%B2%E0%B8%88%E0%B8%B2%E0%B8%A3%E0%B8%A2%E0%B9%8C-architectural-highlights">💡 2. จุดเด่นทางเทคนิคที่โชว์อาจารย์ (Architectural Highlights)</h4>
+<ul>
+<li><strong>Zero Cold-Start (&lt;5ms):</strong> Cloudflare Workers ทำงานบน V8 Isolates ไม่มี Cold Start ช้าเหมือน Docker หรือ AWS Lambda</li>
+<li><strong>Zero Trust Network:</strong> Microservices แต่ละตัวไม่เปิด Public Internet ให้บุคคลภายนอกเข้าถึงตรงๆ ได้ จะปฏิเสธ Request ที่ไม่มี <code>x-internal-service-key</code> ที่ถูกต้อง</li>
+<li><strong>Database-per-Service:</strong> แยก D1 SQLite อิสระ 6 ฐานข้อมูล ป้องกันปัญหา Database Bottleneck และ Schema Coupling</li>
+</ul>
+<hr>
+<h3 id="%F0%9F%94%B9-flow-12-%E0%B8%A3%E0%B8%B0%E0%B8%9A%E0%B8%9A%E0%B8%A2%E0%B8%B7%E0%B8%99%E0%B8%A2%E0%B8%B1%E0%B8%99%E0%B8%95%E0%B8%B1%E0%B8%A7%E0%B8%95%E0%B8%99%E0%B9%81%E0%B8%A5%E0%B8%B0%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%88%E0%B8%B1%E0%B8%94%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%AA%E0%B8%B4%E0%B8%97%E0%B8%98%E0%B8%B4%E0%B9%8C-zero-trust-security--rbac-flow">🔹 Flow 1.2: ระบบยืนยันตัวตนและการจัดการสิทธิ์ (Zero-Trust Security &amp; RBAC Flow)</h3>
+<p><em>ตอบโจทย์เกณฑ์: <strong>5. Security</strong> &amp; <strong>2. API Implementation</strong></em></p>
+<pre class="hljs"><code><div>[ พนักงานเข้าหน้าจอ /login ]
+            │
+            ├── 1. กรอก Email/Username + Password + ติ๊ก &quot;Remember Me&quot;
+            ▼
+[ POST /api/v1/auth/login ]
+            │
+            ├── ตรวจสอบรหัสผ่านผ่าน bcryptjs (Salt 10 rounds)
+            ├── ดึง Role ผู้ใช้: 'admin' | 'manager' | 'front_desk' | 'housekeeping'
+            ├── สร้าง Access Token (JWT 15 นาที) + Refresh Token (30 วันหาก Remember Me)
+            └── บันทึก Session Hash ลง Cloudflare KV (`keystay_kv`)
+            ▼
+[ Frontend Shell (apps/web) ดักอ่าน Role ]
+            │
+            ├── role: 'owner'              ──► Redirect สู่ /admin (Owner Portal)
+            ├── role: 'front_desk'         ──► Redirect สู่ /front-desk (Front Desk Portal)
+            └── role: 'housekeeping'       ──► Redirect สู่ /housekeeping (Housekeeping Portal)
+</div></code></pre>
+<h4 id="%F0%9F%9B%A1%EF%B8%8F-%E0%B8%AA%E0%B8%B4%E0%B8%97%E0%B8%98%E0%B8%B4%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B9%80%E0%B8%82%E0%B9%89%E0%B8%B2%E0%B8%96%E0%B8%B6%E0%B8%87%E0%B8%95%E0%B8%B2%E0%B8%A1-4-%E0%B8%9A%E0%B8%97%E0%B8%9A%E0%B8%B2%E0%B8%97%E0%B8%AB%E0%B8%A5%E0%B8%B1%E0%B8%81-rbac-matrix">🛡️ สิทธิการเข้าถึงตาม 4 บทบาทหลัก (RBAC Matrix)</h4>
+<table>
+<thead>
+<tr>
+<th>ทรัพยากร / หน้าที่</th>
+<th style="text-align:center"><code>admin</code></th>
+<th style="text-align:center"><code>manager</code></th>
+<th style="text-align:center"><code>front_desk</code></th>
+<th style="text-align:center"><code>housekeeping</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>จัดการ User &amp; Role (<code>/users</code>)</td>
+<td style="text-align:center">✅ Full CRUD</td>
+<td style="text-align:center">❌ ซ่อนปุ่ม</td>
+<td style="text-align:center">❌ 404/403</td>
+<td style="text-align:center">❌ 404/403</td>
+</tr>
+<tr>
+<td>จัดการ Master Data ช่าง Outsource (<code>/outsource-contacts</code>)</td>
+<td style="text-align:center">✅ Full CRUD</td>
+<td style="text-align:center">👁️ Read-only</td>
+<td style="text-align:center">👁️ Quick Call</td>
+<td style="text-align:center">👁️ Quick Call</td>
+</tr>
+<tr>
+<td>จองห้อง / เช็คอิน / เช็คเอาท์ (<code>/reservations</code>)</td>
+<td style="text-align:center">✅</td>
+<td style="text-align:center">✅</td>
+<td style="text-align:center">✅ Full Access</td>
+<td style="text-align:center">❌ 404/403</td>
+</tr>
+<tr>
+<td>คิดเงิน / ออกใบเสร็จ / จัดการมินิบาร์ (<code>/bills</code>)</td>
+<td style="text-align:center">✅</td>
+<td style="text-align:center">✅</td>
+<td style="text-align:center">✅ Cashier Full</td>
+<td style="text-align:center">❌ 404/403</td>
+</tr>
+<tr>
+<td>รับงานทำความสะอาด / ตรวจห้อง (<code>/housekeeping/tasks</code>)</td>
+<td style="text-align:center">✅</td>
+<td style="text-align:center">👁️ ดูรายงาน</td>
+<td style="text-align:center">👁️ ดูสถานะ</td>
+<td style="text-align:center">✅ Full Access</td>
+</tr>
+<tr>
+<td>ดูสถิติรายได้ &amp; Occupancy (<code>/reports</code>)</td>
+<td style="text-align:center">✅</td>
+<td style="text-align:center">✅ Full Report</td>
+<td style="text-align:center">❌</td>
+<td style="text-align:center">❌</td>
+</tr>
+</tbody>
+</table>
+<h4 id="%F0%9F%92%A1-%E0%B8%88%E0%B8%B8%E0%B8%94%E0%B9%80%E0%B8%94%E0%B9%88%E0%B8%99%E0%B8%84%E0%B8%A7%E0%B8%B2%E0%B8%A1%E0%B8%9B%E0%B8%A5%E0%B8%AD%E0%B8%94%E0%B8%A0%E0%B8%B1%E0%B8%A2%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%82%E0%B8%8A%E0%B8%A7%E0%B9%8C%E0%B8%AD%E0%B8%B2%E0%B8%88%E0%B8%B2%E0%B8%A3%E0%B8%A2%E0%B9%8C-security-highlights">💡 จุดเด่นความปลอดภัยที่โชว์อาจารย์ (Security Highlights)</h4>
+<ul>
+<li><strong>Security by Obscurity (404 Guard):</strong> หากพนักงาน <code>housekeeping</code> แอบพิมพ์ URL ข้ามไป <code>/admin</code> ระบบ Frontend Guard และ Gateway จะตอบกลับด้วย <strong><code>404 Not Found</code></strong> เสมือนว่าหน้านั้นไม่มีอยู่จริง แทนที่จะตอบ 403 Forbidden เพื่อป้องกันไม่ให้ผู้โจมตีสำรวจ Endpoint ภายในระบบได้</li>
+<li><strong>Instant Token Revocation via KV:</strong> หากพนักงานทำบัตรหายหรือถูกให้ออกจากงาน Admin สามารถกด Revoke Session ทันที Token จะติด Blacklist ใน Cloudflare KV ภายในเวลา &lt;1 วินาทีทั่วโลก</li>
+</ul>
+<hr>
+<h3 id="%F0%9F%94%B9-flow-13-%E0%B8%AA%E0%B8%A3%E0%B8%B8%E0%B8%9B%E0%B8%AA%E0%B8%96%E0%B8%B2%E0%B8%99%E0%B8%B0%E0%B9%82%E0%B8%84%E0%B8%A3%E0%B8%87%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B9%81%E0%B8%A5%E0%B8%B0%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%9A%E0%B8%A3%E0%B8%B4%E0%B8%AB%E0%B8%B2%E0%B8%A3%E0%B8%87%E0%B8%B2%E0%B8%99-project-status--engineering-roadmap">🔹 Flow 1.3: สรุปสถานะโครงการและการบริหารงาน (Project Status &amp; Engineering Roadmap)</h3>
+<p><em>ตอบโจทย์เกณฑ์: <strong>7. Project Status</strong></em></p>
+<h4 id="%F0%9F%93%8A-%E0%B8%AA%E0%B8%96%E0%B8%B2%E0%B8%99%E0%B8%B0%E0%B8%84%E0%B8%A7%E0%B8%B2%E0%B8%A1%E0%B8%84%E0%B8%B7%E0%B8%9A%E0%B8%AB%E0%B8%99%E0%B9%89%E0%B8%B2-4-phases-%E0%B8%95%E0%B8%B2%E0%B8%A1-github-project-board-csi204projects1">📊 สถานะความคืบหน้า 4 Phases ตาม GitHub Project Board (csi204/projects/1)</h4>
+<pre class="hljs"><code><div>[ Phase 0: Core Setup ] ──► ✅ เสร็จสมบูรณ์ 100% (Issue #1)
+[ Phase 1: Core CRUD ]  ──► 🟢 เสร็จแล้ว 85% (Issue #2, #3, #4)
+[ Phase 2: Business Op] ──► 🟡 กำลังดำเนินการ 75% (Issue #5, #6 เสร็จแล้ว / #7, #8, #9 กำลังทำ)
+[ Phase 3: Portals UI ] ──► ⚪ กำลังเริ่มต้น (Issue #10, #11, #12)
+[ Phase 4: UAT &amp; Demo ] ──► ⚪ เตรียมการทดสอบ 24 Scenarios (Issue #13)
+</div></code></pre>
+<ul>
+<li><strong>งานที่เสร็จสมบูรณ์แล้ว (Completed):</strong>
+<ol>
+<li>โครงสร้าง Monorepo (pnpm Workspaces + Turborepo + TypeScript 5.8)</li>
+<li>ติดตั้ง Cloudflare D1 ฐานข้อมูล 6 ตัว พร้อมระบบ Migration อัตโนมัติ (<code>npm run d1:migrate:local</code>)</li>
+<li>ติดตั้ง Cloudflare R2 Bucket สำหรับรูปถ่ายหลักฐานชำรุด</li>
+<li>Core Schemas, State Machine และ Endpoints ของ <code>reservation</code> (24 APIs) และ <code>billing</code> (16 APIs)</li>
+<li>ระบบ Event-Driven ผ่าน Upstash QStash และ Automated Integration Test Scripts</li>
+</ol>
+</li>
+<li><strong>งานที่กำลังดำเนินการ (In Progress):</strong>
+<ol>
+<li>เชื่อมต่อระบบงานแม่บ้าน (<code>housekeeping</code>) และการบันทึกช่างภายนอก (<code>outsource_contacts</code>) 5 APIs</li>
+<li>การสร้างหน้า UI 3 Portals สไตล์ Enterprise Minimalist (Front Desk, Housekeeping, Manager)</li>
+</ol>
+</li>
+<li><strong>ปัญหาและอุปสรรคที่พบ พร้อมวิธีแก้ไข (Challenges &amp; Resolutions):</strong>
+<ul>
+<li><em>ปัญหา 1:</em> Cloudflare D1 ล็อกฐานข้อมูลเมื่อใช้ Interactive Transaction <code>db.transaction()</code><br>
+<em>การแก้ไข:</em> เปลี่ยนมาใช้ <code>await db.batch([stmt1, stmt2])</code> ทำงานเป็น Atomic Unit ใน 1 รอบการรัน ปราศจาก Lock Timeout 100%</li>
+<li><em>ปัญหา 2:</em> Cloudflare Queues ไม่รองรับการกระจาย Event 1 สัญญาณไปหลาย Service (Fan-out)<br>
+<em>การแก้ไข:</em> นำ Upstash QStash มาใช้เป็น Event Bus ทำงานแบบ Pub/Sub Webhook พร้อมระบบ Dead Letter Queue (DLQ)</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h1 id="%F0%9F%93%8C-%E0%B8%AB%E0%B8%A1%E0%B8%A7%E0%B8%94%E0%B8%97%E0%B8%B5%E0%B9%88-2-%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%99%E0%B8%B3%E0%B9%80%E0%B8%AA%E0%B8%99%E0%B8%AD%E0%B8%82%E0%B8%AD%E0%B8%87-%22%E0%B9%80%E0%B8%94%E0%B8%B5%E0%B8%A2%E0%B8%A3%E0%B9%8C%22-allmusgus--sa-lead">📌 หมวดที่ 2: การนำเสนอของ &quot;เดียร์&quot; (@allmusgus — SA Lead)</h1>
+<h3 id="%E0%B8%AB%E0%B8%B1%E0%B8%A7%E0%B8%82%E0%B9%89%E0%B8%AD%E0%B8%AB%E0%B8%A5%E0%B8%B1%E0%B8%81-core-domain-logic-room-state-machine-d1-batch-atomic-check-inout--billing">หัวข้อหลัก: Core Domain Logic, Room State Machine, D1 Batch Atomic, Check-in/out &amp; Billing</h3>
+<hr>
+<h3 id="%F0%9F%94%B9-flow-21-ac-2-%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B0%E0%B8%A3%E0%B8%B1%E0%B8%9A%E0%B9%81%E0%B8%82%E0%B8%81%E0%B8%AB%E0%B8%99%E0%B9%89%E0%B8%B2%E0%B8%87%E0%B8%B2%E0%B8%99-front-desk-check-in--walk-in-flow">🔹 Flow 2.1 (AC 2): จังหวะรับแขกหน้างาน (Front Desk Check-in &amp; Walk-in Flow)</h3>
+<p><em>ตอบโจทย์เกณฑ์: <strong>2. API Implementation</strong>, <strong>3. Database</strong> &amp; <strong>4. Integration</strong></em></p>
+<pre class="hljs"><code><div>[ แขกเดินทางมาถึงเคาน์เตอร์ Front Desk ]
+                  │
+        ┌─────────┴─────────┐
+        ▼                   ▼
+ [ แขก Walk-in เข้ามา ]    [ แขกจองล่วงหน้ามาแล้ว ]
+        │                   │
+        │                   ├── ค้นหาการจอง: GET /reservations/today-checkins
+        ▼                   ▼
+ [ POST /walk-in ]        [ POST /reservations/:id/check-in ]
+  (Endpoint #52)           (Endpoint #36)
+        │                   │
+        └─────────┬─────────┘
+                  │
+                  ▼
+ [ Drizzle ORM: await db.batch([ ... ]) ] ──► (Atomic Unit 3 Stmts ในเที่ยวเดียว)
+   ├── 1. UPDATE reservations SET status = 'checked_in', actual_check_in = NOW(), deposit_amount = ?
+   ├── 2. INSERT INTO reservation_history (action = 'checked_in', performed_by = ?)
+   └── 3. INSERT INTO outbox_events (eventType = 'ReservationCheckedIn', payload = ?)
+                  │
+                  ▼
+ [ ส่ง Event ไปยัง Upstash QStash ]
+                  │
+                  ▼
+ [ Room Inventory Service ปรับสถานะห้อง ]
+   rooms.status: 'available' / 'reserved' ──► 'occupied'
+                  │
+                  ▼
+ [ Front Desk มอบคีย์การ์ดให้แขก ] ──► แขกเข้าห้องพักสำเร็จ!
+ [ 📌 สิ้นสุดกระบวนการเช็คอิน: แขกเข้าพัก (Stay Period) -&gt; รอจนถึงวันเช็คเอาท์เพื่อเข้าสู่ AC 3 ]
+</div></code></pre>
+<h4 id="%F0%9F%9B%A0%EF%B8%8F-%E0%B8%A3%E0%B8%B2%E0%B8%A2%E0%B8%81%E0%B8%B2%E0%B8%A3-apis-%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B8%AA%E0%B8%B2%E0%B8%98%E0%B8%B4%E0%B8%95%E0%B9%83%E0%B8%99-flow-%E0%B8%A3%E0%B8%B1%E0%B8%9A%E0%B9%81%E0%B8%82%E0%B8%81">🛠️ รายการ APIs ที่สาธิตใน Flow รับแขก</h4>
+<ol>
+<li><strong><code>POST /api/v1/walk-in</code> (Endpoint #52):</strong>
+<ul>
+<li>รวมการสร้างข้อมูลแขก (<code>guests</code>) + สร้าง Booking + เช็คอินเข้าห้องทันทีในขั้นตอนเดียว</li>
+<li><em>ตัวอย่าง Request Body:</em><pre class="hljs"><code><div>{
+  <span class="hljs-attr">"guestName"</span>: <span class="hljs-string">"Somchai Walkin Test"</span>,
+  <span class="hljs-attr">"guestPhone"</span>: <span class="hljs-string">"0899998888"</span>,
+  <span class="hljs-attr">"guestEmail"</span>: <span class="hljs-string">"somchai@test.com"</span>,
+  <span class="hljs-attr">"roomId"</span>: <span class="hljs-string">"rm-101"</span>,
+  <span class="hljs-attr">"roomNumber"</span>: <span class="hljs-string">"101"</span>,
+  <span class="hljs-attr">"roomTypeName"</span>: <span class="hljs-string">"Deluxe Double"</span>,
+  <span class="hljs-attr">"checkInDate"</span>: <span class="hljs-string">"2026-10-25"</span>,
+  <span class="hljs-attr">"checkOutDate"</span>: <span class="hljs-string">"2026-10-27"</span>,
+  <span class="hljs-attr">"numGuests"</span>: <span class="hljs-number">2</span>,
+  <span class="hljs-attr">"nightlyRate"</span>: <span class="hljs-string">"1500.00"</span>,
+  <span class="hljs-attr">"depositAmount"</span>: <span class="hljs-string">"500.00"</span>,
+  <span class="hljs-attr">"specialRequests"</span>: <span class="hljs-string">"Non-smoking room"</span>
+}
+</div></code></pre>
+</li>
+</ul>
+</li>
+<li><strong><code>POST /api/v1/reservations/:id/check-in</code> (Endpoint #36):</strong>
+<ul>
+<li>รับเช็คอินกรณีแขกจองล่วงหน้า บันทึกเวลาเข้าจริง และบันทึกเงินมัดจำกุญแจ (<code>depositAmount</code>)</li>
+</ul>
+</li>
+<li><strong><code>GET /api/v1/reservations/today-checkins</code> (Endpoint #42):</strong>
+<ul>
+<li>ดึงรายการแขกที่จะเข้าพักวันนี้ สำหรับแสดงผลบน Front Desk Compact Matrix Grid</li>
+</ul>
+</li>
+</ol>
+<h4 id="%F0%9F%97%84%EF%B8%8F-%E0%B8%AB%E0%B8%A5%E0%B8%B1%E0%B8%81%E0%B8%90%E0%B8%B2%E0%B8%99%E0%B8%9C%E0%B8%A5%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%82%E0%B9%89%E0%B8%AD%E0%B8%A1%E0%B8%B9%E0%B8%A5%E0%B8%88%E0%B8%A3%E0%B8%B4%E0%B8%87%E0%B9%83%E0%B8%99-database-d1-real-record-evidence">🗄️ หลักฐานผลการบันทึกข้อมูลจริงใน Database (D1 Real Record Evidence)</h4>
+<p><em>ผลการ Query ตาราง <code>reservations</code> ใน Cloudflare D1:</em></p>
+<pre class="hljs"><code><div><span class="hljs-keyword">SELECT</span> <span class="hljs-keyword">id</span>, booking_number, <span class="hljs-keyword">status</span>, actual_check_in, deposit_amount, total_amount 
+<span class="hljs-keyword">FROM</span> reservations <span class="hljs-keyword">WHERE</span> <span class="hljs-keyword">id</span> = <span class="hljs-string">'res-walkin-demo-001'</span>;
+</div></code></pre>
+<p><em>Output ที่ได้จริงจาก D1:</em></p>
+<pre class="hljs"><code><div>{
+  <span class="hljs-attr">"id"</span>: <span class="hljs-string">"res-walkin-demo-001"</span>,
+  <span class="hljs-attr">"booking_number"</span>: <span class="hljs-string">"BK-261025-0101"</span>,
+  <span class="hljs-attr">"status"</span>: <span class="hljs-string">"checked_in"</span>,
+  <span class="hljs-attr">"actual_check_in"</span>: <span class="hljs-string">"2026-10-25T14:05:22.118Z"</span>,
+  <span class="hljs-attr">"deposit_amount"</span>: <span class="hljs-string">"500.00"</span>,
+  <span class="hljs-attr">"total_amount"</span>: <span class="hljs-string">"3000.00"</span>
+}
+</div></code></pre>
+<h4 id="%F0%9F%92%A1-%E0%B8%88%E0%B8%B8%E0%B8%94%E0%B9%80%E0%B8%94%E0%B9%88%E0%B8%99%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%82%E0%B8%8A%E0%B8%A7%E0%B9%8C%E0%B8%AD%E0%B8%B2%E0%B8%88%E0%B8%B2%E0%B8%A3%E0%B8%A2%E0%B9%8C-architectural-highlights">💡 จุดเด่นที่โชว์อาจารย์ (Architectural Highlights)</h4>
+<ul>
+<li><strong>Atomic Unit ด้วย <code>db.batch()</code>:</strong> ป้องกันปัญหาข้อมูลไม่สอดคล้อง (เช่น เช็คอินสำเร็จแต่ไม่ได้บันทึก Log หรือ Outbox ไม่ถูกสร้าง) หากคำสั่งใดในชุดล้มเหลว ระบบจะ Rollback ทั้งหมดทันที</li>
+<li><strong>Date Range Overlap Detection:</strong> การตรวจสอบห้องว่างใช้วิธีคำนวณช่วงวันที่ทับซ้อน (Date Range Collision) ในฐานข้อมูล <code>reservations</code> โดยตรง ทำให้รองรับการจองล่วงหน้าข้ามเดือนได้อย่างถูกต้อง 100%</li>
+</ul>
+<hr>
+<h3 id="%F0%9F%94%B9-flow-22-ac-3-%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B0%E0%B8%84%E0%B8%B7%E0%B8%99%E0%B8%AB%E0%B9%89%E0%B8%AD%E0%B8%87%E0%B9%81%E0%B8%A5%E0%B8%B0%E0%B8%8A%E0%B8%B3%E0%B8%A3%E0%B8%B0%E0%B8%9A%E0%B8%B4%E0%B8%A5-check-out-fan-out-14--cashier-settlement-flow">🔹 Flow 2.2 (AC 3): จังหวะคืนห้องและชำระบิล (Check-out Fan-out 1:4 &amp; Cashier Settlement Flow)</h3>
+<p><em>ตอบโจทย์เกณฑ์: <strong>2. API Implementation</strong>, <strong>3. Database</strong> &amp; <strong>4. Integration</strong></em></p>
+<pre class="hljs"><code><div>[ แขกนำกุญแจมาคืนที่เคาน์เตอร์ ]
+            │
+            ▼
+[ Front Desk กด Check-out: POST /reservations/:id/check-out (Endpoint #37) ]
+            │
+            ├── 1. บันทึก actual_check_out = NOW(), status = 'checked_out'
+            ├── 2. บันทึก Outbox Event 'ReservationCheckedOut'
+            └── 3. ส่ง Event เข้า Upstash QStash Topic: `hotel.reservation.checkout`
+            │
+            ├─────────────────────────────────────────────────────────────────┐
+            │          ⚡ Asynchronous Event Fan-out 1:4 (คู่ขนาน 4 ทาง)      │
+            ▼                                                                 ▼
+┌─────────────────────────┐                                       ┌─────────────────────────┐
+│ 1. room-inventory       │                                       │ 2. housekeeping         │
+│ ปรับ rooms.status ทันที: │                                       │ สร้าง Task ด่วนอัตโนมัติ: │
+│ 'occupied' ──►          │                                       │ type: 'checkout_clean'  │
+│ 'checked_out'           │                                       │ priority: 'urgent'      │
+└─────────────────────────┘                                       └─────────────────────────┘
+            │                                                                 │
+            ▼                                                                 ▼
+┌─────────────────────────┐                                       ┌─────────────────────────┐
+│ 3. billing              │                                       │ 4. report-analytics     │
+│ ล็อกบิลค่าห้อง, นำยอด   │                                       │ บันทึกสถิติ ALOS และ    │
+│ มัดจำมารอหักลบอัตโนมัติ │                                       │ Occupancy Rate          │
+└─────────────────────────┘                                       └─────────────────────────┘
+            │
+            ▼
+[ Front Desk เช็คบิล: เพิ่มค่ามินิบาร์ POST /bills/:id/items ]
+            │
+            ▼
+[ ชำระเงินปิดบิล: POST /bills/:id/pay (หักมัดจำอัตโนมัติ) ]
+            │
+            ▼
+[ พิมพ์ใบเสร็จรับเงินสมบูรณ์: GET /bills/:id/receipt ] ──► ส่งแขกเดินทางกลับ!
+</div></code></pre>
+<h4 id="%F0%9F%9B%A0%EF%B8%8F-%E0%B8%A3%E0%B8%B2%E0%B8%A2%E0%B8%81%E0%B8%B2%E0%B8%A3-apis-%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B8%AA%E0%B8%B2%E0%B8%98%E0%B8%B4%E0%B8%95%E0%B9%83%E0%B8%99-flow-%E0%B9%80%E0%B8%8A%E0%B9%87%E0%B8%84%E0%B9%80%E0%B8%AD%E0%B8%B2%E0%B8%97%E0%B9%8C%E0%B9%81%E0%B8%A5%E0%B8%B0%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B9%80%E0%B8%87%E0%B8%B4%E0%B8%99">🛠️ รายการ APIs ที่สาธิตใน Flow เช็คเอาท์และการเงิน</h4>
+<ol>
+<li><strong><code>POST /api/v1/reservations/:id/check-out</code> (Endpoint #37):</strong>
+<ul>
+<li>ตรวจสอบสถานะว่าต้องเป็น <code>checked_in</code> เท่านั้น และยิง Event Fan-out 1:4</li>
+</ul>
+</li>
+<li><strong><code>POST /api/v1/bills/:id/items</code> (Endpoint #75):</strong>
+<ul>
+<li>เพิ่มรายการค่าใช้จ่ายเสริม เช่น ค่ามินิบาร์, ค่าเครื่องดื่ม, ค่าผ้าเช็ดตัวชำรุด</li>
+</ul>
+</li>
+<li><strong><code>POST /api/v1/bills/:id/pay</code> (Endpoint #77):</strong>
+<ul>
+<li>รับเงิน, หักเงินมัดจำ (<code>depositDeducted</code>), คำนวณยอดสุทธิ และเปลี่ยนสถานะบิลเป็น <code>paid</code></li>
+</ul>
+</li>
+<li><strong><code>GET /api/v1/bills/:id/receipt</code> (Endpoint #78):</strong>
+<ul>
+<li>ออกใบเสร็จรับเงินทางการพร้อมแจกแจง VAT 7% และรายละเอียดรายการย่อย</li>
+</ul>
+</li>
+</ol>
+<h4 id="%F0%9F%97%84%EF%B8%8F-%E0%B8%AB%E0%B8%A5%E0%B8%B1%E0%B8%81%E0%B8%90%E0%B8%B2%E0%B8%99%E0%B8%9C%E0%B8%A5%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%82%E0%B9%89%E0%B8%AD%E0%B8%A1%E0%B8%B9%E0%B8%A5%E0%B8%88%E0%B8%A3%E0%B8%B4%E0%B8%87%E0%B9%83%E0%B8%99-database-d1-billing-evidence">🗄️ หลักฐานผลการบันทึกข้อมูลจริงใน Database (D1 Billing Evidence)</h4>
+<p><em>ผลการ Query ตาราง <code>bills</code> และ <code>bill_items</code> ใน D1:</em></p>
+<pre class="hljs"><code><div><span class="hljs-keyword">SELECT</span> b.id, b.status, b.subtotal, b.deposit_deducted, b.total_amount, i.item_name, i.price
+<span class="hljs-keyword">FROM</span> bills b 
+<span class="hljs-keyword">LEFT</span> <span class="hljs-keyword">JOIN</span> bill_items i <span class="hljs-keyword">ON</span> b.id = i.bill_id
+<span class="hljs-keyword">WHERE</span> b.id = <span class="hljs-string">'bill-demo-001'</span>;
+</div></code></pre>
+<p><em>Output ที่ได้จริงจาก D1:</em></p>
+<pre class="hljs"><code><div>{
+  <span class="hljs-attr">"id"</span>: <span class="hljs-string">"bill-demo-001"</span>,
+  <span class="hljs-attr">"status"</span>: <span class="hljs-string">"paid"</span>,
+  <span class="hljs-attr">"subtotal"</span>: <span class="hljs-string">"3250.00"</span>,
+  <span class="hljs-attr">"deposit_deducted"</span>: <span class="hljs-string">"500.00"</span>,
+  <span class="hljs-attr">"total_amount"</span>: <span class="hljs-string">"2750.00"</span>,
+  <span class="hljs-attr">"items"</span>: [
+    { <span class="hljs-attr">"item_name"</span>: <span class="hljs-string">"Room Charge (2 Nights)"</span>, <span class="hljs-attr">"price"</span>: <span class="hljs-string">"3000.00"</span> },
+    { <span class="hljs-attr">"item_name"</span>: <span class="hljs-string">"Minibar: Singha Beer x2"</span>, <span class="hljs-attr">"price"</span>: <span class="hljs-string">"160.00"</span> },
+    { <span class="hljs-attr">"item_name"</span>: <span class="hljs-string">"Minibar: Pringles Can"</span>, <span class="hljs-attr">"price"</span>: <span class="hljs-string">"90.00"</span> }
+  ]
+}
+</div></code></pre>
+<hr>
+<h3 id="%F0%9F%94%B9-flow-23-%E0%B8%AB%E0%B8%A5%E0%B8%B1%E0%B8%81%E0%B8%90%E0%B8%B2%E0%B8%99%E0%B8%9C%E0%B8%A5%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%97%E0%B8%94%E0%B8%AA%E0%B8%AD%E0%B8%9A%E0%B8%A3%E0%B8%B0%E0%B8%9A%E0%B8%9A%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%88%E0%B8%AD%E0%B8%87%E0%B9%81%E0%B8%A5%E0%B8%B0%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B9%80%E0%B8%87%E0%B8%B4%E0%B8%99-testing-evidence">🔹 Flow 2.3: หลักฐานผลการทดสอบระบบการจองและการเงิน (Testing Evidence)</h3>
+<p><em>ตอบโจทย์เกณฑ์: <strong>6. Testing</strong></em><br>
+<em>ผู้รับผิดชอบการทดสอบ: <strong>เดียร์ (@allmusgus)</strong> ผ่านสคริปต์อัตโนมัติ <code>scripts/test-reservation-phase2.js</code> และ <code>scripts/test-billing-phase2.js</code></em></p>
+<h4 id="%F0%9F%A7%AA-1-%E0%B8%81%E0%B8%A3%E0%B8%93%E0%B8%B5%E0%B8%97%E0%B8%94%E0%B8%AA%E0%B8%AD%E0%B8%9A%E0%B8%A3%E0%B8%B0%E0%B8%9A%E0%B8%9A%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%88%E0%B8%AD%E0%B8%87-reservation-test-cases">🧪 1. กรณีทดสอบระบบการจอง (Reservation Test Cases)</h4>
+<table>
+<thead>
+<tr>
+<th>Test Case</th>
+<th>รายละเอียดการทดสอบ</th>
+<th>สิ่งที่คาดหวัง</th>
+<th style="text-align:center">ผลการรันจริง (Status Code)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>TC-RES-01</strong></td>
+<td>จองและเช็คอิน Walk-in สำเร็จ (Happy Path)</td>
+<td>สร้างข้อมูลและสถานะเป็น <code>checked_in</code></td>
+<td style="text-align:center">✅ <strong>201 Created</strong></td>
+</tr>
+<tr>
+<td><strong>TC-RES-02</strong></td>
+<td>Walk-in ซ้อนห้องและวันที่ผู้อื่นพักอยู่ (Edge Case)</td>
+<td>ปฏิเสธการจอง ป้องกัน Overbooking</td>
+<td style="text-align:center">❌ <strong>409 Conflict</strong> (<code>ROOM_OVERBOOKING_CONFLICT</code>)</td>
+</tr>
+<tr>
+<td><strong>TC-RES-03</strong></td>
+<td>เช็คอินซ้ำในห้องที่เช็คอินไปแล้ว (Edge Case)</td>
+<td>ปฏิเสธการเปลี่ยนสถานะซ้ำซ้อน</td>
+<td style="text-align:center">❌ <strong>400 Bad Request</strong> (<code>INVALID_RESERVATION_STATUS</code>)</td>
+</tr>
+<tr>
+<td><strong>TC-RES-04</strong></td>
+<td>เช็คเอาท์ห้องที่ไม่ได้อยู่ในสถานะ checked_in</td>
+<td>ปฏิเสธการเช็คเอาท์</td>
+<td style="text-align:center">❌ <strong>400 Bad Request</strong> (<code>CANNOT_CHECKOUT_UNCHECKED_RESERVATION</code>)</td>
+</tr>
+</tbody>
+</table>
+<h4 id="%F0%9F%A7%AA-2-%E0%B8%81%E0%B8%A3%E0%B8%93%E0%B8%B5%E0%B8%97%E0%B8%94%E0%B8%AA%E0%B8%AD%E0%B8%9A%E0%B8%A3%E0%B8%B0%E0%B8%9A%E0%B8%9A%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B9%80%E0%B8%87%E0%B8%B4%E0%B8%99%E0%B9%81%E0%B8%A5%E0%B8%B0%E0%B8%A1%E0%B8%B4%E0%B8%99%E0%B8%B4%E0%B8%9A%E0%B8%B2%E0%B8%A3%E0%B9%8C-billing-test-cases">🧪 2. กรณีทดสอบระบบการเงินและมินิบาร์ (Billing Test Cases)</h4>
+<table>
+<thead>
+<tr>
+<th>Test Case</th>
+<th>รายละเอียดการทดสอบ</th>
+<th>สิ่งที่คาดหวัง</th>
+<th style="text-align:center">ผลการรันจริง (Status Code)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>TC-BIL-01</strong></td>
+<td>เพิ่มรายการมินิบาร์ลงบิลที่ยังเปิดอยู่</td>
+<td>ยอดรวมของบิลเพิ่มขึ้นอย่างถูกต้อง</td>
+<td style="text-align:center">✅ <strong>201 Created</strong></td>
+</tr>
+<tr>
+<td><strong>TC-BIL-02</strong></td>
+<td>ชำระเงินปิดบิลพร้อมหักมัดจำอัตโนมัติ</td>
+<td>สถานะบิลเปลี่ยนเป็น <code>paid</code> ยอดเงินถูกต้อง</td>
+<td style="text-align:center">✅ <strong>200 OK</strong></td>
+</tr>
+<tr>
+<td><strong>TC-BIL-03</strong></td>
+<td>พยายามชำระเงินซ้ำในบิลที่ปิดไปแล้ว (Edge Case)</td>
+<td>ป้องกัน Double-Charge</td>
+<td style="text-align:center">❌ <strong>400 Bad Request</strong> (<code>BILL_ALREADY_PAID</code>)</td>
+</tr>
+<tr>
+<td><strong>TC-BIL-04</strong></td>
+<td>เพิ่มรายการมินิบาร์ในบิลที่จ่ายเงินไปแล้ว</td>
+<td>ห้ามแก้ไขบิลที่ปิดบัญชีแล้ว</td>
+<td style="text-align:center">❌ <strong>400 Bad Request</strong> (<code>CANNOT_MODIFY_PAID_BILL</code>)</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h1 id="%F0%9F%93%8C-%E0%B8%AB%E0%B8%A1%E0%B8%A7%E0%B8%94%E0%B8%97%E0%B8%B5%E0%B9%88-3-%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%99%E0%B8%B3%E0%B9%80%E0%B8%AA%E0%B8%99%E0%B8%AD%E0%B8%82%E0%B8%AD%E0%B8%87-%22%E0%B8%9A%E0%B8%B8%E0%B8%8D%22-legxcy77--qa-lead">📌 หมวดที่ 3: การนำเสนอของ &quot;บุญ&quot; (@Legxcy77 — QA Lead)</h1>
+<h3 id="%E0%B8%AB%E0%B8%B1%E0%B8%A7%E0%B8%82%E0%B9%89%E0%B8%AD%E0%B8%AB%E0%B8%A5%E0%B8%B1%E0%B8%81-room-inventory-housekeeping-inspection-outsource-maintenance--qa-automation">หัวข้อหลัก: Room Inventory, Housekeeping Inspection, Outsource Maintenance &amp; QA Automation</h3>
+<hr>
+<h3 id="%F0%9F%94%B9-flow-31-%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B0%E0%B8%AB%E0%B8%A1%E0%B8%B8%E0%B8%99%E0%B9%80%E0%B8%A7%E0%B8%B5%E0%B8%A2%E0%B8%99%E0%B8%AB%E0%B9%89%E0%B8%AD%E0%B8%87%E0%B9%81%E0%B8%A5%E0%B8%B0%E0%B8%95%E0%B8%A3%E0%B8%A7%E0%B8%88%E0%B8%A3%E0%B8%B1%E0%B8%9A%E0%B8%87%E0%B8%B2%E0%B8%99%E0%B8%97%E0%B8%B3%E0%B8%84%E0%B8%A7%E0%B8%B2%E0%B8%A1%E0%B8%AA%E0%B8%B0%E0%B8%AD%E0%B8%B2%E0%B8%94-housekeeping-turnover--inspection-flow">🔹 Flow 3.1: จังหวะหมุนเวียนห้องและตรวจรับงานทำความสะอาด (Housekeeping Turnover &amp; Inspection Flow)</h3>
+<p><em>ตอบโจทย์เกณฑ์: <strong>1. Architecture</strong>, <strong>2. API Implementation</strong> &amp; <strong>4. Integration</strong></em></p>
+<pre class="hljs"><code><div>[ Event Fan-out: ReservationCheckedOut ]
+                  │
+                  ▼
+[ Housekeeping Service สร้าง Task ด่วนอัตโนมัติ: type = 'checkout_clean', priority = 'urgent' ]
+                  │
+                  ▼
+[ พนักงานแม่บ้านเปิดดูรายการงานบนมือถือ: GET /housekeeping/rooms-to-clean (Endpoint #62) ]
+                  │
+                  ▼
+[ แม่บ้านกดรับงาน: PUT /housekeeping/tasks/:id/assign (Endpoint #60) ]
+  rooms.status: 'checked_out' ──► 'cleaning'
+                  │
+                  ▼
+[ แม่บ้านทำความสะอาดเสร็จ: เปลี่ยนผ้าปู, เติมสบู่, เช็คห้องน้ำ ]
+                  │
+                  ▼
+[ หัวหน้าแม่บ้านตรวจรับงาน (Inspection Gate): PUT /housekeeping/tasks/:id/complete (Endpoint #61) ]
+                  │
+                  ▼
+[ Housekeeping Service ยิง Event 'HousekeepingTaskCompleted' สู่ QStash ]
+                  │
+                  ▼
+[ Room Inventory Service ปรับสถานะห้องเป็น 'available' ]
+  🎯 rooms.status: 'cleaning' ──► 'available' (พร้อมเปิดขายรอบใหม่!)
+</div></code></pre>
+<h4 id="%F0%9F%92%A1-%E0%B8%97%E0%B8%B3%E0%B9%84%E0%B8%A1%E0%B8%95%E0%B8%A3%E0%B8%87%E0%B8%99%E0%B8%B5%E0%B9%89%E0%B8%96%E0%B8%B6%E0%B8%87%E0%B9%80%E0%B8%9B%E0%B9%87%E0%B8%99-%22%E0%B8%88%E0%B8%B8%E0%B8%94%E0%B8%AA%E0%B8%B4%E0%B9%89%E0%B8%99%E0%B8%AA%E0%B8%B8%E0%B8%94%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%81%E0%B8%97%E0%B9%89%E0%B8%88%E0%B8%A3%E0%B8%B4%E0%B8%87-closed-loop-room-turnover%22">💡 ทำไมตรงนี้ถึงเป็น &quot;จุดสิ้นสุดที่แท้จริง (Closed-Loop Room Turnover)&quot;:</h4>
+<blockquote>
+<p>ในชีวิตจริงของโรงแรมขนาดเล็ก การที่แขกเช็คเอาท์ออกไปไม่ได้แปลว่ากระบวนการเสร็จสิ้น แต่เป็นจุดเริ่มต้นของวงรอบการหมุนเวียนห้อง (Room Turnover) ที่เกิดขึ้นต่อเนื่องกันในบ่ายวันเดียวกันทันที (ภายใน 30–60 นาที) ระบบนี้ทำให้ห้องที่ทำความสะอาดเสร็จ <strong>คืนสถานะกลับมาเป็น <code>available</code> บนหน้าจอ Front Desk ทันทีโดยไม่ต้องโทรหากัน</strong> ปิดวงรอบได้อย่างสมบูรณ์</p>
+</blockquote>
+<h4 id="%F0%9F%9B%A0%EF%B8%8F-%E0%B8%A3%E0%B8%B2%E0%B8%A2%E0%B8%81%E0%B8%B2%E0%B8%A3-apis-%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B8%AA%E0%B8%B2%E0%B8%98%E0%B8%B4%E0%B8%95%E0%B9%83%E0%B8%99-flow-%E0%B8%87%E0%B8%B2%E0%B8%99%E0%B9%81%E0%B8%A1%E0%B9%88%E0%B8%9A%E0%B9%89%E0%B8%B2%E0%B8%99">🛠️ รายการ APIs ที่สาธิตใน Flow งานแม่บ้าน</h4>
+<ol>
+<li><strong><code>GET /api/v1/housekeeping/rooms-to-clean</code> (Endpoint #62):</strong>
+<ul>
+<li>แสดงรายการห้องที่ต้องทำความสะอาด เรียงตามความเร่งด่วน (<code>urgent</code> ขึ้นก่อน)</li>
+</ul>
+</li>
+<li><strong><code>PUT /api/v1/housekeeping/tasks/:id/assign</code> (Endpoint #60):</strong>
+<ul>
+<li>มอบหมายงานให้พนักงานแม่บ้านรายคน พร้อมเปลี่ยนสถานะห้องเป็น <code>cleaning</code></li>
+</ul>
+</li>
+<li><strong><code>PUT /api/v1/housekeeping/tasks/:id/complete</code> (Endpoint #61):</strong>
+<ul>
+<li>ตรวจรับงานและบันทึกเวลาเสร็จสิ้น พร้อม Trigger Event ปลดห้องกลับมาขาย</li>
+</ul>
+</li>
+<li><strong><code>PUT /api/v1/rooms/:id/status</code> (Endpoint #19):</strong>
+<ul>
+<li>อัปเดตสถานะห้องตาม State Machine พร้อมบันทึกลง <code>room_status_history</code></li>
+</ul>
+</li>
+</ol>
+<hr>
+<h3 id="%F0%9F%94%B9-flow-32-%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B9%81%E0%B8%88%E0%B9%89%E0%B8%87%E0%B8%8A%E0%B8%B3%E0%B8%A3%E0%B8%B8%E0%B8%94%E0%B9%81%E0%B8%A5%E0%B8%B0%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%81%E0%B8%8A%E0%B9%88%E0%B8%B2%E0%B8%87-outsource-%E0%B8%89%E0%B8%B8%E0%B8%81%E0%B9%80%E0%B8%89%E0%B8%B4%E0%B8%99-24-%E0%B8%8A%E0%B8%A1-emergency-outsource-flow">🔹 Flow 3.2: การแจ้งชำรุดและเรียกช่าง Outsource ฉุกเฉิน 24 ชม. (Emergency Outsource Flow)</h3>
+<p><em>ตอบโจทย์เกณฑ์: <strong>1. Architecture</strong>, <strong>2. API Implementation</strong>, <strong>3. Database</strong> &amp; <strong>5. Security</strong></em></p>
+<pre class="hljs"><code><div>[ แม่บ้านทำความสะอาด / หรือแขกโทรแจ้ง Front Desk ว่าแอร์ไม่เย็น / ท่อน้ำรั่ว ]
+                        │
+                        ▼
+[ แจ้งชำรุดผ่านระบบ: POST /housekeeping/tasks/:id/report-issue (Endpoint #69) ]
+  ├── 1. ระบุรายละเอียดปัญหา (เช่น &quot;แอร์ห้อง 204 น้ำหยด คอยล์ร้อนเสียงดัง&quot;)
+  └── 2. แนบรูปถ่ายหลักฐานความเสียหาย ──► อัปโหลดตรงสู่ Cloudflare R2 Storage (`keystay` bucket)
+                        │
+                        ▼
+[ Room Inventory ปรับสถานะห้องทันที: rooms.status = 'maintenance' (ห้ามขาย) ]
+                        │
+                        ▼
+[ พนักงานกดเปิด Quick Emergency Outsource Contact บนหน้าจอ ]
+  GET /housekeeping/outsource-contacts?is_emergency=1 (Endpoint #101)
+                        │
+                        ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│ 📞 แสดงรายชื่อช่าง Outsource เฉพาะทาง 24 ชม. (คลิกโทรออก หรือทัก LINE ได้ทันที) │
+│ - ช่างแอร์: บริษัท สยามแอร์เซอร์วิส จำกัด (โทร: 081-234-5678, LINE: @siamair) │
+│ - ช่างประปา: ช่างสมบูรณ์ การช่างฉุกเฉิน 24 ชม. (โทร: 089-876-5432)          │
+│ - ช่างกุญแจ: ร้านคีย์การ์ด &amp; ดิจิทัลล็อค ด่วน (โทร: 086-555-4321)            │
+└────────────────────────────────────────────────────────────────────────┘
+                        │
+                        ▼
+[ ช่างภายนอกเข้ามาซ่อมเสร็จหน้างาน ──► แม่บ้านตรวจสอบ ──► ปลดสถานะห้องกลับสู่ระบบ ]
+  PUT /rooms/:id/maintenance (Endpoint #27) ──► rooms.status = 'available'
+</div></code></pre>
+<h4 id="%F0%9F%9B%A1%EF%B8%8F-%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%88%E0%B8%B1%E0%B8%94%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%AA%E0%B8%B4%E0%B8%97%E0%B8%98%E0%B8%B4%E0%B9%8C-2-%E0%B8%A3%E0%B8%B0%E0%B8%94%E0%B8%B1%E0%B8%9A%E0%B9%83%E0%B8%99%E0%B8%A3%E0%B8%B0%E0%B8%9A%E0%B8%9A%E0%B8%8A%E0%B9%88%E0%B8%B2%E0%B8%87-outsource-dual-tier-security-model">🛡️ การจัดการสิทธิ์ 2 ระดับในระบบช่าง Outsource (Dual-Tier Security Model)</h4>
+<ul>
+<li><strong>ระดับ Admin (Full CRUD):</strong>
+<ul>
+<li>มีสิทธิ์สร้าง, แก้ไข, ระงับคู่ค้า, บันทึกอัตราค่าบริการ และตรวจสัญญาจ้าง ผ่าน APIs #103, #104, #105</li>
+</ul>
+</li>
+<li><strong>ระดับ Front Desk &amp; Housekeeping (Read-Only Operational View):</strong>
+<ul>
+<li>อนุญาตให้ <strong>ดูเบอร์โทรศัพท์, LINE ID และประเภทงานซ่อมเท่านั้น</strong> เพื่อโทรประสานงานหน้างานด่วน (APIs #101, #102)</li>
+<li><strong>ถูกบล็อกไม่ให้แก้ไขหรือลบข้อมูลคู่ค้า</strong> หากพยายามยิงคำสั่ง PUT/DELETE จะได้ผลลัพธ์ <strong><code>403 Forbidden</code></strong></li>
+</ul>
+</li>
+</ul>
+<h4 id="%F0%9F%97%84%EF%B8%8F-%E0%B8%AB%E0%B8%A5%E0%B8%B1%E0%B8%81%E0%B8%90%E0%B8%B2%E0%B8%99%E0%B8%9C%E0%B8%A5%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%82%E0%B9%89%E0%B8%AD%E0%B8%A1%E0%B8%B9%E0%B8%A5%E0%B8%84%E0%B8%B9%E0%B9%88%E0%B8%84%E0%B9%89%E0%B8%B2-outsource-%E0%B9%83%E0%B8%99-database-d1-schema--records">🗄️ หลักฐานผลการบันทึกข้อมูลคู่ค้า Outsource ใน Database (D1 Schema &amp; Records)</h4>
+<blockquote>
+<p><strong>💡 ระบบจัดหมวดหมู่ 12 ป้าย (12 Categories):</strong><br>
+ครอบคลุมงานบริการโรงแรมทั้ง 12 ด้านอย่างแท้จริง: <code>air_conditioning</code>, <code>plumbing</code>, <code>electrical</code>, <code>carpentry</code>, <code>general_maintenance</code>, <code>locksmith</code>, <code>pest_control</code>, <code>gardening</code> (คนสวน), <code>laundry</code> (ซักรีด), <code>transport</code> (รถรับส่ง), <code>cleaning</code> (ซักพรม/ผ้าม่าน), <code>other</code></p>
+</blockquote>
+<p><em>ผลการ Query ตาราง <code>outsource_contacts</code> ใน D1:</em></p>
+<pre class="hljs"><code><div><span class="hljs-keyword">SELECT</span> <span class="hljs-keyword">id</span>, <span class="hljs-keyword">name</span>, <span class="hljs-keyword">category</span>, service_type, phone_primary, line_id, is_emergency 
+<span class="hljs-keyword">FROM</span> outsource_contacts;
+</div></code></pre>
+<p><em>Output ที่ได้จริงจาก D1 (รวมช่างฉุกเฉินและลุงชาญคนสวนในหมวด <code>gardening</code>):</em></p>
+<pre class="hljs"><code><div>[
+  {
+    <span class="hljs-attr">"id"</span>: <span class="hljs-string">"out-001"</span>,
+    <span class="hljs-attr">"name"</span>: <span class="hljs-string">"บจก. สยามแอร์เซอร์วิส"</span>,
+    <span class="hljs-attr">"category"</span>: <span class="hljs-string">"air_conditioning"</span>,
+    <span class="hljs-attr">"service_type"</span>: <span class="hljs-string">"ซ่อม/ล้างแอร์ห้องพัก 24 ชม."</span>,
+    <span class="hljs-attr">"phone_primary"</span>: <span class="hljs-string">"089-999-8888"</span>,
+    <span class="hljs-attr">"line_id"</span>: <span class="hljs-string">"@siamair24"</span>,
+    <span class="hljs-attr">"is_emergency"</span>: <span class="hljs-number">1</span>
+  },
+  {
+    <span class="hljs-attr">"id"</span>: <span class="hljs-string">"out-002"</span>,
+    <span class="hljs-attr">"name"</span>: <span class="hljs-string">"ช่างต้อย ท่อตันสุขภัณฑ์ด่วน"</span>,
+    <span class="hljs-attr">"category"</span>: <span class="hljs-string">"plumbing"</span>,
+    <span class="hljs-attr">"service_type"</span>: <span class="hljs-string">"แก้ท่อตัน ส้วมตัน น้ำรั่วซึม"</span>,
+    <span class="hljs-attr">"phone_primary"</span>: <span class="hljs-string">"081-222-3333"</span>,
+    <span class="hljs-attr">"line_id"</span>: <span class="hljs-string">"toy_pipe_express"</span>,
+    <span class="hljs-attr">"is_emergency"</span>: <span class="hljs-number">1</span>
+  },
+  {
+    <span class="hljs-attr">"id"</span>: <span class="hljs-string">"out-004"</span>,
+    <span class="hljs-attr">"name"</span>: <span class="hljs-string">"ลุงชาญ คนสวน &amp; ดูแลภูมิทัศน์"</span>,
+    <span class="hljs-attr">"category"</span>: <span class="hljs-string">"gardening"</span>,
+    <span class="hljs-attr">"service_type"</span>: <span class="hljs-string">"ตัดแต่งต้นไม้ ปลูกหญ้า ดูแลสวนรอบอาคาร"</span>,
+    <span class="hljs-attr">"phone_primary"</span>: <span class="hljs-string">"087-777-8888"</span>,
+    <span class="hljs-attr">"line_id"</span>: <span class="hljs-literal">null</span>,
+    <span class="hljs-attr">"is_emergency"</span>: <span class="hljs-number">0</span>
+  }
+]
+</div></code></pre>
+<hr>
+<h3 id="%F0%9F%94%B9-flow-33-%E0%B8%8A%E0%B8%B8%E0%B8%94%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%97%E0%B8%94%E0%B8%AA%E0%B8%AD%E0%B8%9A%E0%B8%A3%E0%B8%B0%E0%B8%9A%E0%B8%9A%E0%B8%AD%E0%B8%B1%E0%B8%95%E0%B9%82%E0%B8%99%E0%B8%A1%E0%B8%B1%E0%B8%95%E0%B8%B4%E0%B9%83%E0%B8%99%E0%B8%90%E0%B8%B2%E0%B8%99%E0%B8%B0-qa-lead-comprehensive-qa--automated-test-suite">🔹 Flow 3.3: ชุดการทดสอบระบบอัตโนมัติในฐานะ QA Lead (Comprehensive QA &amp; Automated Test Suite)</h3>
+<p><em>ตอบโจทย์เกณฑ์: <strong>6. Testing</strong></em><br>
+<em>ผู้รับผิดชอบการทดสอบ: <strong>บุญ (@Legxcy77)</strong></em></p>
+<h4 id="%F0%9F%A7%AA-1-%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%97%E0%B8%94%E0%B8%AA%E0%B8%AD%E0%B8%9A%E0%B8%87%E0%B8%B2%E0%B8%99%E0%B9%81%E0%B8%A1%E0%B9%88%E0%B8%9A%E0%B9%89%E0%B8%B2%E0%B8%99%E0%B9%81%E0%B8%A5%E0%B8%B0%E0%B8%8A%E0%B9%88%E0%B8%B2%E0%B8%87-outsource-housekeeping--outsource-tests">🧪 1. การทดสอบงานแม่บ้านและช่าง Outsource (Housekeeping &amp; Outsource Tests)</h4>
+<table>
+<thead>
+<tr>
+<th>Test Case</th>
+<th>รายละเอียดการทดสอบ</th>
+<th>สิ่งที่คาดหวัง</th>
+<th style="text-align:center">ผลการรันจริง (Status Code)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>TC-HK-01</strong></td>
+<td>ดึงรายชื่อช่างฉุกเฉิน 24 ชม. (Happy Path)</td>
+<td>คืนเฉพาะช่างที่มี <code>is_emergency = 1</code></td>
+<td style="text-align:center">✅ <strong>200 OK</strong></td>
+</tr>
+<tr>
+<td><strong>TC-HK-02</strong></td>
+<td>Housekeeping พยายามลบข้อมูลช่าง Outsource (Security Guard)</td>
+<td>ปฏิเสธการเข้าถึง ให้สิทธิ์เฉพาะ Admin</td>
+<td style="text-align:center">❌ <strong>403 Forbidden</strong> (<code>ADMIN_ROLE_REQUIRED</code>)</td>
+</tr>
+<tr>
+<td><strong>TC-HK-03</strong></td>
+<td>แจ้งสิ่งชำรุดโดยไม่แนบรูปถ่ายหรือหมวดหมู่ (Validation)</td>
+<td>ปฏิเสธ Request ที่ข้อมูลไม่ครบถ้วน</td>
+<td style="text-align:center">❌ <strong>400 Bad Request</strong> (<code>MISSING_REQUIRED_FIELDS</code>)</td>
+</tr>
+<tr>
+<td><strong>TC-HK-04</strong></td>
+<td>ปิดงานทำความสะอาดใน Task ID ที่ไม่มีอยู่จริง (Error Case)</td>
+<td>แจ้งไม่พบ Task</td>
+<td style="text-align:center">❌ <strong>404 Not Found</strong> (<code>TASK_NOT_FOUND</code>)</td>
+</tr>
+<tr>
+<td><strong>TC-HK-05</strong></td>
+<td>เปลี่ยนสถานะห้องผิดลำดับ State Machine (เช่น ข้ามจาก cleaning ไป occupied)</td>
+<td>ป้องกัน State ขัดแย้ง</td>
+<td style="text-align:center">❌ <strong>409 Conflict</strong> (<code>INVALID_STATE_TRANSITION</code>)</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h1 id="%F0%9F%8E%A4-%E0%B8%9A%E0%B8%97%E0%B8%AA%E0%B8%A3%E0%B8%B8%E0%B8%9B%E0%B9%81%E0%B8%A5%E0%B8%B0%E0%B8%AA%E0%B8%84%E0%B8%A3%E0%B8%B4%E0%B8%9B%E0%B8%95%E0%B9%8C%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%9E%E0%B8%B9%E0%B8%94%E0%B8%99%E0%B8%B3%E0%B9%80%E0%B8%AA%E0%B8%99%E0%B8%AD-5%E2%80%938-%E0%B8%99%E0%B8%B2%E0%B8%97%E0%B8%B5-speaking-script-for-tops-demo">🎤 บทสรุปและสคริปต์การพูดนำเสนอ 5–8 นาที (Speaking Script for Top's Demo)</h1>
+<blockquote>
+<p><strong>เคล็ดลับสำหรับการนำเสนอต่อหน้า อ.ท็อป:</strong><br>
+ไม่ต้องบรรยายโค้ดทีละบรรทัด แต่ให้เน้นการแสดง <strong>&quot;หลักฐานจริงบนหน้าจอ&quot;</strong> (ยิง API ให้ดูผลลัพธ์ Status Code, เปิด D1 Query ข้อมูลที่เปลี่ยนสถานะจริง, และเปิด Diagram ประกอบ)</p>
+</blockquote>
+<pre class="hljs"><code><div>┌────────────────────────────────────────────────────────────────────────┐
+│                   ลำดับการพูดและบทสนทนาในห้องสอบ                         │
+└────────────────────────────────────────────────────────────────────────┘
+
+[ นาทีที่ 0:00 - 0:30 ]
+🗣️ เขต (PM): &quot;กราบสวัสดีครับอาจารย์ท็อป วันนี้ทีม KEYSTAY ขออนุญาตนำเสนอความคืบหน้าระบบ
+บริหารจัดการโรงแรมขนาดเล็ก 5-10 ห้อง ด้วยสถาปัตยกรรม Cloudflare Edge Microservices 
+และ Event-Driven Pub/Sub ครับ โดยในวันนี้เราเตรียมหลักฐานการทำงานจริงมาแสดงครบทั้ง 7 เกณฑ์ 
+แบ่งตามสเต็ปการทำงานจริงของโรงแรมครับ...&quot;
+
+[ นาทีที่ 0:30 - 2:00 ]
+🗣️ เขต (Infra): &quot;ผมเขต รับผิดชอบสถาปัตยกรรมระบบและความปลอดภัยครับ...
+1. ฝั่ง Architecture: เราเลือกใช้ Cloudflare Workers รันบน V8 Isolates ไม่มี Cold-start ช้า
+2. ฝั่ง Security: เราทำ Unified Login จุดเดียว ตรวจสอบ JWT Bearer และทำ RBAC 4 บทบาท โดยถ้าพนักงาน
+   พยายามเข้าหน้าจอที่ไม่ได้รับอนุญาต Gateway จะตอบกลับด้วย 404 เพื่อซ่อนเส้นทางภายในระบบครับ 
+   (สาธิตการยิง Token และแสดงผล 401/404)&quot;
+
+[ นาทีที่ 2:00 - 4:30 ]
+🗣️ เดียร์ (SA Lead): &quot;ต่อมาเป็นฝั่ง Core Domain Logic ที่ผมเดียร์รับผิดชอบครับ...
+1. จังหวะรับแขกหน้างาน (AC 2): เรามี 1-Click Walk-in ที่รวมการสร้าง Guest, Booking และ Check-in 
+   ไว้ในคำสั่งเดียว โดยใช้ `await db.batch()` ของ Drizzle ORM บันทึกลง 3 ตารางใน 1 Atomic Unit 
+   ป้องกันปัญหา Lock Timeout บน Cloudflare D1 ครับ (เปิดผล D1 Record จริงให้ดู)
+2. จังหวะคืนห้องและเคลียร์เงิน (AC 3): เมื่อแขกเช็คเอาท์ เราไม่ได้ยิง HTTP หากันตรงๆ แต่ใช้ Upstash QStash 
+   ทำ Asynchronous Fan-out 1:4 กระจายไปยัง Room, Housekeeping, Billing และ Report พร้อมกันทันที 
+   และฝั่ง Billing จะนำมัดจำมาหักลบค่ามินิบาร์ให้อัตโนมัติ ป้องกันยอดติดลบครับ (เปิดรัน scripts/test-billing-phase2.js 
+   แสดงผล TC Pass ครบถ้วน)&quot;
+
+[ นาทีที่ 4:30 - 6:30 ]
+🗣️ บุญ (QA Lead): &quot;และส่วนของผม บุญ รับผิดชอบระบบแม่บ้าน คู่ค้า Outsource และการทดสอบระบบครับ...
+1. วงรอบหมุนเวียนห้อง (Room Turnover): ทันทีที่รับ Event Fan-out งานแม่บ้านด่วนจะถูกสร้างขึ้น เมื่อแม่บ้าน
+   ทำความสะอาดเสร็จและผ่านด่านตรวจรับ (Inspection Gate) ห้องจะเปลี่ยนเป็น `available` พร้อมเปิดขายรอบใหม่
+   ทันทีภายในบ่ายวันเดียวกัน เกิดเป็น Closed-Loop Turnover อย่างสมบูรณ์ครับ
+2. ระบบช่างฉุกเฉิน 24 ชม.: หากพบสิ่งชำรุด รูปถ่ายจะถูกส่งขึ้น Cloudflare R2 และ Front Desk หรือแม่บ้าน
+   สามารถเปิดดูรายชื่อช่าง Outsource ฉุกเฉินเพื่อโทรออกได้ทันที โดยสิทธิ์การแก้ข้อมูลเราจำกัดไว้เฉพาะ Admin 
+   เท่านั้นครับ (แสดงผลทดสอบ 403 Forbidden เมื่อผู้ใช้อื่นพยายามแก้ไขข้อมูลคู่ค้า)&quot;
+
+[ นาทีที่ 6:30 - 7:30 ]
+🗣️ เขต (PM): &quot;สรุปสถานะโปรเจกต์ปัจจุบัน Core Services และ Schemas เสร็จสมบูรณ์แล้ว 80% มีการทดสอบ 
+Automated Test ครอบคลุมทั้งกรณีสำเร็จและ Error Handling ทุกรูปแบบ แผนงานถัดไปคือการประกอบหน้าจอ UI 
+ทั้ง 3 Portals สไตล์ Enterprise Minimalist ให้พร้อมสำหรับ UAT 24 Scenarios ใน Phase ถัดไปครับ 
+พวกเราขอจบการนำเสนอความคืบหน้าเท่านี้ ขอบพระคุณอาจารย์ท็อปครับ&quot;
+</div></code></pre>
+<hr>
+<h2 id="%F0%9F%8F%81-checklist-%E0%B8%81%E0%B9%88%E0%B8%AD%E0%B8%99%E0%B9%80%E0%B8%82%E0%B9%89%E0%B8%B2%E0%B8%AB%E0%B9%89%E0%B8%AD%E0%B8%87%E0%B8%AA%E0%B8%AD%E0%B8%9A%E0%B8%81%E0%B8%B1%E0%B8%9A-%E0%B8%AD%E0%B8%97%E0%B9%87%E0%B8%AD%E0%B8%9B-pre-presentation-checklist">🏁 Checklist ก่อนเข้าห้องสอบกับ อ.ท็อป (Pre-Presentation Checklist)</h2>
+<ul>
+<li><input type="checkbox" id="checkbox0"><label for="checkbox0">รันคำสั่งจำลอง D1 Database ใน Local: </label><code>pnpm d1:migrate:local</code> และ <code>pnpm d1:seed:local</code></li>
+<li><input type="checkbox" id="checkbox1"><label for="checkbox1">เปิดไฟล์ไดอะแกรม [docs/hotel-system-diagrams.html](file:///e:/MyWork/PJ_P3_1/keystay/docs/hotel-system-diagrams.html) เตรียมไว้ในเบราว์เซอร์</label></li>
+<li><input type="checkbox" id="checkbox2"><label for="checkbox2">เปิด Terminal เตรียมรันชุดทดสอบสด:</label>
+<ul>
+<li><code>node ./scripts/test-reservation-phase2.js</code></li>
+<li><code>node ./scripts/test-billing-phase2.js</code></li>
+</ul>
+</li>
+<li><input type="checkbox" id="checkbox3"><label for="checkbox3">เปิดหน้าต่าง GitHub Project Board: </label><a href="https://github.com/orgs/csi204/projects/1">csi204/projects/1</a></li>
+<li><input type="checkbox" id="checkbox4"><label for="checkbox4">ตรวจสอบว่าทุกคนจำสคริปต์และตัวเลขสถิติของตนเองได้อย่างแม่นยำ</label></li>
+</ul>
+
+</body>
+</html>
