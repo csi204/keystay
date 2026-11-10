@@ -67,11 +67,33 @@ export const reportIssueHandler = async (c: any) => {
       return c.json({ success: false, error: 'NOT_FOUND', message: 'Housekeeping task not found' }, 404);
     }
 
-    finalRoomId = task.roomId;
-    finalRoomNumber = task.roomNumber;
+    if (!finalRoomId) {
+      finalRoomId = task.roomId;
+    }
+    if (!finalRoomNumber) {
+      finalRoomNumber = task.roomNumber;
+    }
 
     if (!payload.reportedBy && task.assignedTo) {
       payload.reportedBy = task.assignedTo;
+    }
+  }
+
+  // Auto-resolve reportedBy if missing
+  if (!payload.reportedBy) {
+    const callerUserId = c.req.header('x-user-id');
+    if (callerUserId) {
+      const staffByUser = await db
+        .select()
+        .from(housekeepingStaff)
+        .where(eq(housekeepingStaff.userId, callerUserId))
+        .get();
+      if (staffByUser) {
+        payload.reportedBy = staffByUser.id;
+      }
+    }
+    if (!payload.reportedBy) {
+      payload.reportedBy = 'hk-staff-001';
     }
   }
 
@@ -339,6 +361,37 @@ issuesRoute.put('/:id/status', async (c) => {
 
   await db.update(roomIssues).set(updateData).where(eq(roomIssues.id, id));
 
+  const updated = await db
+    .select()
+    .from(roomIssues)
+    .where(eq(roomIssues.id, id))
+    .get();
+
+  return c.json({ success: true, data: updated });
+});
+
+issuesRoute.put('/:id/resolve', async (c) => {
+  const id = c.req.param('id');
+  const body = await c.req.json().catch(() => ({}));
+  const db = getDb(c.env.DB);
+  const existing = await db
+    .select()
+    .from(roomIssues)
+    .where(eq(roomIssues.id, id))
+    .get();
+
+  if (!existing) {
+    return c.json({ success: false, error: 'NOT_FOUND', message: 'Room issue not found' }, 404);
+  }
+
+  const now = new Date().toISOString();
+  const updateData: any = {
+    status: 'resolved',
+    resolvedAt: now,
+    receivedByName: body.receivedByName || body.received_by_name || 'Front Desk Customer',
+  };
+
+  await db.update(roomIssues).set(updateData).where(eq(roomIssues.id, id));
   const updated = await db
     .select()
     .from(roomIssues)

@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, or } from 'drizzle-orm';
 import { getDb } from '../db/client';
 import {
   rooms,
@@ -272,7 +272,7 @@ const ALLOWED_TRANSITIONS: Record<string, string[]> = {
   available: ['reserved', 'occupied', 'cleaning', 'maintenance', 'out_of_order'],
   reserved: ['occupied', 'available'],
   occupied: ['checked_out', 'occupied'],
-  checked_out: ['cleaning'],
+  checked_out: ['cleaning', 'available'],
   cleaning: ['available', 'maintenance'],
   maintenance: ['cleaning', 'available', 'out_of_order'],
   out_of_order: ['maintenance', 'available'],
@@ -291,11 +291,16 @@ const updateRoomStatusHandler = async (c: any) => {
   }
 
   const db = getDb(c.env.DB);
-  const room = await db.select().from(rooms).where(eq(rooms.id, id)).get();
+  const room = await db
+    .select()
+    .from(rooms)
+    .where(or(eq(rooms.id, id), eq(rooms.roomNumber, id), eq(rooms.roomNumber, id.replace(/^rm-/, ''))))
+    .get();
   if (!room) {
     return c.json({ success: false, error: 'NOT_FOUND', message: 'Room not found' }, 404);
   }
 
+  const canonicalRoomId = room.id;
   const previousStatus = room.status;
   const newStatus = parsed.data.status;
 
@@ -319,7 +324,7 @@ const updateRoomStatusHandler = async (c: any) => {
   const outboxId = crypto.randomUUID();
 
   const outboxPayload = JSON.stringify({
-    roomId: id,
+    roomId: canonicalRoomId,
     roomNumber: room.roomNumber,
     previousStatus,
     newStatus,
@@ -329,10 +334,10 @@ const updateRoomStatusHandler = async (c: any) => {
 
   // Atomic db.batch() according to Rule 2 in skill.md
   await db.batch([
-    db.update(rooms).set({ status: newStatus, updatedAt: now }).where(eq(rooms.id, id)),
+    db.update(rooms).set({ status: newStatus, updatedAt: now }).where(eq(rooms.id, canonicalRoomId)),
     db.insert(roomStatusHistory).values({
       id: historyId,
-      roomId: id,
+      roomId: canonicalRoomId,
       previousStatus,
       newStatus,
       changedBy: parsed.data.changedBy ?? null,

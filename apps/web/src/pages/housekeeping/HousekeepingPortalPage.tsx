@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Logo } from '../../components/common/Logo';
 import { QuickContactModal } from '../../components/housekeeping/QuickContactModal';
-import { clearAuthSession, getAuthToken, apiUrl } from '../../lib/api';
+import { clearAuthSession, getAuthToken, getAuthUser, apiUrl } from '../../lib/api';
 import {
   Sparkles,
   PhoneCall,
@@ -47,6 +47,9 @@ import {
   Eye,
   HelpCircle,
   Briefcase,
+  Zap,
+  DoorOpen,
+  Pin,
 } from 'lucide-react';
 
 // Room & Task Interfaces
@@ -125,8 +128,8 @@ export const HOTEL_CHECKLIST_GROUPS: ChecklistGroup[] = [
     items: [
       {
         id: 'minibarRefill',
-        label: 'ตรวจเช็คเครื่องดื่มในตู้เย็นและเติมตามมาตรฐาน',
-        sublabel: 'น้ำอัดลม ขนมขบเคี้ยว และเบียร์ครบจำนวนตามกำหนด',
+        label: 'ตรวจเช็คและเติมมินิบาร์ครบเซ็ตแล้ว (พร้อมปล่อยห้อง)',
+        sublabel: 'เครื่องดื่ม ขนมขบเคี้ยวในตู้เย็น และเบียร์ครบจำนวนตามมาตรฐาน',
       },
       {
         id: 'waterKettle',
@@ -164,8 +167,8 @@ interface CleaningTaskItem {
   roomNumber: string;
   floor: number;
   roomType: string;
-  taskType: 'checkout_clean' | 'stayover_clean' | 'inspect';
-  priority: 'urgent' | 'high' | 'normal';
+  taskType: 'checkout_clean' | 'stayover_clean' | 'inspect' | 'daily_clean' | 'deep_clean' | 'inspection';
+  priority: 'urgent' | 'high' | 'normal' | 'low';
   status: 'pending' | 'in_progress' | 'completed';
   assignedTo: string;
   estMinutes: number;
@@ -178,245 +181,17 @@ interface RoomStatusItem {
   roomNumber: string;
   floor: number;
   type: string;
-  status: 'available' | 'cleaning' | 'maintenance' | 'occupied' | 'reserved';
+  status: 'available' | 'cleaning' | 'maintenance' | 'occupied' | 'reserved' | 'checked_out' | 'out_of_order';
   guestInfo?: string;
   notes?: string;
   outsourceNeeded?: string;
 }
-
-const INITIAL_TASKS: CleaningTaskItem[] = [
-  {
-    id: 'hkt-105',
-    roomNumber: '105',
-    floor: 1,
-    roomType: 'สแตนดาร์ด เตียงคู่',
-    taskType: 'checkout_clean',
-    priority: 'high',
-    status: 'in_progress',
-    assignedTo: 'แม่บ้านสุดา',
-    estMinutes: 30,
-    notes: 'เช็คเอาท์แล้ว • แขกใหม่เข้า 14:00 น.',
-    checklist: {
-      linen: true,
-      bedTuck: true,
-      dusting: false,
-      floorClean: false,
-      toiletSanitize: true,
-      glassMirror: false,
-      towelsReplace: false,
-      amenitiesRefill: false,
-      minibarRefill: false,
-      waterKettle: false,
-      trashEmptied: false,
-      acRemoteSpray: false,
-    },
-  },
-  {
-    id: 'hkt-205',
-    roomNumber: '205',
-    floor: 2,
-    roomType: 'ดีลักซ์ มีระเบียง',
-    taskType: 'checkout_clean',
-    priority: 'urgent',
-    status: 'pending',
-    assignedTo: 'แม่บ้านสุดา',
-    estMinutes: 35,
-    guestName: 'คุณลิซ่า หว่อง',
-    notes: 'ด่วนพิเศษ เข้า 13:00 น. • ห้องว่างพร้อมเข้าทำ',
-    checklist: {},
-  },
-  {
-    id: 'hkt-203',
-    roomNumber: '203',
-    floor: 2,
-    roomType: 'ห้องดีลักซ์',
-    taskType: 'checkout_clean',
-    priority: 'urgent',
-    status: 'pending',
-    assignedTo: 'แม่บ้านสุดา',
-    estMinutes: 30,
-    guestName: 'คุณวิภา รัตนากุล',
-    notes: 'ด่วนพิเศษ เข้า 12:30 น. • แขกขอล่วงหน้า จัดผลไม้ต้อนรับบนโต๊ะ',
-    checklist: {},
-  },
-  {
-    id: 'hkt-104',
-    roomNumber: '104',
-    floor: 1,
-    roomType: 'ห้องสแตนดาร์ด',
-    taskType: 'checkout_clean',
-    priority: 'high',
-    status: 'pending',
-    assignedTo: 'แม่บ้านสุดา',
-    estMinutes: 25,
-    guestName: 'คุณยูกิ ทานากะ',
-    notes: 'เช็คเอาท์แล้ว 11:45 น. • แขกใหม่เข้า 14:00 น.',
-    checklist: {},
-  },
-  {
-    id: 'hkt-106',
-    roomNumber: '106',
-    floor: 1,
-    roomType: 'สแตนดาร์ด เตียงคู่',
-    taskType: 'checkout_clean',
-    priority: 'high',
-    status: 'pending',
-    assignedTo: 'แม่บ้านสุดา',
-    estMinutes: 30,
-    notes: 'เช็คเอาท์แล้ว 11:00 น. • ตรวจสอบกลิ่นควันบุหรี่ระเบียง',
-    checklist: {},
-  },
-  {
-    id: 'hkt-204',
-    roomNumber: '204',
-    floor: 2,
-    roomType: 'ห้องดีลักซ์',
-    taskType: 'checkout_clean',
-    priority: 'high',
-    status: 'pending',
-    assignedTo: 'แม่บ้านสุดา',
-    estMinutes: 30,
-    guestName: 'คุณเอมิลี่ คาร์เตอร์',
-    notes: 'เช็คเอาท์แล้ว • มีกระเป๋าฝากส่งขึ้นห้องพักช่วง 15:00 น.',
-    checklist: {},
-  },
-  {
-    id: 'hkt-302',
-    roomNumber: '302',
-    floor: 3,
-    roomType: 'สแตนดาร์ด วิวสวน',
-    taskType: 'checkout_clean',
-    priority: 'high',
-    status: 'pending',
-    assignedTo: 'แม่บ้านสุดา',
-    estMinutes: 25,
-    notes: 'เช็คเอาท์แล้ว • ลูกค้าจองผ่านระบบเข้าพัก 14:30 น.',
-    checklist: {},
-  },
-  {
-    id: 'hkt-301',
-    roomNumber: '301',
-    floor: 3,
-    roomType: 'สแตนดาร์ด วิวสวน',
-    taskType: 'stayover_clean',
-    priority: 'normal',
-    status: 'pending',
-    assignedTo: 'แม่บ้านสุดา',
-    estMinutes: 20,
-    notes: 'ข้อความแขก: ขอผ้าเช็ดตัวเพิ่ม 2 ผืน และน้ำดื่ม 2 ขวด',
-    checklist: {},
-  },
-  {
-    id: 'hkt-201',
-    roomNumber: '201',
-    floor: 2,
-    roomType: 'ห้องดีลักซ์',
-    taskType: 'stayover_clean',
-    priority: 'normal',
-    status: 'pending',
-    assignedTo: 'แม่บ้านสุดา',
-    estMinutes: 20,
-    guestName: 'คุณสมชาย ใจดี',
-    notes: 'แขกพักต่อเนื่อง • ขอเปลี่ยนเฉพาะผ้าเช็ดตัวและเติมน้ำดื่ม',
-    checklist: {},
-  },
-  {
-    id: 'hkt-206',
-    roomNumber: '206',
-    floor: 2,
-    roomType: 'ดีลักซ์ มีระเบียง',
-    taskType: 'stayover_clean',
-    priority: 'normal',
-    status: 'pending',
-    assignedTo: 'แม่บ้านสุดา',
-    estMinutes: 20,
-    notes: 'แขกพักต่อวันที่สอง • ขอเติมชุดชากาแฟและแชมพูเพิ่ม',
-    checklist: {},
-  },
-  {
-    id: 'hkt-303',
-    roomNumber: '303',
-    floor: 3,
-    roomType: 'สแตนดาร์ด วิวสวน',
-    taskType: 'stayover_clean',
-    priority: 'normal',
-    status: 'pending',
-    assignedTo: 'แม่บ้านสุดา',
-    estMinutes: 20,
-    notes: 'แขกพักต่อวันที่ 3 • ขอเก็บขยะและกวาดระเบียงห้องพัก',
-    checklist: {},
-  },
-  {
-    id: 'hkt-103',
-    roomNumber: '103',
-    floor: 1,
-    roomType: 'ห้องสแตนดาร์ด',
-    taskType: 'inspect',
-    priority: 'normal',
-    status: 'pending',
-    assignedTo: 'แม่บ้านสุดา',
-    estMinutes: 15,
-    notes: 'ตรวจความเรียบร้อยรอบสุดท้ายก่อนปล่อยห้องขาย',
-    checklist: {},
-  },
-  {
-    id: 'hkt-202',
-    roomNumber: '202',
-    floor: 2,
-    roomType: 'ห้องดีลักซ์',
-    taskType: 'inspect',
-    priority: 'normal',
-    status: 'pending',
-    assignedTo: 'แม่บ้านสุดา',
-    estMinutes: 15,
-    notes: 'ตรวจเช็คมินิบาร์และระเบียงครบถ้วนก่อนปล่อยขาย',
-    checklist: {},
-  },
-  {
-    id: 'hkt-305',
-    roomNumber: '305',
-    floor: 3,
-    roomType: 'สแตนดาร์ด วิวสวน',
-    taskType: 'inspect',
-    priority: 'normal',
-    status: 'pending',
-    assignedTo: 'แม่บ้านสุดา',
-    estMinutes: 15,
-    notes: 'ช่างแอร์ซ่อมท่อน้ำทิ้งเสร็จแล้ว • ตรวจสอบความสะอาดก่อนเปิดระบบ',
-    checklist: {},
-  },
-];
 
 interface CompletedRoomItem {
   roomNumber: string;
   finishedAt: string;
   inspector: string;
 }
-
-const INITIAL_COMPLETED_ROOMS: CompletedRoomItem[] = [
-  { roomNumber: '101', finishedAt: '10:45 น.', inspector: 'แม่บ้านสุดา' },
-  { roomNumber: '102', finishedAt: '09:20 น.', inspector: 'แม่บ้านสุดา' },
-];
-
-const INITIAL_ROOM_STATUS_LIST: RoomStatusItem[] = [
-  // ชั้น 1
-  { roomNumber: '101', floor: 1, type: 'ห้องสแตนดาร์ด', status: 'available', guestInfo: 'คุณณัฐพงศ์ (กำลังเข้าพัก)', notes: 'จัดชุดเครื่องนอนคู่ สำเร็จ' },
-  { roomNumber: '102', floor: 1, type: 'ห้องสแตนดาร์ด', status: 'available', guestInfo: 'คุณไมเคิล แทน (กำลังเข้าพัก)', notes: 'จัดชุดเครื่องนอนคู่ สำเร็จ' },
-  { roomNumber: '103', floor: 1, type: 'ห้องสแตนดาร์ด', status: 'available', guestInfo: 'ห้องว่างพร้อมเปิดขาย', notes: 'ตรวจสอบคุณภาพแล้วเมื่อ 09:40 น. โดยซุปเปอร์ไวเซอร์' },
-  { roomNumber: '104', floor: 1, type: 'ห้องสแตนดาร์ด', status: 'available', guestInfo: 'คุณยูกิ ทานากะ', notes: 'ห้องเรียบร้อย พร้อมบริการ' },
-  { roomNumber: '105', floor: 1, type: 'ห้องสแตนดาร์ด', status: 'cleaning', guestInfo: 'มอบหมาย: แม่บ้านสุดา (คาดเสร็จ 12:15 น.)', notes: 'กำลังทำความสะอาดรอบบ่าย' },
-  // ชั้น 2
-  { roomNumber: '201', floor: 2, type: 'ห้องดีลักซ์', status: 'occupied', guestInfo: 'คุณสมชาย ใจดี (แขกพักต่อเนื่อง)', notes: 'ขอเปลี่ยนเฉพาะผ้าเช็ดตัวและเติมน้ำดื่ม' },
-  { roomNumber: '202', floor: 2, type: 'ห้องดีลักซ์', status: 'available', guestInfo: 'คุณประภาส วงศ์ทอง', notes: 'ตรวจความเรียบร้อยมินิบาร์และระเบียงครบถ้วน' },
-  { roomNumber: '203', floor: 2, type: 'ห้องดีลักซ์', status: 'reserved', guestInfo: 'แขกใหม่เข้า 14:00 น. (คุณวิภา)', notes: 'เตรียมผลไม้ต้อนรับบนโต๊ะ' },
-  { roomNumber: '204', floor: 2, type: 'ห้องดีลักซ์', status: 'available', guestInfo: 'คุณเอมิลี่ คาร์เตอร์', notes: 'ทำความสะอาดสมบูรณ์' },
-  { roomNumber: '205', floor: 2, type: 'ห้องดีลักซ์', status: 'cleaning', guestInfo: 'เช็คเอาท์แล้ว 11:30 น. (คุณลิซ่า หว่อง)', notes: 'ด่วนพิเศษ ต้องการห้องก่อน 13:00 น.' },
-  // ชั้น 3
-  { roomNumber: '301', floor: 3, type: 'สแตนดาร์ด วิวสวน', status: 'occupied', guestInfo: 'แขกพักต่อเนื่อง', notes: 'ขอผ้าขนหนูเพิ่ม 2 ผืน' },
-  { roomNumber: '302', floor: 3, type: 'ห้องดีลักซ์', status: 'available', guestInfo: 'ห้องว่างพร้อมเปิดขาย', notes: 'ตรวจสอบเรียบร้อย' },
-  { roomNumber: '303', floor: 3, type: 'ห้องดีลักซ์', status: 'available', guestInfo: 'ห้องว่างพร้อมเปิดขาย', notes: 'ตรวจสอบเรียบร้อย' },
-  { roomNumber: '304', floor: 3, type: 'ห้องดีลักซ์', status: 'maintenance', guestInfo: 'แอร์รั่ว รออะไหล่คอมเพรสเซอร์ (ช่างสมศักดิ์)', notes: 'ปิดห้องงดขาย 24 ชม. กำลังประสานช่างแอร์ Outsource', outsourceNeeded: 'air_conditioning' },
-];
 
 // ========================================================
 // Real-time Date & Calendar Helpers
@@ -579,21 +354,32 @@ export const getMonthDaysGrid = (year: number, month: number) => {
   return grid;
 };
 
+export const STANDARD_MINIBAR_CATALOG = [
+  { id: 'mb-001', name: 'น้ำดื่ม 600ml', price: 20, unit: 'ขวด' },
+  { id: 'mb-002', name: 'โค้ก 330ml', price: 35, unit: 'กระป๋อง' },
+  { id: 'mb-003', name: 'เบียร์ Chang 330ml', price: 80, unit: 'กระป๋อง' },
+  { id: 'mb-004', name: 'มันฝรั่งทอด', price: 45, unit: 'ถุง' },
+  { id: 'mb-005', name: 'ช็อกโกแลต KitKat', price: 35, unit: 'แท่ง' },
+];
+
 export const HousekeepingPortalPage: React.FC = () => {
   const navigate = useNavigate();
+  const authUser = getAuthUser();
+  const staffName = authUser ? `${authUser.firstName || ''} ${authUser.lastName || ''}`.trim() : 'Somchai Clean';
+  const staffInitials = authUser?.firstName ? authUser.firstName.slice(0, 2).toUpperCase() : 'SC';
 
   // Navigation State
   const [activeTab, setActiveTab] = useState<'tasks' | 'kanban' | 'status' | 'schedule' | 'profile'>('tasks');
 
   // Filter States
-  const [taskFilter, setTaskFilter] = useState<'all' | 'urgent' | 'floor1' | 'floor2_3'>('all');
+  const [taskFilter, setTaskFilter] = useState<'all' | 'checkout' | 'incoming' | 'stayover' | 'urgent' | 'floor1' | 'floor2_3'>('all');
   const [floorFilter, setFloorFilter] = useState<'all' | '1' | '2' | '3'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // Active Tasks & Cleaning Checklist State
-  const [tasks, setTasks] = useState<CleaningTaskItem[]>(INITIAL_TASKS);
-  const [completedRooms, setCompletedRooms] = useState<CompletedRoomItem[]>(INITIAL_COMPLETED_ROOMS);
-  const [roomStatusList, setRoomStatusList] = useState<RoomStatusItem[]>(INITIAL_ROOM_STATUS_LIST);
+  // Active Tasks & Cleaning Checklist State (เริ่มจาก State ว่างเพื่อรอรับข้อมูลสดจาก Database)
+  const [tasks, setTasks] = useState<CleaningTaskItem[]>([]);
+  const [completedRooms, setCompletedRooms] = useState<CompletedRoomItem[]>([]);
+  const [roomStatusList, setRoomStatusList] = useState<RoomStatusItem[]>([]);
   const [timerSeconds, setTimerSeconds] = useState<number>(30 * 60); // เริ่มที่ 30:00 (1800s) และนับถอยหลัง
   const [isTimerRunning, setIsTimerRunning] = useState<boolean>(true);
   const [isFocusModeOpen, setIsFocusModeOpen] = useState<boolean>(false); // โหมดโฟกัสทำความสะอาด (Focus Mode)
@@ -602,16 +388,24 @@ export const HousekeepingPortalPage: React.FC = () => {
   const [isContactModalOpen, setIsContactModalOpen] = useState<boolean>(false);
   const [isSOPModalOpen, setIsSOPModalOpen] = useState<boolean>(false);
   const [isMaintenanceModalOpen, setIsMaintenanceModalOpen] = useState<boolean>(false);
-  const [handoverNote, setHandoverNote] = useState<string>(
-    'ห้อง 202 แขกแจ้งขอผ้าห่มเสริมตอน 19:00 น. จัดเตรียมไว้ที่สต็อกชั้น 2 แล้ว / ห้อง 304 เช็คเอาท์แล้ว ตรวจมินิบาร์เรียบร้อยของครบ'
-  );
-  const [isMinibarRestocked, setIsMinibarRestocked] = useState<boolean>(true);
+  const [handoverNote, setHandoverNote] = useState<string>('');
+
+  // Quick Minibar Check State (30-sec checkout express for Front Desk Billing)
+  const [isQuickMinibarModalOpen, setIsQuickMinibarModalOpen] = useState<boolean>(false);
+  const [quickMinibarRoom, setQuickMinibarRoom] = useState<string>('203');
+  const [quickMinibarTaskId, setQuickMinibarTaskId] = useState<string | null>(null);
+  const [quickMinibarCounts, setQuickMinibarCounts] = useState<Record<string, number>>({
+    'mb-001': 0,
+    'mb-002': 0,
+    'mb-003': 0,
+    'mb-004': 0,
+    'mb-005': 0,
+  });
+  const [minibarCheckedStatus, setMinibarCheckedStatus] = useState<Record<string, { time: string; total: number; summary: string }>>({});
+
   const [maintenanceRoom, setMaintenanceRoom] = useState<string>('105');
   const [maintenanceCategory, setMaintenanceCategory] = useState<'broken' | 'electric' | 'missing' | 'sanitary' | 'lost_and_found'>('broken');
-  const [maintenanceSeverity, setMaintenanceSeverity] = useState<'low' | 'med' | 'high' | 'critical'>('med');
-  const [maintenanceDesc, setMaintenanceDesc] = useState<string>(
-    'แอร์ในห้องมีน้ำหยดลงบนโต๊ะข้างเตียง และปลั๊กไฟหัวเตียงด้านซ้ายหลวม เสียบไม่ติด ต้องการให้ช่างตรวจเช็คด่วนก่อนแขกใหม่เช็คอิน 14:00 น.'
-  );
+  const [maintenanceDesc, setMaintenanceDesc] = useState<string>('');
   const [lostAndFoundLocation, setLostAndFoundLocation] = useState<string>('Front Desk Counter');
   const [lostAndFoundDays, setLostAndFoundDays] = useState<number>(7);
   const [selectedRoomDetail, setSelectedRoomDetail] = useState<RoomStatusItem | null>(null);
@@ -642,7 +436,7 @@ export const HousekeepingPortalPage: React.FC = () => {
   const [selectedShiftPill, setSelectedShiftPill] = useState<'morning' | 'afternoon' | 'night'>('morning');
   const [isShiftSwapModalOpen, setIsShiftSwapModalOpen] = useState<boolean>(false);
   const [shiftSwapReason, setShiftSwapReason] = useState<'swap' | 'leave_urgent' | 'cover'>('swap');
-  const [shiftSwapTargetStaff, setShiftSwapTargetStaff] = useState<string>('สมชาย วงศ์สุข');
+  const [shiftSwapTargetStaff, setShiftSwapTargetStaff] = useState<string>('มาลี เรืองโรจน์');
   const [shiftSwapNotes, setShiftSwapNotes] = useState<string>('');
 
   // 1. Fetch live tasks from /api/housekeeping/tasks
@@ -652,35 +446,63 @@ export const HousekeepingPortalPage: React.FC = () => {
       const res = await fetch(apiUrl('/api/housekeeping/tasks'), {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
+      if (res.status === 401) {
+        console.warn('Session expired or invalid token (401). Redirecting to login...');
+        clearAuthSession();
+        navigate('/login', { replace: true });
+        return;
+      }
       if (res.ok) {
         const json = await res.json();
-        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-          const mapped: CleaningTaskItem[] = json.data.map((t: any) => {
-            let savedChecklist: Record<string, boolean> = {};
-            try {
-              const raw = localStorage.getItem(`keystay_checklist_${t.id}`);
-              if (raw) savedChecklist = JSON.parse(raw);
-            } catch {}
-            const num = t.roomNumber || t.roomId?.replace('rm-', '') || '101';
-            return {
-              id: t.id,
-              roomNumber: num,
-              floor: Math.floor(parseInt(num, 10) / 100) || 1,
-              roomType: num.startsWith('2') || num.startsWith('3') ? 'ห้องดีลักซ์' : 'สแตนดาร์ด เตียงคู่',
-              taskType: (t.taskType === 'checkout_clean' || t.taskType === 'stayover_clean' || t.taskType === 'inspect')
-                ? t.taskType
-                : 'checkout_clean',
-              priority: (t.priority === 'urgent' || t.priority === 'high' || t.priority === 'normal')
-                ? t.priority
-                : 'normal',
-              status: t.status === 'in_progress' ? 'in_progress' : t.status === 'completed' ? 'completed' : 'pending',
-              assignedTo: t.assignedStaff?.name || 'แม่บ้านสุดา (HK-007)',
-              estMinutes: t.taskType === 'checkout_clean' ? 35 : t.taskType === 'deep_clean' ? 120 : 20,
-              notes: t.notes || '',
-              checklist: savedChecklist,
-            };
-          });
-          setTasks(mapped);
+        if (json.success && Array.isArray(json.data)) {
+          // Completed tasks from DB
+          const completedFromDb: CompletedRoomItem[] = json.data
+            .filter((t: any) => t.status === 'completed')
+            .map((t: any) => {
+              const num = t.roomNumber || t.roomId?.replace('rm-', '') || '101';
+              const timeStr = t.completedAt
+                ? new Date(t.completedAt).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.'
+                : 'เสร็จสมบูรณ์';
+              return {
+                roomNumber: num,
+                finishedAt: timeStr,
+                inspector: t.assignedStaff?.name || staffName,
+              };
+            });
+          setCompletedRooms(completedFromDb);
+
+          // Active and Pending tasks from DB
+          const activeAndPending: CleaningTaskItem[] = json.data
+            .filter((t: any) => t.status !== 'completed')
+            .map((t: any) => {
+              let savedChecklist: Record<string, boolean> = {};
+              // โหลดสถานะ checklist จาก localStorage เฉพาะงานที่กำลังทำอยู่จริง และมีค่าบันทึกไว้
+              if (t.status === 'in_progress') {
+                try {
+                  const raw = localStorage.getItem(`keystay_checklist_${t.id}`);
+                  if (raw) savedChecklist = JSON.parse(raw);
+                } catch {}
+              }
+              const num = t.roomNumber || t.roomId?.replace('rm-', '') || '101';
+              return {
+                id: t.id,
+                roomNumber: num,
+                floor: Math.floor(parseInt(num, 10) / 100) || 1,
+                roomType: num.startsWith('2') || num.startsWith('3') ? 'ห้องดีลักซ์' : 'สแตนดาร์ด เตียงคู่',
+                taskType: (t.taskType === 'checkout_clean' || t.taskType === 'stayover_clean' || t.taskType === 'inspect' || t.taskType === 'daily_clean' || t.taskType === 'deep_clean')
+                  ? t.taskType
+                  : 'checkout_clean',
+                priority: (t.priority === 'urgent' || t.priority === 'high' || t.priority === 'normal' || t.priority === 'low')
+                  ? t.priority
+                  : 'normal',
+                status: t.status === 'in_progress' ? 'in_progress' : 'pending',
+                assignedTo: t.assignedStaff?.name || staffName,
+                estMinutes: t.taskType === 'checkout_clean' ? 35 : t.taskType === 'deep_clean' ? 120 : 20,
+                notes: t.notes || '',
+                checklist: savedChecklist,
+              };
+            });
+          setTasks(activeAndPending);
         }
       }
     } catch (err) {
@@ -695,6 +517,12 @@ export const HousekeepingPortalPage: React.FC = () => {
       const res = await fetch(apiUrl('/api/rooms'), {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
+      if (res.status === 401) {
+        console.warn('Session expired or invalid token (401). Redirecting to login...');
+        clearAuthSession();
+        navigate('/login', { replace: true });
+        return;
+      }
       if (res.ok) {
         const json = await res.json();
         if (json.success && Array.isArray(json.data) && json.data.length > 0) {
@@ -707,7 +535,16 @@ export const HousekeepingPortalPage: React.FC = () => {
               type: r.roomTypeId === 'rt-dlx' ? 'ห้องดีลักซ์' : r.roomTypeId === 'rt-ste' ? 'ห้องเอ็กเซ็กคิวทีฟ สวีท' : 'ห้องสแตนดาร์ด',
               status: r.status,
               notes: r.notes || '',
-              guestInfo: r.status === 'occupied' ? 'แขกกำลังเข้าพัก' : r.status === 'cleaning' ? 'กำลังทำความสะอาด' : r.status === 'available' ? 'ห้องว่างพร้อมเปิดขาย' : 'รอตรวจสอบ',
+              guestInfo:
+                r.status === 'occupied'
+                  ? 'แขกกำลังเข้าพัก'
+                  : r.status === 'cleaning'
+                  ? 'กำลังทำความสะอาด'
+                  : r.status === 'checked_out'
+                  ? 'เช็คเอาท์แล้ว (รอทำความสะอาด)'
+                  : r.status === 'available'
+                  ? 'ห้องว่างพร้อมเปิดขาย'
+                  : 'รอตรวจสอบ',
             };
           });
           setRoomStatusList(mappedRooms);
@@ -720,7 +557,8 @@ export const HousekeepingPortalPage: React.FC = () => {
 
   // ตรวจสอบสิทธิ์และดึงข้อมูลสดจากฐานข้อมูลเมื่อเข้าสู่หน้าเว็บ (Initial Load)
   useEffect(() => {
-    if (!getAuthToken()) {
+    const token = getAuthToken();
+    if (!token) {
       navigate('/login', { replace: true });
       return;
     }
@@ -796,13 +634,18 @@ export const HousekeepingPortalPage: React.FC = () => {
         return { ...t, checklist: newChecklist };
       })
     );
-    showToast(forceDone ? '✓ ตรวจรับครบทุกข้อเรียบร้อย (12/12)' : 'รีเซ็ตรายการตรวจสอบ');
+    showToast(forceDone ? 'ตรวจรับครบทุกข้อเรียบร้อย (12/12)' : 'รีเซ็ตรายการตรวจสอบ');
   };
 
   // Complete Active Task: บันทึกงานเสร็จสมบูรณ์ ปลดปล่อยห้องเป็น available พร้อมบันทึกเข้า DB จริง
   const handleCompleteActiveTask = async (taskId: string) => {
     const task = tasks.find((t) => t.id === taskId);
     if (!task) return;
+
+    // ล้างแคช checklist ของงานนี้ออกจาก localStorage ทันทีที่จบงาน
+    try {
+      localStorage.removeItem(`keystay_checklist_${taskId}`);
+    } catch {}
 
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} น.`;
@@ -816,7 +659,7 @@ export const HousekeepingPortalPage: React.FC = () => {
       {
         roomNumber: task.roomNumber,
         finishedAt: `เสร็จล่าสุด ${timeStr}`,
-        inspector: 'แม่บ้านสุดา (HK-007)',
+        inspector: `${staffName} (${authUser?.id || 'hk-staff-001'})`,
       },
       ...prev,
     ]);
@@ -837,7 +680,7 @@ export const HousekeepingPortalPage: React.FC = () => {
 
     setIsTimerRunning(false);
     setIsFocusModeOpen(false);
-    showToast(`✓ บันทึกทำความสะอาดห้อง ${task.roomNumber} เสร็จสิ้น! ปล่อยห้องพร้อมขายเรียบร้อย`);
+    showToast(`บันทึกทำความสะอาดห้อง ${task.roomNumber} เสร็จสิ้น! ปล่อยห้องพร้อมขายเรียบร้อย`);
 
     // เชื่อมต่อ Backend API สด (Service #4: complete task & Service #2: room status available)
     try {
@@ -849,7 +692,7 @@ export const HousekeepingPortalPage: React.FC = () => {
         },
         body: JSON.stringify({
           inspectionStatus: 'passed',
-          notes: `ทำความสะอาดครบ 12 ข้อ และเติมมินิบาร์ครบเซ็ตแล้ว [Restocked: ${isMinibarRestocked ? 'YES' : 'NO'}]`,
+          notes: 'ทำความสะอาดครบ 12 ข้อตามมาตรฐาน และเติมมินิบาร์ครบเซ็ตเรียบร้อยแล้วพร้อมปล่อยขาย',
         }),
       });
 
@@ -865,6 +708,9 @@ export const HousekeepingPortalPage: React.FC = () => {
           changeReason: 'Housekeeping cleaning inspection completed',
         }),
       });
+
+      // ดึง tasks และสถานะห้องสดใหม่จาก backend ให้ sync 100%
+      await Promise.all([fetchLiveTasks(), fetchLiveRooms()]);
     } catch (err) {
       console.warn('API sync warning:', err);
     }
@@ -872,13 +718,24 @@ export const HousekeepingPortalPage: React.FC = () => {
 
   // Start Queue Task: สลับงานห้องที่เลือกเป็น in_progress และบันทึกเข้า DB จริง
   const handleStartTask = async (taskId: string) => {
+    const currentActive = tasks.find((t) => t.status === 'in_progress');
+    if (currentActive && currentActive.id !== taskId) {
+      showToast(`กรุณาตรวจรับงานห้อง ${currentActive.roomNumber} ให้เสร็จสิ้นก่อนเริ่มทำความสะอาดห้องใหม่`);
+      return;
+    }
+
     const targetTask = tasks.find((t) => t.id === taskId);
     if (!targetTask) return;
 
-    // Reset งานอื่นที่อาจค้าง in_progress อยู่ ให้กลับเป็น pending
+    // เคลียร์ checklist ให้เริ่มจาก 0/12 ว่างเปล่าเสมอเมื่องานเริ่มทำใหม่ ไม่ใช้ค่าเก่า
+    try {
+      localStorage.removeItem(`keystay_checklist_${taskId}`);
+    } catch {}
+
+    // Reset งานอื่นที่อาจค้าง in_progress อยู่ ให้กลับเป็น pending และตั้ง checklist เป็น {}
     setTasks((prev) =>
       prev.map((t) => {
-        if (t.id === taskId) return { ...t, status: 'in_progress' };
+        if (t.id === taskId) return { ...t, status: 'in_progress', checklist: {} };
         if (t.status === 'in_progress') return { ...t, status: 'pending' };
         return t;
       })
@@ -888,7 +745,7 @@ export const HousekeepingPortalPage: React.FC = () => {
     setRoomStatusList((prev) =>
       prev.map((r) =>
         r.roomNumber === targetTask.roomNumber
-          ? { ...r, status: 'cleaning', notes: 'กำลังทำความสะอาด (แม่บ้านสุดา)' }
+          ? { ...r, status: 'cleaning', notes: `กำลังทำความสะอาด (${staffName})` }
           : r
       )
     );
@@ -896,7 +753,7 @@ export const HousekeepingPortalPage: React.FC = () => {
     setTimerSeconds(30 * 60);
     setIsTimerRunning(true);
     setIsFocusModeOpen(true);
-    showToast(`✓ เริ่มงานทำความสะอาดห้อง ${targetTask.roomNumber} แล้ว (เข้าสู่โหมดโฟกัส)`);
+    showToast(`เริ่มงานทำความสะอาดห้อง ${targetTask.roomNumber} แล้ว (เข้าสู่โหมดโฟกัส)`);
 
     // เชื่อมต่อ Backend API สด (Service #4: update task & Service #2: room status cleaning)
     const token = getAuthToken();
@@ -945,14 +802,20 @@ export const HousekeepingPortalPage: React.FC = () => {
 
     const payload: any = {
       roomId,
+      roomNumber: maintenanceRoom,
+      reportedBy: 'hk-staff-001',
       issueType: apiIssueType,
-      severity: maintenanceSeverity === 'med' ? 'medium' : maintenanceSeverity,
-      description: maintenanceDesc,
+      severity: 'medium',
+      description: maintenanceDesc.trim() || (apiIssueType === 'lost_and_found' ? 'ของที่ลูกค้าลืมไว้ในห้องพัก' : 'แจ้งตรวจสอบอุปกรณ์'),
     };
 
+    if (activeTask && activeTask.roomNumber === maintenanceRoom) {
+      payload.taskId = activeTask.id;
+    }
+
     if (apiIssueType === 'lost_and_found') {
-      payload.storageLocation = lostAndFoundLocation;
-      payload.retentionDays = lostAndFoundDays;
+      payload.storageLocation = lostAndFoundLocation || 'Front Desk Counter';
+      payload.retentionDays = lostAndFoundDays || 7;
     }
 
     try {
@@ -967,23 +830,214 @@ export const HousekeepingPortalPage: React.FC = () => {
       if (res.ok) {
         showToast(
           apiIssueType === 'lost_and_found'
-            ? `✓ บันทึกของลืมห้อง ${maintenanceRoom} ส่งมอบ Front Counter (เก็บ ${lostAndFoundDays} วัน) สำเร็จ`
-            : `✓ บันทึกใบแจ้งปัญหาห้อง ${maintenanceRoom} ส่งต่อไปยังทีมช่างแล้ว`
+            ? `บันทึกของลืมห้อง ${maintenanceRoom} ส่งมอบ Front Counter (เก็บ ${lostAndFoundDays} วัน) สำเร็จ`
+            : `บันทึกใบแจ้งปัญหาห้อง ${maintenanceRoom} ส่งต่อไปยังทีมช่างแล้ว`
         );
       } else {
-        showToast(`✓ บันทึกใบแจ้งปัญหาห้อง ${maintenanceRoom} ส่งต่อไปยังทีมช่างแล้ว`);
+        const errJson = await res.json().catch(() => null);
+        showToast(`ไม่สามารถบันทึกได้: ${errJson?.message || res.statusText}`);
       }
     } catch (err) {
       console.warn('API issue report warning:', err);
-      showToast(`✓ บันทึกใบแจ้งปัญหาห้อง ${maintenanceRoom} เรียบร้อยแล้ว`);
+      showToast('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
     } finally {
       setIsMaintenanceModalOpen(false);
+      setMaintenanceDesc('');
     }
   };
 
   const handleLogout = () => {
     clearAuthSession();
     navigate('/login', { replace: true });
+  };
+
+  // Quick Minibar Check Handlers (30-sec checkout express for Front Desk Billing)
+  const handleOpenQuickMinibar = (roomNum: string, taskId?: string) => {
+    setQuickMinibarRoom(roomNum);
+    setQuickMinibarTaskId(taskId || null);
+    setQuickMinibarCounts({
+      'mb-001': 0,
+      'mb-002': 0,
+      'mb-003': 0,
+      'mb-004': 0,
+      'mb-005': 0,
+    });
+    setIsQuickMinibarModalOpen(true);
+  };
+
+  const handleSendMinibarCheck = async (isAllIntact: boolean) => {
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} น.`;
+
+    let totalAmt = 0;
+    const consumedList: string[] = [];
+    if (!isAllIntact) {
+      STANDARD_MINIBAR_CATALOG.forEach((item) => {
+        const count = quickMinibarCounts[item.id] || 0;
+        if (count > 0) {
+          totalAmt += count * item.price;
+          consumedList.push(`${item.name} x${count} (${count * item.price}บ.)`);
+        }
+      });
+    }
+
+    const summaryText =
+      isAllIntact || consumedList.length === 0
+        ? 'มินิบาร์ครบ 100% (ไม่มีการบริโภค • คืนมัดจำได้ทันที)'
+        : `มีรายการใช้: ${consumedList.join(', ')} รวม ${totalAmt} บาท`;
+
+    setMinibarCheckedStatus((prev) => ({
+      ...prev,
+      [quickMinibarRoom]: {
+        time: timeStr,
+        total: totalAmt,
+        summary: summaryText,
+      },
+    }));
+
+    setIsQuickMinibarModalOpen(false);
+
+    if (isAllIntact || consumedList.length === 0) {
+      showToast(`แจ้ง Front Desk: มินิบาร์ห้อง ${quickMinibarRoom} ของครบ 100% คืนเงินมัดจำได้ทันที!`);
+    } else {
+      showToast(`ส่งยอดมินิบาร์ห้อง ${quickMinibarRoom}: ${totalAmt} บาท แจ้ง Front Desk ขึ้นบิลเรียบร้อย!`);
+    }
+
+    if (quickMinibarTaskId) {
+      const token = getAuthToken();
+      try {
+        await fetch(apiUrl(`/api/housekeeping/tasks/${quickMinibarTaskId}`), {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            notes: `[ตรวจมินิบาร์ ${timeStr} โดย ${staffName}] ${summaryText}`,
+          }),
+        });
+      } catch (err) {
+        console.warn('Could not sync minibar check to task note:', err);
+      }
+    }
+  };
+
+  // Helper to parse realistic hotel check-in/out timing from notes
+  const parseCardTimingInfo = (t: CleaningTaskItem) => {
+    const notes = t.notes || '';
+
+    let checkinText = 'เช็กอิน 14:00 น.';
+    let checkinSub = '(ตามรอบปกติ)';
+    let checkinHour = 14;
+    let checkinMinute = 0;
+
+    if (notes.includes('11:45')) {
+      checkinHour = 11;
+      checkinMinute = 45;
+      checkinText = 'เช็กอิน 11:45 น.';
+      checkinSub = '(รอมัดจำหน้าเคาน์เตอร์)';
+    } else if (notes.includes('12:30')) {
+      checkinHour = 12;
+      checkinMinute = 30;
+      checkinText = 'เช็กอิน 12:30 น.';
+      checkinSub = '(แขกขอล่วงหน้า/รอมัดจำ)';
+    } else if (notes.includes('13:00')) {
+      checkinHour = 13;
+      checkinMinute = 0;
+      checkinText = 'เช็กอิน 13:00 น.';
+      checkinSub = '(ด่วนพิเศษ เข้าบ่ายโมง)';
+    } else if (notes.includes('13:30')) {
+      checkinHour = 13;
+      checkinMinute = 30;
+      checkinText = 'เช็กอิน 13:30 น.';
+      checkinSub = '(จองผ่านระบบเข้าพัก)';
+    } else if (notes.includes('14:00')) {
+      checkinHour = 14;
+      checkinMinute = 0;
+      checkinText = 'เช็กอิน 14:00 น.';
+      checkinSub = '(แขกใหม่พร้อมเข้าพัก)';
+    } else if (notes.includes('14:30')) {
+      checkinHour = 14;
+      checkinMinute = 30;
+      checkinText = 'เช็กอิน 14:30 น.';
+      checkinSub = '(แขกใหม่ช่วงบ่าย)';
+    } else if (notes.includes('15:00')) {
+      checkinHour = 15;
+      checkinMinute = 0;
+      checkinText = 'เช็กอิน 15:00 น.';
+      checkinSub = '(มีกระเป๋าฝากส่งขึ้นห้อง)';
+    } else if (
+      t.taskType === 'daily_clean' ||
+      (t as any).taskType === 'stayover_clean' ||
+      notes.includes('พักต่อเนื่อง')
+    ) {
+      checkinHour = 99; // Never overdue
+      checkinText = 'แขกพักต่อเนื่อง';
+      checkinSub = '(พัก 3 คืน ไม่เปลี่ยนเตียง)';
+    }
+
+    let checkoutText = 'เช็กเอาท์ 12:00 น.';
+    let checkoutSub = 'ห้องว่างพร้อมเข้าทำ';
+
+    if (notes.includes('10:30')) {
+      checkoutText = 'เช็กเอาท์ 10:30 น.';
+      checkoutSub = 'ตรวจเช็คแอร์ก่อนปล่อยห้อง';
+    } else if (notes.includes('10:45')) {
+      checkoutText = 'เช็กเอาท์ 10:45 น.';
+      checkoutSub = 'ตรวจกลิ่นควันบุหรี่ระเบียง';
+    } else if (notes.includes('11:00')) {
+      checkoutText = 'เช็กเอาท์ 11:00 น.';
+      checkoutSub = 'ห้องว่างพร้อมเข้าทำ';
+    } else if (notes.includes('11:30')) {
+      checkoutText = 'เช็กเอาท์ 11:30 น.';
+      checkoutSub = 'แขกใหม่เข้า 12:30 น. ด่วนพิเศษ';
+    } else if (notes.includes('11:45')) {
+      checkoutText = 'เช็กเอาท์ 13:00 น.';
+      checkoutSub = 'ห้องว่างพร้อมเข้าทำ';
+    } else if (
+      t.taskType === 'daily_clean' ||
+      (t as any).taskType === 'stayover_clean' ||
+      notes.includes('พักต่อเนื่อง')
+    ) {
+      checkoutText = 'บริการรอบเช้า';
+      checkoutSub = 'เติมน้ำดื่มและเปลี่ยนผ้าเช็ดตัว';
+    }
+
+    let pillTime = 'เช็กอิน 14:00 น.';
+    if (notes.includes('11:45')) pillTime = 'เช็กอิน 11:45 น.';
+    else if (notes.includes('12:30')) pillTime = 'เช็กอิน 12:30 น.';
+    else if (notes.includes('13:00')) pillTime = 'เช็กอิน 13:00 น.';
+    else if (notes.includes('13:30')) pillTime = 'เช็กอิน 13:30 น.';
+    else if (notes.includes('14:00')) pillTime = 'เช็กอิน 14:00 น.';
+    else if (notes.includes('14:30')) pillTime = 'เช็กอิน 14:30 น.';
+    else if (notes.includes('15:00')) pillTime = 'ส่งกระเป๋า 15:00 น.';
+    else if (
+      t.taskType === 'daily_clean' ||
+      (t as any).taskType === 'stayover_clean' ||
+      notes.includes('พักต่อเนื่อง')
+    ) {
+      pillTime = 'รอบบริการ 11:00 น.';
+    }
+
+    // Dynamic Overdue Calculation against current real-time clock
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const targetCheckinMinutes = checkinHour * 60 + checkinMinute;
+    const isOverdue = checkinHour < 90 && currentMinutes > targetCheckinMinutes;
+    const overdueMinutes = isOverdue ? currentMinutes - targetCheckinMinutes : 0;
+
+    let overdueLabel = '';
+    if (isOverdue) {
+      if (overdueMinutes < 60) {
+        overdueLabel = `${overdueMinutes} นาที`;
+      } else {
+        const hours = Math.floor(overdueMinutes / 60);
+        const mins = overdueMinutes % 60;
+        overdueLabel = mins > 0 ? `${hours} ชม. ${mins} นาที` : `${hours} ชั่วโมง`;
+      }
+    }
+
+    return { checkinText, checkinSub, checkoutText, checkoutSub, pillTime, isOverdue, overdueMinutes, overdueLabel };
   };
 
   // Active Room Task & Checklist Metrics
@@ -996,16 +1050,20 @@ export const HousekeepingPortalPage: React.FC = () => {
   const checklistPercent = Math.round((checklistCheckedCount / checklistTotalCount) * 100);
 
   // Smart Sorting Weights (Business Priority & Hotel SOP Rules)
-  const PRIORITY_WEIGHT: Record<CleaningTaskItem['priority'], number> = {
+  const PRIORITY_WEIGHT: Record<string, number> = {
     urgent: 1, // VIP / แขกขอห้องด่วน
     high: 2,   // เช็คเอาท์มีแขกใหม่รอเข้าพัก
     normal: 3, // แขกพักต่อเนื่อง หรือห้องตรวจรอบสุดท้าย
+    low: 4,
   };
 
-  const TASK_TYPE_WEIGHT: Record<CleaningTaskItem['taskType'], number> = {
+  const TASK_TYPE_WEIGHT: Record<string, number> = {
     checkout_clean: 1, // ห้องเช็คเอาท์ (ต้องรีบทำเปิดขาย)
+    daily_clean: 2,    // ห้องพักต่อเนื่อง
     stayover_clean: 2, // ห้องพักต่อเนื่อง (เปลี่ยนผ้า/ขยะ)
-    inspect: 3,        // ตรวจรับงานรอบสุดท้าย
+    deep_clean: 3,     // ทำความสะอาดลึก
+    inspect: 4,        // ตรวจรับงานรอบสุดท้าย
+    inspection: 4,     // ตรวจรับงานรอบสุดท้าย
   };
 
   // Filtered & Smart-Sorted Tasks for Tab 1
@@ -1013,26 +1071,57 @@ export const HousekeepingPortalPage: React.FC = () => {
     .filter((t) => {
       if (t.status === 'in_progress') return false; // Rendered in Active section
       if (taskFilter === 'urgent') return t.priority === 'urgent';
+      if (taskFilter === 'checkout') {
+        return t.taskType === 'checkout_clean' || (t.notes && t.notes.includes('เช็คเอาท์'));
+      }
+      if (taskFilter === 'incoming') {
+        return t.notes && (t.notes.includes('เข้า') || t.notes.includes('แขกใหม่'));
+      }
+      if (taskFilter === 'stayover') {
+        return t.taskType === 'daily_clean' || (t as any).taskType === 'stayover_clean' || (t.notes && t.notes.includes('พักต่อเนื่อง'));
+      }
       if (taskFilter === 'floor1') return t.floor === 1;
       if (taskFilter === 'floor2_3') return t.floor >= 2;
       return true;
     })
     .sort((a, b) => {
-      // 1. ระดับความเร่งด่วนทางธุรกิจ (urgent > high > normal)
-      const pDiff = PRIORITY_WEIGHT[a.priority] - PRIORITY_WEIGHT[b.priority];
+      // 0. เคสด่วนเช็คเอาท์ที่ยังไม่ได้ตรวจมินิบาร์ ดันขึ้นบนสุดทันที (Front Desk รอมัดจำ)
+      const aNeedsMinibar = (a.taskType === 'checkout_clean' || (a.notes && a.notes.includes('เช็คเอาท์'))) && !minibarCheckedStatus[a.roomNumber];
+      const bNeedsMinibar = (b.taskType === 'checkout_clean' || (b.notes && b.notes.includes('เช็คเอาท์'))) && !minibarCheckedStatus[b.roomNumber];
+      if (aNeedsMinibar && !bNeedsMinibar) return -1;
+      if (!aNeedsMinibar && bNeedsMinibar) return 1;
+
+      // 1. ห้องที่เลยเวลาเช็คอินแล้ว (Overdue Alert) ต้องรีบทำก่อนห้องปกติ
+      const aTiming = parseCardTimingInfo(a);
+      const bTiming = parseCardTimingInfo(b);
+      if (aTiming.isOverdue && !bTiming.isOverdue) return -1;
+      if (!aTiming.isOverdue && bTiming.isOverdue) return 1;
+      if (aTiming.isOverdue && bTiming.isOverdue) {
+        const diff = bTiming.overdueMinutes - aTiming.overdueMinutes;
+        if (diff !== 0) return diff;
+      }
+
+      // 2. ระดับความเร่งด่วนทางธุรกิจ (urgent > high > normal)
+      const pDiff = (PRIORITY_WEIGHT[a.priority] || 3) - (PRIORITY_WEIGHT[b.priority] || 3);
       if (pDiff !== 0) return pDiff;
 
-      // 2. ประเภทงาน (checkout turnover > stayover > inspection)
-      const tDiff = TASK_TYPE_WEIGHT[a.taskType] - TASK_TYPE_WEIGHT[b.taskType];
+      // 3. มีแขกใหม่กำลังจะเข้า (Turnover) ดันขึ้นก่อนห้องทั่วไป
+      const aIncoming = a.notes && (a.notes.includes('เข้า') || a.notes.includes('แขกใหม่'));
+      const bIncoming = b.notes && (b.notes.includes('เข้า') || b.notes.includes('แขกใหม่'));
+      if (aIncoming && !bIncoming) return -1;
+      if (!aIncoming && bIncoming) return 1;
+
+      // 4. ประเภทงาน (checkout turnover > stayover > inspection)
+      const tDiff = (TASK_TYPE_WEIGHT[a.taskType] || 2) - (TASK_TYPE_WEIGHT[b.taskType] || 2);
       if (tDiff !== 0) return tDiff;
 
-      // 3. เส้นทางเดินและชั้นที่ใกล้ที่สุด (Proximity to active room's floor)
+      // 5. เส้นทางเดินและชั้นที่ใกล้ที่สุด (Proximity to active room's floor)
       const currentFloor = activeTask ? activeTask.floor : 1;
       const floorDiffA = Math.abs(a.floor - currentFloor);
       const floorDiffB = Math.abs(b.floor - currentFloor);
       if (floorDiffA !== floorDiffB) return floorDiffA - floorDiffB;
 
-      // 4. เรียงตามเลขห้อง
+      // 6. เรียงตามเลขห้อง
       return a.roomNumber.localeCompare(b.roomNumber, undefined, { numeric: true });
     });
 
@@ -1041,9 +1130,20 @@ export const HousekeepingPortalPage: React.FC = () => {
   const inProgressCount = tasks.filter((t) => t.status === 'in_progress').length;
   const pendingCount = tasks.filter((t) => t.status === 'pending').length;
   const totalShiftRooms = completedCount + tasks.length;
-  const shiftProgressPercent = Math.round((completedCount / totalShiftRooms) * 100);
+  const shiftProgressPercent = totalShiftRooms > 0 ? Math.round((completedCount / totalShiftRooms) * 100) : 0;
 
   // Dynamic filter pill counts
+  const checkoutCount = tasks.filter(
+    (t) => t.status !== 'in_progress' && (t.taskType === 'checkout_clean' || (t.notes && t.notes.includes('เช็คเอาท์')))
+  ).length;
+  const incomingCount = tasks.filter(
+    (t) => t.status !== 'in_progress' && t.notes && (t.notes.includes('เข้า') || t.notes.includes('แขกใหม่'))
+  ).length;
+  const stayoverCount = tasks.filter(
+    (t) =>
+      t.status !== 'in_progress' &&
+      (t.taskType === 'daily_clean' || (t as any).taskType === 'stayover_clean' || (t.notes && t.notes.includes('พักต่อเนื่อง')))
+  ).length;
   const urgentCount = tasks.filter((t) => t.priority === 'urgent' && t.status !== 'in_progress').length;
   const floor1Count = tasks.filter((t) => t.floor === 1 && t.status !== 'in_progress').length;
   const floor23Count = tasks.filter((t) => t.floor >= 2 && t.status !== 'in_progress').length;
@@ -1105,135 +1205,184 @@ export const HousekeepingPortalPage: React.FC = () => {
                 </span>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setIsContactModalOpen(true)}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold border border-amber-200 active:scale-95 cursor-pointer"
-                title="ติดต่อช่างภายนอก 24 ชม."
-              >
-                <PhoneCall className="w-3.5 h-3.5 text-amber-700" />
-                <span className="text-[11px]">ช่างด่วน</span>
-              </button>
+              <div className="w-[100px]" />
             </div>
           </header>
 
           {/* Focus Mode Scrollable Content */}
           <main className="flex-1 w-full max-w-md mx-auto px-4 pt-4 pb-32 flex flex-col gap-3.5">
-            {/* Hero Card: Room Spec, Timer, Progress */}
-            <div className="bg-white rounded-xl border-2 border-amber-300 shadow-sm p-4 flex flex-col gap-3 relative overflow-hidden">
-              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-amber-500" />
+            {/* Hero Card: Exact New Design matching Reference */}
+            {(() => {
+              const isCheckout =
+                activeTask.taskType === 'checkout_clean' ||
+                (activeTask.notes && activeTask.notes.includes('เช็คเอาท์'));
+              const isIncoming =
+                activeTask.notes &&
+                (activeTask.notes.includes('เข้า') || activeTask.notes.includes('แขกใหม่'));
+              const isStayover =
+                activeTask.taskType === 'daily_clean' ||
+                (activeTask as any).taskType === 'stayover_clean' ||
+                (activeTask.notes && activeTask.notes.includes('พักต่อเนื่อง'));
+              const isInspect =
+                activeTask.taskType === 'inspect' ||
+                (activeTask as any).taskType === 'inspection' ||
+                (activeTask.notes && activeTask.notes.includes('รอตรวจ'));
+              const isMinibarDone = Boolean(minibarCheckedStatus[activeTask.roomNumber]);
+              const needsUrgentMinibar = isCheckout && !isMinibarDone;
+              const timing = parseCardTimingInfo(activeTask);
 
-              <div className="flex items-start justify-between pl-1">
-                <div className="flex flex-col">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold font-mono text-slate-900 tracking-tight">
-                      {activeTask.roomNumber}
-                    </span>
-                    <span className="text-xs font-medium text-slate-600">
-                      ชั้น {activeTask.floor} • {activeTask.roomType}
-                    </span>
-                  </div>
+              return (
+                <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-4 sm:p-5 flex flex-col gap-3.5 transition-all">
+                  {/* Row 1: Orange Bar + Room Number | Status Pill | Duration / Timer */}
+                  <div className="flex items-center justify-between gap-2">
+                    {/* Left: Orange Bar + Room Number */}
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-1.5 h-10 rounded-full bg-[#F97316] shrink-0" />
+                      <div className="flex flex-col">
+                        <span className="text-[11px] font-medium text-slate-500 leading-tight ทิขๅ">
+                          ห้องเลขที่
+                        </span>
+                        <span className="text-3xl font-black font-mono text-[#0F172A] tracking-tight leading-none">
+                          {activeTask.roomNumber}
+                        </span>
+                      </div>
+                    </div>
 
-                  <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                    {activeTask.priority === 'urgent' && (
-                      <span className="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200 text-[11px] font-bold">
-                        ด่วนพิเศษ (13:00 น.)
+                    {/* Center: Status Pill */}
+                    <div className="shrink-0">
+                      {needsUrgentMinibar ? (
+                        <span className="px-3.5 py-1.5 rounded-full bg-[#FFEDD5] text-[#9A3412] text-xs font-bold shadow-2xs inline-block">
+                          เพิ่งเช็คเอาท์ • รอมินิบาร์
+                        </span>
+                      ) : isCheckout && isMinibarDone ? (
+                        <span className="px-3.5 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold shadow-2xs inline-flex items-center gap-1">
+                          <Check className="w-3.5 h-3.5 text-emerald-700" />
+                          <span>ตรวจมินิบาร์แล้ว</span>
+                        </span>
+                      ) : isStayover ? (
+                        <span className="px-3.5 py-1.5 rounded-full bg-teal-100 text-teal-800 text-xs font-bold shadow-2xs inline-block">
+                          แขกพักต่อเนื่อง
+                        </span>
+                      ) : isInspect ? (
+                        <span className="px-3.5 py-1.5 rounded-full bg-purple-100 text-purple-800 text-xs font-bold shadow-2xs inline-block">
+                          รอตรวจปล่อยห้อง
+                        </span>
+                      ) : (
+                        <span className="px-3.5 py-1.5 rounded-full bg-[#FFEDD5] text-[#9A3412] text-xs font-bold shadow-2xs inline-block">
+                          กำลังทำความสะอาด
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Right: Estimated Duration / Timer */}
+                    <div className="flex flex-col items-end shrink-0">
+                      <span className="text-[11px] font-medium text-slate-500 leading-tight">
+                        เหลือเวลา
                       </span>
+                      <div className="flex items-baseline gap-0.5 leading-none">
+                        <span
+                          className={`text-2xl font-black font-mono leading-none ${
+                            timerSeconds <= 5 * 60 ? 'text-rose-600 animate-pulse' : 'text-slate-900'
+                          }`}
+                        >
+                          {formatTimer(timerSeconds)}
+                        </span>
+                        <span className="text-xs font-medium text-slate-600">น.</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Row 2: Incoming Pill with Clock + Priority Pill */}
+                  <div className="flex items-center gap-2 w-full">
+                    {timing.isOverdue ? (
+                      <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-900 min-w-0">
+                        <span className="relative flex h-2.5 w-2.5 shrink-0">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500" />
+                        </span>
+                        <span className="font-black text-rose-950 shrink-0">เลยเวลาเช็คอินแล้ว</span>
+                        <div className="w-px h-3.5 bg-rose-200 shrink-0" />
+                        <span className="text-rose-700 font-bold truncate">
+                          เลยกำหนด {timing.overdueLabel}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-2xl bg-[#EFF6FF] border border-blue-100 text-xs text-blue-900 min-w-0">
+                        <div className="w-5 h-5 rounded-full border-2 border-blue-600 flex items-center justify-center shrink-0">
+                          <Clock className="w-3 h-3 text-blue-600 stroke-[2.5]" />
+                        </div>
+                        <span className="font-bold text-blue-950 shrink-0">
+                          {isIncoming
+                            ? 'แขกใหม่กำลังเข้า'
+                            : isStayover
+                            ? 'แขกอยู่ในห้อง'
+                            : 'กำลังทำความสะอาด'}
+                        </span>
+                        <div className="w-px h-3.5 bg-blue-200 shrink-0" />
+                        <span className="text-slate-700 font-medium truncate">
+                          {timing.pillTime}
+                        </span>
+                      </div>
                     )}
-                    <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-[11px] font-bold">
-                      ทำความสะอาดหลังเช็คเอาท์
-                    </span>
+
+                    {activeTask.priority === 'urgent' || activeTask.roomNumber === '205' ? (
+                      <div className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-[#FFF1F2] border border-rose-100 shrink-0 relative overflow-hidden">
+                        <div className="w-1 h-3.5 rounded-full bg-rose-500 shrink-0" />
+                        <span className="text-xs font-black text-rose-700">ด่วนพิเศษ</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-amber-50 border border-amber-100 shrink-0 relative overflow-hidden">
+                        <div className="w-1 h-3.5 rounded-full bg-amber-500 shrink-0" />
+                        <span className="text-xs font-bold text-amber-800">สำคัญสูง</span>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="flex items-center gap-1.5 text-emerald-600 text-xs font-medium mt-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <span>ห้องว่างพร้อมเข้าทำ</span>
+                  {/* Row 3: Timing Box (ช่วงเวลาเข้าพัก) */}
+                  <div className="w-full rounded-2xl bg-[#F8FAFC] border border-slate-200/70 p-3.5 flex items-start gap-3">
+                    <div className="w-14 shrink-0 flex flex-col text-[11px] font-medium text-slate-500 leading-tight pt-0.5">
+                      <span>ช่วงเวลา</span>
+                      <span>เข้าพัก</span>
+                    </div>
+                    <div className="w-px self-stretch bg-slate-200 shrink-0" />
+                    <div className="flex flex-col gap-1 text-xs leading-snug flex-1 min-w-0">
+                      <div className="truncate">
+                        <span className="font-black text-slate-900">{timing.checkinText}</span>{' '}
+                        <span className="text-slate-600 font-medium">{timing.checkinSub}</span>
+                      </div>
+                      <div className="truncate">
+                        <span className="font-black text-slate-900">{timing.checkoutText}</span>{' '}
+                        <span className="text-slate-500">{timing.checkoutSub}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Row 4: Progress Bar */}
+                  <div className="flex flex-col gap-1.5 pt-0.5">
+                    <div className="flex items-center justify-between text-xs font-semibold">
+                      <span className="text-slate-800">
+                        ความคืบหน้ารวม {checklistCheckedCount} จาก {checklistTotalCount} รายการ
+                      </span>
+                      <span
+                        className={`font-mono font-bold ${
+                          isAllChecked ? 'text-emerald-600' : 'text-blue-600'
+                        }`}
+                      >
+                        {checklistPercent}%
+                      </span>
+                    </div>
+                    <div className="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden border border-slate-200">
+                      <div
+                        className={`h-full rounded-full transition-all duration-300 ${
+                          isAllChecked ? 'bg-emerald-500' : 'bg-[#F97316]'
+                        }`}
+                        style={{ width: `${checklistPercent}%` }}
+                      />
+                    </div>
                   </div>
                 </div>
-
-                {/* Circular Countdown Timer */}
-                <div className="relative w-[76px] h-[76px] flex items-center justify-center shrink-0">
-                  <svg className="w-full h-full -rotate-90 transform" viewBox="0 0 76 76">
-                    <circle
-                      cx="38"
-                      cy="38"
-                      r="31"
-                      className="stroke-slate-100"
-                      strokeWidth="3.5"
-                      fill="transparent"
-                    />
-                    <circle
-                      cx="38"
-                      cy="38"
-                      r="31"
-                      className={`transition-all duration-1000 ${
-                        timerSeconds <= 0
-                          ? 'stroke-rose-600'
-                          : timerSeconds <= 5 * 60
-                          ? 'stroke-amber-500'
-                          : 'stroke-[#C2410C]'
-                      }`}
-                      strokeWidth="3.5"
-                      strokeDasharray={2 * Math.PI * 31}
-                      strokeDashoffset={
-                        timerSeconds <= 0
-                          ? 0
-                          : 2 * Math.PI * 31 * (1 - Math.max(0, Math.min(1, timerSeconds / (30 * 60))))
-                      }
-                      strokeLinecap="round"
-                      fill="transparent"
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                    <Clock
-                      className={`w-3.5 h-3.5 mb-0.5 ${
-                        timerSeconds <= 0 ? 'text-rose-600 animate-pulse' : 'text-slate-700'
-                      }`}
-                    />
-                    <span
-                      className={`font-mono font-bold text-xs leading-none tracking-tight ${
-                        timerSeconds <= 0 ? 'text-rose-600 font-extrabold animate-pulse' : 'text-slate-900'
-                      }`}
-                    >
-                      {formatTimer(timerSeconds)}
-                    </span>
-                    <span className="text-[9px] text-slate-400 mt-1 leading-none font-sans">
-                      / 30 นาที
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bed spec row */}
-              <div className="py-2 border-y border-slate-100 flex items-center gap-2 text-xs text-slate-600">
-                <Bed className="w-4 h-4 text-amber-500 shrink-0" />
-                <span>เตียงคิงไซส์ 1 หลัง • อุปกรณ์ครบเซ็ต • {activeTask.roomType}</span>
-              </div>
-
-              {/* Progress bar */}
-              <div className="flex flex-col gap-1.5 pt-0.5">
-                <div className="flex items-center justify-between text-xs font-semibold">
-                  <span className="text-slate-800">
-                    ความคืบหน้ารวม {checklistCheckedCount} จาก {checklistTotalCount} รายการ
-                  </span>
-                  <span
-                    className={`font-mono font-bold ${
-                      isAllChecked ? 'text-emerald-600' : 'text-blue-600'
-                    }`}
-                  >
-                    {checklistPercent}%
-                  </span>
-                </div>
-                <div className="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden border border-slate-200">
-                  <div
-                    className={`h-full rounded-full transition-all duration-300 ${
-                      isAllChecked ? 'bg-emerald-500' : 'bg-blue-600'
-                    }`}
-                    style={{ width: `${checklistPercent}%` }}
-                  />
-                </div>
-              </div>
-            </div>
+              );
+            })()}
 
             {/* Checklist Category Section Header & Quick Toggle All */}
             <div className="flex items-center justify-between px-1 pt-1">
@@ -1286,7 +1435,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                           : 'bg-slate-100 text-slate-600'
                       }`}
                     >
-                      {isGroupDone ? '✓ เสร็จสิ้น' : `${groupCheckedCount}/${group.items.length}`}
+                      {isGroupDone ? 'เสร็จสิ้น' : `${groupCheckedCount}/${group.items.length}`}
                     </span>
                   </div>
 
@@ -1340,62 +1489,45 @@ export const HousekeepingPortalPage: React.FC = () => {
 
           {/* Focus Mode Bottom Action Bar */}
           <div className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-xl p-3">
-            <div className="max-w-md mx-auto flex flex-col gap-2">
-              <label className="flex items-center gap-2 px-3 py-2 bg-amber-50 rounded-xl border border-amber-200 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  id="minibarRestockCheck"
-                  checked={isMinibarRestocked}
-                  onChange={(e) => setIsMinibarRestocked(e.target.checked)}
-                  className="w-4 h-4 rounded text-orange-600 accent-orange-600 focus:ring-orange-500 cursor-pointer"
-                />
-                <span className="text-xs font-bold text-amber-900">
-                  ☑️ ตรวจเช็คและเติมมินิบาร์ครบเซ็ตแล้ว (พร้อมปล่อยห้องขาย)
-                </span>
-              </label>
+            <div className="max-w-md mx-auto grid grid-cols-2 gap-2.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setMaintenanceRoom(activeTask.roomNumber);
+                  setIsMaintenanceModalOpen(true);
+                }}
+                className="min-h-[48px] flex items-center justify-center gap-1.5 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-all active:scale-95 text-xs font-bold cursor-pointer"
+              >
+                <AlertTriangle className="w-4 h-4 text-rose-600" />
+                <span>แจ้งชำรุด / ช่าง</span>
+              </button>
 
-              <div className="grid grid-cols-2 gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMaintenanceRoom(activeTask.roomNumber);
-                    setIsMaintenanceModalOpen(true);
-                  }}
-                  className="min-h-[48px] flex items-center justify-center gap-1.5 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-all active:scale-95 text-xs font-bold cursor-pointer"
-                >
-                  <AlertTriangle className="w-4 h-4 text-rose-600" />
-                  <span>แจ้งชำรุด / ช่าง</span>
-                </button>
-
-                <button
-                  type="button"
-                  disabled={!isAllChecked || !isMinibarRestocked}
-                  onClick={() => {
-                    if (isAllChecked && isMinibarRestocked) {
-                      handleCompleteActiveTask(activeTask.id);
-                    }
-                  }}
-                  className={`min-h-[48px] flex items-center justify-center gap-1.5 px-3 rounded-xl text-xs font-bold transition-all ${
-                    isAllChecked && isMinibarRestocked
-                      ? 'bg-[#0F172A] hover:bg-slate-800 text-white shadow-md active:scale-95 cursor-pointer ring-2 ring-emerald-500/50'
-                      : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60'
-                  }`}
-                  title={
-                    !isAllChecked
-                      ? `กรุณาตรวจเช็คให้ครบทั้ง ${checklistTotalCount} รายการ`
-                      : !isMinibarRestocked
-                      ? 'กรุณาติ๊กยืนยันเติมมินิบาร์ครบเซ็ตก่อนจบงาน'
-                      : 'แตะเพื่อบันทึกจบงาน'
+              <button
+                type="button"
+                disabled={!isAllChecked}
+                onClick={() => {
+                  if (isAllChecked) {
+                    handleCompleteActiveTask(activeTask.id);
                   }
-                >
-                  <CheckCircle2
-                    className={`w-4 h-4 transition-colors ${
-                      isAllChecked && isMinibarRestocked ? 'text-emerald-400' : 'text-slate-300'
-                    }`}
-                  />
-                  <span>เสร็จสิ้นงาน ({checklistCheckedCount}/{checklistTotalCount})</span>
-                </button>
-              </div>
+                }}
+                className={`min-h-[48px] flex items-center justify-center gap-1.5 px-3 rounded-xl text-xs font-bold transition-all ${
+                  isAllChecked
+                    ? 'bg-[#0F172A] hover:bg-slate-800 text-white shadow-md active:scale-95 cursor-pointer ring-2 ring-emerald-500/50'
+                    : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60'
+                }`}
+                title={
+                  !isAllChecked
+                    ? `กรุณาตรวจเช็คให้ครบทั้ง ${checklistTotalCount} รายการ`
+                    : 'แตะเพื่อบันทึกจบงาน'
+                }
+              >
+                <CheckCircle2
+                  className={`w-4 h-4 transition-colors ${
+                    isAllChecked ? 'text-emerald-400' : 'text-slate-300'
+                  }`}
+                />
+                <span>เสร็จสิ้นงาน ({checklistCheckedCount}/{checklistTotalCount})</span>
+              </button>
             </div>
           </div>
         </>
@@ -1413,17 +1545,6 @@ export const HousekeepingPortalPage: React.FC = () => {
           </div>
           {/* Quick Actions Right */}
           <div className="flex items-center gap-2">
-            {/* Outsource Quick Dial Button (Assigned Feature) */}
-            <button
-              type="button"
-              onClick={() => setIsContactModalOpen(true)}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold border border-amber-200 active:scale-95 cursor-pointer"
-              title="ติดต่อช่างภายนอก 24 ชม."
-            >
-              <PhoneCall className="w-3.5 h-3.5 text-amber-700" />
-              <span className="text-[11px]">ช่างด่วน</span>
-            </button>
-
             {/* Quick Profile Jump Button to Tab 5 (Dedicated Profile Tab) */}
             <button
               type="button"
@@ -1436,7 +1557,7 @@ export const HousekeepingPortalPage: React.FC = () => {
               title="เปิดหน้าโปรไฟล์ส่วนตัว"
             >
               <div className="relative w-8 h-8 rounded-full bg-blue-100 border border-blue-200 flex items-center justify-center text-xs font-bold text-blue-900 shadow-2xs">
-                สด
+                {staffInitials}
                 {/* Online / Active Shift Indicator */}
                 <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
               </div>
@@ -1513,12 +1634,12 @@ export const HousekeepingPortalPage: React.FC = () => {
               </div>
             </section>
 
-            {/* Filter Pills */}
+            {/* Filter Pills with Express Categories */}
             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
               <button
                 type="button"
                 onClick={() => setTaskFilter('all')}
-                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all shadow-xs ${
+                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all shadow-xs cursor-pointer ${
                   taskFilter === 'all'
                     ? 'bg-[#0F172A] text-white'
                     : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
@@ -1528,11 +1649,46 @@ export const HousekeepingPortalPage: React.FC = () => {
               </button>
               <button
                 type="button"
+                onClick={() => setTaskFilter('checkout')}
+                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1 transition-all shadow-xs cursor-pointer ${
+                  taskFilter === 'checkout'
+                    ? 'bg-amber-600 text-white'
+                    : 'bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100'
+                }`}
+              >
+                <span> เช็คเอาท์/มินิบาร์ ({checkoutCount})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setTaskFilter('incoming')}
+                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1 transition-all shadow-xs cursor-pointer ${
+                  taskFilter === 'incoming'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-blue-50 text-blue-800 border border-blue-200 hover:bg-blue-100'
+                }`}
+              >
+                <Clock className="w-3.5 h-3.5" />
+                <span> แขกกำลังจะเข้า ({incomingCount})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setTaskFilter('stayover')}
+                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1 transition-all shadow-xs cursor-pointer ${
+                  taskFilter === 'stayover'
+                    ? 'bg-teal-700 text-white'
+                    : 'bg-teal-50 text-teal-800 border border-teal-200 hover:bg-teal-100'
+                }`}
+              >
+                <Bed className="w-3.5 h-3.5" />
+                <span> พักต่อเนื่อง ({stayoverCount})</span>
+              </button>
+              <button
+                type="button"
                 onClick={() => setTaskFilter('urgent')}
-                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1 transition-all ${
+                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
                   taskFilter === 'urgent'
                     ? 'bg-rose-600 text-white'
-                    : 'bg-rose-50 text-rose-700 border border-rose-200'
+                    : 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100'
                 }`}
               >
                 <span>งานด่วนพิเศษ ({urgentCount})</span>
@@ -1540,7 +1696,7 @@ export const HousekeepingPortalPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setTaskFilter('floor1')}
-                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                   taskFilter === 'floor1'
                     ? 'bg-[#0F172A] text-white'
                     : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
@@ -1551,7 +1707,7 @@ export const HousekeepingPortalPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setTaskFilter('floor2_3')}
-                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                   taskFilter === 'floor2_3'
                     ? 'bg-[#0F172A] text-white'
                     : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
@@ -1577,150 +1733,192 @@ export const HousekeepingPortalPage: React.FC = () => {
                   <span className="text-[11px] font-mono text-slate-500">เริ่ม 11:15 น.</span>
                 </div>
 
-                <div
-                  onClick={() => setIsFocusModeOpen(true)}
-                  className="bg-white rounded-xl border-2 border-amber-300 shadow-sm p-4 relative overflow-hidden flex flex-col gap-3.5 transition-all hover:border-amber-400 cursor-pointer"
-                >
-                  {/* Amber Accent Edge */}
-                  <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-amber-500" />
+                {/* Active Task Card - Exact Same Style from Reference */}
+                {(() => {
+                  const isCheckout =
+                    activeTask.taskType === 'checkout_clean' ||
+                    (activeTask.notes && activeTask.notes.includes('เช็คเอาท์'));
+                  const isIncoming =
+                    activeTask.notes &&
+                    (activeTask.notes.includes('เข้า') || activeTask.notes.includes('แขกใหม่'));
+                  const isMinibarDone = Boolean(minibarCheckedStatus[activeTask.roomNumber]);
+                  const timing = parseCardTimingInfo(activeTask);
 
-                  {/* Header: เลขห้อง + ป้ายสถานะ ซ้าย | วงกลมจับเวลา ถอยหลังจาก 30:00 ขวา */}
-                  <div className="flex items-start justify-between pl-1">
-                    <div className="flex flex-col">
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-bold font-mono text-slate-900 tracking-tight">
-                          {activeTask.roomNumber}
-                        </span>
-                        <span className="text-xs font-medium text-slate-600">
-                          ชั้น {activeTask.floor} • {activeTask.roomType}
-                        </span>
-                      </div>
-
-                      {/* Badges Row */}
-                      <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                        {activeTask.priority === 'urgent' || activeTask.roomNumber === '205' ? (
-                          <span className="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200 text-[11px] font-bold">
-                            ด่วนพิเศษ (13:00 น.)
-                          </span>
-                        ) : null}
-                        <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-[11px] font-bold">
-                          ทำความสะอาดหลังเช็คเอาท์
-                        </span>
-                      </div>
-
-                      {/* Ready Indicator */}
-                      <div className="flex items-center gap-1.5 text-emerald-600 text-xs font-medium mt-2">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                        <span>ห้องว่างพร้อมเข้าทำ</span>
-                      </div>
-                    </div>
-
-                    {/* Circular Countdown Timer (มุมขวาบน) */}
-                    <div className="relative w-[76px] h-[76px] flex items-center justify-center shrink-0">
-                      <svg className="w-full h-full -rotate-90 transform" viewBox="0 0 76 76">
-                        {/* Background Ring */}
-                        <circle
-                          cx="38"
-                          cy="38"
-                          r="31"
-                          className="stroke-slate-100"
-                          strokeWidth="3.5"
-                          fill="transparent"
-                        />
-                        {/* Progress Countdown Ring */}
-                        <circle
-                          cx="38"
-                          cy="38"
-                          r="31"
-                          className={`transition-all duration-1000 ${
-                            timerSeconds <= 0
-                              ? 'stroke-rose-600'
-                              : timerSeconds <= 5 * 60
-                              ? 'stroke-amber-500'
-                              : 'stroke-[#C2410C]'
-                          }`}
-                          strokeWidth="3.5"
-                          strokeDasharray={2 * Math.PI * 31}
-                          strokeDashoffset={
-                            timerSeconds <= 0
-                              ? 0
-                              : (2 * Math.PI * 31) * (1 - Math.max(0, Math.min(1, timerSeconds / (30 * 60))))
-                          }
-                          strokeLinecap="round"
-                          fill="transparent"
-                        />
-                      </svg>
-                      {/* Inside Ring Content */}
-                      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                        <Clock
-                          className={`w-3.5 h-3.5 mb-0.5 ${
-                            timerSeconds <= 0 ? 'text-rose-600 animate-pulse' : 'text-slate-700'
-                          }`}
-                        />
-                        <span
-                          className={`font-mono font-bold text-xs leading-none tracking-tight ${
-                            timerSeconds <= 0 ? 'text-rose-600 font-extrabold animate-pulse' : 'text-slate-900'
-                          }`}
-                        >
-                          {formatTimer(timerSeconds)}
-                        </span>
-                        <span className="text-[9px] text-slate-400 mt-1 leading-none font-sans">
-                          / 30 นาที
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Single-line Bed Spec */}
-                  <div className="py-2.5 border-y border-slate-100 flex items-center gap-2 text-xs text-slate-600">
-                    <Bed className="w-4 h-4 text-amber-500 shrink-0" />
-                    <span>เตียงคิงไซส์ 1 หลัง • อุปกรณ์ครบเซ็ต • {activeTask.roomType}</span>
-                  </div>
-
-                  {/* Checklist Summary Progress */}
-                  <div className="flex flex-col gap-1.5 pt-0.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-semibold text-slate-800">
-                        รายการตรวจสอบมาตรฐาน ({checklistCheckedCount}/{checklistTotalCount} ข้อ)
-                      </span>
-                      <span className={`font-mono font-bold ${isAllChecked ? 'text-emerald-600' : 'text-blue-600'}`}>
-                        {checklistPercent}%
-                      </span>
-                    </div>
-                    <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden border border-slate-200">
-                      <div
-                        className={`h-full rounded-full transition-all duration-300 ${
-                          isAllChecked ? 'bg-emerald-500' : 'bg-blue-600'
-                        }`}
-                        style={{ width: `${checklistPercent}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="grid grid-cols-2 gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMaintenanceRoom(activeTask.roomNumber);
-                        setIsMaintenanceModalOpen(true);
-                      }}
-                      className="min-h-[44px] flex items-center justify-center gap-1.5 px-3 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition-colors active:scale-95 text-xs font-bold"
-                    >
-                      <AlertTriangle className="w-4 h-4 text-rose-600" />
-                      <span>แจ้งชำรุด</span>
-                    </button>
-
-                    <button
-                      type="button"
+                  return (
+                    <div
                       onClick={() => setIsFocusModeOpen(true)}
-                      className="min-h-[44px] flex items-center justify-center gap-1.5 px-3 rounded-lg bg-[#0F172A] hover:bg-slate-800 text-white transition-all active:scale-95 text-xs font-bold shadow-xs"
+                      className="bg-white rounded-3xl border-2 border-amber-400 shadow-sm p-4 sm:p-5 flex flex-col gap-3.5 transition-all hover:border-amber-500 cursor-pointer"
                     >
-                      <Maximize2 className="w-3.5 h-3.5 text-amber-400" />
-                      <span>ตรวจเช็ครายการ ({checklistCheckedCount}/{checklistTotalCount})</span>
-                    </button>
-                  </div>
-                </div>
+                      {/* Row 1: Orange Bar + Room Number | Status Pill | Timer */}
+                      <div className="flex items-center justify-between gap-2">
+                        {/* Left: Orange Bar + Room Number */}
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-1.5 h-10 rounded-full bg-[#F97316] shrink-0" />
+                          <div className="flex flex-col">
+                            <span className="text-[11px] font-medium text-slate-500 leading-tight">
+                              ห้องเลขที่
+                            </span>
+                            <span className="text-3xl font-black font-mono text-[#0F172A] tracking-tight leading-none">
+                              {activeTask.roomNumber}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Center: Status Pill */}
+                        <div className="shrink-0">
+                          <span className="px-3.5 py-1.5 rounded-full bg-[#FFEDD5] text-[#9A3412] text-xs font-bold shadow-2xs inline-block">
+                            กำลังทำความสะอาด
+                          </span>
+                        </div>
+
+                        {/* Right: Remaining Time */}
+                        <div className="flex flex-col items-end shrink-0">
+                          <span className="text-[11px] font-medium text-slate-500 leading-tight">
+                            เหลือเวลา
+                          </span>
+                          <div className="flex items-baseline gap-0.5 leading-none">
+                            <span
+                              className={`text-2xl font-black font-mono leading-none ${
+                                timerSeconds <= 5 * 60 ? 'text-rose-600 animate-pulse' : 'text-slate-900'
+                              }`}
+                            >
+                              {formatTimer(timerSeconds)}
+                            </span>
+                            <span className="text-xs font-medium text-slate-600">น.</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Row 2: Incoming Pill with Clock + Priority Pill */}
+                      <div className="flex items-center gap-2 w-full">
+                        {timing.isOverdue ? (
+                          <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-900 min-w-0">
+                            <span className="relative flex h-2.5 w-2.5 shrink-0">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+                              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500" />
+                            </span>
+                            <span className="font-black text-rose-950 shrink-0">เลยเวลาเช็คอินแล้ว</span>
+                            <div className="w-px h-3.5 bg-rose-200 shrink-0" />
+                            <span className="text-rose-700 font-bold truncate">
+                              เลยกำหนด {timing.overdueLabel}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-2xl bg-[#EFF6FF] border border-blue-100 text-xs text-blue-900 min-w-0">
+                            <div className="w-5 h-5 rounded-full border-2 border-blue-600 flex items-center justify-center shrink-0">
+                              <Clock className="w-3 h-3 text-blue-600 stroke-[2.5]" />
+                            </div>
+                            <span className="font-bold text-blue-950 shrink-0">
+                              {isIncoming ? 'แขกใหม่กำลังเข้า' : 'ห้องกำลังทำความสะอาด'}
+                            </span>
+                            <div className="w-px h-3.5 bg-blue-200 shrink-0" />
+                            <span className="text-slate-700 font-medium truncate">
+                              {timing.pillTime}
+                            </span>
+                          </div>
+                        )}
+
+                        {activeTask.priority === 'urgent' || activeTask.roomNumber === '205' ? (
+                          <div className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-[#FFF1F2] border border-rose-100 shrink-0 relative overflow-hidden">
+                            <div className="w-1 h-3.5 rounded-full bg-rose-500 shrink-0" />
+                            <span className="text-xs font-black text-rose-700">ด่วนพิเศษ</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-amber-50 border border-amber-100 shrink-0 relative overflow-hidden">
+                            <div className="w-1 h-3.5 rounded-full bg-amber-500 shrink-0" />
+                            <span className="text-xs font-bold text-amber-800">สำคัญสูง</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Row 3: Timing Box (ช่วงเวลาเข้าพัก) */}
+                      <div className="w-full rounded-2xl bg-[#F8FAFC] border border-slate-200/70 p-3.5 flex items-start gap-3">
+                        <div className="w-14 shrink-0 flex flex-col text-[11px] font-medium text-slate-500 leading-tight pt-0.5">
+                          <span>ช่วงเวลา</span>
+                          <span>เข้าพัก</span>
+                        </div>
+                        <div className="w-px self-stretch bg-slate-200 shrink-0" />
+                        <div className="flex flex-col gap-1 text-xs leading-snug flex-1 min-w-0">
+                          <div className="truncate">
+                            <span className="font-black text-slate-900">{timing.checkinText}</span>{' '}
+                            <span className="text-slate-600 font-medium">{timing.checkinSub}</span>
+                          </div>
+                          <div className="truncate">
+                            <span className="font-black text-slate-900">{timing.checkoutText}</span>{' '}
+                            <span className="text-slate-500">{timing.checkoutSub}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Checklist Summary Progress Bar */}
+                      <div className="flex flex-col gap-1.5 pt-0.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-semibold text-slate-800">
+                            ความคืบหน้ารายการตรวจ ({checklistCheckedCount}/{checklistTotalCount} ข้อ)
+                          </span>
+                          <span
+                            className={`font-mono font-bold ${
+                              isAllChecked ? 'text-emerald-600' : 'text-blue-600'
+                            }`}
+                          >
+                            {checklistPercent}%
+                          </span>
+                        </div>
+                        <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden border border-slate-200">
+                          <div
+                            className={`h-full rounded-full transition-all duration-300 ${
+                              isAllChecked ? 'bg-emerald-500' : 'bg-[#F97316]'
+                            }`}
+                            style={{ width: `${checklistPercent}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Row 4: Action Buttons */}
+                      <div className="flex items-center gap-2.5 pt-0.5" onClick={(e) => e.stopPropagation()}>
+                        {isCheckout ? (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenQuickMinibar(activeTask.roomNumber, activeTask.id)}
+                            className="w-[38%] min-h-[52px] py-2 px-3 rounded-2xl bg-white border-2 border-slate-200 hover:border-slate-300 active:scale-95 transition-all flex flex-col items-center justify-center cursor-pointer shadow-2xs"
+                          >
+                            <span className="text-xs sm:text-sm font-bold text-slate-900 leading-tight">
+                              ตรวจมินิบาร์
+                            </span>
+                            <span className="text-[11px] font-medium text-slate-500 leading-tight">
+                              {isMinibarDone ? 'ตรวจแล้ว' : '30 วิ'}
+                            </span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMaintenanceRoom(activeTask.roomNumber);
+                              setIsMaintenanceModalOpen(true);
+                            }}
+                            className="w-[38%] min-h-[52px] py-2 px-3 rounded-2xl bg-white border-2 border-slate-200 hover:border-slate-300 active:scale-95 transition-all flex flex-col items-center justify-center cursor-pointer shadow-2xs"
+                          >
+                            <span className="text-xs sm:text-sm font-bold text-slate-900 leading-tight">
+                              แจ้งชำรุด
+                            </span>
+                            <span className="text-[11px] font-medium text-slate-500 leading-tight">
+                              ส่งช่างซ่อม
+                            </span>
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => setIsFocusModeOpen(true)}
+                          className="flex-1 min-h-[52px] py-2 px-4 rounded-2xl bg-gradient-to-r from-[#F97316] to-[#EA580C] hover:from-[#EA580C] hover:to-[#C2410C] text-white font-bold text-sm sm:text-base shadow-md shadow-orange-500/20 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          <span>ตรวจเช็ครายการ ({checklistCheckedCount}/{checklistTotalCount})</span>
+                          <ChevronRight className="w-5 h-5 stroke-[2.5]" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
               </section>
             )}
 
@@ -1734,72 +1932,218 @@ export const HousekeepingPortalPage: React.FC = () => {
                   </h3>
                 </div>
                 <span className="text-[11px] text-blue-600 font-medium flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-blue-500" />
-                  จัดลำดับอัจฉริยะตามความเร่งด่วน
+                  จัดลำดับตามความเร่งด่วน
                 </span>
               </div>
 
               <div className="flex flex-col gap-2.5">
-                {filteredTasks.map((t) => (
-                  <div
-                    key={t.id}
-                    className="bg-white rounded-xl border border-slate-200 shadow-xs p-3.5 flex flex-col gap-2.5"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg font-bold font-mono text-slate-900">
-                            {t.roomNumber}
-                          </span>
-                          {t.priority === 'urgent' && (
-                            <span className="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold flex items-center gap-1">
-                              ด่วนพิเศษ (13:00 น.)
+                {filteredTasks.map((t) => {
+                  const isCheckout = t.taskType === 'checkout_clean' || (t.notes && t.notes.includes('เช็คเอาท์'));
+                  const isIncoming = t.notes && (t.notes.includes('เข้า') || t.notes.includes('แขกใหม่'));
+                  const isStayover = t.taskType === 'daily_clean' || (t as any).taskType === 'stayover_clean' || (t.notes && t.notes.includes('พักต่อเนื่อง'));
+                  const isInspect = t.taskType === 'inspect' || (t as any).taskType === 'inspection' || (t.notes && t.notes.includes('รอตรวจ'));
+                  const isMinibarDone = Boolean(minibarCheckedStatus[t.roomNumber]);
+                  const needsUrgentMinibar = isCheckout && !isMinibarDone;
+
+                  const cardStyle = needsUrgentMinibar
+                    ? 'bg-amber-50/40 border-2 border-amber-400 ring-2 ring-amber-300/30 shadow-sm'
+                    : isIncoming
+                    ? 'bg-blue-50/20 border-2 border-blue-200 shadow-2xs'
+                    : isStayover
+                    ? 'bg-teal-50/15 border border-teal-200 shadow-2xs'
+                    : 'bg-white border border-slate-200 shadow-2xs';
+
+                  const timing = parseCardTimingInfo(t);
+
+                  return (
+                    <div
+                      key={t.id}
+                      className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-4 sm:p-5 flex flex-col gap-3.5 transition-all hover:shadow-md"
+                    >
+                      {/* Row 1: Orange Bar + Room Number | Status Pill | Duration */}
+                      <div className="flex items-center justify-between gap-2">
+                        {/* Left: Orange Bar + Room Number */}
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-1.5 h-10 rounded-full bg-[#F97316] shrink-0" />
+                          <div className="flex flex-col">
+                            <span className="text-[11px] font-medium text-slate-500 leading-tight">
+                              ห้องเลขที่
                             </span>
-                          )}
-                          {t.taskType === 'stayover_clean' && (
-                            <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold">
+                            <span className="text-3xl font-black font-mono text-[#0F172A] tracking-tight leading-none">
+                              {t.roomNumber}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Center: Status Pill */}
+                        <div className="shrink-0">
+                          {needsUrgentMinibar ? (
+                            <span className="px-3.5 py-1.5 rounded-full bg-[#FFEDD5] text-[#9A3412] text-xs font-bold shadow-2xs inline-block">
+                              เพิ่งเช็คเอาท์ • รอมินิบาร์
+                            </span>
+                          ) : isCheckout && isMinibarDone ? (
+                            <span className="px-3.5 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold shadow-2xs inline-flex items-center gap-1">
+                              <Check className="w-3.5 h-3.5 text-emerald-700" />
+                              <span>ตรวจมินิบาร์แล้ว</span>
+                            </span>
+                          ) : isStayover ? (
+                            <span className="px-3.5 py-1.5 rounded-full bg-teal-100 text-teal-800 text-xs font-bold shadow-2xs inline-block">
                               แขกพักต่อเนื่อง
                             </span>
-                          )}
-                          {t.taskType === 'inspect' && (
-                            <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 text-[10px] font-bold">
-                              รอตรวจรับงาน
+                          ) : isInspect ? (
+                            <span className="px-3.5 py-1.5 rounded-full bg-purple-100 text-purple-800 text-xs font-bold shadow-2xs inline-block">
+                              รอตรวจปล่อยห้อง
+                            </span>
+                          ) : (
+                            <span className="px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-700 text-xs font-bold shadow-2xs inline-block">
+                              ห้องว่างพร้อมทำ
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-slate-500 mt-0.5">
-                          ชั้น {t.floor} • {t.roomType}
-                        </p>
-                      </div>
-                      <span className="text-[11px] font-mono text-slate-400">
-                        ประมาณ {t.estMinutes} นาที
-                      </span>
-                    </div>
 
-                    {/* Special Note */}
-                    {t.notes && (
-                      <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100 flex items-start gap-2">
-                        <MessageSquare className="w-3.5 h-3.5 text-blue-600 shrink-0 mt-0.5" />
-                        <p className="text-xs text-slate-700 leading-snug">{t.notes}</p>
+                        {/* Right: Estimated Duration */}
+                        <div className="flex flex-col items-end shrink-0">
+                          <span className="text-[11px] font-medium text-slate-500 leading-tight mb-1">
+                            ประมาณ
+                          </span>
+                          <div className="flex items-baseline gap-0.5 leading-none">
+                            <span className="text-2xl font-black font-mono text-slate-900 leading-none">
+                              {t.estMinutes}
+                            </span>
+                            <span className="text-xs font-medium text-slate-600">นาที</span>
+                          </div>
+                        </div>
                       </div>
-                    )}
 
-                    <div className="flex items-center justify-between pt-1">
-                      <span className="text-[11px] text-slate-400 flex items-center gap-1">
-                        <Bed className="w-3.5 h-3.5" />
-                        ห้องว่างพร้อมเข้าทำ
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleStartTask(t.id)}
-                        className="min-h-[44px] px-4 rounded-lg bg-slate-100 hover:bg-[#0F172A] hover:text-white text-slate-900 border border-slate-200 transition-all active:scale-95 text-xs font-bold flex items-center gap-1.5"
-                      >
-                        <Play className="w-3.5 h-3.5" />
-                        <span>เริ่มงานทำความสะอาด</span>
-                      </button>
+                      {/* Row 2: Incoming Pill with Clock + Priority Pill */}
+                      <div className="flex items-center gap-2 w-full">
+                        {/* Left Pill (Blue / Pastel Incoming Pill OR Overdue Rose Alert) */}
+                        {timing.isOverdue ? (
+                          <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-900 min-w-0">
+                            <span className="relative flex h-2.5 w-2.5 shrink-0">
+                              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500" />
+                            </span>
+                            <span className="font-black text-rose-950 shrink-0">
+                              เลยเวลาเช็คอิน
+                            </span>
+                            <div className="w-px h-3.5 bg-rose-200 shrink-0" />
+                            <span className="text-rose-700 font-bold truncate">
+                              เลยกำหนด {timing.overdueLabel}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-2xl bg-[#EFF6FF] border border-blue-100 text-xs text-blue-900 min-w-0">
+                            <div className="w-5 h-5 rounded-full border-2 border-blue-600 flex items-center justify-center shrink-0">
+                              <Clock className="w-3 h-3 text-blue-600 stroke-[2.5]" />
+                            </div>
+                            <span className="font-bold text-blue-950 shrink-0">
+                              {isIncoming
+                                ? 'แขกใหม่กำลังเข้า'
+                                : isStayover
+                                ? 'แขกอยู่ในห้อง'
+                                : 'ห้องว่างพร้อมเข้าทำ'}
+                            </span>
+                            <div className="w-px h-3.5 bg-blue-200 shrink-0" />
+                            <span className="text-slate-700 font-medium truncate">
+                              {timing.pillTime}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Right Pill (Rose Priority Pill with Red Accent Bar) */}
+                        {t.priority === 'urgent' ? (
+                          <div className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-[#FFF1F2] border border-rose-100 shrink-0 relative overflow-hidden">
+                            <div className="w-1 h-3.5 rounded-full bg-rose-500 shrink-0" />
+                            <span className="text-xs font-black text-rose-700">ด่วนพิเศษ</span>
+                          </div>
+                        ) : t.priority === 'high' ? (
+                          <div className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-amber-50 border border-amber-100 shrink-0 relative overflow-hidden">
+                            <div className="w-1 h-3.5 rounded-full bg-amber-500 shrink-0" />
+                            <span className="text-xs font-bold text-amber-800">สำคัญสูง</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-slate-100 border border-slate-200/60 shrink-0">
+                            <span className="text-xs font-medium text-slate-600">ปกติ</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Row 3: Timing Box (ช่วงเวลาเข้าพัก) */}
+                      <div className="w-full rounded-2xl bg-[#F8FAFC] border border-slate-200/70 p-3.5 flex items-start gap-3">
+                        <div className="w-14 shrink-0 flex flex-col text-[11px] font-medium text-slate-500 leading-tight pt-0.5">
+                          <span>ช่วงเวลา</span>
+                          <span>เข้าพัก</span>
+                        </div>
+                        <div className="w-px self-stretch bg-slate-200 shrink-0" />
+                        <div className="flex flex-col gap-1 text-xs leading-snug flex-1 min-w-0">
+                          <div className="truncate">
+                            <span className="font-black text-slate-900">{timing.checkinText}</span>{' '}
+                            <span className="text-slate-600 font-medium">{timing.checkinSub}</span>
+                          </div>
+                          <div className="truncate">
+                            <span className="font-black text-slate-900">{timing.checkoutText}</span>{' '}
+                            <span className="text-slate-500">{timing.checkoutSub}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Row 4: Action Buttons (ตรวจมินิบาร์ / 30 วิ | เริ่มงานทำความสะอาด >) */}
+                      <div className="flex items-center gap-2.5 pt-0.5">
+                        {isCheckout ? (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenQuickMinibar(t.roomNumber, t.id)}
+                            className="w-[38%] min-h-[52px] py-2 px-3 rounded-2xl bg-white border-2 border-slate-200 hover:border-slate-300 active:scale-95 transition-all flex flex-col items-center justify-center cursor-pointer shadow-2xs"
+                          >
+                            <span className="text-xs sm:text-sm font-bold text-slate-900 leading-tight">
+                              ตรวจมินิบาร์
+                            </span>
+                            <span className="text-[11px] font-medium text-slate-500 leading-tight">
+                              {isMinibarDone ? 'ตรวจแล้ว' : '30 วิ'}
+                            </span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMaintenanceRoom(t.roomNumber);
+                              setIsMaintenanceModalOpen(true);
+                            }}
+                            className="w-[38%] min-h-[52px] py-2 px-3 rounded-2xl bg-white border-2 border-slate-200 hover:border-slate-300 active:scale-95 transition-all flex flex-col items-center justify-center cursor-pointer shadow-2xs"
+                          >
+                            <span className="text-xs sm:text-sm font-bold text-slate-900 leading-tight">
+                              แจ้งชำรุด
+                            </span>
+                            <span className="text-[11px] font-medium text-slate-500 leading-tight">
+                              ส่งช่างซ่อม
+                            </span>
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          disabled={Boolean(activeTask)}
+                          onClick={() => {
+                            if (!activeTask) handleStartTask(t.id);
+                          }}
+                          className={`flex-1 min-h-[52px] py-2 px-4 rounded-2xl font-bold text-sm sm:text-base transition-all flex items-center justify-center gap-2 ${
+                            activeTask
+                              ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60'
+                              : 'bg-gradient-to-r from-[#F97316] to-[#EA580C] hover:from-[#EA580C] hover:to-[#C2410C] text-white shadow-md shadow-orange-500/20 active:scale-98 cursor-pointer'
+                          }`}
+                          title={
+                            activeTask
+                              ? `กำลังทำความสะอาดห้อง ${activeTask.roomNumber} อยู่ กรุณาตรวจรับงานให้เสร็จสิ้นก่อนเริ่มห้องใหม่`
+                              : 'แตะเพื่อเริ่มงาน'
+                          }
+                        >
+                          <span>เริ่มงานทำความสะอาด</span>
+                          <ChevronRight className={`w-5 h-5 stroke-[2.5] ${activeTask ? 'text-slate-300' : 'text-white'}`} />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </section>
 
@@ -1840,7 +2184,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                       </div>
                     </div>
                     <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold">
-                      ✓ พร้อมขาย
+                      พร้อมขาย
                     </span>
                   </div>
                 ))}
@@ -1988,8 +2332,9 @@ export const HousekeepingPortalPage: React.FC = () => {
             <section className="flex flex-col gap-2">
               {filteredRooms.map((r) => {
                 const isClean = r.status === 'available';
-                const isMaintenance = r.status === 'maintenance';
+                const isMaintenance = r.status === 'maintenance' || r.status === 'out_of_order';
                 const isCleaning = r.status === 'cleaning';
+                const isCheckedOut = r.status === 'checked_out';
 
                 return (
                   <div
@@ -2007,6 +2352,8 @@ export const HousekeepingPortalPage: React.FC = () => {
                             ? 'bg-rose-500'
                             : isCleaning
                             ? 'bg-amber-500'
+                            : isCheckedOut
+                            ? 'bg-orange-500'
                             : 'bg-blue-500'
                         }`}
                       />
@@ -2032,6 +2379,8 @@ export const HousekeepingPortalPage: React.FC = () => {
                             ? 'bg-rose-50 text-rose-800 border border-rose-200'
                             : isCleaning
                             ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                            : isCheckedOut
+                            ? 'bg-orange-50 text-orange-800 border border-orange-200'
                             : 'bg-blue-50 text-blue-800 border border-blue-200'
                         }`}
                       >
@@ -2041,6 +2390,8 @@ export const HousekeepingPortalPage: React.FC = () => {
                           ? 'แจ้งซ่อม'
                           : isCleaning
                           ? 'กำลังทำ'
+                          : isCheckedOut
+                          ? 'รอทำความสะอาด'
                           : 'เข้าพักอยู่'}
                       </span>
                       <ChevronRight className="w-4 h-4 text-slate-400" />
@@ -2166,18 +2517,47 @@ export const HousekeepingPortalPage: React.FC = () => {
                         </div>
                       )}
 
-                      <div className="pt-1 flex items-center justify-between border-t border-slate-100">
+                      <div className="pt-1 flex items-center justify-between border-t border-slate-100 gap-1">
                         <span className="text-[10px] text-slate-400 flex items-center gap-1">
                           <Bed className="w-3 h-3 text-slate-400" /> ห้องว่าง
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => handleStartTask(t.id)}
-                          className="px-3 py-1.5 rounded-lg bg-[#0F172A] hover:bg-slate-800 text-white text-[11px] font-bold flex items-center gap-1 active:scale-95 shadow-xs transition-colors cursor-pointer"
-                        >
-                          <Play className="w-3 h-3" />
-                          <span>เริ่มงาน</span>
-                        </button>
+                        <div className="flex items-center gap-1">
+                          {t.taskType === 'checkout_clean' && (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenQuickMinibar(t.roomNumber, t.id)}
+                              className={`px-2 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1 active:scale-95 transition-all cursor-pointer border ${
+                                minibarCheckedStatus[t.roomNumber]
+                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                  : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-300'
+                              }`}
+                              title="เช็คมินิบาร์ด่วนแจ้ง Front Desk ทันที"
+                            >
+                              <Zap className="w-3 h-3 text-amber-600" />
+                              <span>{minibarCheckedStatus[t.roomNumber] ? 'ตรวจแล้ว' : 'มินิบาร์'}</span>
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            disabled={Boolean(activeTask)}
+                            onClick={() => {
+                              if (!activeTask) handleStartTask(t.id);
+                            }}
+                            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1 shadow-xs transition-colors ${
+                              activeTask
+                                ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60'
+                                : 'bg-[#0F172A] hover:bg-slate-800 text-white active:scale-95 cursor-pointer'
+                            }`}
+                            title={
+                              activeTask
+                                ? `กำลังทำความสะอาดห้อง ${activeTask.roomNumber} อยู่ กรุณาตรวจรับงานให้เสร็จสิ้นก่อนเริ่มห้องใหม่`
+                                : 'เริ่มงาน'
+                            }
+                          >
+                            <Play className={`w-3 h-3 ${activeTask ? 'text-slate-300' : 'text-white'}`} />
+                            <span>เริ่มงาน</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -2307,7 +2687,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                           </div>
                         </div>
                         <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold">
-                          ✓ พร้อมขาย
+                          พร้อมขาย
                         </span>
                       </div>
 
@@ -2522,7 +2902,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                         setPickerViewMonth(now.getMonth());
                         setPickerViewYear(now.getFullYear());
                         setIsMonthPickerOpen(false);
-                        showToast('📍 เลือกวันปัจจุบันเรียบร้อย');
+                        showToast('เลือกวันปัจจุบันเรียบร้อย');
                       }}
                       className="text-xs font-bold text-emerald-700 hover:text-emerald-800 cursor-pointer"
                     >
@@ -2772,7 +3152,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                 <div className="flex items-center gap-3">
                   <div className="relative">
                     <div className="w-11 h-11 rounded-xl bg-[#0F172A] text-white flex items-center justify-center font-extrabold text-sm shadow-xs">
-                      สด
+                      {staffInitials}
                     </div>
                     <span
                       className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full ring-2 ring-white ${
@@ -2782,13 +3162,13 @@ export const HousekeepingPortalPage: React.FC = () => {
                   </div>
                   <div>
                     <div className="flex items-center gap-1.5">
-                      <h4 className="text-sm font-bold text-slate-900">สุดา รัตนภักดี</h4>
+                      <h4 className="text-sm font-bold text-slate-900">{staffName}</h4>
                       <span className="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-[#0F172A] text-white">
                         คุณ
                       </span>
                     </div>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      หัวหน้ากะเช้า • ประจำโซน: ชั้น 1 - 2
+                      หัวหน้ากะเช้า • ประจำโซน: ชั้น 1 - 2 (HK-001)
                     </p>
                   </div>
                 </div>
@@ -2880,13 +3260,13 @@ export const HousekeepingPortalPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Staff Card 2: สมชาย วงศ์สุข */}
+            {/* Staff Card 2: มาลี เรืองโรจน์ */}
             <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col gap-3">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div className="relative">
-                    <div className="w-11 h-11 rounded-xl bg-blue-600 text-white flex items-center justify-center font-extrabold text-sm shadow-xs">
-                      สม
+                    <div className="w-11 h-11 rounded-xl bg-purple-600 text-white flex items-center justify-center font-extrabold text-sm shadow-xs">
+                      มา
                     </div>
                     <span
                       className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full ring-2 ring-white ${
@@ -2895,9 +3275,9 @@ export const HousekeepingPortalPage: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-slate-900">สมชาย วงศ์สุข</h4>
+                    <h4 className="text-sm font-bold text-slate-900">มาลี เรืองโรจน์ (Malee)</h4>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      กะเช้า 07:00 - 15:30 • ประจำโซน: ชั้น 3 - 4
+                      กะเช้า 07:00 - 15:30 • ประจำโซน: ชั้น 3 - 4 (HK-002)
                     </p>
                   </div>
                 </div>
@@ -2941,7 +3321,7 @@ export const HousekeepingPortalPage: React.FC = () => {
               {isBeforeToday(selectedDate) ? (
                 <button
                   type="button"
-                  onClick={() => showToast('⚠️ ไม่สามารถขอความช่วยเหลือในรอบกะที่ปิดแล้วได้')}
+                  onClick={() => showToast('ไม่สามารถขอความช่วยเหลือในรอบกะที่ปิดแล้วได้')}
                   className="w-full py-2.5 px-3 rounded-xl bg-slate-100 text-slate-400 border border-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 cursor-not-allowed opacity-60 mt-0.5"
                   title="ปิดรอบแล้ว"
                 >
@@ -2952,7 +3332,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    setShiftSwapTargetStaff('สมชาย วงศ์สุข');
+                    setShiftSwapTargetStaff('มาลี เรืองโรจน์');
                     setShiftSwapReason('swap');
                     setIsShiftSwapModalOpen(true);
                   }}
@@ -2964,7 +3344,7 @@ export const HousekeepingPortalPage: React.FC = () => {
               )}
             </div>
 
-            {/* Staff Card 3: วิชัย กลิ่นเกสร (กะดึก) */}
+            {/* Staff Card 3: วิชัย แซ่ตั้ง (กะดึก) */}
             <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col gap-2.5 opacity-90">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
@@ -2975,9 +3355,9 @@ export const HousekeepingPortalPage: React.FC = () => {
                     <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-slate-300 ring-2 ring-white" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-slate-900">วิชัย กลิ่นเกสร</h4>
+                    <h4 className="text-sm font-bold text-slate-900">วิชัย แซ่ตั้ง (Wichai)</h4>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      กะดึก 23:00 - 07:00 • ส่วนกลาง & ฉุกเฉิน
+                      กะดึก 23:00 - 07:00 • ส่วนกลาง & ฉุกเฉิน (HK-003)
                     </p>
                   </div>
                 </div>
@@ -3018,7 +3398,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                       <span>โซน 1 (ชั้น 1 - 2 • 10 ห้อง)</span>
                     </div>
                     <span className="text-[11px] text-slate-500 ml-3">
-                      ผู้รับผิดชอบ: แม่บ้านสุดา
+                      ผู้รับผิดชอบ: {staffName}
                     </span>
                   </div>
                   <span className="text-emerald-700 font-bold text-xs">100% ครอบคลุม</span>
@@ -3032,7 +3412,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                       <span>โซน 2 (ชั้น 3 - 4 • 8 ห้อง)</span>
                     </div>
                     <span className="text-[11px] text-slate-500 ml-3">
-                      ผู้รับผิดชอบ: แม่บ้านสมชาย
+                      ผู้รับผิดชอบ: มาลี เรืองโรจน์
                     </span>
                   </div>
                   <span className="text-emerald-700 font-bold text-xs">100% ครอบคลุม</span>
@@ -3063,12 +3443,12 @@ export const HousekeepingPortalPage: React.FC = () => {
                     บันทึกส่งเวรประจำวัน (Daily Handover Note)
                   </h3>
                 </div>
-                <span className="text-[10px] font-mono text-slate-400">กะเช้า ➔ กะบ่าย</span>
+                <span className="text-[10px] font-mono text-slate-400">กะเช้า -&gt; กะบ่าย</span>
               </div>
 
               <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200/80 text-xs text-amber-900 leading-relaxed font-sans">
                 <div className="flex items-start gap-2">
-                  <span className="text-base shrink-0">📌</span>
+                  <Pin className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
                   <div className="flex-1">
                     <p className="font-semibold text-amber-950">ข้อความส่งต่อถึงแม่บ้านกะถัดไป:</p>
                     <p className="mt-0.5 text-amber-900/90">{handoverNote}</p>
@@ -3081,7 +3461,7 @@ export const HousekeepingPortalPage: React.FC = () => {
             {isBeforeToday(selectedDate) ? (
               <button
                 type="button"
-                onClick={() => showToast('⚠️ วันที่เลือกเป็นประวัติย้อนหลัง ไม่สามารถยื่นคำขอฉุกเฉินหรือสลับกะได้')}
+                onClick={() => showToast('วันที่เลือกเป็นประวัติย้อนหลัง ไม่สามารถยื่นคำขอฉุกเฉินหรือสลับกะได้')}
                 className="w-full min-h-[48px] rounded-2xl bg-slate-200 text-slate-500 font-bold text-xs flex items-center justify-center gap-2 cursor-not-allowed opacity-60 mt-1"
                 title="ไม่สามารถทำรายการย้อนหลังได้"
               >
@@ -3122,20 +3502,20 @@ export const HousekeepingPortalPage: React.FC = () => {
                 <div className="flex items-center gap-3">
                   <div className="relative">
                     <div className="w-13 h-13 rounded-2xl bg-blue-100 border border-blue-200 flex items-center justify-center font-extrabold text-blue-900 text-lg shadow-2xs">
-                      สด
+                      {staffInitials}
                     </div>
                     <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 ring-2 ring-white" />
                   </div>
                   <div className="flex flex-col">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <h2 className="text-base font-extrabold text-slate-900 leading-tight">แม่บ้านสุดา</h2>
+                      <h2 className="text-base font-extrabold text-slate-900 leading-tight">{staffName}</h2>
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
                         หัวหน้าเวร
                       </span>
                     </div>
-                    <p className="text-xs text-slate-600 mt-0.5">สุดา พุ่มเจริญ</p>
+                    <p className="text-xs text-slate-600 mt-0.5">{authUser?.email || 'housekeeping@keystay.com'}</p>
                     <p className="text-[11px] font-mono text-slate-400 mt-0.5">
-                      รหัส HK-007 • ประจำโซนชั้น 1 และ 2
+                      รหัส HK-001 • ประจำโซนชั้น 1 และ 2
                     </p>
                   </div>
                 </div>
@@ -3205,7 +3585,7 @@ export const HousekeepingPortalPage: React.FC = () => {
               <div className="flex flex-col gap-2">
                 <button
                   type="button"
-                  onClick={() => showToast('📞 กำลังต่อสายไปยัง เคาน์เตอร์ต้อนรับส่วนหน้า (Front Desk เบอร์ 0)')}
+                  onClick={() => showToast('กำลังต่อสายไปยัง เคาน์เตอร์ต้อนรับส่วนหน้า (Front Desk เบอร์ 0)')}
                   className="p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 flex items-center justify-between transition-colors text-left group active:scale-[0.99] cursor-pointer"
                 >
                   <div className="flex items-center gap-2.5">
@@ -3277,7 +3657,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                     type="button"
                     onClick={() => {
                       setIsSoundAlertEnabled((prev) => !prev);
-                      showToast(!isSoundAlertEnabled ? '🔔 เปิดเสียงแจ้งเตือนงานด่วนแล้ว' : '🔕 ปิดเสียงแจ้งเตือนแล้ว');
+                      showToast(!isSoundAlertEnabled ? ' เปิดเสียงแจ้งเตือนงานด่วนแล้ว' : ' ปิดเสียงแจ้งเตือนแล้ว');
                     }}
                     className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                       isSoundAlertEnabled ? 'bg-emerald-500' : 'bg-slate-300'
@@ -3303,7 +3683,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                     type="button"
                     onClick={() => {
                       setIsEyeCareMode((prev) => !prev);
-                      showToast(!isEyeCareMode ? '🌙 เปิดโหมดถนอมสายตาแล้ว' : '☀️ ปิดโหมดถนอมสายตาแล้ว');
+                      showToast(!isEyeCareMode ? ' เปิดโหมดถนอมสายตาแล้ว' : ' ปิดโหมดถนอมสายตาแล้ว');
                     }}
                     className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                       isEyeCareMode ? 'bg-[#0F172A]' : 'bg-slate-300'
@@ -3438,12 +3818,20 @@ export const HousekeepingPortalPage: React.FC = () => {
             {/* Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-rose-50 border border-rose-200 text-rose-700 flex items-center justify-center">
-                  <Wrench className="w-4 h-4" />
+                <div className={`w-8 h-8 rounded-full border flex items-center justify-center ${
+                  maintenanceCategory === 'lost_and_found'
+                    ? 'bg-amber-50 border-amber-200 text-amber-700'
+                    : 'bg-rose-50 border-rose-200 text-rose-700'
+                }`}>
+                  {maintenanceCategory === 'lost_and_found' ? <Briefcase className="w-4 h-4" /> : <Wrench className="w-4 h-4" />}
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">แจ้งปัญหา / ส่งซ่อมบำรุง</h3>
-                  <p className="text-xs text-slate-500">ห้อง {maintenanceRoom} • สแตนดาร์ด ชั้น 1</p>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    {maintenanceCategory === 'lost_and_found' ? 'บันทึกของที่ลูกค้าลืมไว้ (Lost & Found)' : 'แจ้งปัญหา / ส่งซ่อมบำรุง'}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    ห้อง {maintenanceRoom} • {roomStatusList.find((r) => r.roomNumber === maintenanceRoom)?.type || 'ห้องพัก'}
+                  </p>
                 </div>
               </div>
               <button
@@ -3527,7 +3915,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <Briefcase className="w-4 h-4 text-amber-500" />
                     <div>
-                      <span className="text-xs font-bold block">📦 ของที่ลูกค้าลืมไว้ (Lost & Found)</span>
+                      <span className="text-xs font-bold block">ของที่ลูกค้าลืมไว้ (Lost & Found)</span>
                       <span className="text-[10px] opacity-75">ส่งมอบ Front Counter • นับถอยหลัง 7 วัน</span>
                     </div>
                   </div>
@@ -3572,43 +3960,21 @@ export const HousekeepingPortalPage: React.FC = () => {
             )}
 
 
-            {/* Section 2: Severity Tabs */}
+            
+
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-bold text-slate-800">
-                ระดับความเร่งด่วน
+                {maintenanceCategory === 'lost_and_found' ? 'คำอธิบายของที่ลืมไว้ (Lost & Found)' : 'คำอธิบายอาการชำรุด'}
               </label>
-              <div className="grid grid-cols-4 gap-1 p-1 bg-slate-100 rounded-lg">
-                {(['low', 'med', 'high', 'critical'] as const).map((lvl) => (
-                  <button
-                    key={lvl}
-                    type="button"
-                    onClick={() => setMaintenanceSeverity(lvl)}
-                    className={`py-1.5 text-xs font-bold rounded transition-all capitalize ${
-                      maintenanceSeverity === lvl
-                        ? 'bg-white text-slate-900 shadow-xs'
-                        : 'text-slate-500 hover:text-slate-800'
-                    }`}
-                  >
-                    {lvl === 'low'
-                      ? 'ต่ำ'
-                      : lvl === 'med'
-                      ? 'กลาง'
-                      : lvl === 'high'
-                      ? 'สูง'
-                      : 'วิกฤต'}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Section 3: Description Field */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-slate-800">คำอธิบายอาการชำรุด</label>
               <textarea
                 rows={3}
                 value={maintenanceDesc}
                 onChange={(e) => setMaintenanceDesc(e.target.value)}
-                placeholder="ระบุอาการชำรุด เช่น แอร์มีน้ำหยด, ลูกบิดประตูหลวม..."
+                placeholder={
+                  maintenanceCategory === 'lost_and_found'
+                    ? 'พิมพ์ระบุของที่ลืม เช่น หูฟังบลูทูธสีดำ, กระเป๋าสตางค์, สายชาร์จ...'
+                    : 'พิมพ์ระบุอาการชำรุด เช่น แอร์มีน้ำหยด, ปลั๊กไฟหลวม, ลูกบิดประตูชำรุด...'
+                }
                 className="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 resize-none"
               />
             </div>
@@ -3765,9 +4131,9 @@ export const HousekeepingPortalPage: React.FC = () => {
               <label className="text-xs font-semibold text-slate-700">ประเภทคำขอ</label>
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  { id: 'swap', label: '⇄ สลับกะ' },
-                  { id: 'leave_urgent', label: '⚠️ ลาฉุกเฉิน' },
-                  { id: 'cover', label: '🤝 เสริมเวร' },
+                  { id: 'swap', label: 'สลับกะ' },
+                  { id: 'leave_urgent', label: 'ลาฉุกเฉิน' },
+                  { id: 'cover', label: 'เสริมเวร' },
                 ].map((type) => (
                   <button
                     key={type.id}
@@ -3794,9 +4160,9 @@ export const HousekeepingPortalPage: React.FC = () => {
                   onChange={(e) => setShiftSwapTargetStaff(e.target.value)}
                   className="w-full p-2.5 rounded-xl border border-slate-300 text-xs font-medium text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-[#0F172A]"
                 >
-                  <option value="สมชาย วงศ์สุข">สมชาย วงศ์สุข (กะเช้า • ประจำโซนชั้น 3-4)</option>
-                  <option value="วิชัย กลิ่นเกสร">วิชัย กลิ่นเกสร (กะดึก • ส่วนกลาง & ฉุกเฉิน)</option>
-                  <option value="กานดา จิตมั่น">กานดา จิตมั่น (กะบ่าย • 14:30 - 23:00)</option>
+                  <option value="มาลี เรืองโรจน์">มาลี เรืองโรจน์ (กะเช้า • ประจำโซนชั้น 3-4)</option>
+                  <option value="วิชัย แซ่ตั้ง">วิชัย แซ่ตั้ง (กะดึก • ส่วนกลาง & ฉุกเฉิน)</option>
+                  <option value="น้องแพร สดใส">น้องแพร สดใส (กะบ่าย • 14:30 - 23:00)</option>
                 </select>
               </div>
             )}
@@ -3846,7 +4212,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                 type="button"
                 onClick={() => {
                   setIsShiftSwapModalOpen(false);
-                  showToast('📨 ส่งคำขอสลับกะไปยัง Supervisor เรียบร้อยแล้ว (รอการอนุมัติในระบบ)');
+                  showToast('ส่งคำขอสลับกะไปยัง Supervisor เรียบร้อยแล้ว (รอการอนุมัติในระบบ)');
                 }}
                 className="py-2.5 rounded-xl bg-[#0F172A] hover:bg-slate-800 text-white font-bold text-xs shadow-xs cursor-pointer"
               >
@@ -3908,7 +4274,9 @@ export const HousekeepingPortalPage: React.FC = () => {
               {/* Category 1 */}
               <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
-                  <span className="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs">🚪</span>
+                  <span className="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs">
+                    <DoorOpen className="w-3.5 h-3.5" />
+                  </span>
                   <span>หมวดที่ 1: ขั้นตอนก่อนเข้าห้องและสำรวจ (Entry & Assessment)</span>
                 </div>
                 <div className="space-y-2 text-xs text-slate-700 pl-4 sm:pl-8">
@@ -3930,7 +4298,9 @@ export const HousekeepingPortalPage: React.FC = () => {
               {/* Category 2 */}
               <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
-                  <span className="w-6 h-6 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center text-xs">🧹</span>
+                  <span className="w-6 h-6 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center text-xs">
+                    <Sparkles className="w-3.5 h-3.5" />
+                  </span>
                   <span>หมวดที่ 2: การรื้อถอนและทำความสะอาดลึก (Stripping & Cleaning)</span>
                 </div>
                 <div className="space-y-2 text-xs text-slate-700 pl-4 sm:pl-8">
@@ -3952,7 +4322,9 @@ export const HousekeepingPortalPage: React.FC = () => {
               {/* Category 3 */}
               <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
-                  <span className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">🛏️</span>
+                  <span className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">
+                    <Bed className="w-3.5 h-3.5" />
+                  </span>
                   <span>หมวดที่ 3: การเซ็ตอัปห้องและเติมสิ่งอำนวยความสะดวก (Setup & Amenities)</span>
                 </div>
                 <div className="space-y-2 text-xs text-slate-700 pl-4 sm:pl-8">
@@ -3974,7 +4346,9 @@ export const HousekeepingPortalPage: React.FC = () => {
               {/* Category 4 */}
               <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
-                  <span className="w-6 h-6 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center text-xs">✨</span>
+                  <span className="w-6 h-6 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center text-xs">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                  </span>
                   <span>หมวดที่ 4: การตรวจสอบขั้นสุดท้ายและความปลอดภัย (Final Inspection & Lock)</span>
                 </div>
                 <div className="space-y-2 text-xs text-slate-700 pl-4 sm:pl-8">
@@ -3999,12 +4373,163 @@ export const HousekeepingPortalPage: React.FC = () => {
               <button
                 onClick={() => {
                   setIsSOPModalOpen(false);
-                  showToast('✅ รับทราบและยืนยันมาตรฐานการปฏิบัติงาน 12 ข้อเรียบร้อยแล้ว');
+                  showToast('รับทราบและยืนยันมาตรฐานการปฏิบัติงาน 12 ข้อเรียบร้อยแล้ว');
                 }}
                 className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
               >
                 <Check className="w-4 h-4" />
                 <span>ฉันได้อ่านและเข้าใจมาตรฐานการปฏิบัติงานแล้ว</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ========================================================
+          MODAL 5: QUICK MINIBAR CHECK (Express 30-sec Checkout Check)
+          แยกอิสระเพื่อแจ้ง Front Desk ขึ้นบิล / คืนมัดจำแขกทันที
+          โดยไม่ต้องรอทำความสะอาดเสร็จทั้ง 12 ข้อ
+          ======================================================== */}
+      {isQuickMinibarModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl border-t sm:border border-slate-200 shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in slide-in-from-bottom duration-200">
+            {/* Mobile Drag Handle */}
+            <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto my-2.5 sm:hidden" />
+
+            {/* Header */}
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 flex items-center justify-center font-bold">
+                  <Zap className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-sm sm:text-base font-bold text-slate-900">
+                      ตรวจมินิบาร์ด่วน (ห้อง {quickMinibarRoom})
+                    </h2>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold">
+                      30 วิ คืนมัดจำ
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    แจ้ง Front Desk ทันที เพื่อขึ้นบิลหรือคืนเงินมัดจำแขก
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsQuickMinibarModalOpen(false)}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content Body */}
+            <div className="p-4 overflow-y-auto space-y-4">
+              {/* Option A: One-Tap 100% Intact / No Consumption */}
+              <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    กรณีแขกไม่ได้ดื่ม/ทานอะไรเลย
+                  </span>
+                  <span className="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                    แนะนำ (เร็วกว่า)
+                  </span>
+                </div>
+                <p className="text-[11px] text-emerald-800 leading-snug">
+                  หากมินิบาร์ครบสมบูรณ์ทุกรายการ ไม่มีการเปิดทาน สามารถกดยืนยันปุ่มนี้เพื่อแจ้ง Front Desk ให้คืนเงินมัดจำแขกได้ทันทีใน 1 วินาที
+                </p>
+                <button
+                  type="button"
+                  onClick={() => handleSendMinibarCheck(true)}
+                  className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>ของครบ 100% (อนุมัติคืนมัดจำทันที)</span>
+                </button>
+              </div>
+
+              {/* Divider */}
+              <div className="flex items-center gap-2 text-slate-400 text-xs font-medium">
+                <div className="flex-1 h-px bg-slate-200" />
+                <span>หรือหากมีการบริโภค / ของหาย</span>
+                <div className="flex-1 h-px bg-slate-200" />
+              </div>
+
+              {/* Option B: Itemized Checklist */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-800">
+                  ระบุจำนวนชิ้นที่เปิดทานหรือสูญหาย:
+                </label>
+                <div className="space-y-1.5">
+                  {STANDARD_MINIBAR_CATALOG.map((item) => {
+                    const count = quickMinibarCounts[item.id] || 0;
+                    return (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200"
+                      >
+                        <div>
+                          <div className="text-xs font-bold text-slate-800">{item.name}</div>
+                          <div className="text-[10px] text-slate-500 font-mono">
+                            ฿{item.price} / {item.unit}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setQuickMinibarCounts((prev) => ({
+                                ...prev,
+                                [item.id]: Math.max(0, (prev[item.id] || 0) - 1),
+                              }))
+                            }
+                            className="w-7 h-7 rounded-lg bg-white border border-slate-300 text-slate-700 flex items-center justify-center font-bold text-sm active:scale-90 hover:bg-slate-100 cursor-pointer"
+                          >
+                            -
+                          </button>
+                          <span className="w-6 text-center font-mono font-bold text-xs text-slate-900">
+                            {count}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setQuickMinibarCounts((prev) => ({
+                                ...prev,
+                                [item.id]: (prev[item.id] || 0) + 1,
+                              }))
+                            }
+                            className="w-7 h-7 rounded-lg bg-white border border-slate-300 text-slate-700 flex items-center justify-center font-bold text-sm active:scale-90 hover:bg-slate-100 cursor-pointer"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer with Total and Submit */}
+            <div className="p-4 border-t border-slate-100 bg-slate-50 shrink-0 flex items-center justify-between gap-3">
+              <div>
+                <span className="text-[11px] text-slate-500 block">ยอดรวมที่ต้องเก็บเงิน:</span>
+                <span className="text-base font-bold font-mono text-slate-900">
+                  ฿
+                  {STANDARD_MINIBAR_CATALOG.reduce(
+                    (sum, item) => sum + (quickMinibarCounts[item.id] || 0) * item.price,
+                    0
+                  )}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleSendMinibarCheck(false)}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-[#0F172A] hover:bg-slate-800 active:scale-98 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
+              >
+                <Zap className="w-4 h-4 text-amber-400" />
+                <span>ส่งยอดแจ้ง Front Desk ทันที</span>
               </button>
             </div>
           </div>

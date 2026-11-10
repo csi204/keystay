@@ -20,6 +20,7 @@
     "test:housekeeping": "tsx scripts/run-mocha.ts housekeeping-outsource",
     "test:boon": "tsx scripts/run-mocha.ts housekeeping-outsource",
     "test:khet": "tsx scripts/run-mocha.ts",
+    "seed:housekeeping": "node ./scripts/seed-housekeeping-test.js",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
     "setup:r2": "powershell -ExecutionPolicy Bypass -File ./scripts/setup-r2.ps1",
     "d1:migrate:local": "node ./scripts/migrate-d1.js",

@@ -58,9 +58,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
         }
       }
 
-      if (response.ok && data?.token) {
-        const userObj = data.user || { email, role: 'front_desk' };
-        setAuthSession(data.token, userObj, userObj.role || 'front_desk');
+      const token = data?.data?.tokens?.accessToken || data?.tokens?.accessToken || data?.token || data?.accessToken;
+      if (response.ok && token) {
+        const userObj = data?.data?.user || data?.user || { email, role: 'front_desk' };
+        setAuthSession(token, userObj, userObj.role || 'front_desk');
         navigate('/');
         return;
       }
@@ -113,10 +114,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
         body: JSON.stringify({ email: demoEmail, password: 'Keystay@2026' }),
       });
       const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        console.warn('[Login Debug] Gateway responded with error:', response.status, data);
+      }
 
-      if (response.ok && data?.token) {
-        const userObj = data.user || { email: demoEmail, role: targetRole };
-        setAuthSession(data.token, userObj, targetRole);
+      const token = data?.data?.tokens?.accessToken || data?.tokens?.accessToken || data?.token || data?.accessToken;
+      if (response.ok && token) {
+        const userObj = data?.data?.user || data?.user || { email: demoEmail, role: targetRole };
+        setAuthSession(token, userObj, targetRole);
         navigate(targetRole === 'owner' ? '/admin/dashboard' : targetRole === 'housekeeping' ? '/housekeeping' : '/');
         return;
       }

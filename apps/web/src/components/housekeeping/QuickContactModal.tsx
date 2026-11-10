@@ -13,6 +13,10 @@ import {
   MessageCircle,
   ShieldAlert,
   Zap,
+  Wind,
+  Droplets,
+  Key,
+  ClipboardList,
 } from 'lucide-react';
 
 export interface OutsourceContactDTO {
@@ -32,14 +36,17 @@ export interface OutsourceContactDTO {
   isActive: number;
 }
 
-// 6 Core Categories optimized for Small & Boutique Hotels
-export const PRIMARY_CATEGORIES: Record<string, { label: string; icon: string; color: string }> = {
-  all: { label: 'ทั้งหมด', icon: '📋', color: 'bg-slate-100 text-slate-700' },
-  air_conditioning: { label: 'แอร์ / ความเย็น', icon: '❄️', color: 'bg-sky-50 text-sky-700 border-sky-200' },
-  plumbing: { label: 'ประปา / ท่อตัน', icon: '🚰', color: 'bg-blue-50 text-blue-700 border-blue-200' },
-  electrical: { label: 'ระบบไฟฟ้า', icon: '⚡', color: 'bg-amber-50 text-amber-700 border-amber-200' },
-  locksmith: { label: 'กุญแจ / คีย์การ์ด', icon: '🔑', color: 'bg-orange-50 text-orange-700 border-orange-200' },
-  general_maintenance: { label: 'ซ่อมบำรุงทั่วไป', icon: '🛠️', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+// 6 Core Categories optimized for Small & Boutique Hotels (Pure Lucide Icons, No Emojis)
+export const PRIMARY_CATEGORIES: Record<
+  string,
+  { label: string; iconComponent: React.ElementType; color: string }
+> = {
+  all: { label: 'ทั้งหมด', iconComponent: ClipboardList, color: 'bg-slate-100 text-slate-700' },
+  air_conditioning: { label: 'แอร์ / ความเย็น', iconComponent: Wind, color: 'bg-sky-50 text-sky-700 border-sky-200' },
+  plumbing: { label: 'ประปา / ท่อตัน', iconComponent: Droplets, color: 'bg-blue-50 text-blue-700 border-blue-200' },
+  electrical: { label: 'ระบบไฟฟ้า', iconComponent: Zap, color: 'bg-amber-50 text-amber-700 border-amber-200' },
+  locksmith: { label: 'กุญแจ / คีย์การ์ด', iconComponent: Key, color: 'bg-orange-50 text-orange-700 border-orange-200' },
+  general_maintenance: { label: 'ซ่อมบำรุงทั่วไป', iconComponent: Wrench, color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
 };
 
 // Fallback seed data in case backend API is not connected locally
@@ -224,41 +231,6 @@ export const QuickContactModal: React.FC<QuickContactModalProps> = ({ isOpen, on
           </button>
         </div>
 
-        {/* 🚨 SPEED DIAL SECTION: 4 ฉุกเฉินโทรด่วน 24 ชม. (Thumb-Friendly Carousel) */}
-        <div className="p-3.5 bg-gradient-to-r from-red-50/70 via-amber-50/40 to-slate-50 border-b border-slate-200/70 shrink-0">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold text-red-800 flex items-center gap-1.5">
-              <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-              โทรด่วนทันที (Speed Dial 24 ชม.)
-            </span>
-            <span className="text-[10px] text-slate-500">แตะเพื่อโทรออก</span>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {emergencyContacts.slice(0, 4).map((c) => (
-              <a
-                key={c.id}
-                href={`tel:${c.phonePrimary.replace(/[^0-9]/g, '')}`}
-                className="p-2.5 rounded-xl bg-white border border-red-200 shadow-2xs hover:shadow-xs active:scale-[0.98] transition-all flex flex-col justify-between group"
-              >
-                <div className="flex items-start justify-between">
-                  <span className="text-base">
-                    {c.category === 'air_conditioning' ? '❄️' : c.category === 'plumbing' ? '🚰' : c.category === 'electrical' ? '⚡' : '🔑'}
-                  </span>
-                  <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center group-hover:bg-emerald-600 transition-colors shadow-2xs">
-                    <Phone className="w-3 h-3 fill-current" />
-                  </div>
-                </div>
-                <div className="mt-2">
-                  <p className="text-xs font-bold text-slate-900 truncate leading-tight">{c.name}</p>
-                  <p className="text-[10px] text-slate-500 truncate">{c.serviceType}</p>
-                  <p className="text-[11px] font-mono font-bold text-emerald-700 mt-0.5">{c.phonePrimary}</p>
-                </div>
-              </a>
-            ))}
-          </div>
-        </div>
-
         {/* Search & Category Pills */}
         <div className="p-3 border-b border-slate-100 bg-white space-y-2.5 shrink-0">
           <div className="relative">
@@ -273,18 +245,18 @@ export const QuickContactModal: React.FC<QuickContactModalProps> = ({ isOpen, on
           </div>
 
           <div className="flex gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
-            {Object.entries(PRIMARY_CATEGORIES).map(([catKey, { label, icon }]) => (
+            {Object.entries(PRIMARY_CATEGORIES).map(([catKey, { label, iconComponent: Icon }]) => (
               <button
                 key={catKey}
                 onClick={() => setSelectedCategory(catKey)}
-                className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap font-medium transition-all border cursor-pointer ${
+                className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap font-medium transition-all border cursor-pointer flex items-center gap-1.5 ${
                   selectedCategory === catKey
                     ? 'bg-slate-900 border-slate-900 text-white shadow-2xs'
                     : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
                 }`}
               >
-                <span className="mr-1">{icon}</span>
-                {label}
+                <Icon className="w-3.5 h-3.5" />
+                <span>{label}</span>
               </button>
             ))}
           </div>
@@ -309,11 +281,7 @@ export const QuickContactModal: React.FC<QuickContactModalProps> = ({ isOpen, on
                       <span className="text-xs sm:text-sm font-bold text-slate-900 font-sans">
                         {contact.name}
                       </span>
-                      {contact.isEmergency === 1 && (
-                        <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-md bg-red-100 text-red-700 border border-red-200 font-semibold">
-                          24 ชม.
-                        </span>
-                      )}
+                      
                       {contact.rating && (
                         <span className="text-[11px] text-amber-600 font-mono flex items-center gap-0.5 font-bold">
                           <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
@@ -381,8 +349,9 @@ export const QuickContactModal: React.FC<QuickContactModalProps> = ({ isOpen, on
                 </div>
 
                 {contact.notes && (
-                  <p className="text-[11px] text-amber-800 bg-amber-50/60 p-2 rounded-lg border border-amber-200/50 mt-1">
-                    💡 {contact.notes}
+                  <p className="text-[11px] text-amber-800 bg-amber-50/60 p-2 rounded-lg border border-amber-200/50 mt-1 flex items-start gap-1.5">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                    <span>{contact.notes}</span>
                   </p>
                 )}
               </div>
