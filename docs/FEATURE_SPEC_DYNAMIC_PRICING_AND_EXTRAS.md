@@ -347,7 +347,7 @@ KEYSTAY HOTEL — รายงานสรุปยอดขายและภ�
 | **1. Dynamic Pricing Engine** | **C** (กำหนดสูตร/ทดสอบการแสดงผล) | **A / R** (ทำ Owner UI ตาราง Season, Month Matcher) | **R** (ทำ API ตารางราคา & Logic คำนวณ) |
 | **2. Booking Channels & Slips** | **A / R** (ทำ UI ช่องทางจอง, ปุ่มอัปโหลด/ดูสลิป) | **C** (ตรวจสอบรายงานช่องทางจอง) | **R** (ทำ Migration ตาราง + Endpoint อัปโหลด R2) |
 | **3. Extra Amenities Catalog** | **C** (ทำ UI ให้ฟรอนต์เลือกของใช้ + ผูกบิล Folio) | **A / R** (ทำ Owner UI จัดการรายการและราคาของใช้) | **R** (ทำ CRUD Amenities API + Trigger ลงบิล) |
-| **4. VAT 7% & Export Report** | **A** (ตรวจสูตรคิดเงินในใบเสร็จ/บิลฟรอนต์) | **A / R** (ทำหน้า Export CSV/Excel ใน Owner Portal) | **R** (ทำ API สรุปยอดขายพร้อม Subtotal, VAT, Grand Total) |
+| **4. VAT 7% & Export Report** | **A / C** (ร่วมตรวจทานสูตรคิดเงิน VAT 7% กับเขต และตรวจในบิลฟรอนต์) | **A / R** (ทำทั้ง Backend API สรุปยอดใน `report-analytics` และทำหน้า Export CSV/Excel ใน Owner Portal) | **I** (รับทราบผลการสรุปรายงาน / ไม่ต้องทำ API ข้อนี้เพราะอยู่ใน Service ของเขต) |
 | **5. Testing & Code Review** | **R** (Full-Stack Review & Front Desk UAT) | **I** (ตรวจทาน Acceptance Criteria) | **A / R** (เขียน Mocha / API Tests & ตรวจสอบ AI Slop) |
 
 *คำอธิบาย:* **A** = Accountable (ผู้รับผิดชอบหลัก), **R** = Responsible (ผู้ลงมือทำ), **C** = Consulted (ผู้ให้คำปรึกษา/ร่วมกำหนด), **I** = Informed (รับทราบ)
