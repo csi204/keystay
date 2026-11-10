@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "pnpm dlx wrangler dev --port 8789",
+    "dev": "pnpm dlx wrangler dev --port 8789 --inspector-port 9231",
     "deploy": "pnpm dlx wrangler deploy",
     "typecheck": "tsc --noEmit",
     "lint": "echo 'room-inventory lint ok'"

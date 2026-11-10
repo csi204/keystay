@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "pnpm dlx wrangler dev --port 8790",
+    "dev": "pnpm dlx wrangler dev --port 8790 --inspector-port 9232",
     "deploy": "pnpm dlx wrangler deploy",
     "typecheck": "tsc --noEmit",
     "lint": "echo 'reservation lint ok'"

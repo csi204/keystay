@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "pnpm dlx wrangler dev --port 8793",
+    "dev": "pnpm dlx wrangler dev --port 8793 --inspector-port 9235",
     "deploy": "pnpm dlx wrangler deploy",
     "typecheck": "tsc --noEmit",
     "lint": "echo 'report-analytics lint ok'",

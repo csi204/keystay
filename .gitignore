@@ -56,4 +56,6 @@ scratch/
 OnlyMe/
 onlyMe/
 .vscode/
+.agents
+.superpowers/
 PR_*.md

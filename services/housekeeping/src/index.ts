@@ -123,3 +123,4 @@ app.notFound((c) => {
 });
 
 export default app;
+export { outsourceContactsRoute, mapOutsourceContact, type OutsourceContactDTO } from './routes/outsource-contacts';

@@ -1,9 +1,12 @@
 import React from 'react';
 import { Logo } from '@/components/common/Logo';
 import { useNavigate } from 'react-router-dom';
+import { getAuthToken } from '@/lib/api';
+import { LogIn, ArrowLeft, Home } from 'lucide-react';
 
 export const NotFound404Page: React.FC = () => {
   const navigate = useNavigate();
+  const token = getAuthToken();
 
   return (
     <div className="min-h-screen w-full flex flex-col justify-center items-center bg-[#F8FAFC] p-4 font-sans text-slate-900">
@@ -29,23 +32,43 @@ export const NotFound404Page: React.FC = () => {
           ไม่พบหน้าที่คุณต้องการ
         </h1>
         <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed mb-6">
-          หน้าที่คุณกำลังค้นหาไม่มีอยู่ หรือถูกย้ายไปแล้ว กรุณาตรวจสอบ URL อีกครั้ง หรือกลับสู่หน้าหลัก
+          {!token
+            ? 'คุณยังไม่ได้เข้าสู่ระบบ หรือเซสชันหมดอายุแล้ว กรุณาเข้าสู่ระบบเพื่อเข้าใช้งานหน้านี้'
+            : 'หน้าที่คุณกำลังค้นหาไม่มีอยู่ ถูกย้ายไปแล้ว หรือคุณไม่มีสิทธิ์เข้าถึง'}
         </p>
 
-        {/* Action Button (ย้อนกลับไปหน้าที่แอบเข้ามา/หน้าที่แล้ว) */}
-        <div className="max-w-xs mx-auto">
+        {/* Action Buttons */}
+        <div className="max-w-xs mx-auto flex flex-col gap-2">
+          {!token ? (
+            <button
+              onClick={() => navigate('/login')}
+              className="w-full h-9 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold transition-colors shadow-sm flex items-center justify-center gap-1.5"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>เข้าสู่ระบบ (Login)</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => navigate('/')}
+              className="w-full h-9 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold transition-colors shadow-sm flex items-center justify-center gap-1.5"
+            >
+              <Home className="w-3.5 h-3.5" />
+              <span>กลับสู่หน้าหลัก</span>
+            </button>
+          )}
+
           <button
             onClick={() => {
               if (window.history.length > 1) {
                 navigate(-1);
               } else {
-                const token = localStorage.getItem('keystay_token');
                 navigate(token ? '/' : '/login');
               }
             }}
-            className="w-full h-9 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-medium transition-colors shadow-sm"
+            className="w-full h-8 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-1.5"
           >
-            ย้อนกลับไปหน้าที่แล้ว
+            <ArrowLeft className="w-3.5 h-3.5 text-slate-400" />
+            <span>ย้อนกลับไปหน้าที่แล้ว</span>
           </button>
         </div>
       </div>

@@ -50,13 +50,24 @@ const syncChild = spawn('node', [path.join(__dirname, 'watch-db-sync.js')], {
 });
 children.push(syncChild);
 
-process.on('SIGINT', () => {
+const cleanup = () => {
   console.log('\n🛑 Stopping all backend services...');
-  children.forEach((c) => c.kill('SIGINT'));
+  children.forEach((c) => {
+    try {
+      if (isWin) {
+        spawn('taskkill', ['/F', '/T', '/PID', c.pid]);
+      } else {
+        c.kill('SIGTERM');
+      }
+    } catch (_) {}
+  });
+  if (!isWin) {
+    try {
+      require('child_process').execSync('pkill -f workerd 2>/dev/null || true');
+    } catch (_) {}
+  }
   process.exit(0);
-});
+};
 
-process.on('SIGTERM', () => {
-  children.forEach((c) => c.kill('SIGTERM'));
-  process.exit(0);
-});
+process.on('SIGINT', cleanup);
+process.on('SIGTERM', cleanup);

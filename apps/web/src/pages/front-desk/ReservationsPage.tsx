@@ -1,0 +1,282 @@
+import React, { useState, useMemo } from 'react';
+import { FrontDeskLayout } from '@/components/front-desk/FrontDeskLayout';
+import { useReservations, ExtendedReservation, resolveGuestName } from '@/hooks/useReservations';
+import { useRooms } from '@/hooks/useRooms';
+import { NewBookingModal } from '@/components/front-desk/NewBookingModal';
+import { CheckInModal } from '@/components/front-desk/CheckInModal';
+import { useI18n } from '@/lib/i18n';
+import { localizeRoomType } from '@/lib/localizeMetadata';
+import { ReservationStatus } from '@keystay/types';
+import {
+  CalendarDays,
+  Search,
+  Plus,
+  RotateCw,
+  LogIn,
+  WifiOff,
+} from 'lucide-react';
+
+const RESERVATION_STATUS_STYLES: Record<
+  ReservationStatus,
+  { bg: string; text: string; border: string }
+> = {
+  pending: { bg: 'bg-slate-100', text: 'text-slate-700', border: 'border-slate-300' },
+  confirmed: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
+  checked_in: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
+  checked_out: { bg: 'bg-slate-100', text: 'text-slate-600', border: 'border-slate-200' },
+  cancelled: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' },
+  no_show: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
+};
+
+export const ReservationsPage: React.FC = () => {
+  const { t, locale, formatDateRange, formatCurrency, formatRelativeTime } = useI18n();
+
+  const {
+    reservations,
+    loading,
+    error,
+    isOffline,
+    lastRefreshed,
+    refresh,
+    createReservation,
+    checkInReservation,
+  } = useReservations();
+
+  const { rooms, roomTypes } = useRooms();
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [isNewModalOpen, setIsNewModalOpen] = useState(false);
+  const [checkInReservationTarget, setCheckInReservationTarget] = useState<ExtendedReservation | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    await refresh();
+    setIsRefreshing(false);
+  };
+
+  const filteredReservations = useMemo(() => {
+    return reservations.filter((r) => {
+      if (statusFilter !== 'all' && r.status !== statusFilter) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const guestDisplayName = r.guestName || resolveGuestName(r);
+        const matchesGuest = guestDisplayName.toLowerCase().includes(q);
+        const matchesBooking = r.bookingNumber?.toLowerCase().includes(q) || r.id.toLowerCase().includes(q);
+        const matchesRoom = r.roomNumber?.toLowerCase().includes(q) || false;
+        return matchesGuest || matchesBooking || matchesRoom;
+      }
+      return true;
+    });
+  }, [reservations, statusFilter, searchQuery]);
+
+  return (
+    <FrontDeskLayout activeTab="reservations">
+      <div className="space-y-4">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+              {t('res.title')}
+            </h1>
+            <p className="text-sm text-slate-600 mt-0.5">
+              {t('res.subtitle')}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs sm:text-sm text-slate-500 font-mono tabular-nums tracking-tight hidden sm:inline">
+              {formatRelativeTime(lastRefreshed, locale)}
+            </span>
+            <button
+              onClick={handleManualRefresh}
+              disabled={loading || isRefreshing}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-md transition-colors shadow-sm disabled:opacity-50"
+              title={t('common.refresh')}
+            >
+              <RotateCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">{t('common.refresh')}</span>
+            </button>
+
+            <button
+              onClick={() => setIsNewModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-md shadow-sm transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{t('res.newReservation')}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Status / Offline Notices */}
+        {isOffline && (
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2 text-xs text-amber-800">
+            <WifiOff className="w-4 h-4 text-amber-600 flex-shrink-0" />
+            <span>{t('matrix.offlineNotice')}</span>
+          </div>
+        )}
+
+        {/* Filter Bar */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder={t('res.searchPlaceholder')}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full text-sm py-2 px-3.5 pl-9 bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-sans"
+            />
+          </div>
+
+          <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+            {['all', 'confirmed', 'checked_in', 'checked_out', 'cancelled'].map((st) => (
+              <button
+                key={st}
+                onClick={() => setStatusFilter(st)}
+                className={`text-sm px-3.5 py-1.5 font-medium rounded-md border transition-colors whitespace-nowrap ${
+                  statusFilter === st
+                    ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                {st === 'all' ? t('status.all') : t(`status.${st}`)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Reservations Table */}
+        <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-sm">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-700 uppercase tracking-wider py-3">
+                  <th className="py-3 px-4 font-mono font-bold tracking-wider">{t('res.bookingNumber')}</th>
+                  <th className="py-3 px-4 font-bold tracking-wider">{t('common.guestName')}</th>
+                  <th className="py-3 px-4 font-mono font-bold tracking-wider">{t('common.room')}</th>
+                  <th className="py-3 px-4 font-bold tracking-wider">{t('common.roomType')}</th>
+                  <th className="py-3 px-4 font-mono font-bold tracking-wider">{t('common.dates')}</th>
+                  <th className="py-3 px-4 text-center font-mono font-bold tracking-wider">{t('common.nights')}</th>
+                  <th className="py-3 px-4 text-right font-mono font-bold tracking-wider">{t('common.total')}</th>
+                  <th className="py-3 px-4 text-right font-mono font-bold tracking-wider">{t('common.deposit')}</th>
+                  <th className="py-3 px-4 text-center font-bold tracking-wider">{t('common.status')}</th>
+                  <th className="py-3 px-4 text-right font-bold tracking-wider">{t('common.actions')}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {loading && reservations.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} className="py-12 text-center text-slate-400 font-medium">
+                      {t('res.loadingReservations')}
+                    </td>
+                  </tr>
+                ) : filteredReservations.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} className="py-16 text-center">
+                      <div className="flex flex-col items-center justify-center max-w-sm mx-auto text-center space-y-3">
+                        <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                          <CalendarDays className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-slate-800">
+                            {t('res.noReservationsFound')}
+                          </p>
+                          <p className="text-xs text-slate-500 mt-1">
+                            {searchQuery ? t('common.noData') : t('res.subtitle')}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredReservations.map((res) => {
+                    const stCfg = RESERVATION_STATUS_STYLES[res.status] || {
+                      bg: 'bg-slate-100',
+                      text: 'text-slate-700',
+                      border: 'border-slate-200',
+                    };
+                    const room = rooms.find((r) => r.id === res.roomId);
+                    const roomType = roomTypes.find((rt) => rt.id === room?.roomTypeId);
+                    const roomNum = res.roomNumber || room?.roomNumber || '—';
+                    const roomTypeName = localizeRoomType(roomType?.name, locale) || '—';
+                    const guestDisplayName = res.guestName || resolveGuestName(res);
+
+                    return (
+                      <tr key={res.id} className="hover:bg-slate-50/70 transition-colors text-sm text-slate-800">
+                        <td className="py-3.5 px-4 text-sm font-mono font-medium text-slate-900 tabular-nums tracking-tight">
+                          {res.bookingNumber || res.id.slice(0, 8)}
+                        </td>
+                        <td className="py-3.5 px-4 font-medium text-sm text-slate-800">
+                          {guestDisplayName}
+                        </td>
+                        <td className="py-3.5 px-4 text-sm font-mono font-medium text-slate-900 tabular-nums tracking-tight">
+                          {roomNum}
+                        </td>
+                        <td className="text-sm py-3.5 px-4 text-slate-800">
+                          {roomTypeName}
+                        </td>
+                        <td className="py-3.5 px-4 text-sm font-mono font-medium text-slate-900 tabular-nums tracking-tight">
+                          {formatDateRange(res.checkInDate, res.checkOutDate, res.totalNights)}
+                        </td>
+                        <td className="py-3.5 px-4 text-center font-mono tabular-nums tracking-tight text-slate-800">
+                          {res.totalNights || '1'}
+                        </td>
+                        <td className="py-3.5 px-4 text-right text-sm font-mono font-medium text-slate-900 tabular-nums tracking-tight">
+                          {formatCurrency(res.totalAmount || '0')}
+                        </td>
+                        <td className="py-3.5 px-4 text-right text-sm font-mono font-medium text-slate-900 tabular-nums tracking-tight">
+                          {formatCurrency(res.depositAmount || '0')}
+                        </td>
+                        <td className="text-sm py-3.5 px-4 text-center">
+                          <span
+                            className={`inline-block px-2.5 py-0.5 rounded text-xs font-semibold border ${stCfg.bg} ${stCfg.text} ${stCfg.border}`}
+                          >
+                            {t(`status.${res.status}`)}
+                          </span>
+                        </td>
+                        <td className="text-sm py-3.5 px-4 text-right">
+                          {res.status === 'confirmed' ? (
+                            <button
+                              onClick={() => setCheckInReservationTarget(res)}
+                              className="inline-flex items-center gap-1.5 text-sm font-semibold py-1.5 px-3.5 text-white bg-emerald-600 hover:bg-emerald-700 rounded shadow-sm transition-colors"
+                            >
+                              <LogIn className="w-3.5 h-3.5" />
+                              <span>{t('ops.checkIn')}</span>
+                            </button>
+                          ) : (
+                            <span className="text-slate-400 text-sm">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* New Booking Modal */}
+      <NewBookingModal
+        isOpen={isNewModalOpen}
+        rooms={rooms}
+        roomTypes={roomTypes}
+        onClose={() => setIsNewModalOpen(false)}
+        onSubmit={createReservation}
+      />
+
+      {/* Check In Modal */}
+      <CheckInModal
+        reservation={checkInReservationTarget}
+        isOpen={!!checkInReservationTarget}
+        onClose={() => setCheckInReservationTarget(null)}
+        onConfirm={checkInReservation}
+      />
+    </FrontDeskLayout>
+  );
+};
+
+export default ReservationsPage;

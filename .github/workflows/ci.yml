@@ -23,7 +23,7 @@ jobs:
         run: npm install -g pnpm@11.11.0
 
       - name: Install Dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --registry=https://registry.npmjs.org
 
       - name: Type Check
         run: pnpm typecheck

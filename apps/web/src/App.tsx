@@ -25,6 +25,10 @@ const ReportsAnalyticsPage = React.lazy(() => import('./pages/admin/ReportsAnaly
 const HousekeepingPortalPage = React.lazy(() => import('./pages/housekeeping/HousekeepingPortalPage'));
 const MinibarCatalogPage = React.lazy(() => import('./pages/admin/MinibarCatalogPage'));
 const HousekeepingTasksPage = React.lazy(() => import('./pages/admin/HousekeepingTasksPage'));
+const RoomMatrixPage = React.lazy(() => import('./pages/front-desk/RoomMatrixPage'));
+const ReservationsPage = React.lazy(() => import('./pages/front-desk/ReservationsPage'));
+const DailyOperationsPage = React.lazy(() => import('./pages/front-desk/DailyOperationsPage'));
+const CashierFolioPage = React.lazy(() => import('./pages/front-desk/CashierFolioPage'));
 
 // ============================================================================
 // ENTERPRISE ROUTE GUARDS (ความปลอดภัยระดับสูง แยกตาม Tab Session)
@@ -61,6 +65,9 @@ const AuthenticatedHome: React.FC = () => {
   }
   if (role === 'housekeeping') {
     return <Navigate to="/housekeeping" replace />;
+  }
+  if (role === 'front_desk') {
+    return <Navigate to="/front-desk/room-matrix" replace />;
   }
 
   const user = getAuthUser();
@@ -189,6 +196,43 @@ export const App: React.FC = () => {
               ) : (
                 <Navigate to="/login" replace />
               )
+            }
+          />
+          {/* หน้า Front Desk & Cashier Portal (เดียร์ @allmusgus) */}
+          <Route
+            path="/front-desk"
+            element={<Navigate to="/front-desk/room-matrix" replace />}
+          />
+          <Route
+            path="/front-desk/room-matrix"
+            element={
+              <RequireAuth>
+                <RoomMatrixPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/front-desk/reservations"
+            element={
+              <RequireAuth>
+                <ReservationsPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/front-desk/daily-operations"
+            element={
+              <RequireAuth>
+                <DailyOperationsPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/front-desk/billing"
+            element={
+              <RequireAuth>
+                <CashierFolioPage />
+              </RequireAuth>
             }
           />
           {/* หน้า Admin Portal (สำหรับผู้ดูแลระบบ Admin) */}
