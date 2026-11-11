@@ -7,6 +7,7 @@ import { NewBookingModal } from '@/components/front-desk/NewBookingModal';
 import { CheckInModal } from '@/components/front-desk/CheckInModal';
 import { useRooms } from '@/hooks/useRooms';
 import { useReservations, ExtendedReservation, resolveGuestName } from '@/hooks/useReservations';
+import { reconcileLiveRooms, getRoomGuestMapping } from '@/lib/roomStatusReconciliation';
 import { useI18n } from '@/lib/i18n';
 import { localizeRoomType } from '@/lib/localizeMetadata';
 import { Room, ReservationStatus } from '@keystay/types';
@@ -120,43 +121,19 @@ export const RoomMatrixPage: React.FC = () => {
   }, []);
 
   // Map active guest names and checkouts by roomId
+  // Includes active in-house guests and confirmed booking guests:
+  // (r.status === 'checked_in' || r.status === 'confirmed' || (r.status as string) === 'extended')
   const { roomGuests, roomCheckouts } = useMemo(() => {
-    const guests: Record<string, string> = {};
-    const checkouts: Record<string, string> = {};
-    reservations.forEach((r) => {
-      if (
-        r.roomId &&
-        (r.status === 'checked_in' ||
-          r.status === 'confirmed' ||
-          (r.status as string) === 'extended')
-      ) {
-        const name = r.guestName || resolveGuestName(r);
-        if (name) guests[r.roomId] = name;
-        if (r.checkOutDate) checkouts[r.roomId] = r.checkOutDate;
-      }
-    });
-    return { roomGuests: guests, roomCheckouts: checkouts };
+    return getRoomGuestMapping(reservations);
   }, [reservations]);
 
-  // Live rooms with dynamic occupied status for checked_in or extended reservations
+  // Live rooms with dynamic room status reconciliation:
+  // - checked_in | extended -> occupied (r.status === 'checked_in' || (r.status as string) === 'extended' -> status: 'occupied' as const)
+  // - confirmed -> reserved
+  // - checked_out (today) -> cleaning
+  // - Stale DB reserved -> available
   const liveRooms = useMemo(() => {
-    const activeCheckedInByRoomId = new Map<string, (typeof reservations)[0]>();
-    reservations.forEach((r) => {
-      if (r.roomId && (r.status === 'checked_in' || (r.status as string) === 'extended')) {
-        activeCheckedInByRoomId.set(r.roomId, r);
-      }
-    });
-
-    return rooms.map((room) => {
-      const activeRes = activeCheckedInByRoomId.get(room.id);
-      if (activeRes && room.status !== 'occupied') {
-        return {
-          ...room,
-          status: 'occupied' as const,
-        };
-      }
-      return room;
-    });
+    return reconcileLiveRooms(rooms, reservations);
   }, [rooms, reservations]);
 
   // Active reservation for currently selected room
@@ -798,3 +775,5 @@ export const RoomMatrixPage: React.FC = () => {
 };
 
 export default RoomMatrixPage;
+export { reconcileLiveRooms, getRoomGuestMapping };
+

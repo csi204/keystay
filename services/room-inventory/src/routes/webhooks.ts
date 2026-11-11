@@ -99,12 +99,13 @@ webhooksRoute.post('/checkout', async (c) => {
     );
   }
 
-  // Idempotency / State Guard: /checkout only transitions from 'occupied' -> 'checked_out'
-  // If room is in any other status (e.g. checked_out, cleaning, available, reserved), it is duplicate or outdated
-  if (room.status !== 'occupied') {
+  // State Guard: /checkout permits transitions from 'occupied', 'reserved', or 'checked_out' -> 'checked_out'
+  // If room is in any other status (e.g. cleaning, available, maintenance, out_of_order), it is duplicate or outdated
+  const allowedStatuses = ['occupied', 'reserved', 'checked_out'];
+  if (!allowedStatuses.includes(room.status)) {
     return c.json({
       success: true,
-      message: `Room '${room.roomNumber}' is currently in '${room.status}' (not 'occupied'); skipped duplicate or outdated checkout event`,
+      message: `Room '${room.roomNumber}' is currently in '${room.status}' (not in ${allowedStatuses.join(', ')}); skipped duplicate or outdated checkout event`,
       data: room,
     });
   }
