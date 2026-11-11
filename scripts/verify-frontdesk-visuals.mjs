@@ -276,7 +276,7 @@ async function runVerification() {
     await page.waitForTimeout(600);
 
     // Verify auto-refresh badge
-    const autoRefreshBadge = page.locator('text=อัปเดตอัตโนมัติทุก 1 นาที');
+    const autoRefreshBadge = page.locator('text=อัปเดตอัตโนมัติ');
     const badgeVisible = (await autoRefreshBadge.count()) > 0;
     console.log(`  Auto-refresh 1-min badge visible: ${badgeVisible}`);
     if (!badgeVisible) {

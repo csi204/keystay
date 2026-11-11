@@ -191,10 +191,12 @@ export const RoomCard: React.FC<RoomCardProps> = ({
         {/* Occupied Rooms: Guest Name & Checkout Date Chip */}
         {room.status === 'occupied' && (
           <div className="flex flex-wrap items-center gap-1.5">
-            <div className="inline-flex items-center gap-1.5 bg-blue-50/80 border border-blue-200 text-xs sm:text-sm font-semibold text-blue-900 px-2 py-1 rounded-md max-w-full">
-              <User className="w-3.5 h-3.5 text-blue-600 shrink-0" strokeWidth={1.75} aria-hidden="true" />
-              <span className="truncate leading-none">{displayGuest || t('common.guest')}</span>
-            </div>
+            {displayGuest && (
+              <div className="inline-flex items-center gap-1.5 bg-blue-50/80 border border-blue-200 text-xs sm:text-sm font-semibold text-blue-900 px-2.5 py-1 rounded-md max-w-full">
+                <User className="w-3.5 h-3.5 text-blue-600 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+                <span className="truncate leading-none">{displayGuest}</span>
+              </div>
+            )}
             {displayCheckout && (
               <div className="inline-flex items-center gap-1 bg-blue-50/80 border border-blue-200 text-blue-900 text-xs px-2 py-1 rounded-md font-mono">
                 <Calendar className="w-3 h-3 text-blue-600 shrink-0" strokeWidth={1.75} aria-hidden="true" />

@@ -90,10 +90,17 @@ export function useReservations() {
     checkInDate: string;
     checkOutDate: string;
     depositAmount: string;
+    nightlyRate?: number;
+    numGuests?: number;
+    guestsCount?: number;
   }) => {
     const res = await apiFetch<Reservation>('/api/reservations', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        ...data,
+        nightlyRate: data.nightlyRate ?? 1000,
+        numGuests: data.numGuests ?? 1,
+      }),
     });
     if (res.data) {
       await fetchReservations();

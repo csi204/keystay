@@ -107,7 +107,7 @@ export const en: Record<string, string> = {
   // Cashier & Folio
   'folio.title': 'Bills & Cashier',
   'folio.subtitle': 'Manage folios, extra charges, and payment settlement',
-  'folio.itemizedTitle': 'Itemized Folio Charges',
+  'folio.itemizedTitle': 'Itemized Charges',
   'folio.settlementTitle': 'Cashier Settlement',
   'folio.subtotal': 'Subtotal',
   'folio.vat': 'VAT (7%)',
@@ -299,7 +299,7 @@ export const en: Record<string, string> = {
   'checkout.guestName': 'Guest Name',
   'checkout.roomNumber': 'Room Number',
   'checkout.stayPeriod': 'Stay Period',
-  'checkout.folioSettlement': 'Folio Settlement & Cashier',
+  'checkout.folioSettlement': 'Settlement & Close',
   'checkout.roomCharges': 'Room Charges',
   'checkout.extraCharges': 'Extra Charges & Minibar',
   'checkout.addCharge': 'Add Charge',

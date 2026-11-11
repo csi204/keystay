@@ -17,7 +17,6 @@ import {
   LogOut,
   Receipt,
   CalendarPlus,
-  RotateCw,
   WifiOff,
   Search,
   Printer,
@@ -52,7 +51,6 @@ export const DailyOperationsPage: React.FC = () => {
   const [checkOutTarget, setCheckOutTarget] = useState<ExtendedReservation | null>(null);
   const [extendTarget, setExtendTarget] = useState<ExtendedReservation | null>(null);
   const [isWalkInOpen, setIsWalkInOpen] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Billing history sub-tab state
   const [billingSearchQuery, setBillingSearchQuery] = useState('');
@@ -60,9 +58,7 @@ export const DailyOperationsPage: React.FC = () => {
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
 
   const handleManualRefresh = async () => {
-    setIsRefreshing(true);
     await Promise.all([refreshReservations(), refreshRooms(), refreshBilling()]);
-    setIsRefreshing(false);
   };
 
   // Available rooms for Walk-in
@@ -126,15 +122,13 @@ export const DailyOperationsPage: React.FC = () => {
             <span className="text-xs sm:text-sm text-slate-500 font-mono tabular-nums tracking-tight hidden sm:inline">
               {formatRelativeTime(lastRefreshed, locale)}
             </span>
-            <button
-              onClick={handleManualRefresh}
-              disabled={reservationsLoading || billingLoading || isRefreshing}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-md transition-colors shadow-sm disabled:opacity-50 min-h-[36px]"
-              title={t('common.refresh')}
-            >
-              <RotateCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
-              <span className="hidden sm:inline">{t('common.refresh')}</span>
-            </button>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200/80 text-[11px] font-medium text-slate-600">
+              <span className="relative flex h-2 w-2" aria-hidden="true">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              </span>
+              <span>{locale === 'th' ? 'อัปเดตอัตโนมัติ' : 'Auto-refresh'}</span>
+            </div>
 
             <button
               onClick={() => setIsWalkInOpen(true)}

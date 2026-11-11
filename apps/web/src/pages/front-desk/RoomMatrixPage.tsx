@@ -238,6 +238,10 @@ export const RoomMatrixPage: React.FC = () => {
     }
   };
 
+  const selectedRoomType = selectedRoom
+    ? roomTypes.find((t) => t.id === selectedRoom.roomTypeId)
+    : undefined;
+
   const handleFastBookingSubmit = async (data: FastBookingFormData) => {
     const res = await createReservation({
       guestName: data.guestName,
@@ -246,16 +250,14 @@ export const RoomMatrixPage: React.FC = () => {
       checkInDate: data.checkInDate,
       checkOutDate: data.checkOutDate,
       depositAmount: data.depositAmount,
+      nightlyRate: Number(selectedRoomType?.basePrice || 1000),
+      numGuests: (data as any).guestsCount || 1,
     });
     if (res.success) {
       await Promise.all([refreshRooms(), refreshReservations()]);
     }
     return res;
   };
-
-  const selectedRoomType = selectedRoom
-    ? roomTypes.find((t) => t.id === selectedRoom.roomTypeId)
-    : undefined;
 
   const refreshTimeStr = lastRefreshed.toLocaleTimeString(
     locale === 'th' ? 'th-TH' : 'en-US',
@@ -539,7 +541,7 @@ export const RoomMatrixPage: React.FC = () => {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
               </span>
-              <span>{locale === 'th' ? 'อัปเดตอัตโนมัติทุก 1 นาที' : 'Auto-refreshes every 1 min'}</span>
+              <span>{locale === 'th' ? 'อัปเดตอัตโนมัติ' : 'Auto-refresh'}</span>
             </div>
 
             {/* Live Auto-Refresh Indicator with Pulse Dot and Tabular Numbers */}

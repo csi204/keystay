@@ -73,7 +73,7 @@ describe('Task 6: Front Desk Touchpoints Elevation & Visual Verification Suite',
     const code = fs.readFileSync(verifyScriptPath, 'utf-8');
 
     assert.match(code, /chromium/);
-    assert.match(code, /อัปเดตอัตโนมัติทุก 1 นาที/);
+    assert.match(code, /อัปเดตอัตโนมัติ/);
     assert.match(code, /Walk-In/);
     assert.match(code, /Check-In Confirmation/);
     assert.match(code, /receipt-80mm-paper/);

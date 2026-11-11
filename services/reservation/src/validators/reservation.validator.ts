@@ -25,7 +25,7 @@ export const createReservationSchema = z
     checkInDate: validDateSchema,
     checkOutDate: validDateSchema,
     numGuests: z.coerce.number().int().min(1).default(1),
-    nightlyRate: z.coerce.number().min(0, 'Nightly rate must be positive'),
+    nightlyRate: z.coerce.number().min(0, 'Nightly rate must be positive').default(1000),
     depositAmount: z.coerce.number().min(0).default(0),
     discountAmount: z.coerce.number().min(0).default(0),
     specialRequests: z.string().optional().nullable(),

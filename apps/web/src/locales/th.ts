@@ -107,7 +107,7 @@ export const th: Record<string, string> = {
   // Cashier & Folio
   'folio.title': 'แคชเชียร์และบิล',
   'folio.subtitle': 'จัดการโฟลิโอค่าใช้จ่ายและบันทึกการชำระเงิน',
-  'folio.itemizedTitle': 'รายการค่าใช้จ่ายในโฟลิโอ',
+  'folio.itemizedTitle': 'รายการค่าใช้จ่าย',
   'folio.settlementTitle': 'คิดเงินและปิดยอด',
   'folio.subtotal': 'ยอดรวมก่อนภาษี',
   'folio.vat': 'ภาษีมูลค่าเพิ่ม (VAT 7%)',
@@ -299,7 +299,7 @@ export const th: Record<string, string> = {
   'checkout.guestName': 'ชื่อผู้เข้าพัก',
   'checkout.roomNumber': 'หมายเลขห้อง',
   'checkout.stayPeriod': 'ระยะเวลาเข้าพัก',
-  'checkout.folioSettlement': 'คิดเงินและปิดยอดโฟลิโอ',
+  'checkout.folioSettlement': 'คิดเงินและปิดยอด',
   'checkout.roomCharges': 'ค่าห้องพัก',
   'checkout.extraCharges': 'ค่าใช้จ่ายเสริม / มินิบาร์',
   'checkout.addCharge': 'เพิ่มค่าใช้จ่าย',
