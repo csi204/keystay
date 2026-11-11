@@ -16,7 +16,7 @@ export const th: Record<string, string> = {
   'status.reserved': 'ติดจอง',
   'status.occupied': 'มีแขกพัก',
   'status.checked_out': 'รอทำความสะอาด',
-  'status.cleaning': 'กำลังทำความสะอาด',
+  'status.cleaning': 'รอทำความสะอาด',
   'status.maintenance': 'ปิดปรับปรุง',
   'status.out_of_order': 'งดใช้งาน',
   'status.confirmed': 'ยืนยันแล้ว',

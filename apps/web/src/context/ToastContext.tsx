@@ -108,6 +108,17 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children, initialT
     };
   }, []);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const handleCustomToast = (e: Event) => {
+        const detail = (e as CustomEvent).detail || {};
+        showToast(detail.type || 'success', detail.title || '', detail.description, detail.duration);
+      };
+      window.addEventListener('keystay-toast', handleCustomToast);
+      return () => window.removeEventListener('keystay-toast', handleCustomToast);
+    }
+  }, [showToast]);
+
   const value: ToastContextValue = {
     toasts,
     showToast,

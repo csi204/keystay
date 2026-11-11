@@ -222,16 +222,16 @@
 - `scripts/verify-frontdesk-visuals.mjs`
 - Screenshots in `preview-responsive/`
 
-- [ ] **Step 6.1: Run backend Mocha test suite**
+- [x] **Step 6.1: Run backend Mocha test suite**
   Run: `pnpm test` (verify all 162 backend tests pass across all microservices).
 
-- [ ] **Step 6.2: Run frontend web test suite**
+- [x] **Step 6.2: Run frontend web test suite**
   Run: `pnpm test:web` (verify all 221+ web tests pass).
 
-- [ ] **Step 6.3: Run monorepo typecheck**
+- [x] **Step 6.3: Run monorepo typecheck**
   Run: `pnpm typecheck` (verify all 11 packages pass with 0 errors).
 
-- [ ] **Step 6.4: Execute Playwright Visual Verification script**
+- [x] **Step 6.4: Execute Playwright Visual Verification script**
   Run: `node scripts/verify-frontdesk-visuals.mjs`
   Verify that the generated screenshots demonstrate:
   - Floor section dividers with badges (`ชั้น 1 (4 ห้อง)`, `ชั้น 2 (4 ห้อง)`).
@@ -239,6 +239,6 @@
   - Room 102 displaying `รอทำความสะอาด` after checkout.
   - Daily Operations showing paid bill in billing history.
 
-- [ ] **Step 6.5: Commit final verification artifacts**
+- [x] **Step 6.5: Commit final verification artifacts**
   Git commit: `chore(test): verify all frontdesk resilience and billing integration fixes`
 

@@ -55,7 +55,7 @@ export const ROOM_STATUS_CONFIG: Record<
     dot: 'bg-purple-500',
   },
   cleaning: {
-    label: 'กำลังทำความสะอาด',
+    label: 'รอทำความสะอาด',
     bg: 'bg-cyan-50',
     text: 'text-cyan-700',
     border: 'border-cyan-200',
