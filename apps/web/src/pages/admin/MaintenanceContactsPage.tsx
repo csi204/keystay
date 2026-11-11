@@ -656,7 +656,7 @@ export const MaintenanceContactsPage: React.FC = () => {
             <form onSubmit={handleSaveSubmit} className="py-4 space-y-3">
               <div>
                 <label className="text-xs font-semibold text-slate-700 block mb-1">
-                  ชื่อช่าง / บริษัทผู้ให้บริการ *
+                  ชื่อช่าง / บริษัทผู้ให้บริการ <span className="text-red-500">*</span>
                 </label>
                 <Input
                   required
@@ -670,7 +670,7 @@ export const MaintenanceContactsPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    หมวดหมู่งานบริการ *
+                    หมวดหมู่งานบริการ <span className="text-red-500">*</span>
                   </label>
                   <Select
                     value={form.category}
@@ -688,7 +688,7 @@ export const MaintenanceContactsPage: React.FC = () => {
 
                 <div>
                   <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    เบอร์โทรศัพท์หลัก *
+                    เบอร์โทรศัพท์หลัก <span className="text-red-500">*</span>
                   </label>
                   <Input
                     required

@@ -1071,7 +1071,9 @@ export const RoomsPricingPage: React.FC = () => {
 
             <form onSubmit={handleCreateSubmit} className="py-4 space-y-3.5">
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.roomTypeName')} *</label>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  {t('field.roomTypeName')} <span className="text-red-500">*</span>
+                </label>
                 <Input required placeholder="เช่น Premier Deluxe Room" value={createForm.name} onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })} className="text-xs h-9" />
               </div>
               <div>
@@ -1080,17 +1082,23 @@ export const RoomsPricingPage: React.FC = () => {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.basePrice')} *</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    {t('field.basePrice')} <span className="text-red-500">*</span>
+                  </label>
                   <Input required type="number" placeholder="1500" value={createForm.basePrice} onChange={(e) => setCreateForm({ ...createForm, basePrice: e.target.value })} className="text-xs font-mono h-9" />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.maxOccupancy')} *</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    {t('field.maxOccupancy')} <span className="text-red-500">*</span>
+                  </label>
                   <Input required type="number" min="1" max="10" value={createForm.maxOccupancy} onChange={(e) => setCreateForm({ ...createForm, maxOccupancy: e.target.value })} className="text-xs font-mono h-9" />
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.bedType')} *</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    {t('field.bedType')} <span className="text-red-500">*</span>
+                  </label>
                   <Select value={createForm.bedType} onChange={(e) => setCreateForm({ ...createForm, bedType: e.target.value })} className="text-xs h-9">
                     <option value="King Bed">King Bed</option>
                     <option value="Queen Bed">Queen Bed</option>
@@ -1099,11 +1107,15 @@ export const RoomsPricingPage: React.FC = () => {
                   </Select>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.sizeSqm')} *</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    {t('field.sizeSqm')} <span className="text-red-500">*</span>
+                  </label>
                   <Input required type="number" value={createForm.sizeSqm} onChange={(e) => setCreateForm({ ...createForm, sizeSqm: e.target.value })} className="text-xs font-mono h-9" />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.bathrooms')} *</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    {t('field.bathrooms')} <span className="text-red-500">*</span>
+                  </label>
                   <Input required type="number" min="1" max="10" value={createForm.bathrooms} onChange={(e) => setCreateForm({ ...createForm, bathrooms: e.target.value })} className="text-xs font-mono h-9" />
                 </div>
               </div>
@@ -1142,7 +1154,9 @@ export const RoomsPricingPage: React.FC = () => {
 
             <form onSubmit={handleEditSubmit} className="py-4 space-y-3.5">
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.roomTypeName')} *</label>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  {t('field.roomTypeName')} <span className="text-red-500">*</span>
+                </label>
                 <Input required value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="text-xs h-9" />
               </div>
               <div>
@@ -1151,17 +1165,23 @@ export const RoomsPricingPage: React.FC = () => {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.basePrice')} *</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    {t('field.basePrice')} <span className="text-red-500">*</span>
+                  </label>
                   <Input required type="number" value={editForm.basePrice} onChange={(e) => setEditForm({ ...editForm, basePrice: e.target.value })} className="text-xs font-mono h-9" />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.maxOccupancy')} *</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    {t('field.maxOccupancy')} <span className="text-red-500">*</span>
+                  </label>
                   <Input required type="number" min="1" max="10" value={editForm.maxOccupancy} onChange={(e) => setEditForm({ ...editForm, maxOccupancy: e.target.value })} className="text-xs font-mono h-9" />
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.bedType')} *</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    {t('field.bedType')} <span className="text-red-500">*</span>
+                  </label>
                   <Select value={editForm.bedType} onChange={(e) => setEditForm({ ...editForm, bedType: e.target.value })} className="text-xs h-9">
                     <option value="King Bed">King Bed</option>
                     <option value="Queen Bed">Queen Bed</option>
@@ -1170,11 +1190,15 @@ export const RoomsPricingPage: React.FC = () => {
                   </Select>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.sizeSqm')} *</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    {t('field.sizeSqm')} <span className="text-red-500">*</span>
+                  </label>
                   <Input required type="number" value={editForm.sizeSqm} onChange={(e) => setEditForm({ ...editForm, sizeSqm: e.target.value })} className="text-xs font-mono h-9" />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.bathrooms')} *</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    {t('field.bathrooms')} <span className="text-red-500">*</span>
+                  </label>
                   <Input required type="number" min="1" max="10" value={editForm.bathrooms} onChange={(e) => setEditForm({ ...editForm, bathrooms: e.target.value })} className="text-xs font-mono h-9" />
                 </div>
               </div>
@@ -1244,11 +1268,15 @@ export const RoomsPricingPage: React.FC = () => {
 
             <form onSubmit={handleCreateRoomSubmit} className="py-4 space-y-3.5">
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1 leading-normal pt-0.5">{t('field.roomNumber')} *</label>
+                <label className="text-xs font-semibold text-slate-700 block mb-1 leading-normal pt-0.5">
+                  {t('field.roomNumber')} <span className="text-red-500">*</span>
+                </label>
                 <Input required placeholder="เช่น 205, 301A" value={createRoomForm.roomNumber} onChange={(e) => setCreateRoomForm({ ...createRoomForm, roomNumber: e.target.value })} className="text-xs font-mono h-9" />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1 leading-normal pt-0.5">{t('field.floor')} *</label>
+                <label className="text-xs font-semibold text-slate-700 block mb-1 leading-normal pt-0.5">
+                  {t('field.floor')} <span className="text-red-500">*</span>
+                </label>
                 <Select value={createRoomForm.floorId} onChange={(e) => setCreateRoomForm({ ...createRoomForm, floorId: e.target.value })} className="text-xs h-9">
                   <option value="">{locale === 'en' ? 'Select Floor' : 'เลือกชั้น'}</option>
                   {floors.map((f) => (
@@ -1257,7 +1285,9 @@ export const RoomsPricingPage: React.FC = () => {
                 </Select>
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.roomType')} *</label>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  {t('field.roomType')} <span className="text-red-500">*</span>
+                </label>
                 <Select value={createRoomForm.roomTypeId} onChange={(e) => setCreateRoomForm({ ...createRoomForm, roomTypeId: e.target.value })} className="text-xs h-9">
                   <option value="">{t('modal.selectTypePlaceholder')}</option>
                   {roomTypes.map((rt) => (
@@ -1300,11 +1330,15 @@ export const RoomsPricingPage: React.FC = () => {
 
             <form onSubmit={handleEditRoomSubmit} className="py-4 space-y-3.5">
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1 leading-normal pt-0.5">{t('field.roomNumber')} *</label>
+                <label className="text-xs font-semibold text-slate-700 block mb-1 leading-normal pt-0.5">
+                  {t('field.roomNumber')} <span className="text-red-500">*</span>
+                </label>
                 <Input required value={editRoomForm.roomNumber} onChange={(e) => setEditRoomForm({ ...editRoomForm, roomNumber: e.target.value })} className="text-xs font-mono h-9" />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1 leading-normal pt-0.5">{t('field.floor')} *</label>
+                <label className="text-xs font-semibold text-slate-700 block mb-1 leading-normal pt-0.5">
+                  {t('field.floor')} <span className="text-red-500">*</span>
+                </label>
                 <Select value={editRoomForm.floorId} onChange={(e) => setEditRoomForm({ ...editRoomForm, floorId: e.target.value })} className="text-xs h-9">
                   {floors.map((f) => (
                     <option key={f.id} value={f.id}>{f.name}</option>
@@ -1312,7 +1346,9 @@ export const RoomsPricingPage: React.FC = () => {
                 </Select>
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.roomType')} *</label>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  {t('field.roomType')} <span className="text-red-500">*</span>
+                </label>
                 <Select value={editRoomForm.roomTypeId} onChange={(e) => setEditRoomForm({ ...editRoomForm, roomTypeId: e.target.value })} className="text-xs h-9">
                   {roomTypes.map((rt) => (
                     <option key={rt.id} value={rt.id}>{`${rt.name} · ฿${rt.basePrice.toLocaleString()}`}</option>
@@ -1362,7 +1398,9 @@ export const RoomsPricingPage: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-slate-700 block">{t('modal.changeStatus.changeTo')} *</label>
+                  <label className="text-xs font-semibold text-slate-700 block">
+                    {t('modal.changeStatus.changeTo')} <span className="text-red-500">*</span>
+                  </label>
                   {ALLOWED_OWNER_TRANSITIONS[statusRoom.status].map((s) => (
                     <label key={s} className={`flex items-center gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-colors ${newStatus === s ? 'border-[#F97316] bg-orange-50/50' : 'border-slate-200 hover:border-slate-300'}`}>
                       <input type="radio" name="newStatus" value={s} checked={newStatus === s} onChange={() => setNewStatus(s)} className="accent-[#F97316]" />

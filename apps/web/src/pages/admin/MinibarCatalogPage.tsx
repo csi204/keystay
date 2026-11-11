@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { useTranslation } from '@/lib/i18n';
 import {
   ShoppingCart,
@@ -16,6 +16,9 @@ import {
   AlertTriangle,
   Package,
   RefreshCw,
+  RotateCcw,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 // ============================================================================
@@ -30,17 +33,25 @@ export interface MinibarItem {
   isActive: boolean;
 }
 
-// shortcut: mock data only, upgrade when /api/room-inventory/minibar-items is ready (@Legxcy77)
 const SEED_ITEMS: MinibarItem[] = [
   { id: 'mb-001', name: 'น้ำดื่ม 600ml', category: 'เครื่องดื่ม', pricePerUnit: 20, unit: 'ขวด', isActive: true },
   { id: 'mb-002', name: 'โค้ก 330ml', category: 'เครื่องดื่ม', pricePerUnit: 35, unit: 'กระป๋อง', isActive: true },
-  { id: 'mb-003', name: 'เบียร์ Chang 330ml', category: 'แอลกอฮอล์', pricePerUnit: 80, unit: 'กระป๋อง', isActive: true },
-  { id: 'mb-004', name: 'มันฝรั่งทอด', category: 'ขนม', pricePerUnit: 45, unit: 'ถุง', isActive: true },
-  { id: 'mb-005', name: 'ช็อกโกแลต KitKat', category: 'ขนม', pricePerUnit: 35, unit: 'แท่ง', isActive: true },
-  { id: 'mb-006', name: 'กาแฟสำเร็จรูป', category: 'เครื่องดื่ม', pricePerUnit: 25, unit: 'ซอง', isActive: false },
+  { id: 'mb-003', name: 'สไปรท์ 330ml', category: 'เครื่องดื่ม', pricePerUnit: 35, unit: 'กระป๋อง', isActive: true },
+  { id: 'mb-004', name: 'เบียร์ Chang 330ml', category: 'แอลกอฮอล์', pricePerUnit: 80, unit: 'กระป๋อง', isActive: true },
+  { id: 'mb-005', name: 'เบียร์ Singha 330ml', category: 'แอลกอฮอล์', pricePerUnit: 90, unit: 'กระป๋อง', isActive: true },
+  { id: 'mb-006', name: 'ไวน์แดงขวดเล็ก 187ml', category: 'แอลกอฮอล์', pricePerUnit: 280, unit: 'ขวด', isActive: true },
+  { id: 'mb-007', name: 'มันฝรั่งทอด Lay\'s', category: 'ขนม', pricePerUnit: 45, unit: 'ถุง', isActive: true },
+  { id: 'mb-008', name: 'ช็อกโกแลต KitKat', category: 'ขนม', pricePerUnit: 35, unit: 'แท่ง', isActive: true },
+  { id: 'mb-009', name: 'ถั่วรวมอบเกลือ', category: 'ขนม', pricePerUnit: 50, unit: 'ซอง', isActive: true },
+  { id: 'mb-010', name: 'กาแฟสำเร็จรูป', category: 'เครื่องดื่ม', pricePerUnit: 25, unit: 'ซอง', isActive: false },
+  { id: 'mb-011', name: 'ชาเขียวโออิชิ 380ml', category: 'เครื่องดื่ม', pricePerUnit: 30, unit: 'ขวด', isActive: true },
+  { id: 'mb-012', name: 'ป๊อปคอร์นคาราเมล', category: 'ขนม', pricePerUnit: 65, unit: 'ถุง', isActive: true },
+  { id: 'mb-013', name: 'บะหมี่กึ่งสำเร็จรูป', category: 'ขนม', pricePerUnit: 35, unit: 'ถ้วย', isActive: true },
+  { id: 'mb-014', name: 'น้ำแร่ Perrier 330ml', category: 'เครื่องดื่ม', pricePerUnit: 95, unit: 'ขวด', isActive: true },
 ];
 
 const CATEGORIES = ['ทั้งหมด', 'เครื่องดื่ม', 'แอลกอฮอล์', 'ขนม', 'อื่นๆ'];
+const ITEMS_PER_PAGE = 10;
 
 const EMPTY_FORM: Omit<MinibarItem, 'id'> = {
   name: '',
@@ -58,17 +69,38 @@ export const MinibarCatalogPage: React.FC = () => {
   const [items, setItems] = useState<MinibarItem[]>(SEED_ITEMS);
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState('ทั้งหมด');
+  const [currentPage, setCurrentPage] = useState(1);
+
   const [showModal, setShowModal] = useState(false);
   const [editItem, setEditItem] = useState<MinibarItem | null>(null);
   const [form, setForm] = useState<Omit<MinibarItem, 'id'>>(EMPTY_FORM);
   const [deleteTarget, setDeleteTarget] = useState<MinibarItem | null>(null);
   const [refreshSuccess, setRefreshSuccess] = useState(false);
 
-  const filtered = items.filter((it) => {
-    const matchSearch = it.name.toLowerCase().includes(search.toLowerCase());
-    const matchCat = filterCat === 'ทั้งหมด' || it.category === filterCat;
-    return matchSearch && matchCat;
-  });
+  const filtered = useMemo(() => {
+    return items.filter((it) => {
+      const matchSearch = it.name.toLowerCase().includes(search.toLowerCase());
+      const matchCat = filterCat === 'ทั้งหมด' || it.category === filterCat;
+      return matchSearch && matchCat;
+    });
+  }, [items, search, filterCat]);
+
+  // Reset to page 1 on filter/search change
+  const handleSearchChange = (val: string) => {
+    setSearch(val);
+    setCurrentPage(1);
+  };
+
+  const handleCategoryChange = (val: string) => {
+    setFilterCat(val);
+    setCurrentPage(1);
+  };
+
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
+  const paginatedItems = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filtered.slice(start, start + ITEMS_PER_PAGE);
+  }, [filtered, currentPage]);
 
   const openCreate = () => {
     setEditItem(null);
@@ -78,7 +110,13 @@ export const MinibarCatalogPage: React.FC = () => {
 
   const openEdit = (item: MinibarItem) => {
     setEditItem(item);
-    setForm({ name: item.name, category: item.category, pricePerUnit: item.pricePerUnit, unit: item.unit, isActive: item.isActive });
+    setForm({
+      name: item.name,
+      category: item.category,
+      pricePerUnit: item.pricePerUnit,
+      unit: item.unit,
+      isActive: item.isActive,
+    });
     setShowModal(true);
   };
 
@@ -87,7 +125,7 @@ export const MinibarCatalogPage: React.FC = () => {
     if (editItem) {
       setItems((prev) => prev.map((it) => (it.id === editItem.id ? { ...editItem, ...form } : it)));
     } else {
-      setItems((prev) => [...prev, { id: `mb-${Date.now()}`, ...form }]);
+      setItems((prev) => [{ id: `mb-${Date.now()}`, ...form }, ...prev]);
     }
     setShowModal(false);
   };
@@ -104,33 +142,48 @@ export const MinibarCatalogPage: React.FC = () => {
 
   return (
     <AdminLayout activePath="/admin/minibar" isBackendOffline={false}>
-      <div className="px-4 py-3.5 space-y-4">
-        {/* Header */}
-        <div className="flex items-center justify-between">
+      {/* ── Page Header ── */}
+      <div className="bg-white px-4 py-3.5 mb-4 shadow-2xs">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-              <ShoppingCart className="w-5 h-5 text-orange-500" />
-              {t('header.minibar.title')}
+            <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
+              <span>{t('nav.home')}</span>
+              <span>/</span>
+              <span className="font-semibold text-slate-800">{t('header.minibar.title')}</span>
+            </div>
+            <h1 className="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+              <ShoppingCart className="w-5 h-5 text-[#F97316]" />
+              <span>{t('header.minibar.title')}</span>
             </h1>
-            <p className="text-xs text-slate-500 mt-0.5">{t('header.minibar.desc')}</p>
+            <p className="text-xs text-slate-500 mt-1">{t('header.minibar.desc')}</p>
           </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-2 self-start md:self-auto">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => { setRefreshSuccess(true); setTimeout(() => setRefreshSuccess(false), 2500); }}
+              onClick={() => {
+                setRefreshSuccess(true);
+                setTimeout(() => setRefreshSuccess(false), 2500);
+              }}
               className="text-xs font-semibold gap-1.5 h-9 px-3 bg-white hover:bg-slate-50 border-slate-300 text-slate-700 shadow-2xs"
             >
               <RefreshCw className="w-3.5 h-3.5 text-slate-600" />
               <span>{refreshSuccess ? t('action.refreshSuccess') : t('action.refresh')}</span>
             </Button>
-            <Button onClick={openCreate} className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold px-3 h-9 flex items-center gap-1.5">
+            <Button
+              size="sm"
+              onClick={openCreate}
+              className="bg-[#F97316] hover:bg-orange-600 text-white text-xs font-semibold px-3 h-9 flex items-center gap-1.5 shadow-2xs"
+            >
               <Plus className="w-4 h-4" />
-              {t('action.addItem')}
+              <span>{t('action.addItem')}</span>
             </Button>
           </div>
         </div>
+      </div>
 
+      <div className="px-4 pb-6 space-y-4">
         {/* API notice */}
         <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 flex items-start gap-2 text-xs text-amber-800">
           <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
@@ -139,115 +192,160 @@ export const MinibarCatalogPage: React.FC = () => {
           </span>
         </div>
 
-        {/* Filter row */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-            <Input
-              placeholder="ค้นหาสินค้า..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 text-sm h-8"
-            />
-          </div>
-          <div className="flex gap-1.5 flex-wrap">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setFilterCat(cat)}
-                className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                  filterCat === cat
-                    ? 'bg-orange-500 text-white border-orange-500'
-                    : 'bg-white text-slate-600 border-slate-200 hover:border-orange-300'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Stats row */}
-        <div className="grid grid-cols-3 gap-3">
+        {/* ── 3 Neutral Stats Cards (Zero Rainbow Slop) ── */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {[
-            { label: 'สินค้าทั้งหมด', value: items.length, color: 'text-slate-700' },
-            { label: 'พร้อมขาย', value: items.filter((i) => i.isActive).length, color: 'text-emerald-600' },
-            { label: 'ระงับการขาย', value: items.filter((i) => !i.isActive).length, color: 'text-slate-400' },
+            { label: 'สินค้าทั้งหมด', value: items.length },
+            { label: 'พร้อมขาย', value: items.filter((i) => i.isActive).length },
+            { label: 'ระงับการขาย', value: items.filter((i) => !i.isActive).length },
           ].map((s) => (
-            <Card key={s.label} className="shadow-none border border-slate-100">
-              <CardContent className="p-3">
-                <p className="text-xs text-slate-500">{s.label}</p>
-                <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
+            <Card key={s.label} className="border-slate-200 bg-white shadow-2xs">
+              <CardContent className="p-4">
+                <p className="text-xs text-slate-500 font-medium">{s.label}</p>
+                <p className="text-2xl font-bold font-mono text-slate-900 mt-1">{s.value}</p>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        {/* Table */}
-        <Card className="shadow-none border border-slate-100">
-          <CardHeader className="pb-2 pt-3 px-4">
-            <CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-              <Package className="w-4 h-4" />
-              รายการสินค้า · {filtered.length} รายการ
-            </CardTitle>
+        {/* ── Clean Toolbar with Selection Dropdown (Matching Room Types Tab) ── */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2.5 flex-1">
+            <div className="relative min-w-[200px] flex-1 max-w-sm">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Input
+                placeholder="ค้นหาชื่อสินค้า..."
+                value={search}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                className="pl-9 h-9 text-xs border-slate-200 bg-white"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => handleSearchChange('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            <div className="w-44">
+              <Select
+                value={filterCat}
+                onChange={(e) => handleCategoryChange(e.target.value)}
+                className="text-xs h-9 bg-white"
+              >
+                <option value="ทั้งหมด">ทุกหมวดหมู่</option>
+                {CATEGORIES.filter((c) => c !== 'ทั้งหมด').map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </Select>
+            </div>
+
+            {(search || filterCat !== 'ทั้งหมด') && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSearch('');
+                  setFilterCat('ทั้งหมด');
+                  setCurrentPage(1);
+                }}
+                className="h-9 text-xs text-slate-500 hover:text-slate-800"
+              >
+                <RotateCcw className="w-3 h-3 mr-1" />
+                ล้างตัวกรอง
+              </Button>
+            )}
+          </div>
+
+          <div className="text-xs text-slate-500 shrink-0 font-medium">
+            แสดง {filtered.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1} -{' '}
+            {Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} จากทั้งหมด {filtered.length} รายการสินค้า
+          </div>
+        </div>
+
+        {/* ── Table (Matching Room Types Enterprise Font & Spacing) ── */}
+        <Card className="border-slate-200 shadow-2xs bg-white overflow-hidden rounded-xl">
+          <CardHeader className="py-3 px-4 border-b border-slate-100 flex flex-row items-center justify-between bg-white">
+            <div className="flex items-center gap-2">
+              <Package className="w-4 h-4 text-slate-400" />
+              <CardTitle className="text-sm font-bold text-slate-900">
+                รายการสินค้า · {filtered.length} รายการ
+              </CardTitle>
+            </div>
+            <span className="text-[11px] text-slate-400 font-mono">
+              * ราคารวมภาษีมูลค่าเพิ่ม 7% เมื่อลงบิลเช็คเอาท์
+            </span>
           </CardHeader>
-          <CardContent className="px-0 pb-0">
+          <CardContent className="p-0">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-100 bg-white">
-                    <th className="py-2.5 px-4 text-left text-xs font-semibold text-slate-500">ชื่อสินค้า</th>
-                    <th className="py-2.5 px-4 text-left text-xs font-semibold text-slate-500">หมวดหมู่</th>
-                    <th className="py-2.5 px-4 text-right text-xs font-semibold text-slate-500">ราคา/หน่วย</th>
-                    <th className="py-2.5 px-4 text-center text-xs font-semibold text-slate-500">หน่วย</th>
-                    <th className="py-2.5 px-4 text-center text-xs font-semibold text-slate-500">สถานะ</th>
-                    <th className="py-2.5 px-4 text-center text-xs font-semibold text-slate-500">จัดการ</th>
+              <table className="w-full text-left text-xs">
+                <thead className="bg-white text-[11px] text-slate-500 font-semibold border-b border-slate-100 uppercase tracking-wider">
+                  <tr>
+                    <th className="py-2.5 px-4 w-72">ชื่อสินค้า</th>
+                    <th className="py-2.5 px-3 w-40">หมวดหมู่</th>
+                    <th className="py-2.5 px-3 text-right w-36">ราคาต่อหน่วย</th>
+                    <th className="py-2.5 px-3 text-center w-28">หน่วยนับ</th>
+                    <th className="py-2.5 px-3 text-center w-36">สถานะ</th>
+                    <th className="py-2.5 px-4 text-center w-40">การจัดการ</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {filtered.length === 0 ? (
+                <tbody className="divide-y divide-slate-100">
+                  {paginatedItems.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="py-12 text-center text-slate-400 text-sm">
-                        ไม่พบสินค้า
+                      <td colSpan={6} className="py-12 text-center text-slate-400 text-xs">
+                        ไม่พบสินค้าที่ตรงกับเงื่อนไข
                       </td>
                     </tr>
                   ) : (
-                    filtered.map((item) => (
-                      <tr key={item.id} className="border-b border-slate-50 hover:bg-slate-50/60 transition-colors">
-                        <td className="py-3 px-4 font-medium text-slate-800">{item.name}</td>
-                        <td className="py-3 px-4">
-                          <Badge variant="outline" className="text-xs">{item.category}</Badge>
+                    paginatedItems.map((item) => (
+                      <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="py-3 px-4 font-semibold text-slate-900 text-xs">{item.name}</td>
+                        <td className="py-3 px-3 text-slate-700">
+                          <span className="text-xs text-slate-700 font-normal">{item.category}</span>
                         </td>
-                        <td className="py-3 px-4 text-right font-semibold text-emerald-700">
-                          ฿{item.pricePerUnit.toLocaleString()}
+                        <td className="py-3 px-3 text-right font-mono font-medium text-slate-900 text-xs">
+                          ฿{item.pricePerUnit.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                         </td>
-                        <td className="py-3 px-4 text-center text-slate-500 text-xs">{item.unit}</td>
-                        <td className="py-3 px-4 text-center">
+                        <td className="py-3 px-3 text-center text-slate-700 text-xs">{item.unit}</td>
+                        <td className="py-3 px-3 text-center">
                           <button
+                            type="button"
                             onClick={() => toggleActive(item.id)}
-                            className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors ${
-                              item.isActive
-                                ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                                : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
-                            }`}
+                            className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 hover:text-slate-900 transition-colors"
+                            title="คลิกเพื่อสลับสถานะ"
                           >
-                            {item.isActive ? 'พร้อมขาย' : 'ระงับ'}
+                            <span
+                              className={`w-2 h-2 rounded-full shrink-0 ${
+                                item.isActive ? 'bg-emerald-500' : 'bg-slate-300'
+                              }`}
+                            />
+                            <span>{item.isActive ? 'พร้อมขาย' : 'ระงับการขาย'}</span>
                           </button>
                         </td>
                         <td className="py-3 px-4 text-center">
                           <div className="flex items-center justify-center gap-1.5">
-                            <button
+                            <Button
+                              variant="outline"
+                              size="sm"
                               onClick={() => openEdit(item)}
-                              className="p-1.5 rounded hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-colors"
+                              className="h-7 text-xs px-2 border-slate-300 text-slate-700 hover:bg-slate-50 gap-1 font-medium"
                             >
-                              <Pencil className="w-3.5 h-3.5" />
-                            </button>
-                            <button
+                              <Pencil className="w-3 h-3 text-slate-500" />
+                              <span>แก้ไข</span>
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
                               onClick={() => setDeleteTarget(item)}
-                              className="p-1.5 rounded hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"
+                              className="h-7 text-xs px-2 border-red-200 text-red-600 hover:bg-red-50"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
                           </div>
                         </td>
                       </tr>
@@ -258,108 +356,201 @@ export const MinibarCatalogPage: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* ── Pagination Bar (Active when items > 10) ── */}
+        {filtered.length > ITEMS_PER_PAGE && (
+          <div className="flex items-center justify-between bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-2xs mt-4">
+            <div className="text-xs text-slate-500 font-medium">
+              แสดง <span className="font-semibold text-slate-800">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> -{' '}
+              <span className="font-semibold text-slate-800">
+                {Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)}
+              </span>{' '}
+              จากทั้งหมด <span className="font-semibold text-slate-800">{filtered.length}</span> รายการสินค้า · 10 รายการต่อหน้า
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className="h-8 px-2.5 text-xs text-slate-600 border-slate-200 hover:bg-slate-50 disabled:opacity-40"
+              >
+                <ChevronLeft className="w-3.5 h-3.5 mr-1" />
+                ก่อนหน้า
+              </Button>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                <button
+                  key={pageNum}
+                  onClick={() => setCurrentPage(pageNum)}
+                  className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all ${
+                    currentPage === pageNum
+                      ? 'bg-slate-900 text-white shadow-2xs'
+                      : 'text-slate-600 hover:bg-slate-100 border border-transparent'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              ))}
+
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                className="h-8 px-2.5 text-xs text-slate-600 border-slate-200 hover:bg-slate-50 disabled:opacity-40"
+              >
+                ถัดไป
+                <ChevronRight className="w-3.5 h-3.5 ml-1" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Create/Edit Modal */}
+      {/* ── Create / Edit Modal (Styled like Add Room Type Modal with Red Asterisks) ── */}
       {showModal && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-bold text-slate-800">
-                {editItem ? 'แก้ไขสินค้า' : 'เพิ่มสินค้าใหม่'}
-              </h2>
-              <button onClick={() => setShowModal(false)} className="p-1 hover:bg-slate-100 rounded text-slate-400">
-                <X className="w-4 h-4" />
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <ShoppingCart className="w-5 h-5 text-[#F97316]" />
+                <h3 className="text-base font-bold text-slate-900">
+                  {editItem ? 'แก้ไขสินค้ามินิบาร์' : 'เพิ่มสินค้ามินิบาร์ใหม่'}
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowModal(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-md"
+              >
+                <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="space-y-3">
+
+            <div className="py-4 space-y-3.5">
               <div>
-                <label className="text-xs font-medium text-slate-600 mb-1 block">ชื่อสินค้า *</label>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  ชื่อสินค้า <span className="text-red-500">*</span>
+                </label>
                 <Input
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                   placeholder="เช่น น้ำดื่ม 600ml"
-                  className="text-sm"
+                  className="text-xs h-9"
+                  required
                 />
               </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-medium text-slate-600 mb-1 block">หมวดหมู่</label>
-                  <select
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    หมวดหมู่ <span className="text-red-500">*</span>
+                  </label>
+                  <Select
                     value={form.category}
                     onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-                    className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-400"
+                    className="text-xs h-9"
                   >
                     {CATEGORIES.filter((c) => c !== 'ทั้งหมด').map((c) => (
-                      <option key={c}>{c}</option>
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-slate-600 mb-1 block">หน่วย</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    หน่วยนับ <span className="text-red-500">*</span>
+                  </label>
                   <Input
                     value={form.unit}
                     onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
-                    placeholder="ขวด / ชิ้น / ซอง"
-                    className="text-sm"
+                    placeholder="ขวด / กระป๋อง / ถุง"
+                    className="text-xs h-9"
+                    required
                   />
                 </div>
               </div>
+
               <div>
-                <label className="text-xs font-medium text-slate-600 mb-1 block">ราคาต่อหน่วย · บาท *</label>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  ราคาต่อหน่วย · บาท <span className="text-red-500">*</span>
+                </label>
                 <Input
                   type="number"
                   min={0}
+                  step={0.5}
                   value={form.pricePerUnit}
                   onChange={(e) => setForm((f) => ({ ...f, pricePerUnit: Number(e.target.value) }))}
-                  className="text-sm"
+                  className="text-xs font-mono h-9"
+                  required
                 />
               </div>
-              <div className="flex items-center gap-2">
+
+              <div className="flex items-center gap-2 pt-1">
                 <input
                   type="checkbox"
                   id="isActive"
                   checked={form.isActive}
                   onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
-                  className="accent-orange-500"
+                  className="accent-[#F97316] w-4 h-4 rounded"
                 />
-                <label htmlFor="isActive" className="text-xs text-slate-600">พร้อมขาย</label>
+                <label htmlFor="isActive" className="text-xs font-medium text-slate-700 cursor-pointer">
+                  เปิดให้จำหน่าย (พร้อมขาย)
+                </label>
               </div>
             </div>
-            <div className="flex gap-2 mt-5">
+
+            <div className="flex gap-2 pt-3 border-t border-slate-100">
               <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowModal(false)}
+                className="flex-1 text-xs h-9"
+              >
+                ยกเลิก
+              </Button>
+              <Button
+                size="sm"
                 onClick={handleSave}
                 disabled={!form.name.trim() || form.pricePerUnit <= 0}
-                className="flex-1 bg-orange-500 hover:bg-orange-600 text-white text-sm flex items-center gap-1.5 justify-center"
+                className="flex-1 bg-[#F97316] hover:bg-orange-600 text-white text-xs h-9 flex items-center justify-center gap-1.5 shadow-2xs"
               >
                 <Save className="w-3.5 h-3.5" />
-                บันทึก
-              </Button>
-              <Button variant="outline" onClick={() => setShowModal(false)} className="flex-1 text-sm">
-                ยกเลิก
+                <span>บันทึก</span>
               </Button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Delete Confirm */}
+      {/* ── Delete Confirm Modal ── */}
       {deleteTarget && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-5">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-5 border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center gap-2 mb-3">
               <AlertTriangle className="w-5 h-5 text-red-500" />
-              <h2 className="text-base font-bold text-slate-800">ยืนยันการลบ</h2>
+              <h3 className="text-base font-bold text-slate-800">ยืนยันการลบสินค้า</h3>
             </div>
-            <p className="text-sm text-slate-600 mb-4">
-              ลบ <strong>{deleteTarget.name}</strong> ออกจากรายการมินิบาร์?
+            <p className="text-xs text-slate-600 mb-4 leading-relaxed">
+              ต้องการลบรายการ <strong>{deleteTarget.name}</strong> ออกจากแคตตาล็อกมินิบาร์หรือไม่?
             </p>
             <div className="flex gap-2">
-              <Button onClick={handleDelete} className="flex-1 bg-red-500 hover:bg-red-600 text-white text-sm">
-                ลบเลย
-              </Button>
-              <Button variant="outline" onClick={() => setDeleteTarget(null)} className="flex-1 text-sm">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDeleteTarget(null)}
+                className="flex-1 text-xs h-9"
+              >
                 ยกเลิก
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleDelete}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white text-xs h-9 shadow-2xs"
+              >
+                ยืนยันการลบ
               </Button>
             </div>
           </div>

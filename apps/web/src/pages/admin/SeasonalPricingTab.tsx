@@ -512,7 +512,7 @@ export const SeasonalPricingTab = React.forwardRef<SeasonalPricingTabRef, Season
             <form onSubmit={handleSaveSubmit} className="py-4 space-y-3">
               <div>
                 <label className="text-xs font-semibold text-slate-700 block mb-1">
-                  ชื่อกฎราคา *
+                  ชื่อกฎราคา <span className="text-red-500">*</span>
                 </label>
                 <Input
                   required
@@ -526,7 +526,7 @@ export const SeasonalPricingTab = React.forwardRef<SeasonalPricingTabRef, Season
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    ระดับ Tier *
+                    ระดับ Tier <span className="text-red-500">*</span>
                   </label>
                   <Select
                     value={form.isCustomTier ? '__custom__' : form.tier}
@@ -570,7 +570,7 @@ export const SeasonalPricingTab = React.forwardRef<SeasonalPricingTabRef, Season
               {form.isCustomTier && (
                 <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
                   <label className="text-xs font-semibold text-slate-800 block mb-1">
-                    ระบุชื่อ Tier ใหม่ *
+                    ระบุชื่อ Tier ใหม่ <span className="text-red-500">*</span>
                   </label>
                   <Input
                     required
@@ -585,7 +585,7 @@ export const SeasonalPricingTab = React.forwardRef<SeasonalPricingTabRef, Season
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    วันที่เริ่มต้น *
+                    วันที่เริ่มต้น <span className="text-red-500">*</span>
                   </label>
                   <Input
                     required
@@ -597,7 +597,7 @@ export const SeasonalPricingTab = React.forwardRef<SeasonalPricingTabRef, Season
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    วันที่สิ้นสุด *
+                    วันที่สิ้นสุด <span className="text-red-500">*</span>
                   </label>
                   <Input
                     required
@@ -627,7 +627,7 @@ export const SeasonalPricingTab = React.forwardRef<SeasonalPricingTabRef, Season
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    รูปแบบการปรับราคา *
+                    รูปแบบการปรับราคา <span className="text-red-500">*</span>
                   </label>
                   <Select
                     value={form.adjustmentType}
@@ -643,7 +643,7 @@ export const SeasonalPricingTab = React.forwardRef<SeasonalPricingTabRef, Season
 
                 <div>
                   <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    ค่าปรับราคา {form.adjustmentType === 'percent' ? '%' : 'บาท'} *
+                    ค่าปรับราคา {form.adjustmentType === 'percent' ? '%' : 'บาท'} <span className="text-red-500">*</span>
                   </label>
                   <Input
                     required

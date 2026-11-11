@@ -493,7 +493,7 @@ export const AmenitiesCatalogTab = React.forwardRef<AmenitiesCatalogTabRef, Amen
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    ชื่อรายการ (ไทย) *
+                    ชื่อรายการ (ไทย) <span className="text-red-500">*</span>
                   </label>
                   <Input
                     required
@@ -519,7 +519,7 @@ export const AmenitiesCatalogTab = React.forwardRef<AmenitiesCatalogTabRef, Amen
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    หมวดหมู่ *
+                    หมวดหมู่ <span className="text-red-500">*</span>
                   </label>
                   <Select
                     value={form.category}
@@ -536,7 +536,7 @@ export const AmenitiesCatalogTab = React.forwardRef<AmenitiesCatalogTabRef, Amen
 
                 <div>
                   <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    ประเภทการคิดเงิน *
+                    ประเภทการคิดเงิน <span className="text-red-500">*</span>
                   </label>
                   <Select
                     value={form.isChargeable ? 'chargeable' : 'free'}
@@ -559,7 +559,7 @@ export const AmenitiesCatalogTab = React.forwardRef<AmenitiesCatalogTabRef, Amen
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    ราคาต่อหน่วย {form.isChargeable && '*'}
+                    ราคาต่อหน่วย {form.isChargeable && <span className="text-red-500">*</span>}
                   </label>
                   <Input
                     type="number"
@@ -573,7 +573,7 @@ export const AmenitiesCatalogTab = React.forwardRef<AmenitiesCatalogTabRef, Amen
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    หน่วยนับ (ไทย) *
+                    หน่วยนับ (ไทย) <span className="text-red-500">*</span>
                   </label>
                   <Input
                     required

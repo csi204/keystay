@@ -456,7 +456,7 @@ export const UsersManagementPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    ชื่อจริง *
+                    ชื่อจริง <span className="text-red-500">*</span>
                   </label>
                   <Input
                     required
@@ -468,7 +468,7 @@ export const UsersManagementPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    นามสกุล *
+                    นามสกุล <span className="text-red-500">*</span>
                   </label>
                   <Input
                     required
@@ -482,7 +482,7 @@ export const UsersManagementPage: React.FC = () => {
 
               <div>
                 <label className="text-xs font-semibold text-slate-700 block mb-1">
-                  อีเมลเข้าสู่ระบบ *
+                  อีเมลเข้าสู่ระบบ <span className="text-red-500">*</span>
                 </label>
                 <Input
                   required
@@ -496,7 +496,7 @@ export const UsersManagementPage: React.FC = () => {
 
               <div>
                 <label className="text-xs font-semibold text-slate-700 block mb-1">
-                  รหัสผ่านเริ่มต้น *
+                  รหัสผ่านเริ่มต้น <span className="text-red-500">*</span>
                 </label>
                 <Input
                   required
@@ -510,7 +510,7 @@ export const UsersManagementPage: React.FC = () => {
 
               <div>
                 <label className="text-xs font-semibold text-slate-700 block mb-1">
-                  บทบาทและสิทธิ์การใช้งาน *
+                  บทบาทและสิทธิ์การใช้งาน <span className="text-red-500">*</span>
                 </label>
                 <Select
                   value={createForm.role}
@@ -567,7 +567,7 @@ export const UsersManagementPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    ชื่อจริง *
+                    ชื่อจริง <span className="text-red-500">*</span>
                   </label>
                   <Input
                     required
@@ -578,7 +578,7 @@ export const UsersManagementPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    นามสกุล *
+                    นามสกุล <span className="text-red-500">*</span>
                   </label>
                   <Input
                     required
@@ -591,7 +591,7 @@ export const UsersManagementPage: React.FC = () => {
 
               <div>
                 <label className="text-xs font-semibold text-slate-700 block mb-1">
-                  อีเมล *
+                  อีเมล <span className="text-red-500">*</span>
                 </label>
                 <Input
                   required
@@ -605,7 +605,7 @@ export const UsersManagementPage: React.FC = () => {
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-xs font-semibold text-slate-700">
-                    บทบาท *
+                    บทบาท <span className="text-red-500">*</span>
                   </label>
                   {Boolean(
                     editingUser?.id === currentUser?.id ||
