@@ -147,16 +147,16 @@
 - `services/reservation/src/routes/reservations.ts`
 - `apps/web/src/__tests__/ExtendStaySync.test.ts` (new)
 
-- [ ] **Step 4.1: Write failing test for Extend Stay and Popover bounds**
+- [x] **Step 4.1: Write failing test for Extend Stay and Popover bounds**
   Create `apps/web/src/__tests__/ExtendStaySync.test.ts` testing:
   - `ExtendStayModal` invokes `onSuccess(updatedRes)` when API succeeds.
   - `RoomDetailsModal` updates its displayed checkout date and re-renders room status upon extension.
   - `CustomDatePicker` computes smart upward placement (`bottom-full mb-1.5`) when container bottom clearance is < 300px.
 
-- [ ] **Step 4.2: Run test to confirm failure**
+- [x] **Step 4.2: Run test to confirm failure**
   Run: `pnpm --filter @keystay/web test apps/web/src/__tests__/ExtendStaySync.test.ts`
 
-- [ ] **Step 4.3: Implement state updates in `RoomDetailsModal.tsx` and `ExtendStayModal.tsx`**
+- [x] **Step 4.3: Implement state updates in `RoomDetailsModal.tsx` and `ExtendStayModal.tsx`**
   - In `ExtendStayModal.tsx`:
     - Call `toast.showSuccess(t('extend.successTitle'), t('extend.successDesc'))`.
     - Pass `res.data` to `onSuccess(res.data)`.
@@ -165,10 +165,10 @@
   - In `services/reservation/src/routes/reservations.ts`:
     - In `handleExtendStay`: allow extensions for `status IN ('checked_in', 'extended', 'confirmed')`.
 
-- [ ] **Step 4.4: Improve `CustomDatePicker.tsx` smart bounds**
+- [x] **Step 4.4: Improve `CustomDatePicker.tsx` smart bounds**
   - In `computePlacement`: account for modal element bounding rectangle so popover opens above if space below is limited.
 
-- [ ] **Step 4.5: Verify test passes & commit**
+- [x] **Step 4.5: Verify test passes & commit**
   Run: `pnpm --filter @keystay/web test apps/web/src/__tests__/ExtendStaySync.test.ts`
   Git commit: `feat(front-desk): synchronize extend stay state and enhance datepicker popover placement`
 

@@ -19,6 +19,7 @@ export interface CustomDatePickerProps {
 
 /**
  * Determine popover placement based on element bounding rect and window height.
+ * Returns 'top' when popover would overflow bottom bounds or clearance is < 300px.
  */
 export function computePlacement(
   rect?: { bottom: number; top?: number } | null,
@@ -26,7 +27,8 @@ export function computePlacement(
   popoverHeight: number = 320
 ): 'top' | 'bottom' {
   if (!rect) return 'bottom';
-  if (rect.bottom + popoverHeight > windowHeight) {
+  const clearanceBelow = windowHeight - rect.bottom;
+  if (clearanceBelow < popoverHeight || clearanceBelow < 300 || rect.bottom + popoverHeight > windowHeight) {
     return 'top';
   }
   return 'bottom';
@@ -165,11 +167,19 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
       const el = inputRef.current || containerRef.current;
       if (el) {
         const rect = el.getBoundingClientRect();
-        if (rect.bottom + 320 > window.innerHeight) {
-          setPopoverDirection('top');
-        } else {
-          setPopoverDirection('bottom');
+        // Check window bottom bounds AND modal/dialog bottom boundary
+        const dialog =
+          el.closest('[role="dialog"]') ||
+          el.closest('.overflow-y-auto') ||
+          el.closest('.modal-content') ||
+          el.closest('[aria-modal="true"]');
+        let availableHeight = window.innerHeight;
+        if (dialog) {
+          const dialogRect = dialog.getBoundingClientRect();
+          availableHeight = Math.min(window.innerHeight, dialogRect.bottom);
         }
+        const direction = computePlacement(rect, availableHeight, 320);
+        setPopoverDirection(direction);
       }
     }
   };

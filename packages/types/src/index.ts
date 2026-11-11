@@ -67,6 +67,7 @@ export const ReservationStatusSchema = z.enum([
   'pending',
   'confirmed',
   'checked_in',
+  'extended',
   'checked_out',
   'cancelled',
   'no_show',

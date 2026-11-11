@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { ExtendedReservation, resolveGuestName } from '@/hooks/useReservations';
 import { Room, RoomType } from '@keystay/types';
 import { useI18n } from '@/lib/i18n';
+import { useToast } from '@/context/ToastContext';
 import { localizeRoomType } from '@/lib/localizeMetadata';
 import { apiFetch } from '@/lib/api';
 import { CustomDatePicker } from '../common/CustomDatePicker';
@@ -22,13 +23,13 @@ export interface ExtendStayModalProps {
   roomType?: RoomType | null;
   isOpen: boolean;
   onClose: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (updatedReservation?: ExtendedReservation) => void;
   onConfirm?: (
     reservationId: string,
     newCheckOutDate: string,
     extraNights: number,
     extraCharge: number
-  ) => Promise<{ success: boolean; error?: string }>;
+  ) => Promise<{ success: boolean; error?: string; data?: ExtendedReservation }>;
 }
 
 export const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
@@ -41,6 +42,7 @@ export const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
   onConfirm,
 }) => {
   const { t, locale, formatCurrency, formatDate } = useI18n();
+  const toast = useToast();
 
   const [newCheckOutDate, setNewCheckOutDate] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -136,13 +138,23 @@ export const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
           extraCharge
         );
         if (res.success) {
-          onSuccess?.();
+          toast.showSuccess(
+            t('extend.successTitle') || (locale === 'th' ? 'ขยายเวลาเข้าพักสำเร็จ' : 'Stay Extended'),
+            t('extend.successDesc') || (locale === 'th' ? `ขยายเวลาเข้าพักถึง ${newCheckOutDate} แล้ว` : `Extended stay until ${newCheckOutDate}`)
+          );
+          const updatedRes: ExtendedReservation = (res.data as ExtendedReservation) || {
+            ...reservation,
+            checkOutDate: newCheckOutDate,
+            totalNights: String(Number(reservation.totalNights || 1) + extraNights),
+            status: 'extended',
+          };
+          onSuccess?.(updatedRes);
           onClose();
         } else {
           setError(res.error || t('extend.errorGeneral'));
         }
       } else {
-        const res = await apiFetch(`/api/reservations/${reservation.id}/extend-stay`, {
+        const res = await apiFetch<ExtendedReservation>(`/api/reservations/${reservation.id}/extend-stay`, {
           method: 'POST',
           body: JSON.stringify({
             newCheckOutDate,
@@ -151,7 +163,17 @@ export const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
         });
 
         if (!res.error) {
-          onSuccess?.();
+          toast.showSuccess(
+            t('extend.successTitle') || (locale === 'th' ? 'ขยายเวลาเข้าพักสำเร็จ' : 'Stay Extended'),
+            t('extend.successDesc') || (locale === 'th' ? `ขยายเวลาเข้าพักถึง ${newCheckOutDate} แล้ว` : `Extended stay until ${newCheckOutDate}`)
+          );
+          const updatedRes: ExtendedReservation = (res.data as ExtendedReservation) || {
+            ...reservation,
+            checkOutDate: newCheckOutDate,
+            totalNights: String(Number(reservation.totalNights || 1) + extraNights),
+            status: 'extended',
+          };
+          onSuccess?.(updatedRes);
           onClose();
         } else {
           setError(res.error || t('extend.errorGeneral'));

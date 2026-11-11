@@ -1810,13 +1810,13 @@ const handleExtendStay = async (c: Context<{ Bindings: Env }>) => {
       return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Reservation not found' } }, 404);
     }
 
-    if (existing.status !== 'checked_in' && existing.status !== 'extended') {
+    if (existing.status !== 'checked_in' && existing.status !== 'extended' && existing.status !== 'confirmed') {
       return c.json(
         {
           success: false,
           error: {
             code: 'INVALID_STATUS',
-            message: 'Stay extension is only available for active in-house guests (checked_in or extended).',
+            message: 'Stay extension is only available for active in-house or confirmed reservations (confirmed, checked_in, or extended).',
           },
         },
         400

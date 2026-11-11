@@ -292,6 +292,8 @@ export const en: Record<string, string> = {
   'extend.errorInvalidDate': 'New check-out date must be at least 1 night after current check-out',
   'extend.errorGeneral': 'An error occurred while extending stay',
   'extend.success': 'Stay extended successfully',
+  'extend.successTitle': 'Stay Extended',
+  'extend.successDesc': 'Guest stay extension saved successfully',
 
   // Operational Workflows: Check-Out & Key Card Return (UAT-FD05)
   'checkout.title': 'Confirm Check-Out & Cashier Settlement',

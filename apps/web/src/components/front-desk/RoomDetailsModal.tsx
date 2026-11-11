@@ -49,7 +49,8 @@ export type RoomModalAction =
   | 'charge'
   | 'walkin'
   | 'clean'
-  | 'extend';
+  | 'extend'
+  | 'refresh';
 
 export type RoomDrawerAction = RoomModalAction;
 
@@ -78,7 +79,7 @@ export interface RoomDetailsModalProps {
   onClose: () => void;
   onAction?:
     | ((action: RoomModalAction, room: Room) => void)
-    | ((action: 'checkin' | 'checkout' | 'charge' | 'walkin' | 'clean', room: Room) => void);
+    | ((action: 'checkin' | 'checkout' | 'charge' | 'walkin' | 'clean' | 'extend' | 'refresh', room: Room) => void);
   currentReservation?: ExtendedReservation | null;
   initialMode?: 'details' | 'booking';
   onSubmitBooking?: (data: FastBookingFormData) => Promise<{ success: boolean; error?: string }>;
@@ -111,7 +112,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
   isOpen,
   onClose,
   onAction,
-  currentReservation,
+  currentReservation: initialReservation,
   initialMode = 'details',
   onSubmitBooking,
   onVerifySlip,
@@ -119,6 +120,14 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
   onAddFolioCharge,
 }) => {
   const { t, formatCurrency, locale } = useI18n();
+
+  const [currentReservation, setCurrentReservation] = useState<ExtendedReservation | null | undefined>(
+    initialReservation
+  );
+
+  useEffect(() => {
+    setCurrentReservation(initialReservation);
+  }, [initialReservation]);
 
   // Mode: 'details' (single pane max-w-lg) or 'booking' (split pane max-w-4xl)
   const [mode, setMode] = useState<'details' | 'booking'>(initialMode);
@@ -489,6 +498,15 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                       </span>
                     </div>
                   </div>
+
+                  {currentReservation.checkOutDate && (
+                    <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 text-[11px]">
+                      <span className="text-slate-500">{locale === 'th' ? 'กำหนดเช็คเอาท์:' : 'Check-out:'}</span>
+                      <span className="font-mono font-medium text-slate-800">
+                        {currentReservation.checkOutDate}
+                      </span>
+                    </div>
+                  )}
 
                   {/* Slip Action Button */}
                   <div className="pt-1">
@@ -1068,6 +1086,12 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
           roomType={roomType}
           isOpen={isExtendOpen}
           onClose={() => setIsExtendOpen(false)}
+          onSuccess={(updatedRes) => {
+            if (updatedRes) {
+              setCurrentReservation(updatedRes);
+            }
+            onAction?.('refresh', room);
+          }}
         />
       )}
 

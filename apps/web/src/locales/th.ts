@@ -292,6 +292,8 @@ export const th: Record<string, string> = {
   'extend.errorInvalidDate': 'วันเช็คเอาท์ใหม่ต้องหลังจากวันเช็คเอาท์เดิมอย่างน้อย 1 คืน',
   'extend.errorGeneral': 'เกิดข้อผิดพลาดในการขยายเวลาเข้าพัก',
   'extend.success': 'ขยายเวลาเข้าพักสำเร็จ',
+  'extend.successTitle': 'ขยายเวลาเข้าพักสำเร็จ',
+  'extend.successDesc': 'บันทึกการขยายเวลาเข้าพักเรียบร้อยแล้ว',
 
   // Operational Workflows: Check-Out & Key Card Return (UAT-FD05)
   'checkout.title': 'ยืนยันการเช็คเอาท์และคิดเงิน',
