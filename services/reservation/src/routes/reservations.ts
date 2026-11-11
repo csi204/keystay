@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { type Env, mapReservation } from '../types';
+import { type Env, mapReservation, mapAmenityRequest } from '../types';
 import {
   createReservationSchema,
   updateReservationSchema,
@@ -11,6 +11,8 @@ import {
   upgradeRoomSchema,
   walkInSchema,
   applyDiscountSchema,
+  updatePaymentSchema,
+  createAmenityRequestSchema,
 } from '../validators/reservation.validator';
 import { publishToQStash } from '../events/publisher';
 import { runNightAudit } from '../cron/night-audit';
@@ -338,8 +340,9 @@ reservations.post('/walk-in', async (c) => {
         return c.json({ success: false, error: { code: 'GUEST_NOT_FOUND', message: `Guest with ID ${guestId} not found` } }, 404);
       }
     } else {
-      if (data.guestPhone) {
-        guestRecord = await c.env.DB.prepare('SELECT * FROM guests WHERE phone = ?').bind(data.guestPhone.trim()).first();
+      const resolvedPhone = data.guestPhone || data.phone;
+      if (resolvedPhone) {
+        guestRecord = await c.env.DB.prepare('SELECT * FROM guests WHERE phone = ?').bind(resolvedPhone.trim()).first();
       }
       if (!guestRecord && data.idCardNumber) {
         guestRecord = await c.env.DB.prepare('SELECT * FROM guests WHERE id_card_number = ?').bind(data.idCardNumber.trim()).first();
@@ -364,7 +367,7 @@ reservations.post('/walk-in', async (c) => {
           firstName,
           lastName,
           data.guestEmail?.trim() || null,
-          data.guestPhone?.trim() || null,
+          resolvedPhone?.trim() || null,
           data.idCardNumber?.trim() || null,
           data.nationality?.trim() || 'Thai',
           now,
@@ -429,15 +432,23 @@ reservations.post('/walk-in', async (c) => {
     }
 
     // Insert Reservation
+    const bookingSource = data.bookingSource || 'walk_in';
+    const paymentStatus = data.paymentStatus || (bookingSource === 'walk_in' ? 'paid' : 'unpaid');
+    const paymentSlipUrl = data.paymentSlipUrl || null;
+    const paymentSlipRef = data.paymentSlipRef || null;
+    const paymentVerifiedAt = paymentStatus === 'paid' ? now : null;
+    const paymentVerifiedBy = paymentStatus === 'paid' ? callerId : null;
+
     stmts.push(
       c.env.DB.prepare(
         `INSERT INTO reservations (
           id, reservation_code, guest_id, room_id, room_number, room_type_name,
           status, booking_type, check_in_date, check_out_date, actual_check_in,
           num_guests, nightly_rate, total_nights, subtotal, discount_amount,
-          tax_amount, deposit_amount, total_amount, special_requests, created_by,
-          created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, 'checked_in', 'walk_in', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          tax_amount, deposit_amount, total_amount, special_requests,
+          booking_source, payment_status, payment_slip_url, payment_slip_ref, payment_verified_at, payment_verified_by,
+          created_by, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, 'checked_in', 'walk_in', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).bind(
         reservationId,
         reservationCode,
@@ -456,7 +467,13 @@ reservations.post('/walk-in', async (c) => {
         taxAmount,
         depositAmount,
         totalAmount,
-        data.specialRequests || 'Walk-in guest',
+        data.specialRequests || (bookingSource === 'walk_in' ? 'Walk-in guest' : `${bookingSource} reservation`),
+        bookingSource,
+        paymentStatus,
+        paymentSlipUrl,
+        paymentSlipRef,
+        paymentVerifiedAt,
+        paymentVerifiedBy,
         callerId,
         now,
         now
@@ -737,14 +754,23 @@ reservations.post('/', async (c) => {
     }
 
     // Insert reservation
+    const bookingSource = (data as any).bookingSource || 'walk_in';
+    const paymentStatus = (data as any).paymentStatus || (data.bookingType === 'walk_in' ? 'paid' : 'unpaid');
+    const paymentSlipUrl = (data as any).paymentSlipUrl || null;
+    const paymentSlipRef = (data as any).paymentSlipRef || null;
+    const paymentVerifiedAt = paymentStatus === 'paid' ? now : null;
+    const paymentVerifiedBy = paymentStatus === 'paid' ? callerId : null;
+
     batchStatements.push(
       c.env.DB.prepare(
         `INSERT INTO reservations (
           id, reservation_code, guest_id, room_id, room_number, room_type_name,
           status, booking_type, check_in_date, check_out_date, actual_check_in,
           num_guests, nightly_rate, total_nights, subtotal, discount_amount, tax_amount, deposit_amount,
-          total_amount, special_requests, created_by, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          total_amount, special_requests,
+          booking_source, payment_status, payment_slip_url, payment_slip_ref, payment_verified_at, payment_verified_by,
+          created_by, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).bind(
         reservationId,
         reservationCode,
@@ -766,6 +792,12 @@ reservations.post('/', async (c) => {
         depositAmount,
         totalAmount,
         data.specialRequests || null,
+        bookingSource,
+        paymentStatus,
+        paymentSlipUrl,
+        paymentSlipRef,
+        paymentVerifiedAt,
+        paymentVerifiedBy,
         callerId,
         now,
         now
@@ -2182,6 +2214,174 @@ reservations.post('/:id/apply-discount', async (c) => {
     });
   } catch (error: any) {
     return c.json({ success: false, error: { message: error.message || 'Failed to apply discount' } }, 500);
+  }
+});
+
+// ============================================================================
+// Payment Slip Verification & Status Update (PATCH /:id/payment & POST /:id/slip)
+// ============================================================================
+reservations.patch('/:id/payment', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const body = await c.req.json();
+    const parsed = updatePaymentSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json({ success: false, error: { message: 'Validation failed', details: parsed.error.format() } }, 400);
+    }
+
+    const existing = await c.env.DB.prepare('SELECT * FROM reservations WHERE id = ?').bind(id).first<any>();
+    if (!existing) {
+      return c.json({ success: false, error: { code: 'RESERVATION_NOT_FOUND', message: `Reservation with ID ${id} not found` } }, 404);
+    }
+
+    const callerId = c.req.header('x-user-id') || 'system';
+    const now = new Date().toISOString();
+    const paymentStatus = parsed.data.paymentStatus;
+    const paymentSlipUrl = parsed.data.paymentSlipUrl !== undefined ? parsed.data.paymentSlipUrl : existing.payment_slip_url;
+    const paymentSlipRef = parsed.data.paymentSlipRef !== undefined ? parsed.data.paymentSlipRef : existing.payment_slip_ref;
+    const paymentVerifiedAt = paymentStatus === 'paid' ? now : null;
+    const paymentVerifiedBy = paymentStatus === 'paid' ? callerId : null;
+
+    await c.env.DB.prepare(
+      `UPDATE reservations
+       SET payment_status = ?, payment_slip_url = ?, payment_slip_ref = ?,
+           payment_verified_at = ?, payment_verified_by = ?, updated_at = ?
+       WHERE id = ?`
+    ).bind(paymentStatus, paymentSlipUrl, paymentSlipRef, paymentVerifiedAt, paymentVerifiedBy, now, id).run();
+
+    const updated = await c.env.DB.prepare('SELECT * FROM reservations WHERE id = ?').bind(id).first();
+    const mapped = mapReservation(updated);
+
+    return c.json({
+      success: true,
+      message: 'Payment verification updated successfully',
+      data: mapped,
+    });
+  } catch (error: any) {
+    return c.json({ success: false, error: { message: error.message || 'Failed to update payment status' } }, 500);
+  }
+});
+
+reservations.post('/:id/slip', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const body = await c.req.json();
+    const parsed = updatePaymentSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json({ success: false, error: { message: 'Validation failed', details: parsed.error.format() } }, 400);
+    }
+
+    const existing = await c.env.DB.prepare('SELECT * FROM reservations WHERE id = ?').bind(id).first<any>();
+    if (!existing) {
+      return c.json({ success: false, error: { code: 'RESERVATION_NOT_FOUND', message: `Reservation with ID ${id} not found` } }, 404);
+    }
+
+    const callerId = c.req.header('x-user-id') || 'system';
+    const now = new Date().toISOString();
+    const paymentStatus = 'paid';
+    const paymentSlipUrl = parsed.data.paymentSlipUrl || existing.payment_slip_url;
+    const paymentSlipRef = parsed.data.paymentSlipRef || existing.payment_slip_ref;
+
+    await c.env.DB.prepare(
+      `UPDATE reservations
+       SET payment_status = ?, payment_slip_url = ?, payment_slip_ref = ?,
+           payment_verified_at = ?, payment_verified_by = ?, updated_at = ?
+       WHERE id = ?`
+    ).bind(paymentStatus, paymentSlipUrl, paymentSlipRef, now, callerId, now, id).run();
+
+    const updated = await c.env.DB.prepare('SELECT * FROM reservations WHERE id = ?').bind(id).first();
+    const mapped = mapReservation(updated);
+
+    return c.json({
+      success: true,
+      message: 'Payment slip attached and verified successfully',
+      data: mapped,
+    });
+  } catch (error: any) {
+    return c.json({ success: false, error: { message: error.message || 'Failed to attach slip' } }, 500);
+  }
+});
+
+// ============================================================================
+// Extra Amenity Requests (POST & GET /:id/amenities)
+// ============================================================================
+reservations.post('/:id/amenities', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const body = await c.req.json();
+    const parsed = createAmenityRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json({ success: false, error: { message: 'Validation failed', details: parsed.error.format() } }, 400);
+    }
+
+    const existing = await c.env.DB.prepare('SELECT * FROM reservations WHERE id = ?').bind(id).first<any>();
+    if (!existing) {
+      return c.json({ success: false, error: { code: 'RESERVATION_NOT_FOUND', message: `Reservation with ID ${id} not found` } }, 404);
+    }
+
+    const now = new Date().toISOString();
+    const reqId = `amr-${crypto.randomUUID()}`;
+    const qty = parsed.data.quantity || 1;
+    const unitPrice = parsed.data.unitPrice || 0;
+    const totalPrice = Number((qty * unitPrice).toFixed(2));
+    const isChargeable = parsed.data.isChargeable ? 1 : 0;
+
+    await c.env.DB.prepare(
+      `INSERT INTO reservation_amenity_requests (
+        id, reservation_id, amenity_id, amenity_name, quantity, unit_price,
+        total_price, is_chargeable, status, billed_to_folio, notes, requested_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'requested', 0, ?, ?)`
+    ).bind(
+      reqId,
+      id,
+      parsed.data.amenityId,
+      parsed.data.amenityName,
+      qty,
+      unitPrice,
+      totalPrice,
+      isChargeable,
+      parsed.data.notes || null,
+      now
+    ).run();
+
+    const created = await c.env.DB.prepare('SELECT * FROM reservation_amenity_requests WHERE id = ?').bind(reqId).first();
+    const mapped = mapAmenityRequest(created);
+
+    return c.json(
+      {
+        success: true,
+        message: isChargeable
+          ? 'Amenity requested successfully (Chargeable - ready for folio billing)'
+          : 'Amenity requested successfully (Free - housekeeping notified)',
+        data: mapped,
+      },
+      201
+    );
+  } catch (error: any) {
+    return c.json({ success: false, error: { message: error.message || 'Failed to request amenity' } }, 500);
+  }
+});
+
+reservations.get('/:id/amenities', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const existing = await c.env.DB.prepare('SELECT * FROM reservations WHERE id = ?').bind(id).first<any>();
+    if (!existing) {
+      return c.json({ success: false, error: { code: 'RESERVATION_NOT_FOUND', message: `Reservation with ID ${id} not found` } }, 404);
+    }
+
+    const { results } = await c.env.DB.prepare(
+      'SELECT * FROM reservation_amenity_requests WHERE reservation_id = ? ORDER BY requested_at DESC'
+    ).bind(id).all();
+
+    const mapped = (results || []).map((row) => mapAmenityRequest(row));
+    return c.json({
+      success: true,
+      data: mapped,
+      totalCount: mapped.length,
+    });
+  } catch (error: any) {
+    return c.json({ success: false, error: { message: error.message || 'Failed to fetch amenity requests' } }, 500);
   }
 });
 

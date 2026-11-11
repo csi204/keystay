@@ -30,6 +30,10 @@ export const createReservationSchema = z
     discountAmount: z.coerce.number().min(0).default(0),
     specialRequests: z.string().optional().nullable(),
     bookingType: z.enum(['advance', 'walk_in']).default('advance'),
+    bookingSource: z.enum(['walk_in', 'phone', 'facebook']).default('walk_in'),
+    paymentStatus: z.enum(['unpaid', 'paid']).default('unpaid'),
+    paymentSlipUrl: z.string().optional().nullable(),
+    paymentSlipRef: z.string().optional().nullable(),
   })
   .refine((data) => data.checkOutDate > data.checkInDate, {
     message: 'checkOutDate must be after checkInDate',
@@ -113,16 +117,21 @@ export const walkInSchema = z
     guestId: z.string().optional(),
     guestName: z.string().min(1, 'Guest name is required'),
     guestPhone: z.string().optional().nullable(),
+    phone: z.string().optional().nullable(),
     guestEmail: z.string().email('Invalid email format').optional().nullable().or(z.literal('')),
     idCardNumber: z.string().optional().nullable(),
     nationality: z.string().optional().nullable(),
     checkInDate: validDateSchema.optional(),
     checkOutDate: validDateSchema,
     numGuests: z.coerce.number().int().min(1).default(1),
-    nightlyRate: z.coerce.number().min(0, 'Nightly rate must be positive'),
+    nightlyRate: z.coerce.number().min(0).default(1200),
     depositAmount: z.coerce.number().min(0).default(0),
     discountAmount: z.coerce.number().min(0).default(0),
     specialRequests: z.string().optional().nullable(),
+    bookingSource: z.enum(['walk_in', 'phone', 'facebook']).default('walk_in'),
+    paymentStatus: z.enum(['unpaid', 'paid']).default('unpaid'),
+    paymentSlipUrl: z.string().optional().nullable(),
+    paymentSlipRef: z.string().optional().nullable(),
   })
   .refine((data) => {
     const today = new Intl.DateTimeFormat('en-CA', {
@@ -152,6 +161,22 @@ export const applyDiscountSchema = z
     path: ['discountAmount'],
   });
 
+export const updatePaymentSchema = z.object({
+  paymentStatus: z.enum(['unpaid', 'paid']).default('paid'),
+  paymentSlipUrl: z.string().optional().nullable(),
+  paymentSlipRef: z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
+});
+
+export const createAmenityRequestSchema = z.object({
+  amenityId: z.string().min(1, 'Amenity ID is required'),
+  amenityName: z.string().min(1, 'Amenity name is required'),
+  quantity: z.coerce.number().int().min(1).default(1),
+  unitPrice: z.coerce.number().min(0).default(0),
+  isChargeable: z.coerce.number().int().min(0).max(1).default(0),
+  notes: z.string().optional().nullable(),
+});
+
 export type CreateReservationInput = z.infer<typeof createReservationSchema>;
 export type UpdateReservationInput = z.infer<typeof updateReservationSchema>;
 export type CheckInReservationInput = z.infer<typeof checkInReservationSchema>;
@@ -162,3 +187,5 @@ export type ExtendStayInput = z.infer<typeof extendStaySchema>;
 export type UpgradeRoomInput = z.infer<typeof upgradeRoomSchema>;
 export type WalkInInput = z.infer<typeof walkInSchema>;
 export type ApplyDiscountInput = z.infer<typeof applyDiscountSchema>;
+export type UpdatePaymentInput = z.infer<typeof updatePaymentSchema>;
+export type CreateAmenityRequestInput = z.infer<typeof createAmenityRequestSchema>;
