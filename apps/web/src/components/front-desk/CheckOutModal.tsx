@@ -217,7 +217,7 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
   };
 
   // Submit checkout and cashier settlement
-  const handleSettleAndCheckOut = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsSubmitting(true);
@@ -252,24 +252,52 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
         return;
       }
 
-      // Record payment if Net Due > 0
-      if (summary.netDue > 0 && billId) {
-        try {
-          await apiFetch(`/api/bills/${billId}/pay`, {
-            method: 'POST',
-            body: JSON.stringify({
-              paymentMethod,
-              amount: summary.netDue.toFixed(2),
-            }),
-          });
-        } catch (payErr) {
-          console.warn('Payment recording error, proceed with folio invoice generation', payErr);
+      let billIdToPay = billId;
+
+      if (!billIdToPay) {
+        const mappedItems = folioItems.map((item) => {
+          let itemType = 'other';
+          if (item.category === 'room') itemType = 'room_charge';
+          else if (item.category === 'minibar') itemType = 'minibar';
+          else if (item.category === 'laundry') itemType = 'laundry';
+          else if (item.category === 'service') itemType = 'room_service';
+          else if (item.category === 'damage') itemType = 'damage';
+          return {
+            itemType,
+            description: item.description,
+            quantity: Number(item.quantity) || 1,
+            unitPrice: Number(item.unitPrice) || 0,
+          };
+        });
+
+        const createBillRes = await apiFetch<any>('/api/bills', {
+          method: 'POST',
+          body: JSON.stringify({
+            reservationId: reservation.id,
+            guestName: guestDisplayName,
+            roomNumber: reservation.roomNumber || '—',
+            depositDeducted: depositAmountNum,
+            items: mappedItems,
+          }),
+        });
+        if (createBillRes.data?.id) {
+          billIdToPay = createBillRes.data.id;
         }
       }
 
-      // Create settled bill object for instant Tax Invoice ABB receipt
+      if (billIdToPay) {
+        await apiFetch(`/api/bills/${billIdToPay}/pay`, {
+          method: 'POST',
+          body: JSON.stringify({
+            paymentMethod,
+            amount: Math.max(0, summary.netDue).toFixed(2),
+          }),
+        }).catch((e) => console.warn('Payment recording error:', e));
+      }
+
+      // Create settled bill object for instant Tax Invoice ABB receipt (if referenced)
       const finalizedBill: DetailedBill = {
-        id: billId || reservation.id,
+        id: billIdToPay || billId || reservation.id,
         reservationId: reservation.id,
         guestId: reservation.guestId,
         guestName: guestDisplayName,
@@ -283,8 +311,8 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
         payments: [
           {
             id: `pay-${Date.now()}`,
-            billId: billId || reservation.id,
-            amount: summary.netDue.toFixed(2),
+            billId: billIdToPay || billId || reservation.id,
+            amount: Math.max(0, summary.netDue).toFixed(2),
             paymentMethod,
             createdAt: new Date().toISOString(),
           },
@@ -294,14 +322,19 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
       };
 
       setSettledBill(finalizedBill);
-      setIsSuccess(true);
+
+      // Trigger onSuccess and close modal immediately (do not remain stuck in modal)
       onSuccess?.();
+      onClose();
     } catch (err: any) {
       setError(err?.message || t('checkout.errorGeneral'));
+      setIsSubmitting(false);
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const handleSettleAndCheckOut = handleSubmit;
 
   const handleFinish = () => {
     onClose();
@@ -405,7 +438,7 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
               </div>
             ) : (
               /* Check-out & Folio Settlement Flow */
-              <form onSubmit={handleSettleAndCheckOut} className="space-y-5">
+              <form onSubmit={handleSubmit} className="space-y-5">
                 {/* Stay Info Card */}
                 <div className="bg-slate-50 rounded-lg border border-slate-200 p-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
                   <div>

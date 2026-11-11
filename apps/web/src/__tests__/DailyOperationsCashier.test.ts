@@ -159,4 +159,49 @@ describe('Task 5 — Consolidated Daily Operations & Cashier Settlement Flow', (
       assert.notStrictEqual(en[key], '', `English translation cannot be empty: ${key}`);
     }
   });
+
+  it('Task 6: verifies CheckOutModal automatically creates bill in @keystay/billing if !billId and records payment', () => {
+    const code = fs.readFileSync(checkOutModalPath, 'utf-8');
+
+    // Maps folio items to billing schema
+    assert.match(code, /room_charge/);
+    assert.match(code, /minibar/);
+    assert.match(code, /laundry/);
+    assert.match(code, /room_service/);
+    assert.match(code, /damage/);
+
+    // POST /api/bills when !billId / !billIdToPay
+    assert.match(code, /\/api\/bills/);
+    assert.match(code, /depositDeducted/);
+
+    // POST /api/bills/${billIdToPay}/pay
+    assert.match(code, /\/api\/bills\/\$\{billIdToPay\}\/pay/);
+    assert.match(code, /paymentMethod/);
+
+    // Triggers onSuccess and closes modal immediately (does not remain stuck)
+    assert.match(code, /onSuccess\?\.()/);
+    assert.match(code, /onClose\(\)/);
+
+    // Handles error gracefully
+    assert.match(code, /setError/);
+    assert.match(code, /setIsSubmitting\(false\)/);
+  });
+
+  it('Task 6: verifies DailyOperationsPage hooks CheckOutModal onSuccess to handleManualRefresh for immediate Billing ledger update', () => {
+    const pageCode = fs.readFileSync(dailyOpsPath, 'utf-8');
+
+    // CheckOutModal receives onSuccess={handleManualRefresh}
+    assert.match(
+      pageCode,
+      /<CheckOutModal[\s\S]*?onSuccess=\{handleManualRefresh\}/,
+      'CheckOutModal must be wired with onSuccess={handleManualRefresh}'
+    );
+
+    // handleManualRefresh refreshes reservations, rooms, and billing
+    assert.match(
+      pageCode,
+      /Promise\.all\(\[\s*refreshReservations\(\),\s*refreshRooms\(\),\s*refreshBilling\(\)\s*\]\)/,
+      'handleManualRefresh must refresh reservations, rooms, and billing'
+    );
+  });
 });
