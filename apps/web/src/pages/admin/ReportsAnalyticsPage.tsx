@@ -29,7 +29,8 @@ import {
 type ExportFormat = 'pdf' | 'csv';
 
 export const ReportsAnalyticsPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const isEn = language === 'en';
   const [loading, setLoading] = useState<boolean>(true);
   const [isOffline, setIsOffline] = useState<boolean>(false);
   const [isExporting, setIsExporting] = useState<boolean>(false);
@@ -166,15 +167,15 @@ export const ReportsAnalyticsPage: React.FC = () => {
         no: i + 1,
         date: dateStr,
         docNo,
-        customer: `ลูกค้าโรงแรม (${r.occupiedRooms} ห้อง)`,
-        description: 'ค่าห้องพักและบริการโรงแรม',
+        customer: isEn ? 'General Hotel Guests' : 'ผู้รับบริการทั่วไป',
+        description: isEn ? 'Accommodation & Services' : 'ค่าบริการห้องพักและบริการที่เกี่ยวข้อง',
         net,
         vat,
         total,
-        paymentMethod: 'โอนเงิน / บัตรเครดิต',
+        paymentMethod: isEn ? 'Transfer / Card' : 'โอนเงิน / บัตรเครดิต',
       };
     });
-  }, [dailyStatsList, startDate, endDate]);
+  }, [dailyStatsList, startDate, endDate, isEn]);
 
   const taxTotals = useMemo(() => {
     let sumNet = 0;
@@ -232,17 +233,26 @@ export const ReportsAnalyticsPage: React.FC = () => {
     try {
       const filename = `keystay_tax_sales_pp30_${startDate}_to_${endDate}.csv`;
       let content = '\uFEFF'; // Prepend UTF-8 BOM so Thai text renders properly in Excel
-      content += '"บริษัท คีย์สเตย์ โฮเต็ล แอนด์ รีสอร์ท จำกัด (KEYSTAY HOTEL & RESORT CO., LTD.)"\n';
-      content += '"รายงานภาษีขาย (Sales Tax Report) — แบบ ภ.พ.30 ตามประมวลรัษฎากร มาตรา 87 (1)"\n';
-      content += `"ประจำงวดภาษี: ${startDate} ถึง ${endDate} | เลขประจำตัวผู้เสียภาษี: 0105569012345 | สำนักงานใหญ่"\n`;
-      content += '"หมายเหตุ: เงินมัดจำกุญแจห้อง (Key Deposit) ได้รับการยกเว้นไม่ต้องนำมารวมคำนวณภาษีมูลค่าเพิ่ม"\n\n';
-      content += 'ลำดับ,วันที่ (Date),เลขที่ใบกำกับภาษี (Tax Invoice),ชื่อผู้รับบริการ/อ้างอิง,รายการสินค้าและบริการ,มูลค่าก่อนภาษี (Net Sales),ภาษีมูลค่าเพิ่ม 7% (VAT),ยอดรวมทั้งสิ้น (Grand Total),ช่องทางชำระเงิน\n';
+      if (isEn) {
+        content += '"KEYSTAY HOTEL & RESORT CO., LTD."\n';
+        content += '"Sales Tax Report — Form ภ.พ.30 pursuant to Section 87 (1) of Revenue Code"\n';
+        content += `"Tax Period: ${startDate} to ${endDate} | Taxpayer ID: 0105569012345 | Head Office"\n`;
+        content += '"Note: Room key deposit is tax-exempt from VAT calculation"\n\n';
+        content += 'No.,Date,Tax Invoice No.,Customer / Service Recipient,Description,Net Amount,VAT 7%,Total Amount,Payment Method\n';
+      } else {
+        content += '"บริษัท คีย์สเตย์ โฮเต็ล แอนด์ รีสอร์ท จำกัด"\n';
+        content += '"รายงานภาษีขาย — แบบ ภ.พ.30 ตามประมวลรัษฎากร มาตรา 87 (1)"\n';
+        content += `"ประจำงวดภาษี: ${startDate} ถึง ${endDate} | เลขประจำตัวผู้เสียภาษี: 0105569012345 | สำนักงานใหญ่"\n`;
+        content += '"หมายเหตุ: เงินมัดจำกุญแจห้องได้รับการยกเว้นไม่ต้องนำมารวมคำนวณภาษีมูลค่าเพิ่ม"\n\n';
+        content += 'ลำดับ,วันที่,เลขที่ใบกำกับภาษี,ชื่อผู้ซื้อสินค้า/บริการ,รายการบริการ,มูลค่าก่อนภาษี,ภาษีมูลค่าเพิ่ม 7%,ยอดรวมสุทธิ,ช่องทางชำระเงิน\n';
+      }
 
       taxRows.forEach((r) => {
         content += `${r.no},"${r.date}","${r.docNo}","${r.customer}","${r.description}",${r.net.toFixed(2)},${r.vat.toFixed(2)},${r.total.toFixed(2)},"${r.paymentMethod}"\n`;
       });
 
-      content += `\n"ยอดรวมทั้งสิ้น (GRAND TOTAL ภ.พ.30)",,,,,"${taxTotals.sumNet.toFixed(2)}","${taxTotals.sumVat.toFixed(2)}","${taxTotals.sumTotal.toFixed(2)}",\n`;
+      const totalLabel = isEn ? 'Grand Total (ภ.พ.30)' : 'ยอดรวมภาษีขายทั้งสิ้น (ภ.พ.30)';
+      content += `\n"${totalLabel}",,,,,"${taxTotals.sumNet.toFixed(2)}","${taxTotals.sumVat.toFixed(2)}","${taxTotals.sumTotal.toFixed(2)}",\n`;
 
       const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
@@ -340,20 +350,33 @@ export const ReportsAnalyticsPage: React.FC = () => {
     }
   };
 
-  // Enterprise Dynamic Pagination for ภ.พ.30 Tax Report:
-  // Page 1 has Letterhead + 4 KPI summary boxes + Sign-off block -> 16 rows.
-  // Subsequent pages have compact running header -> 22 rows each.
+  // Dynamic Pagination for ภ.พ.30 Tax Report:
+  // Page 1: Official Header (~130px) + Table Header (~30px).
+  // Last page: Grand Total row (~35px) + Single Signature Block (~110px) + Footer (~25px).
+  // With 1123px total A4 height, <= 18 rows easily fits on a single page without overflowing.
   const pdfPagesData = useMemo(() => {
     const pages: any[][] = [];
-    if (taxRows.length > 0) {
-      pages.push(taxRows.slice(0, 16));
-      let cursor = 16;
-      while (cursor < taxRows.length) {
-        pages.push(taxRows.slice(cursor, cursor + 22));
-        cursor += 22;
+    if (taxRows.length === 0) {
+      return [[]];
+    }
+    if (taxRows.length <= 18) {
+      return [taxRows];
+    }
+
+    const remaining = [...taxRows];
+    // First page holds up to 24 rows
+    pages.push(remaining.splice(0, 24));
+
+    while (remaining.length > 0) {
+      if (remaining.length <= 18) {
+        pages.push(remaining.splice(0, remaining.length));
+      } else if (remaining.length <= 28) {
+        const half = Math.ceil(remaining.length / 2);
+        pages.push(remaining.splice(0, half));
+        pages.push(remaining.splice(0, remaining.length));
+      } else {
+        pages.push(remaining.splice(0, 26));
       }
-    } else {
-      pages.push([]);
     }
     return pages;
   }, [taxRows]);
@@ -882,17 +905,17 @@ export const ReportsAnalyticsPage: React.FC = () => {
                     <div className="w-full bg-white rounded-lg border border-slate-200 shadow-xs overflow-hidden">
                       <div className="overflow-x-auto max-h-[620px] overflow-y-auto">
                         <table className="w-full text-left border-collapse text-xs">
-                          <thead className="bg-slate-100/90 text-slate-600 font-semibold border-b border-slate-300 sticky top-0 z-10 text-[11px]">
+                          <thead className="bg-slate-100/90 text-slate-700 font-semibold border-b border-slate-300 sticky top-0 z-10 text-[11px]">
                             <tr>
                               <th className="py-2 px-3 border-r border-slate-200 w-12 text-center text-slate-400 font-mono">#</th>
-                              <th className="py-2 px-3 border-r border-slate-200">วันที่ (Date)</th>
-                              <th className="py-2 px-3 border-r border-slate-200">เลขที่ใบกำกับภาษี</th>
-                              <th className="py-2 px-3 border-r border-slate-200">ผู้รับบริการ / อ้างอิง</th>
-                              <th className="py-2 px-3 border-r border-slate-200">รายการบริการ</th>
-                              <th className="py-2 px-3 border-r border-slate-200 text-right">ยอดก่อนภาษี (Net)</th>
-                              <th className="py-2 px-3 border-r border-slate-200 text-right text-orange-600">ภาษี 7% (VAT)</th>
-                              <th className="py-2 px-3 border-r border-slate-200 text-right">ยอดรวมสุทธิ (Total)</th>
-                              <th className="py-2 px-3 text-center">ช่องทางชำระเงิน</th>
+                              <th className="py-2 px-3 border-r border-slate-200">{isEn ? 'Date' : 'วันที่'}</th>
+                              <th className="py-2 px-3 border-r border-slate-200">{isEn ? 'Tax Invoice No.' : 'เลขที่ใบกำกับภาษี'}</th>
+                              <th className="py-2 px-3 border-r border-slate-200">{isEn ? 'Customer / Recipient' : 'ชื่อผู้ซื้อสินค้า/บริการ'}</th>
+                              <th className="py-2 px-3 border-r border-slate-200">{isEn ? 'Description' : 'รายการบริการ'}</th>
+                              <th className="py-2 px-3 border-r border-slate-200 text-right">{isEn ? 'Net Amount' : 'มูลค่าก่อนภาษี'}</th>
+                              <th className="py-2 px-3 border-r border-slate-200 text-right">{isEn ? 'VAT 7%' : 'ภาษีมูลค่าเพิ่ม 7%'}</th>
+                              <th className="py-2 px-3 border-r border-slate-200 text-right">{isEn ? 'Total' : 'ยอดรวมสุทธิ'}</th>
+                              <th className="py-2 px-3 text-center">{isEn ? 'Payment' : 'ช่องทางชำระเงิน'}</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-200 font-mono text-[11px]">
@@ -904,7 +927,7 @@ export const ReportsAnalyticsPage: React.FC = () => {
                                 <td className="py-1.5 px-3 border-r border-slate-200 font-sans text-slate-700">{r.customer}</td>
                                 <td className="py-1.5 px-3 border-r border-slate-200 font-sans text-slate-600">{r.description}</td>
                                 <td className="py-1.5 px-3 border-r border-slate-200 text-right text-slate-900">฿{r.net.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                                <td className="py-1.5 px-3 border-r border-slate-200 text-right text-orange-600 font-semibold">฿{r.vat.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                                <td className="py-1.5 px-3 border-r border-slate-200 text-right text-slate-900 font-semibold">฿{r.vat.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
                                 <td className="py-1.5 px-3 border-r border-slate-200 text-right font-bold text-slate-900">฿{r.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
                                 <td className="py-1.5 px-3 text-center text-[10px] text-slate-500 font-sans">{r.paymentMethod}</td>
                               </tr>
@@ -912,12 +935,12 @@ export const ReportsAnalyticsPage: React.FC = () => {
 
                             <tr className="bg-slate-100 font-bold border-t-2 border-slate-300">
                               <td colSpan={5} className="py-2.5 px-3 text-right font-sans text-slate-900">
-                                ยอดรวมทั้งสิ้น (GRAND TOTAL ภ.พ.30):
+                                {isEn ? 'Grand Total (ภ.พ.30):' : 'ยอดรวมภาษีขายทั้งสิ้น (ภ.พ.30):'}
                               </td>
                               <td className="py-2.5 px-3 text-right text-slate-900">
                                 ฿{taxTotals.sumNet.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                               </td>
-                              <td className="py-2.5 px-3 text-right text-orange-600 font-bold">
+                              <td className="py-2.5 px-3 text-right text-slate-900 font-bold">
                                 ฿{taxTotals.sumVat.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                               </td>
                               <td className="py-2.5 px-3 text-right text-slate-900 font-bold">
@@ -985,73 +1008,63 @@ export const ReportsAnalyticsPage: React.FC = () => {
                                   <div className="flex items-start justify-between">
                                     <div>
                                       <div className="text-base font-black text-slate-900 font-sans tracking-wide">
-                                        บริษัท คีย์สเตย์ โฮเต็ล แอนด์ รีสอร์ท จำกัด (KEYSTAY HOTEL & RESORT CO., LTD.)
+                                        {isEn
+                                          ? 'KEYSTAY HOTEL & RESORT CO., LTD.'
+                                          : 'บริษัท คีย์สเตย์ โฮเต็ล แอนด์ รีสอร์ท จำกัด'}
                                       </div>
-                                      <div className="text-sm font-bold text-[#F97316] font-sans mt-0.5">
-                                        รายงานภาษีขาย (Sales Tax Report) — ตามแบบ ภ.พ.30
+                                      <div className="text-sm font-bold text-slate-900 font-sans mt-0.5">
+                                        {isEn
+                                          ? 'Sales Tax Report — Form ภ.พ.30'
+                                          : 'รายงานภาษีขาย — แบบ ภ.พ.30'}
                                       </div>
                                       <div className="text-[10px] text-slate-600 font-sans mt-0.5">
-                                        ออกตามความในมาตรา 87 (1) แห่งประมวลรัษฎากร
+                                        {isEn
+                                          ? 'Issued pursuant to Section 87 (1) of the Revenue Code'
+                                          : 'ออกตามความในมาตรา 87 (1) แห่งประมวลรัษฎากร'}
                                       </div>
                                     </div>
                                     <div className="text-right">
-                                      <span className="inline-block px-2.5 py-1 bg-emerald-50 text-emerald-800 border border-emerald-300 rounded font-semibold text-[10px]">
-                                        แบบยื่นสรรพากร (ภ.พ.30)
-                                      </span>
-                                      <div className="text-[9px] text-slate-400 font-mono mt-1">
-                                        วันที่ออกเอกสาร: {new Date().toISOString().replace('T', ' ').slice(0, 19)}
+                                      <div className="border border-slate-900 px-3 py-1 font-bold text-[11px] text-slate-900 uppercase tracking-wider inline-block">
+                                        {isEn ? 'Form ภ.พ.30' : 'แบบ ภ.พ.30'}
+                                      </div>
+                                      <div className="text-[9px] text-slate-500 font-mono mt-1">
+                                        {isEn ? 'Date of Issue:' : 'วันที่ออกเอกสาร:'} {new Date().toISOString().replace('T', ' ').slice(0, 10)}
                                       </div>
                                     </div>
                                   </div>
 
                                   <div className="mt-2.5 pt-2 border-t border-slate-200 grid grid-cols-2 text-[10px] text-slate-700 leading-tight">
                                     <div>
-                                      <p><strong>ชื่อสถานประกอบการ:</strong> โรงแรมคีย์สเตย์ (KEYSTAY) | สำนักงานใหญ่</p>
-                                      <p className="mt-0.5"><strong>เลขประจำตัวผู้เสียภาษีอากร:</strong> <span className="font-mono font-bold">0-1055-69012-34-5</span></p>
+                                      <p>
+                                        <strong>{isEn ? 'Establishment:' : 'ชื่อสถานประกอบการ:'}</strong>{' '}
+                                        {isEn ? 'Keystay Hotel | Head Office' : 'โรงแรมคีย์สเตย์ | สำนักงานใหญ่'}
+                                      </p>
+                                      <p className="mt-0.5">
+                                        <strong>{isEn ? 'Taxpayer ID:' : 'เลขประจำตัวผู้เสียภาษีอากร:'}</strong>{' '}
+                                        <span className="font-mono font-bold">0-1055-69012-34-5</span>
+                                      </p>
                                     </div>
                                     <div className="text-right">
-                                      <p><strong>ประจำงวดภาษี:</strong> <span className="font-bold text-slate-900 font-mono">{startDate} ถึง {endDate}</span></p>
-                                      <p className="mt-0.5 text-slate-500">เงินมัดจำกุญแจ (Key Deposit) ได้รับยกเว้นไม่ต้องคำนวณ VAT</p>
+                                      <p>
+                                        <strong>{isEn ? 'Tax Period:' : 'ประจำงวดภาษี:'}</strong>{' '}
+                                        <span className="font-bold text-slate-900 font-mono">{startDate} {isEn ? 'to' : 'ถึง'} {endDate}</span>
+                                      </p>
+                                      <p className="mt-0.5 text-slate-500">
+                                        {isEn ? 'Key Deposit is tax-exempt from VAT' : 'เงินมัดจำกุญแจห้องได้รับการยกเว้นไม่ต้องนำมารวมคำนวณ VAT'}
+                                      </p>
                                     </div>
                                   </div>
                                 </div>
                               ) : (
-                                <div className="flex items-center justify-between border-b border-slate-300 pb-2 mb-3 text-[10px] text-slate-600">
+                                <div className="flex items-center justify-between border-b border-slate-900 pb-2 mb-3 text-[10px] text-slate-700">
                                   <div>
-                                    <span className="font-bold text-slate-900">KEYSTAY HOTEL & RESORT</span> — รายงานภาษีขาย ภ.พ.30 (งวด {startDate} ถึง {endDate})
+                                    <span className="font-bold text-slate-900">
+                                      {isEn ? 'KEYSTAY HOTEL & RESORT' : 'โรงแรมคีย์สเตย์'}
+                                    </span>{' '}
+                                    — {isEn ? 'Sales Tax Report ภ.พ.30' : 'รายงานภาษีขาย แบบ ภ.พ.30'} ({startDate} {isEn ? 'to' : 'ถึง'} {endDate})
                                   </div>
                                   <div className="font-mono font-semibold">
-                                    หน้าที่ {pageNum} / {totalPages}
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* Top 4 KPI Summary Cards (Only on Page 1) */}
-                              {pageNum === 1 && (
-                                <div className="grid grid-cols-4 gap-2 mb-3">
-                                  <div className="border border-slate-200 bg-slate-50 p-2 rounded">
-                                    <div className="text-[9px] font-bold text-slate-500 uppercase">ยอดขายรวมก่อนภาษี (Net)</div>
-                                    <div className="text-xs font-bold font-mono text-slate-900 mt-0.5">
-                                      ฿{taxTotals.sumNet.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </div>
-                                  </div>
-                                  <div className="border border-orange-200 bg-orange-50/60 p-2 rounded">
-                                    <div className="text-[9px] font-bold text-orange-700 uppercase">ภาษีมูลค่าเพิ่ม 7% (VAT)</div>
-                                    <div className="text-xs font-bold font-mono text-[#F97316] mt-0.5">
-                                      ฿{taxTotals.sumVat.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </div>
-                                  </div>
-                                  <div className="border border-slate-200 bg-slate-50 p-2 rounded">
-                                    <div className="text-[9px] font-bold text-slate-500 uppercase">ยอดรวมสุทธิทั้งสิ้น (Total)</div>
-                                    <div className="text-xs font-bold font-mono text-slate-900 mt-0.5">
-                                      ฿{taxTotals.sumTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </div>
-                                  </div>
-                                  <div className="border border-slate-200 bg-slate-50 p-2 rounded">
-                                    <div className="text-[9px] font-bold text-slate-500 uppercase">จำนวนใบกำกับภาษี</div>
-                                    <div className="text-xs font-bold font-mono text-slate-900 mt-0.5">
-                                      {taxTotals.count} ฉบับ
-                                    </div>
+                                    {isEn ? `Page ${pageNum} of ${totalPages}` : `หน้าที่ ${pageNum} จาก ${totalPages}`}
                                   </div>
                                 </div>
                               )}
@@ -1059,44 +1072,44 @@ export const ReportsAnalyticsPage: React.FC = () => {
                               {/* ภ.พ.30 Sales Tax Table */}
                               <table className="w-full border-collapse text-[10px]">
                                 <thead>
-                                  <tr className="bg-slate-100 text-slate-800 uppercase font-semibold border-y border-slate-300">
-                                    <th className="py-1.5 px-2 text-center w-8">ลำดับ</th>
-                                    <th className="py-1.5 px-2 text-left w-20">วันที่</th>
-                                    <th className="py-1.5 px-2 text-left w-28">เลขที่ใบกำกับภาษี</th>
-                                    <th className="py-1.5 px-2 text-left">ชื่อผู้ซื้อสินค้า/บริการ</th>
-                                    <th className="py-1.5 px-2 text-left">รายการบริการ</th>
-                                    <th className="py-1.5 px-2 text-right w-24">มูลค่าสินค้าก่อนภาษี</th>
-                                    <th className="py-1.5 px-2 text-right w-20 text-orange-700">ภาษี 7% (VAT)</th>
-                                    <th className="py-1.5 px-2 text-right w-24">ยอดเงินรวม</th>
+                                  <tr className="bg-slate-100 text-slate-900 font-semibold border-y border-slate-400">
+                                    <th className="py-2 px-2 text-center w-8">{isEn ? 'No.' : 'ลำดับ'}</th>
+                                    <th className="py-2 px-2 text-left w-20">{isEn ? 'Date' : 'วันที่'}</th>
+                                    <th className="py-2 px-2 text-left w-28">{isEn ? 'Tax Invoice No.' : 'เลขที่ใบกำกับภาษี'}</th>
+                                    <th className="py-2 px-2 text-left">{isEn ? 'Customer / Recipient' : 'ชื่อผู้ซื้อสินค้า/บริการ'}</th>
+                                    <th className="py-2 px-2 text-left">{isEn ? 'Description' : 'รายการบริการ'}</th>
+                                    <th className="py-2 px-2 text-right w-24">{isEn ? 'Net Sales' : 'มูลค่าก่อนภาษี'}</th>
+                                    <th className="py-2 px-2 text-right w-20">{isEn ? 'VAT 7%' : 'ภาษีมูลค่าเพิ่ม 7%'}</th>
+                                    <th className="py-2 px-2 text-right w-24">{isEn ? 'Total' : 'ยอดรวมสุทธิ'}</th>
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-200 font-mono text-[9.5px]">
                                   {pageRows.map((r: any) => (
                                     <tr key={r.no} className="hover:bg-slate-50">
-                                      <td className="py-1 px-2 text-center text-slate-400">{r.no}</td>
-                                      <td className="py-1 px-2 font-sans text-slate-900">{r.date}</td>
-                                      <td className="py-1 px-2 font-bold text-slate-800">{r.docNo}</td>
-                                      <td className="py-1 px-2 font-sans text-slate-700 truncate max-w-[120px]">{r.customer}</td>
-                                      <td className="py-1 px-2 font-sans text-slate-600 truncate max-w-[120px]">{r.description}</td>
-                                      <td className="py-1 px-2 text-right text-slate-800 font-medium">฿{r.net.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                      <td className="py-1 px-2 text-right text-[#F97316] font-bold">฿{r.vat.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                      <td className="py-1 px-2 text-right font-bold text-slate-900">฿{r.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                      <td className="py-1.5 px-2 text-center text-slate-500">{r.no}</td>
+                                      <td className="py-1.5 px-2 font-sans text-slate-900">{r.date}</td>
+                                      <td className="py-1.5 px-2 font-bold text-slate-900">{r.docNo}</td>
+                                      <td className="py-1.5 px-2 font-sans text-slate-800 truncate max-w-[120px]">{r.customer}</td>
+                                      <td className="py-1.5 px-2 font-sans text-slate-700 truncate max-w-[120px]">{r.description}</td>
+                                      <td className="py-1.5 px-2 text-right text-slate-900">฿{r.net.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                      <td className="py-1.5 px-2 text-right text-slate-900 font-semibold">฿{r.vat.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                      <td className="py-1.5 px-2 text-right font-bold text-slate-900">฿{r.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                     </tr>
                                   ))}
 
                                   {/* Grand Total Row on Last Page */}
                                   {isLastPage && (
-                                    <tr className="bg-slate-100 font-bold border-t-2 border-b border-slate-400 text-[10px]">
-                                      <td colSpan={5} className="py-2 px-2 text-right font-sans text-slate-900">
-                                        ยอดรวมภาษีขายทั้งสิ้น (GRAND TOTAL ภ.พ.30):
+                                    <tr className="bg-slate-100 font-bold border-t-2 border-b-2 border-slate-900 text-[10px]">
+                                      <td colSpan={5} className="py-2.5 px-2 text-right font-sans text-slate-900">
+                                        {isEn ? 'Grand Total (ภ.พ.30):' : 'ยอดรวมภาษีขายทั้งสิ้น (ภ.พ.30):'}
                                       </td>
-                                      <td className="py-2 px-2 text-right text-slate-900">
+                                      <td className="py-2.5 px-2 text-right text-slate-900">
                                         ฿{taxTotals.sumNet.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                       </td>
-                                      <td className="py-2 px-2 text-right text-[#F97316]">
+                                      <td className="py-2.5 px-2 text-right text-slate-900">
                                         ฿{taxTotals.sumVat.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                       </td>
-                                      <td className="py-2 px-2 text-right text-slate-900">
+                                      <td className="py-2.5 px-2 text-right text-slate-900">
                                         ฿{taxTotals.sumTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                       </td>
                                     </tr>
@@ -1106,22 +1119,24 @@ export const ReportsAnalyticsPage: React.FC = () => {
 
                               {/* Sign-Off Authorization Section on Last Page */}
                               {isLastPage && (
-                                <div className="mt-6 pt-3 border-t border-slate-200">
-                                  <p className="text-[9px] text-slate-500 italic text-center mb-4">
-                                    ขอยืนยันว่ารายการข้างต้นนี้ถูกต้องครบถ้วนตามหลักฐานใบกำกับภาษีที่ได้ออกให้แก่ผู้รับบริการในงวดภาษีนี้จริงทุกประการ
+                                <div className="mt-8 pt-4 border-t border-slate-300">
+                                  <p className="text-[9px] text-slate-600 italic text-center mb-6">
+                                    {isEn
+                                      ? 'I hereby certify that the above statement is true and correct in all respects in accordance with tax invoices issued.'
+                                      : 'ขอยืนยันว่ารายการข้างต้นนี้ถูกต้องครบถ้วนตามหลักฐานใบกำกับภาษีที่ได้ออกให้แก่ผู้รับบริการในงวดภาษีนี้จริงทุกประการ'}
                                   </p>
-                                  <div className="grid grid-cols-2 gap-8 text-[10px] text-slate-700">
-                                    <div className="text-center space-y-1">
-                                      <div className="border-b border-dotted border-slate-400 w-48 mx-auto h-6" />
-                                      <p className="font-semibold text-slate-900">( ................................................................ )</p>
-                                      <p className="text-[9px] text-slate-500">ผู้จัดทำรายงาน / เจ้าหน้าที่บัญชี (Accountant)</p>
-                                      <p className="text-[9px] text-slate-400">วันที่ ......./......./............</p>
-                                    </div>
-                                    <div className="text-center space-y-1">
-                                      <div className="border-b border-dotted border-slate-400 w-48 mx-auto h-6" />
-                                      <p className="font-semibold text-slate-900">( ................................................................ )</p>
-                                      <p className="text-[9px] text-slate-500">ผู้มีอำนาจลงนาม / กรรมการผู้จัดการ (Authorized Signature)</p>
-                                      <p className="text-[9px] text-slate-400">วันที่ ......./......./............</p>
+                                  <div className="flex justify-end pr-6">
+                                    <div className="text-center space-y-1.5 w-64">
+                                      <div className="border-b border-dotted border-slate-500 w-52 mx-auto h-7" />
+                                      <p className="font-semibold text-slate-900 text-xs">
+                                        ( ................................................................ )
+                                      </p>
+                                      <p className="text-[10px] text-slate-800 font-semibold">
+                                        {isEn ? 'Authorized Signature / Owner' : 'ผู้มีอำนาจลงนาม / เจ้าของกิจการ'}
+                                      </p>
+                                      <p className="text-[9px] text-slate-500 font-sans">
+                                        {isEn ? 'Date ......./......./............' : 'วันที่ ......./......./............'}
+                                      </p>
                                     </div>
                                   </div>
                                 </div>
@@ -1129,9 +1144,15 @@ export const ReportsAnalyticsPage: React.FC = () => {
                             </div>
 
                             {/* Page Footer */}
-                            <div className="flex items-center justify-between border-t border-slate-200 pt-2 mt-4 text-[9px] text-slate-400">
-                              <span>รายงานภาษีขายนี้จัดทำขึ้นตามแบบ ภ.พ.30 กรมสรรพากร · โรงแรมคีย์สเตย์</span>
-                              <span className="font-mono">หน้าที่ {pageNum} จาก {totalPages}</span>
+                            <div className="flex items-center justify-between border-t border-slate-300 pt-2 mt-4 text-[9px] text-slate-500">
+                              <span>
+                                {isEn
+                                  ? 'Sales Tax Report prepared under Form ภ.พ.30 Revenue Department · Keystay Hotel'
+                                  : 'รายงานภาษีขายนี้จัดทำขึ้นตามแบบ ภ.พ.30 กรมสรรพากร · โรงแรมคีย์สเตย์'}
+                              </span>
+                              <span className="font-mono">
+                                {isEn ? `Page ${pageNum} of ${totalPages}` : `หน้าที่ ${pageNum} จาก ${totalPages}`}
+                              </span>
                             </div>
                           </div>
                         );
