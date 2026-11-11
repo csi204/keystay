@@ -42,17 +42,17 @@
 - `scripts/seeds/02_room.sql`
 - `apps/web/src/__tests__/GhostRoomElimination.test.ts` (new)
 
-- [ ] **Step 1.1: Write failing test for orphan occupied room reconciliation and prevention**
+- [x] **Step 1.1: Write failing test for orphan occupied room reconciliation and prevention**
   Create `apps/web/src/__tests__/GhostRoomElimination.test.ts` testing:
   - If a room has status `'occupied'` in DB but no active reservation (`checked_in` or `extended`) exists in reservations, `reconcileLiveRooms` automatically reconciles it to `'available'`.
   - Rooms 103, 302, 402 without reservations are displayed as `available` (`ว่างพร้อมใช้`).
   - Rooms with real checked-in reservations remain `occupied`.
   - Prevention: Verify that any attempt to manually assign `occupied` status in `services/room-inventory` requires a verified reservation context, preventing orphan occupancy creation in the future.
 
-- [ ] **Step 1.2: Run test to confirm failure**
+- [x] **Step 1.2: Run test to confirm failure**
   Run: `node --import tsx --test apps/web/src/__tests__/GhostRoomElimination.test.ts`
 
-- [ ] **Step 1.3: Update `reconcileLiveRooms` in `roomStatusReconciliation.ts`**
+- [x] **Step 1.3: Update `reconcileLiveRooms` in `roomStatusReconciliation.ts`**
   - In `apps/web/src/lib/roomStatusReconciliation.ts`:
     - Strict PMS Invariant: If `room.status === 'occupied'` and `!activeCheckedInByRoomId.has(room.id)`:
       - Automatically auto-heal and set `room.status = 'available' as const`.
@@ -61,10 +61,10 @@
   - In `services/room-inventory/src/routes/rooms.ts`:
     - Add status update validation guard: changing room status to `'occupied'` directly via PUT/PATCH is rejected unless triggered by authenticated webhook or valid reservation ID, ensuring ghost rooms can never be accidentally introduced.
 
-- [ ] **Step 1.4: Update Miniflare D1 SQLite database for rooms 103, 302, 402**
+- [x] **Step 1.4: Update Miniflare D1 SQLite database for rooms 103, 302, 402**
   - Run SQL update on `services/room-inventory/.wrangler/state/v3/d1/...` to set status of `rm-103`, `rm-302`, `rm-402` to `available`.
 
-- [ ] **Step 1.5: Verify test passes & commit**
+- [x] **Step 1.5: Verify test passes & commit**
   Run: `node --import tsx --test apps/web/src/__tests__/GhostRoomElimination.test.ts`
   Git commit: `feat(front-desk): eliminate ghost occupied rooms and enforce PMS integrity`
 
@@ -77,27 +77,27 @@
 - `services/room-inventory/src/routes/rooms.ts`
 - `apps/web/src/__tests__/RoomNotesAndLocalization.test.ts` (new)
 
-- [ ] **Step 2.1: Write failing test for status.extended and editable notes**
+- [x] **Step 2.1: Write failing test for status.extended and editable notes**
   Create `apps/web/src/__tests__/RoomNotesAndLocalization.test.ts` verifying:
   - `status.extended` localized string exists in `th.ts` ('ขยายเวลาพัก') and `en.ts` ('Extended').
   - `RoomDetailsModal` renders an edit button (pencil icon) for room notes.
   - Editing notes allows typing and saving, updating room notes state and triggering toast.
 
-- [ ] **Step 2.2: Run test to confirm failure**
+- [x] **Step 2.2: Run test to confirm failure**
   Run: `node --import tsx --test apps/web/src/__tests__/RoomNotesAndLocalization.test.ts`
 
-- [ ] **Step 2.3: Add `status.extended` to i18n dictionaries**
+- [x] **Step 2.3: Add `status.extended` to i18n dictionaries**
   - In `apps/web/src/locales/th.ts`: add `'status.extended': 'ขยายเวลาพัก'`.
   - In `apps/web/src/locales/en.ts`: add `'status.extended': 'Extended'`.
 
-- [ ] **Step 2.4: Implement inline editable room notes in `RoomDetailsModal.tsx`**
+- [x] **Step 2.4: Implement inline editable room notes in `RoomDetailsModal.tsx`**
   - Add `isEditingNotes`, `editedNotes`, `isSavingNotes` states.
   - When clicking edit button (Pencil icon): toggle into edit mode with textarea, "บันทึก" and "ยกเลิก" buttons.
   - On save: call `PATCH /api/rooms/:id` (or `PUT /api/rooms/:id`) updating `notes`.
   - On success: update local `room.notes`, show success toast, exit edit mode.
   - Ensure backend `services/room-inventory/src/routes/rooms.ts` supports updating `notes`.
 
-- [ ] **Step 2.5: Verify test passes & commit**
+- [x] **Step 2.5: Verify test passes & commit**
   Run: `node --import tsx --test apps/web/src/__tests__/RoomNotesAndLocalization.test.ts`
   Git commit: `feat(front-desk): add status.extended localization and editable room notes`
 
@@ -148,17 +148,17 @@
 - `apps/web/src/pages/front-desk/DailyOperationsPage.tsx`
 - `apps/web/src/__tests__/RoomAvailabilityFilter.test.ts` (new)
 
-- [ ] **Step 4.1: Write failing test for date-range room availability**
+- [x] **Step 4.1: Write failing test for date-range room availability**
   Create `apps/web/src/__tests__/RoomAvailabilityFilter.test.ts` verifying:
   - `getAvailableRoomsForDates(rooms, reservations, checkIn, checkOut)` excludes rooms with overlapping active reservations (`confirmed`, `checked_in`, `extended`).
   - Excludes rooms in `maintenance` or `out_of_order`.
   - Excludes same-day walk-in for rooms currently `cleaning`.
   - Returns only genuinely available rooms.
 
-- [ ] **Step 4.2: Run test to confirm failure**
+- [x] **Step 4.2: Run test to confirm failure**
   Run: `node --import tsx --test apps/web/src/__tests__/RoomAvailabilityFilter.test.ts`
 
-- [ ] **Step 4.3: Create `apps/web/src/lib/roomAvailability.ts`**
+- [x] **Step 4.3: Create `apps/web/src/lib/roomAvailability.ts`**
   - Implement `getAvailableRoomsForDates`:
     ```typescript
     export function getAvailableRoomsForDates(
@@ -172,12 +172,12 @@
     - Checks overlap: `r.checkInDate < checkOutDate && r.checkOutDate > checkInDate`.
     - Filters out booked/occupied rooms.
 
-- [ ] **Step 4.4: Integrate into `WalkInModal.tsx`, `NewBookingModal.tsx`, and `DailyOperationsPage.tsx`**
+- [x] **Step 4.4: Integrate into `WalkInModal.tsx`, `NewBookingModal.tsx`, and `DailyOperationsPage.tsx`**
   - Dynamic room options: as the user changes checkInDate or checkOutDate, the room selection dropdown re-evaluates `availableRoomsForDates`.
   - If the currently selected room is not available for new dates, automatically select the first available room or prompt user.
   - If 0 rooms are available: display clear notice `<p className="text-amber-600 text-xs mt-1">ไม่มีห้องว่างในช่วงวันที่เลือก</p>` and disable confirmation.
 
-- [ ] **Step 4.5: Verify test passes & commit**
+- [x] **Step 4.5: Verify test passes & commit**
   Run: `node --import tsx --test apps/web/src/__tests__/RoomAvailabilityFilter.test.ts`
   Git commit: `feat(front-desk): implement smart date-range room availability filtering`
 
@@ -192,7 +192,7 @@
 - `apps/web/src/pages/front-desk/RoomMatrixPage.tsx`
 - `apps/web/src/__tests__/CashierHubMasterDetail.test.ts` (new)
 
-- [ ] **Step 5.1: Write failing test for Cashier Hub & pending active folio**
+- [x] **Step 5.1: Write failing test for Cashier Hub & pending active folio**
   Create `apps/web/src/__tests__/CashierHubMasterDetail.test.ts` verifying:
   - `FrontDeskLayout` contains primary navigation item for "แคชเชียร์และบิล" (`/front-desk/billing`).
   - New active folio created for an in-house room starts in status `'pending'` (`รอชำระ`), not `'paid'`.
@@ -200,21 +200,21 @@
   - Cashier page features Master-Detail layout with searchable bills list on the left and folio details on the right.
   - Auto-refresh badge is unified with pulse indicator.
 
-- [ ] **Step 5.2: Run test to confirm failure**
+- [x] **Step 5.2: Run test to confirm failure**
   Run: `node --import tsx --test apps/web/src/__tests__/CashierHubMasterDetail.test.ts`
 
-- [ ] **Step 5.3: Add Cashier & Folios to primary sidebar navigation**
+- [x] **Step 5.3: Add Cashier & Folios to primary sidebar navigation**
   - In `FrontDeskLayout.tsx`:
     - Add item: `{ title: t('nav.billing') || 'แคชเชียร์และบิล', path: '/front-desk/billing', key: 'billing', icon: ReceiptText }`.
     - Ensure active state highlights properly.
 
-- [ ] **Step 5.4: Ensure newly created active folios start with status `pending`**
+- [x] **Step 5.4: Ensure newly created active folios start with status `pending`**
   - In `services/billing/src/routes/bills.ts`:
     - In `POST /bills`: when creating a bill with 0 items, set `status = 'pending'`, ensuring it is never auto-closed as paid.
   - In `RoomMatrixPage.tsx`:
     - When navigating to `/front-desk/billing`, pass exact guest name: `guestName: roomRes?.guestName || roomGuests[room.id]`.
 
-- [ ] **Step 5.5: Redesign `CashierFolioPage.tsx` to Swiss Master-Detail Layout**
+- [x] **Step 5.5: Redesign `CashierFolioPage.tsx` to Swiss Master-Detail Layout**
   - Left Panel (Master):
     - Search input for room number, guest name, bill number.
     - Filter tabs: `ทั้งหมด`, `เปิดบิลอยู่ / กำลังพัก (Pending)`, `ชำระแล้ว (Paid)`.
@@ -224,11 +224,11 @@
   - Top header:
     - Replace manual refresh button with `[Pulse dot] อัปเดตอัตโนมัติ: HH:mm:ss`.
 
-- [ ] **Step 5.6: Streamline Daily Operations "รอเช็คเอาท์ & คิดเงิน"**
+- [x] **Step 5.6: Streamline Daily Operations "รอเช็คเอาท์ & คิดเงิน"**
   - In `DailyOperationsPage.tsx`:
     - In departures table actions: add "เปิดหน้าแคชเชียร์ Folio" button alongside "เช็คเอาท์ด่วน".
 
-- [ ] **Step 5.7: Verify test passes & commit**
+- [x] **Step 5.7: Verify test passes & commit**
   Run: `node --import tsx --test apps/web/src/__tests__/CashierHubMasterDetail.test.ts`
   Git commit: `feat(front-desk): build integrated master-detail cashier hub and pending active folios`
 
@@ -239,16 +239,16 @@
 - `scripts/verify-frontdesk-visuals.mjs`
 - Screenshots in `preview-responsive/`
 
-- [ ] **Step 6.1: Run backend Mocha test suite**
+- [x] **Step 6.1: Run backend Mocha test suite**
   Run: `pnpm test` (verify all 163 backend tests pass).
 
-- [ ] **Step 6.2: Run frontend web test suite**
+- [x] **Step 6.2: Run frontend web test suite**
   Run: `pnpm test:web` (verify all 255+ web tests pass).
 
-- [ ] **Step 6.3: Run monorepo typecheck**
+- [x] **Step 6.3: Run monorepo typecheck**
   Run: `pnpm typecheck` (verify all 11 packages pass with 0 errors).
 
-- [ ] **Step 6.4: Execute Playwright Visual Verification script**
+- [x] **Step 6.4: Execute Playwright Visual Verification script**
   Update and run `scripts/verify-frontdesk-visuals.mjs`.
   Capture and verify:
   - `01-room-matrix-no-ghost-rooms.png`: Rooms 103, 302, 402 shown as `ว่างพร้อมใช้` (no ghost occupied rooms).
@@ -256,6 +256,6 @@
   - `03-portal-datepicker-no-clip.png`: Portal DatePicker floating cleanly above modal without clipping.
   - `04-room-notes-inline-edit.png`: Editable room notes in RoomDetailsModal.
 
-- [ ] **Step 6.5: Commit final verification artifacts**
+- [x] **Step 6.5: Commit final verification artifacts**
   Git commit: `chore(test): verify cashier hub, ghost room elimination, and portal datepicker`
 
