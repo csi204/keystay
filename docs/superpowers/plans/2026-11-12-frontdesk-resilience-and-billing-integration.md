@@ -114,16 +114,16 @@
 - `apps/web/src/App.tsx`
 - `apps/web/src/__tests__/ToastSystem.test.ts` (new)
 
-- [ ] **Step 3.1: Write failing test for Toast System**
+- [x] **Step 3.1: Write failing test for Toast System**
   Create `apps/web/src/__tests__/ToastSystem.test.ts` testing:
   - `useToast()` provides `showSuccess`, `showError`, `showWarning`, `showInfo`.
   - Toast displays title, description, and correct Lucide icon.
   - Auto-dismisses after duration.
 
-- [ ] **Step 3.2: Run test to confirm failure**
+- [x] **Step 3.2: Run test to confirm failure**
   Run: `pnpm --filter @keystay/web test apps/web/src/__tests__/ToastSystem.test.ts`
 
-- [ ] **Step 3.3: Implement `ToastContext.tsx` and `ToastContainer.tsx`**
+- [x] **Step 3.3: Implement `ToastContext.tsx` and `ToastContainer.tsx`**
   - Modern Swiss design styling (fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none).
   - Cards: `pointer-events-auto bg-white/95 backdrop-blur-sm border shadow-lg rounded-xl p-3.5 min-w-[320px] max-w-md animate-in slide-in-from-top-2 duration-200`.
   - Types:
@@ -133,7 +133,7 @@
     - Info: `sky-500` icon `Info`, border `sky-200/80`
   - Wrap `App.tsx` with `<ToastProvider>`.
 
-- [ ] **Step 3.4: Verify test passes & commit**
+- [x] **Step 3.4: Verify test passes & commit**
   Run: `pnpm --filter @keystay/web test apps/web/src/__tests__/ToastSystem.test.ts`
   Git commit: `feat(common): implement global Swiss toast notification system`
 
