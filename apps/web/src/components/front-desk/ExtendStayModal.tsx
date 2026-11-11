@@ -142,8 +142,12 @@ export const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
             t('extend.successTitle') || (locale === 'th' ? 'ขยายเวลาเข้าพักสำเร็จ' : 'Stay Extended'),
             t('extend.successDesc') || (locale === 'th' ? `ขยายเวลาเข้าพักถึง ${newCheckOutDate} แล้ว` : `Extended stay until ${newCheckOutDate}`)
           );
-          const updatedRes: ExtendedReservation = (res.data as ExtendedReservation) || {
+          const updatedRes: ExtendedReservation = {
             ...reservation,
+            ...((res.data as ExtendedReservation) || {}),
+            guest: (res.data as any)?.guest || reservation.guest,
+            guestName: (res.data as any)?.guestName || reservation.guestName,
+            roomNumber: (res.data as any)?.roomNumber || reservation.roomNumber,
             checkOutDate: newCheckOutDate,
             totalNights: String(Number(reservation.totalNights || 1) + extraNights),
             status: 'extended',
@@ -167,8 +171,12 @@ export const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
             t('extend.successTitle') || (locale === 'th' ? 'ขยายเวลาเข้าพักสำเร็จ' : 'Stay Extended'),
             t('extend.successDesc') || (locale === 'th' ? `ขยายเวลาเข้าพักถึง ${newCheckOutDate} แล้ว` : `Extended stay until ${newCheckOutDate}`)
           );
-          const updatedRes: ExtendedReservation = (res.data as ExtendedReservation) || {
+          const updatedRes: ExtendedReservation = {
             ...reservation,
+            ...((res.data as ExtendedReservation) || {}),
+            guest: (res.data as any)?.guest || reservation.guest,
+            guestName: (res.data as any)?.guestName || reservation.guestName,
+            roomNumber: (res.data as any)?.roomNumber || reservation.roomNumber,
             checkOutDate: newCheckOutDate,
             totalNights: String(Number(reservation.totalNights || 1) + extraNights),
             status: 'extended',

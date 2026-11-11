@@ -203,9 +203,14 @@ export const RoomMatrixPage: React.FC = () => {
   };
 
   const handleModalAction = (
-    action: 'checkin' | 'checkout' | 'charge' | 'walkin' | 'clean' | 'extend' | string,
+    action: 'checkin' | 'checkout' | 'charge' | 'walkin' | 'clean' | 'extend' | 'refresh' | string,
     room: Room
   ) => {
+    if (action === 'refresh') {
+      refreshReservations();
+      refreshRooms();
+      return;
+    }
     if (action !== 'extend') {
       setIsModalOpen(false);
     }

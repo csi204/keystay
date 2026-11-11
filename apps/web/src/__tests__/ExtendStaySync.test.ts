@@ -21,6 +21,10 @@ describe('Task 4: Extend Stay State Synchronization & DatePicker Smart Bounds', 
     rootDir,
     'apps/web/src/components/front-desk/RoomDetailsModal.tsx'
   );
+  const roomMatrixPagePath = path.resolve(
+    rootDir,
+    'apps/web/src/pages/front-desk/RoomMatrixPage.tsx'
+  );
   const customDatePickerPath = path.resolve(
     rootDir,
     'apps/web/src/components/common/CustomDatePicker.tsx'
@@ -33,6 +37,7 @@ describe('Task 4: Extend Stay State Synchronization & DatePicker Smart Bounds', 
   it('verifies all target files exist', () => {
     assert.ok(fs.existsSync(extendStayModalPath), 'ExtendStayModal.tsx should exist');
     assert.ok(fs.existsSync(roomDetailsModalPath), 'RoomDetailsModal.tsx should exist');
+    assert.ok(fs.existsSync(roomMatrixPagePath), 'RoomMatrixPage.tsx should exist');
     assert.ok(fs.existsSync(customDatePickerPath), 'CustomDatePicker.tsx should exist');
     assert.ok(fs.existsSync(reservationsRoutePath), 'reservations.ts should exist');
   });
@@ -54,7 +59,7 @@ describe('Task 4: Extend Stay State Synchronization & DatePicker Smart Bounds', 
     assert.strictEqual(computePlacement(null, 800, 320), 'bottom');
   });
 
-  it('ExtendStayModal wires useToast and calls toast.showSuccess and onSuccess(updatedRes)', () => {
+  it('ExtendStayModal wires useToast and calls toast.showSuccess and onSuccess(updatedRes), preserving guest metadata', () => {
     const code = fs.readFileSync(extendStayModalPath, 'utf-8');
 
     // Must import useToast from ToastContext
@@ -79,6 +84,23 @@ describe('Task 4: Extend Stay State Synchronization & DatePicker Smart Bounds', 
       code,
       /onSuccess\?\.\s*\(\s*(?:res\.data|updatedRes)/,
       'ExtendStayModal must call onSuccess with updated reservation data'
+    );
+
+    // Must preserve guest, guestName, and roomNumber in updatedRes
+    assert.match(
+      code,
+      /guest:\s*\(res\.data as any\)\?\.guest\s*\|\|\s*reservation\.guest/,
+      'ExtendStayModal must preserve guest object in updatedRes'
+    );
+    assert.match(
+      code,
+      /guestName:\s*\(res\.data as any\)\?\.guestName\s*\|\|\s*reservation\.guestName/,
+      'ExtendStayModal must preserve guestName in updatedRes'
+    );
+    assert.match(
+      code,
+      /roomNumber:\s*\(res\.data as any\)\?\.roomNumber\s*\|\|\s*reservation\.roomNumber/,
+      'ExtendStayModal must preserve roomNumber in updatedRes'
     );
   });
 
@@ -111,6 +133,17 @@ describe('Task 4: Extend Stay State Synchronization & DatePicker Smart Bounds', 
       code,
       /checkOutDate/,
       'RoomDetailsModal must render checkOutDate from currentReservation'
+    );
+  });
+
+  it('RoomMatrixPage handleModalAction("refresh", room) calls refreshReservations() and refreshRooms() without closing isModalOpen', () => {
+    const code = fs.readFileSync(roomMatrixPagePath, 'utf-8');
+
+    // Must handle 'refresh' action
+    assert.match(
+      code,
+      /if\s*\(\s*action\s*===\s*['"]refresh['"]\s*\)\s*\{[\s\S]*?refreshReservations\(\);[\s\S]*?refreshRooms\(\);[\s\S]*?return;[\s\S]*?\}/,
+      'handleModalAction must call refreshReservations() and refreshRooms() on action === "refresh" and return before closing modal'
     );
   });
 
