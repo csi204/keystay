@@ -310,6 +310,7 @@ export const th: Record<string, string> = {
   'checkout.paymentMethod': 'วิธีชำระเงิน',
   'checkout.settleAndCheckOut': 'ชำระเงินและเช็คเอาท์',
   'checkout.settleSuccess': 'บันทึกการชำระเงินและเช็คเอาท์สำเร็จ',
+  'checkout.settleSuccessDesc': 'ห้อง {room} ({guest}) ทำการเช็คเอาท์และปิดยอดบิลเรียบร้อยแล้ว',
   'checkout.printReceiptAbb': 'พิมพ์ใบเสร็จ/ใบกำกับภาษีอย่างย่อ',
   'checkout.reprintReceipt': 'พิมพ์ใบเสร็จซ้ำ',
   'checkout.closeSettled': 'เสร็จสิ้น',

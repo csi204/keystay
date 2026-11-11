@@ -318,6 +318,47 @@ describe('Billing Service (Dear - @allmusgus)', () => {
       expect(json.data.bill.status).to.equal('paid');
     });
 
+    it('SUCCESS: zero-due settlement (deposit covers total or netPayable is 0) marks bill as paid without error', async () => {
+      const createRes = await app.request(
+        '/bills',
+        {
+          method: 'POST',
+          headers: HEADERS,
+          body: JSON.stringify({
+            reservationId: 'res-zero-due-test',
+            guestName: 'Zero Due Guest',
+            roomNumber: '109',
+            subtotal: 1000,
+            taxRate: 0,
+            serviceChargeRate: 0,
+            depositDeducted: 1000,
+          }),
+        },
+        env
+      );
+      const createJson = await createRes.json();
+      const testBillId = createJson.data.id;
+
+      const payRes = await app.request(
+        `/bills/${testBillId}/pay`,
+        {
+          method: 'POST',
+          headers: HEADERS,
+          body: JSON.stringify({
+            paymentMethod: 'cash',
+            amount: 0,
+          }),
+        },
+        env
+      );
+
+      expect(payRes.status).to.equal(200);
+      const payJson = await payRes.json();
+      expect(payJson.success).to.be.true;
+      expect(payJson.data.bill.status).to.equal('paid');
+      expect(Number(payJson.data.bill.amountDue)).to.equal(0);
+    });
+
     it('BAD: returns 400 when payment amount is negative or 0', async () => {
       const res = await app.request(
         '/bills/bill-003/pay',

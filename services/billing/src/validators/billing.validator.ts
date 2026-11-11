@@ -39,7 +39,7 @@ export const addBillItemSchema = z.object({
 export const payBillSchema = z.object({
   paymentMethodId: z.string().optional(),
   paymentMethod: z.string().optional(),
-  amount: z.coerce.number().min(0.01, 'Payment amount must be greater than 0').optional(),
+  amount: z.coerce.number().min(0, 'Payment amount must be non-negative').optional(),
   referenceNumber: z.string().optional(),
   depositDeducted: z.coerce.number().min(0).optional(),
 });

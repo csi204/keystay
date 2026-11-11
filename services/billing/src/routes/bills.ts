@@ -522,21 +522,54 @@ bills.post('/:id/pay', async (c) => {
     }
 
     if (bill.status === 'paid') {
-      return c.json({ success: false, error: { code: 'ALREADY_PAID', message: 'Bill is already paid in full' } }, 400);
+      return c.json({
+        success: true,
+        message: 'Bill is already paid in full',
+        data: {
+          bill: mapBill(bill),
+          receiptNumber: `REC-${bill.bill_number.replace('BILL-', '')}`,
+        },
+      });
     }
     if (bill.status === 'void' || bill.status === 'refunded') {
       return c.json({ success: false, error: { code: 'INVALID_STATUS', message: `Cannot pay bill in status '${bill.status}'` } }, 400);
     }
 
-    // 1. Resolve Payment Method
+    // 1. Resolve Payment Method (case-insensitive & alias-aware)
+    const rawMethod = (data.paymentMethodId || data.paymentMethod || '').trim();
+    const normalizedMethod = rawMethod.toLowerCase().replace(/[-_]/g, '');
+    let mappedCodeOrId: string | null = null;
+    if (normalizedMethod.includes('cash')) {
+      mappedCodeOrId = 'pm-cash';
+    } else if (normalizedMethod.includes('card') || normalizedMethod.includes('credit')) {
+      mappedCodeOrId = 'pm-card';
+    } else if (normalizedMethod.includes('qr') || normalizedMethod.includes('promptpay')) {
+      mappedCodeOrId = 'pm-qr';
+    } else if (normalizedMethod.includes('transfer') || normalizedMethod.includes('bank')) {
+      mappedCodeOrId = 'pm-transfer';
+    }
+
     let paymentMethodRecord: any = null;
     if (data.paymentMethodId) {
-      paymentMethodRecord = await c.env.DB.prepare('SELECT * FROM payment_methods WHERE id = ?')
-        .bind(data.paymentMethodId)
+      paymentMethodRecord = await c.env.DB.prepare(
+        'SELECT * FROM payment_methods WHERE LOWER(id) = LOWER(?) OR id = ?'
+      )
+        .bind(data.paymentMethodId, data.paymentMethodId)
         .first();
-    } else if (data.paymentMethod) {
-      paymentMethodRecord = await c.env.DB.prepare('SELECT * FROM payment_methods WHERE code = ? OR name LIKE ? OR id = ?')
-        .bind(data.paymentMethod.toUpperCase(), `%${data.paymentMethod}%`, data.paymentMethod)
+    }
+
+    if (!paymentMethodRecord && (data.paymentMethod || mappedCodeOrId)) {
+      const searchTarget = mappedCodeOrId || data.paymentMethod;
+      paymentMethodRecord = await c.env.DB.prepare(
+        'SELECT * FROM payment_methods WHERE LOWER(id) = LOWER(?) OR LOWER(code) = LOWER(?) OR LOWER(name) LIKE LOWER(?)'
+      )
+        .bind(searchTarget, searchTarget, `%${searchTarget}%`)
+        .first();
+    }
+
+    if (!paymentMethodRecord && mappedCodeOrId) {
+      paymentMethodRecord = await c.env.DB.prepare('SELECT * FROM payment_methods WHERE id = ?')
+        .bind(mappedCodeOrId)
         .first();
     }
 
@@ -555,7 +588,8 @@ bills.post('/:id/pay', async (c) => {
     const netPayable = Math.max(0, Number((bill.total_amount - newDeposit - currentPaid).toFixed(2)));
     const paymentAmount = data.amount !== undefined ? Number(data.amount) : netPayable;
 
-    if (paymentAmount <= 0) {
+    // If netPayable is 0 (e.g. deposit covered all or total is 0), settle bill as paid without error
+    if (paymentAmount <= 0 && netPayable > 0) {
       return c.json({ success: false, error: { code: 'INVALID_AMOUNT', message: 'Payment amount must be greater than 0' } }, 400);
     }
 
@@ -564,19 +598,20 @@ bills.post('/:id/pay', async (c) => {
     const paymentId = `pay-${crypto.randomUUID()}`;
     const referenceNumber = data.referenceNumber || `REF-${Date.now().toString().slice(-6)}`;
 
-    const newAmountPaid = Number((currentPaid + paymentAmount).toFixed(2));
+    const effectivePaymentAmount = Math.max(0, paymentAmount);
+    const newAmountPaid = Number((currentPaid + effectivePaymentAmount).toFixed(2));
     const newAmountDue = Math.max(0, Number((bill.total_amount - newDeposit - newAmountPaid).toFixed(2)));
-    const newStatus = newAmountDue === 0 ? 'paid' : 'partially_paid';
+    const newStatus = (newAmountDue === 0 || netPayable === 0) ? 'paid' : 'partially_paid';
 
     // 3. Prepare Batch Statements
     const stmts: any[] = [];
 
-    // Insert payment
+    // Insert payment (even for 0 THB zero-due checkout settlement to maintain audit trail)
     stmts.push(
       c.env.DB.prepare(
         `INSERT INTO payments (id, bill_id, payment_method_id, amount, reference_number, status, paid_at, created_at)
          VALUES (?, ?, ?, ?, ?, 'completed', ?, ?)`
-      ).bind(paymentId, bill.id, paymentMethodId, paymentAmount, referenceNumber, now, now)
+      ).bind(paymentId, bill.id, paymentMethodId, effectivePaymentAmount, referenceNumber, now, now)
     );
 
     // Update bill

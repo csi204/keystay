@@ -3,6 +3,7 @@ import { ExtendedReservation, resolveGuestName } from '@/hooks/useReservations';
 import { RoomType } from '@keystay/types';
 import { DetailedBill, BillItem } from '@/hooks/useBilling';
 import { useI18n } from '@/lib/i18n';
+import { useToast } from '@/context/ToastContext';
 import { localizeRoomType, localizeFolioDescription } from '@/lib/localizeMetadata';
 import { calculateFolioSummary, FolioItemLike } from '@/components/front-desk/FolioSplitScreen';
 import { AddExtraChargeModal } from '@/components/front-desk/AddExtraChargeModal';
@@ -52,6 +53,7 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
   onConfirm,
 }) => {
   const { t, locale, formatCurrency, formatDateRange } = useI18n();
+  const toast = useToast();
 
   const [keyCardReturned, setKeyCardReturned] = useState<boolean>(true);
   const [note, setNote] = useState<string>('');
@@ -322,6 +324,15 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
       };
 
       setSettledBill(finalizedBill);
+
+      // Trigger success toast notification
+      toast.showSuccess(
+        t('checkout.settleSuccess') || (locale === 'th' ? 'บันทึกการชำระเงินและเช็คเอาท์สำเร็จ' : 'Payment settled and checked out successfully'),
+        t('checkout.settleSuccessDesc', { room: reservation.roomNumber || '—', guest: guestDisplayName }) ||
+          (locale === 'th'
+            ? `ห้อง ${reservation.roomNumber || '—'} (${guestDisplayName}) บันทึกการชำระเงินและเช็คเอาท์เรียบร้อยแล้ว`
+            : `Room ${reservation.roomNumber || '—'} (${guestDisplayName}) payment settled and checked out successfully`)
+      );
 
       // Trigger onSuccess and close modal immediately (do not remain stuck in modal)
       onSuccess?.();

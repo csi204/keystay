@@ -310,6 +310,7 @@ export const en: Record<string, string> = {
   'checkout.paymentMethod': 'Payment Method',
   'checkout.settleAndCheckOut': 'Settle Payment & Check-Out',
   'checkout.settleSuccess': 'Payment settled and checked out successfully',
+  'checkout.settleSuccessDesc': 'Room {room} ({guest}) checkout and billing settlement completed.',
   'checkout.printReceiptAbb': 'Print Tax Receipt (ABB)',
   'checkout.reprintReceipt': 'Reprint Receipt',
   'checkout.closeSettled': 'Finish & Close',

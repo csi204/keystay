@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { FrontDeskLayout } from '@/components/front-desk/FrontDeskLayout';
 import { useBilling, DetailedBill } from '@/hooks/useBilling';
@@ -7,6 +7,7 @@ import { AddExtraChargeModal } from '@/components/front-desk/AddExtraChargeModal
 import { RequestAmenitiesModal } from '@/components/front-desk/RequestAmenitiesModal';
 import { ReceiptTaxInvoiceModal } from '@/components/front-desk/ReceiptTaxInvoiceModal';
 import { useI18n } from '@/lib/i18n';
+import { apiFetch } from '@/lib/api';
 import {
   RotateCw,
   Search,
@@ -20,6 +21,7 @@ export const CashierFolioPage: React.FC = () => {
     reservationId?: string;
     roomId?: string;
     roomNumber?: string;
+    guestName?: string;
     billId?: string;
     action?: string;
   } | null;
@@ -45,29 +47,71 @@ export const CashierFolioPage: React.FC = () => {
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const autoCreatedRef = useRef(false);
 
-  // Auto-select bill from navigation state if passed
+  // Auto-select bill from navigation state if passed, or auto-create folio on the fly if none exists
   useEffect(() => {
     if (navState?.reservationId) {
+      const match = bills.find((b) => b.reservationId === navState.reservationId);
+      if (match) {
+        loadBillDetails(match.id);
+        return;
+      }
       loadBillByReservation(navState.reservationId);
     } else if (navState?.billId) {
       loadBillDetails(navState.billId);
-    } else if (navState?.roomId || navState?.roomNumber) {
-      const matchingBill = bills.find(
-        (b) =>
-          (navState.roomId &&
-            (b.roomId === navState.roomId || (b as any).room_id === navState.roomId)) ||
-          (navState.roomNumber && b.roomNumber === navState.roomNumber)
-      );
-      if (matchingBill) {
-        loadBillDetails(matchingBill.id);
-      } else if (bills.length > 0 && !selectedBill) {
-        loadBillDetails(bills[0].id);
-      }
+      return;
+    }
+
+    const matchingBill = bills.find(
+      (b) =>
+        (navState?.roomId &&
+          (b.roomId === navState.roomId || (b as any).room_id === navState.roomId)) ||
+        (navState?.roomNumber && b.roomNumber === navState.roomNumber)
+    );
+
+    if (matchingBill) {
+      loadBillDetails(matchingBill.id);
+    } else if (
+      !autoCreatedRef.current &&
+      !loading &&
+      (navState?.action === 'add-charge' ||
+        navState?.action === 'charge' ||
+        navState?.action === 'minibar' ||
+        Boolean(navState?.roomId || navState?.roomNumber || navState?.reservationId)) &&
+      Boolean(navState?.roomNumber || navState?.roomId || navState?.reservationId)
+    ) {
+      autoCreatedRef.current = true;
+      const roomNum = navState?.roomNumber || '—';
+      const resId = navState?.reservationId || `res-${Date.now()}`;
+      const guestName = (navState as any)?.guestName || `Guest (Room ${roomNum})`;
+
+      apiFetch<any>('/api/bills', {
+        method: 'POST',
+        body: JSON.stringify({
+          reservationId: resId,
+          guestName,
+          roomNumber: roomNum,
+          subtotal: 0,
+          depositDeducted: 0,
+          items: [],
+        }),
+      })
+        .then(async (createRes) => {
+          if (createRes.data) {
+            await refresh();
+            const newBill = await loadBillDetails(createRes.data.id);
+            if (newBill) {
+              setSelectedBill(newBill);
+            }
+            setIsAddChargeOpen(true);
+          }
+        })
+        .catch((e) => console.warn('Auto-create active folio failed:', e));
     } else if (bills.length > 0 && !selectedBill) {
       loadBillDetails(bills[0].id);
     }
-  }, [navState, bills]);
+  }, [navState, bills, loading]);
 
   // Handle direct actions triggered from navigation
   useEffect(() => {

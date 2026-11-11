@@ -182,22 +182,22 @@
 - `services/billing/src/routes/bills.ts`
 - `apps/web/src/__tests__/SeamlessCheckoutBilling.test.ts` (new)
 
-- [ ] **Step 5.1: Write failing test for One-Click Auto-Settle & Auto-Create Folio**
+- [x] **Step 5.1: Write failing test for One-Click Auto-Settle & Auto-Create Folio**
   Create `apps/web/src/__tests__/SeamlessCheckoutBilling.test.ts` verifying:
   - Confirming checkout automatically settles bill in `@keystay/billing` with status `'paid'`.
   - If `netDue === 0`, payment is marked completed without 400 error.
   - Daily Operations billing history tab immediately includes settled bill with emerald `'ชำระแล้ว'` badge.
   - Navigating to Cashier page for an in-house room without an existing bill auto-creates an active folio on the fly.
 
-- [ ] **Step 5.2: Run test to confirm failure**
+- [x] **Step 5.2: Run test to confirm failure**
   Run: `pnpm --filter @keystay/web test apps/web/src/__tests__/SeamlessCheckoutBilling.test.ts`
 
-- [ ] **Step 5.3: Update `POST /bills/:id/pay` in `services/billing` for zero/positive dues**
+- [x] **Step 5.3: Update `POST /bills/:id/pay` in `services/billing` for zero/positive dues**
   - In `services/billing/src/routes/bills.ts`:
     - If `netPayable === 0` (or `paymentAmount === 0` because deposit covers total): update bill status to `'paid'` and return success instead of 400 `INVALID_AMOUNT`.
     - Support paymentMethod case-insensitively (`CARD`, `CASH`, `PROMPTPAY`, `TRANSFER`).
 
-- [ ] **Step 5.4: Implement One-Click Auto-Settle in `CheckOutModal.tsx` & `DailyOperationsPage.tsx`**
+- [x] **Step 5.4: Implement One-Click Auto-Settle in `CheckOutModal.tsx` & `DailyOperationsPage.tsx`**
   - In `CheckOutModal.tsx`:
     - Ensure bill creation and `/pay` run reliably.
     - Close modal immediately upon completion.
@@ -207,11 +207,11 @@
     - `handleCheckoutSuccess`: `Promise.all([refreshReservations(), refreshRooms(), refreshBilling()])`.
     - In billing history table: ensure `isPaid = b.status === 'paid'` displays emerald badge `'ชำระแล้ว'` with full 80mm receipt capability.
 
-- [ ] **Step 5.5: Implement Auto-Create Active Folio in `CashierFolioPage.tsx`**
+- [x] **Step 5.5: Implement Auto-Create Active Folio in `CashierFolioPage.tsx`**
   - When navigating with `action === 'add-charge'` or `roomId` / `reservationId`:
     - If matching bill is not found in `bills`, call `POST /api/bills` to create an active bill for that room/guest, then load and select it immediately.
 
-- [ ] **Step 5.6: Verify test passes & commit**
+- [x] **Step 5.6: Verify test passes & commit**
   Run: `pnpm --filter @keystay/web test apps/web/src/__tests__/SeamlessCheckoutBilling.test.ts`
   Git commit: `feat(front-desk): implement one-click checkout auto-settle and cashier active folio auto-creation`
 
