@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FrontDeskLayout } from '@/components/front-desk/FrontDeskLayout';
-import { RoomMatrixGrid } from '@/components/front-desk/RoomMatrixGrid';
+import { RoomMatrixGrid, getRoomFloor } from '@/components/front-desk/RoomMatrixGrid';
 import { RoomDetailsModal, FastBookingFormData } from '@/components/front-desk/RoomDetailsModal';
 import { NewBookingModal } from '@/components/front-desk/NewBookingModal';
 import { CheckInModal } from '@/components/front-desk/CheckInModal';
@@ -154,7 +154,8 @@ export const RoomMatrixPage: React.FC = () => {
   const floors = useMemo(() => {
     const set = new Set<string>();
     rooms.forEach((r) => {
-      if (r.floor) set.add(r.floor);
+      const fl = getRoomFloor(r);
+      if (fl) set.add(fl);
     });
     return Array.from(set).sort();
   }, [rooms]);

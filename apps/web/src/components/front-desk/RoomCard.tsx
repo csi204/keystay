@@ -3,6 +3,7 @@ import { Room, RoomType, RoomStatus } from '@keystay/types';
 import { useI18n } from '@/lib/i18n';
 import { localizeRoomType, localizeRoomNote, localizeAmenity } from '@/lib/localizeMetadata';
 import { User, BedDouble, Bath, Users, Zap, Wrench, Calendar } from 'lucide-react';
+import { formatDisplayDate } from '@/components/common/CustomDatePicker';
 
 export type RoomWithDetails = Room & {
   roomType?: RoomType;
@@ -97,6 +98,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
   };
 
   const localizedStatus = t(`status.${room.status}`);
+  const resolvedFloor = room.floor || (room as any).floorId?.replace(/^fl-/, '') || room.roomNumber.charAt(0) || '1';
   const displayGuest = guestName || (room as any).guestName || (room as any).currentGuestName;
   const displayCheckout = checkoutDate || (room as any).checkOutDate || (room as any).checkoutDate;
 
@@ -158,7 +160,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
         </p>
         <div className="flex items-center justify-between">
           <span className="text-xs text-slate-600 font-mono tracking-tight">
-            {t('common.floor', { floor: room.floor || '1' })}
+            {t('common.floor', { floor: resolvedFloor })}
           </span>
           {formattedPrice && (
             <span className="text-xs sm:text-sm font-bold font-mono text-slate-900 tracking-tight">
@@ -200,7 +202,28 @@ export const RoomCard: React.FC<RoomCardProps> = ({
             {displayCheckout && (
               <div className="inline-flex items-center gap-1 bg-blue-50/80 border border-blue-200 text-blue-900 text-xs px-2 py-1 rounded-md font-mono">
                 <Calendar className="w-3 h-3 text-blue-600 shrink-0" strokeWidth={1.75} aria-hidden="true" />
-                <span className="leading-none">{locale === 'th' ? `ออก: ${displayCheckout}` : `Out: ${displayCheckout}`}</span>
+                <span className="leading-none">{locale === 'th' ? `ออก: ${formatDisplayDate(displayCheckout, locale)}` : `Out: ${formatDisplayDate(displayCheckout, locale)}`}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Reserved Rooms: Display Guest Name */}
+        {room.status === 'reserved' && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {displayGuest ? (
+              <span
+                className="inline-flex items-center gap-1 text-xs text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/60 max-w-[140px] truncate"
+                title={displayGuest}
+              >
+                <User className="w-3 h-3 text-amber-500 shrink-0" strokeWidth={1.75} />
+                <span className="truncate">{displayGuest}</span>
+              </span>
+            ) : (
+              <div className="text-xs text-slate-600 leading-snug truncate">
+                {room.notes ? localizeRoomNote(room.notes, locale) : (
+                  <span className="text-slate-400 font-mono text-[11px]">—</span>
+                )}
               </div>
             )}
           </div>
@@ -214,9 +237,10 @@ export const RoomCard: React.FC<RoomCardProps> = ({
           </div>
         )}
 
-        {/* Other Statuses: Reserved, Checked-out, Cleaning notes */}
+        {/* Other Statuses: Checked-out, Cleaning notes */}
         {room.status !== 'available' &&
           room.status !== 'occupied' &&
+          room.status !== 'reserved' &&
           room.status !== 'maintenance' &&
           room.status !== 'out_of_order' && (
             <div className="text-xs text-slate-600 leading-snug truncate">

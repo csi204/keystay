@@ -19,6 +19,13 @@ export interface RoomMatrixGridProps {
   searchQuery?: string;
 }
 
+/**
+ * Resolves floor number from r.floor, r.floorId ('fl-1' -> '1'), or r.roomNumber.charAt(0) ('201' -> '2')
+ */
+export function getRoomFloor(r: Room): string {
+  return r.floor || (r as any).floorId?.replace(/^fl-/, '') || r.roomNumber.charAt(0) || '1';
+}
+
 export const RoomMatrixGrid: React.FC<RoomMatrixGridProps> = ({
   rooms,
   roomTypes,
@@ -49,7 +56,8 @@ export const RoomMatrixGrid: React.FC<RoomMatrixGridProps> = ({
   const floors = useMemo(() => {
     const set = new Set<string>();
     rooms.forEach((r) => {
-      if (r.floor) set.add(r.floor);
+      const fl = getRoomFloor(r);
+      if (fl) set.add(fl);
     });
     return Array.from(set).sort();
   }, [rooms]);
@@ -58,7 +66,8 @@ export const RoomMatrixGrid: React.FC<RoomMatrixGridProps> = ({
   const filteredRooms = useMemo(() => {
     return rooms.filter((r) => {
       if (filterStatus !== 'all' && r.status !== filterStatus) return false;
-      if (filterFloor !== 'all' && r.floor !== filterFloor) return false;
+      const roomFloor = getRoomFloor(r);
+      if (filterFloor !== 'all' && roomFloor !== filterFloor) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const matchesNumber = r.roomNumber.toLowerCase().includes(q);
@@ -78,7 +87,7 @@ export const RoomMatrixGrid: React.FC<RoomMatrixGridProps> = ({
     floors.forEach((fl) => map.set(fl, []));
 
     filteredRooms.forEach((r) => {
-      const fl = r.floor || '1';
+      const fl = getRoomFloor(r);
       const list = map.get(fl);
       if (list) {
         list.push(r);

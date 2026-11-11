@@ -46,7 +46,11 @@ roomsRoute.get('/', async (c) => {
       : db.select().from(rooms);
 
   const allRooms = await query.all();
-  return c.json({ success: true, data: allRooms });
+  const roomsWithFloor = allRooms.map((room) => ({
+    ...room,
+    floor: room.floorId ? room.floorId.replace(/^fl-/, '') : room.roomNumber.charAt(0),
+  }));
+  return c.json({ success: true, data: roomsWithFloor });
 });
 
 // API #14: GET /rooms/:id - ข้อมูลห้องพักรายห้อง พร้อม amenities และ room_type
@@ -69,8 +73,9 @@ roomsRoute.get('/:id', async (c) => {
     success: true,
     data: {
       ...room,
+      floor: room.floorId ? room.floorId.replace(/^fl-/, '') : room.roomNumber.charAt(0),
+      floorDetails: floor ?? null,
       roomType: roomType ?? null,
-      floor: floor ?? null,
       amenities,
     },
   });

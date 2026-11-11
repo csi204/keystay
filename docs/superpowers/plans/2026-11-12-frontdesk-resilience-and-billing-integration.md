@@ -77,7 +77,7 @@
 - `services/room-inventory/src/routes/rooms.ts`
 - `apps/web/src/__tests__/RoomMatrixGridFloors.test.ts` (new)
 
-- [ ] **Step 2.1: Write failing test for Floor Grouping & RoomCard Date formatting**
+- [x] **Step 2.1: Write failing test for Floor Grouping & RoomCard Date formatting**
   Create `apps/web/src/__tests__/RoomMatrixGridFloors.test.ts` verifying:
   - Floor is extracted reliably from `r.floor || r.floorId?.replace('fl-', '') || r.roomNumber.charAt(0)`.
   - `floors` contains all distinct floors (`1`, `2`, `3`, `4`, `5`).
@@ -85,10 +85,10 @@
   - `RoomCard.tsx` renders checkout date formatted via `formatDisplayDate(displayCheckout, locale)`.
   - `RoomCard.tsx` displays the correct floor number rather than hardcoded `ชั้น 1`.
 
-- [ ] **Step 2.2: Run test to confirm failure**
+- [x] **Step 2.2: Run test to confirm failure**
   Run: `pnpm --filter @keystay/web test apps/web/src/__tests__/RoomMatrixGridFloors.test.ts`
 
-- [ ] **Step 2.3: Implement floor resolution in `RoomMatrixGrid.tsx` & `RoomCard.tsx`**
+- [x] **Step 2.3: Implement floor resolution in `RoomMatrixGrid.tsx` & `RoomCard.tsx`**
   - In `RoomMatrixGrid.tsx`:
     - Helper `getRoomFloor(r: Room): string`: returns `r.floor || (r as any).floorId?.replace(/^fl-/, '') || r.roomNumber.charAt(0) || '1'`.
     - Populate `floors` from `getRoomFloor(r)`.
@@ -97,11 +97,11 @@
     - Helper `resolvedFloor = room.floor || (room as any).floorId?.replace(/^fl-/, '') || room.roomNumber.charAt(0) || '1'`.
     - Format `displayCheckout`: `<span className="leading-none">{locale === 'th' ? 'ออก: ' + formatDisplayDate(displayCheckout, locale) : 'Out: ' + formatDisplayDate(displayCheckout, locale)}</span>`.
 
-- [ ] **Step 2.4: Ensure `services/room-inventory` returns `floor` alias in GET /rooms**
+- [x] **Step 2.4: Ensure `services/room-inventory` returns `floor` alias in GET /rooms**
   - In `services/room-inventory/src/routes/rooms.ts`:
     - Map `allRooms` to include `floor: r.floorId ? r.floorId.replace(/^fl-/, '') : r.roomNumber.charAt(0)`.
 
-- [ ] **Step 2.5: Verify test passes & commit**
+- [x] **Step 2.5: Verify test passes & commit**
   Run: `pnpm --filter @keystay/web test apps/web/src/__tests__/RoomMatrixGridFloors.test.ts`
   Git commit: `feat(front-desk): restore floor section dividers and format room card checkout dates`
 
