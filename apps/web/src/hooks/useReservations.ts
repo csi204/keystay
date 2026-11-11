@@ -5,6 +5,7 @@ import type { Reservation } from '@keystay/types';
 export interface ExtendedReservation extends Reservation {
   guestName?: string;
   roomNumber?: string;
+  reservationCode?: string;
   guest?: {
     id?: string;
     fullName?: string;
@@ -12,6 +13,12 @@ export interface ExtendedReservation extends Reservation {
     email?: string;
     nationalId?: string;
   } | null;
+  bookingSource?: 'walk_in' | 'phone' | 'facebook';
+  paymentStatus?: 'unpaid' | 'paid';
+  paymentSlipUrl?: string;
+  paymentSlipRef?: string;
+  paymentVerifiedAt?: string;
+  paymentVerifiedBy?: string;
 }
 
 /**

@@ -455,7 +455,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                       <span>{currentReservation.guest?.fullName || (currentReservation as any).guestName || t('drawer.guestInfo')}</span>
                     </span>
                     <span className="font-mono text-[11px] text-slate-500">
-                      {currentReservation.reservationCode}
+                      {currentReservation.reservationCode || currentReservation.bookingNumber}
                     </span>
                   </div>
 
@@ -1070,7 +1070,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
           isOpen={isSlipViewerOpen}
           onClose={() => setIsSlipViewerOpen(false)}
           reservationId={currentReservation.id}
-          reservationCode={currentReservation.reservationCode || ''}
+          reservationCode={currentReservation.reservationCode || currentReservation.bookingNumber || ''}
           guestName={currentReservation.guest?.fullName || (currentReservation as any).guestName || 'Guest'}
           bookingSource={(currentReservation as any).bookingSource || 'walk_in'}
           paymentStatus={(currentReservation as any).paymentStatus || 'unpaid'}
