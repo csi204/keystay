@@ -10,6 +10,7 @@ import { CheckInModal } from '@/components/front-desk/CheckInModal';
 import { CheckOutModal } from '@/components/front-desk/CheckOutModal';
 import { ExtendStayModal } from '@/components/front-desk/ExtendStayModal';
 import { RapidWalkInModal } from '@/components/front-desk/RapidWalkInModal';
+import { getAvailableRoomsForDates } from '@/lib/roomAvailability';
 import { ReceiptTaxInvoiceModal, TaxInvoiceAbbModal } from '@/components/front-desk/ReceiptTaxInvoiceModal';
 import {
   UserPlus,
@@ -26,6 +27,9 @@ export const DailyOperationsPage: React.FC = () => {
   const navigate = useNavigate();
   const { t, locale, formatDate, formatDateRange, formatCurrency } = useI18n();
   const todayStr = new Date().toISOString().split('T')[0];
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
   const {
     reservations,
@@ -66,10 +70,12 @@ export const DailyOperationsPage: React.FC = () => {
     { hour: '2-digit', minute: '2-digit', second: '2-digit' }
   );
 
-  // Available rooms for Walk-in
+  // Available rooms for Walk-in filtered by smart room availability
   const availableRooms = useMemo(() => {
-    return rooms.filter((r) => r.status === 'available');
-  }, [rooms]);
+    return getAvailableRoomsForDates(rooms, reservations, todayStr, tomorrowStr, {
+      isWalkInToday: true,
+    });
+  }, [rooms, reservations, todayStr, tomorrowStr]);
 
   // Today's Arrivals: checkInDate <= todayStr and status is confirmed or pending
   const arrivals = useMemo(() => {
@@ -548,6 +554,8 @@ export const DailyOperationsPage: React.FC = () => {
       <RapidWalkInModal
         isOpen={isWalkInOpen}
         availableRooms={availableRooms}
+        rooms={rooms}
+        reservations={reservations}
         roomTypes={roomTypes}
         onClose={() => setIsWalkInOpen(false)}
         onSubmit={walkInCheckIn}

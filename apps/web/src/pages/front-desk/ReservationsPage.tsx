@@ -264,6 +264,7 @@ export const ReservationsPage: React.FC = () => {
       <NewBookingModal
         isOpen={isNewModalOpen}
         rooms={rooms}
+        reservations={reservations}
         roomTypes={roomTypes}
         onClose={() => setIsNewModalOpen(false)}
         onSubmit={createReservation}

@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Room, RoomType } from '@keystay/types';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Room, RoomType, Reservation } from '@keystay/types';
+import type { ExtendedReservation } from '@/hooks/useReservations';
+import { getAvailableRoomsForDates } from '@/lib/roomAvailability';
 import { useI18n } from '@/lib/i18n';
 import { localizeRoomType, localizeAmenity } from '@/lib/localizeMetadata';
 import { CustomDatePicker, formatDisplayDate } from '../common/CustomDatePicker';
@@ -43,7 +45,10 @@ export interface FastBookingFormData {
 
 export interface WalkInModalProps {
   isOpen: boolean;
-  availableRooms: Room[];
+  availableRooms?: Room[];
+  rooms?: Room[];
+  allRooms?: Room[];
+  reservations?: (Reservation | ExtendedReservation)[];
   roomTypes: RoomType[];
   preselectedRoomId?: string;
   onClose: () => void;
@@ -64,7 +69,10 @@ export type RapidWalkInModalProps = WalkInModalProps;
 
 export const WalkInModal: React.FC<WalkInModalProps> = ({
   isOpen,
-  availableRooms,
+  availableRooms = [],
+  rooms,
+  allRooms,
+  reservations = [],
   roomTypes,
   preselectedRoomId,
   onClose,
@@ -88,6 +96,18 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const poolOfRooms = allRooms || rooms || availableRooms || [];
+
+  const availableRoomsForDates = useMemo(() => {
+    return getAvailableRoomsForDates(
+      allRooms || rooms || availableRooms,
+      reservations,
+      checkInDate,
+      checkOutDate,
+      { isWalkInToday: checkInDate === todayStr }
+    );
+  }, [allRooms, rooms, availableRooms, reservations, checkInDate, checkOutDate, todayStr]);
+
   const handleCheckInDateChange = (date: string) => {
     setCheckInDate(date);
     if (checkOutDate && date > checkOutDate) {
@@ -96,12 +116,17 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
   };
 
   useEffect(() => {
-    if (preselectedRoomId) {
+    if (preselectedRoomId && availableRoomsForDates.some((r) => r.id === preselectedRoomId)) {
       setRoomId(preselectedRoomId);
-    } else if (availableRooms.length > 0 && (!roomId || !availableRooms.some((r) => r.id === roomId))) {
-      setRoomId(availableRooms[0].id);
+    } else if (
+      availableRoomsForDates.length > 0 &&
+      (!roomId || !availableRoomsForDates.some((r) => r.id === roomId))
+    ) {
+      setRoomId(availableRoomsForDates[0].id);
+    } else if (availableRoomsForDates.length === 0) {
+      setRoomId('');
     }
-  }, [preselectedRoomId, availableRooms, roomId]);
+  }, [preselectedRoomId, availableRoomsForDates, roomId]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -114,7 +139,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
   if (!isOpen) return null;
 
   // Selected room details
-  const selectedRoom = availableRooms.find((r) => r.id === roomId) || availableRooms[0];
+  const selectedRoom = availableRoomsForDates.find((r) => r.id === roomId) || availableRoomsForDates[0];
   const selectedRoomType = roomTypes.find((t) => t.id === selectedRoom?.roomTypeId);
 
   // Dynamic night calculation
@@ -251,7 +276,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
             </div>
           )}
 
-          {availableRooms.length === 0 ? (
+          {poolOfRooms.length === 0 ? (
             <div className="p-6 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800 text-center space-y-1">
               <p className="font-semibold">{t('res.noAvailableRooms')}</p>
               <p className="text-xs text-amber-700">ไม่มีห้องว่างพร้อมให้บริการในขณะนี้</p>
@@ -265,24 +290,35 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
                   <label className="block text-sm font-semibold text-slate-800 mb-1">
                     {t('res.selectAvailableRoom')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
                   </label>
-                  <div className="relative">
-                    <select
-                      value={roomId}
-                      onChange={(e) => setRoomId(e.target.value)}
-                      className="w-full text-sm py-2 px-3 pr-9 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-sans shadow-2xs appearance-none"
-                    >
-                      {availableRooms.map((r) => {
-                        const type = roomTypes.find((t) => t.id === r.roomTypeId);
-                        const typeName = localizeRoomType(type?.name, locale) || type?.name || 'Standard';
-                        return (
-                          <option key={r.id} value={r.id}>
-                            {t('common.room')} {r.roomNumber} ({typeName} · {formatCurrency(type?.basePrice || '1200')}{t('common.pricePerNight')})
-                          </option>
-                        );
-                      })}
-                    </select>
-                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={1.75} />
-                  </div>
+                  {availableRoomsForDates.length === 0 ? (
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 space-y-0.5">
+                      <p className="font-semibold">ไม่มีห้องว่างในช่วงวันที่เลือก</p>
+                      <p className="text-amber-700">
+                        {locale === 'th'
+                          ? 'ไม่มีห้องว่างที่พร้อมให้บริการสำหรับช่วงวันที่เลือก กรุณาเปลี่ยนวันที่หรือเลือกห้องอื่น'
+                          : 'No rooms available for the selected dates.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <select
+                        value={roomId}
+                        onChange={(e) => setRoomId(e.target.value)}
+                        className="w-full text-sm py-2 px-3 pr-9 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-sans shadow-2xs appearance-none"
+                      >
+                        {availableRoomsForDates.map((r) => {
+                          const type = roomTypes.find((t) => t.id === r.roomTypeId);
+                          const typeName = localizeRoomType(type?.name, locale) || type?.name || 'Standard';
+                          return (
+                            <option key={r.id} value={r.id}>
+                              {t('common.room')} {r.roomNumber} ({typeName} · {formatCurrency(type?.basePrice || '1200')}{t('common.pricePerNight')})
+                            </option>
+                          );
+                        })}
+                      </select>
+                      <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={1.75} />
+                    </div>
+                  )}
                 </div>
 
                 {/* Selected Room Highlight Card */}
@@ -522,7 +558,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
                   </button>
                   <button
                     type="submit"
-                    disabled={isSubmitting || availableRooms.length === 0}
+                    disabled={isSubmitting || availableRoomsForDates.length === 0 || !roomId}
                     className="inline-flex items-center justify-center px-5 text-sm font-semibold py-2.5 text-white bg-slate-900 hover:bg-slate-800 active:scale-[0.98] rounded-lg shadow-sm transition-all disabled:opacity-50 disabled:pointer-events-none min-h-[44px]"
                   >
                     {isSubmitting ? (

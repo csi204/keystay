@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Room, RoomType } from '@keystay/types';
+import { Room, RoomType, Reservation } from '@keystay/types';
+import type { ExtendedReservation } from '@/hooks/useReservations';
+import { getAvailableRoomsForDates } from '@/lib/roomAvailability';
 import { useI18n } from '@/lib/i18n';
 import { localizeRoomType } from '@/lib/localizeMetadata';
 import { CustomDatePicker } from '../common/CustomDatePicker';
@@ -24,6 +26,7 @@ import {
 export interface NewBookingModalProps {
   isOpen: boolean;
   rooms: Room[];
+  reservations?: (Reservation | ExtendedReservation)[];
   roomTypes: RoomType[];
   preselectedRoomId?: string;
   onClose: () => void;
@@ -48,6 +51,7 @@ export type NewReservationModalProps = NewBookingModalProps;
 export const NewBookingModal: React.FC<NewBookingModalProps> = ({
   isOpen,
   rooms,
+  reservations = [],
   roomTypes,
   preselectedRoomId,
   onClose,
@@ -75,13 +79,28 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const availableRoomsForDates = useMemo(() => {
+    return getAvailableRoomsForDates(
+      rooms,
+      reservations,
+      checkInDate,
+      checkOutDate,
+      { isWalkInToday: checkInDate === todayStr }
+    );
+  }, [rooms, reservations, checkInDate, checkOutDate, todayStr]);
+
   useEffect(() => {
-    if (preselectedRoomId) {
+    if (preselectedRoomId && availableRoomsForDates.some((r) => r.id === preselectedRoomId)) {
       setRoomId(preselectedRoomId);
-    } else if (rooms.length > 0 && !roomId) {
-      setRoomId(rooms[0].id);
+    } else if (
+      availableRoomsForDates.length > 0 &&
+      (!roomId || !availableRoomsForDates.some((r) => r.id === roomId))
+    ) {
+      setRoomId(availableRoomsForDates[0].id);
+    } else if (availableRoomsForDates.length === 0) {
+      setRoomId('');
     }
-  }, [preselectedRoomId, rooms, roomId]);
+  }, [preselectedRoomId, availableRoomsForDates, roomId]);
 
   useEffect(() => {
     if (isOpen) {
@@ -101,7 +120,10 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  const selectedRoom = useMemo(() => rooms.find((r) => r.id === roomId), [rooms, roomId]);
+  const selectedRoom = useMemo(
+    () => availableRoomsForDates.find((r) => r.id === roomId) || rooms.find((r) => r.id === roomId),
+    [availableRoomsForDates, rooms, roomId]
+  );
   const selectedRoomType = useMemo(() => {
     if (!selectedRoom) return undefined;
     return roomTypes.find((t) => t.id === selectedRoom.roomTypeId);
@@ -338,24 +360,35 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
               <label className="block text-sm font-semibold text-slate-800 mb-1">
                 {t('res.selectRoom')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
               </label>
-              <div className="relative">
-                <select
-                  value={roomId}
-                  onChange={(e) => setRoomId(e.target.value)}
-                  className="w-full text-sm py-2 px-3 pr-9 bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-sans appearance-none"
-                >
-                  {rooms.map((r) => {
-                    const type = roomTypes.find((t) => t.id === r.roomTypeId);
-                    const localizedTypeName = localizeRoomType(type?.name, locale) || type?.name || 'Standard';
-                    return (
-                      <option key={r.id} value={r.id}>
-                        {t('common.room')} {r.roomNumber} ({localizedTypeName} · {formatCurrency(type?.basePrice || '1200')}{t('common.pricePerNight')})
-                      </option>
-                    );
-                  })}
-                </select>
-                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={1.75} />
-              </div>
+              {availableRoomsForDates.length === 0 ? (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 space-y-0.5">
+                  <p className="font-semibold">ไม่มีห้องว่างในช่วงวันที่เลือก</p>
+                  <p className="text-amber-700">
+                    {locale === 'th'
+                      ? 'ไม่มีห้องว่างที่พร้อมให้บริการสำหรับช่วงวันที่เลือก กรุณาเปลี่ยนวันที่หรือเลือกช่วงเวลาอื่น'
+                      : 'No rooms available for the selected dates.'}
+                  </p>
+                </div>
+              ) : (
+                <div className="relative">
+                  <select
+                    value={roomId}
+                    onChange={(e) => setRoomId(e.target.value)}
+                    className="w-full text-sm py-2 px-3 pr-9 bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-sans appearance-none"
+                  >
+                    {availableRoomsForDates.map((r) => {
+                      const type = roomTypes.find((t) => t.id === r.roomTypeId);
+                      const localizedTypeName = localizeRoomType(type?.name, locale) || type?.name || 'Standard';
+                      return (
+                        <option key={r.id} value={r.id}>
+                          {t('common.room')} {r.roomNumber} ({localizedTypeName} · {formatCurrency(type?.basePrice || '1200')}{t('common.pricePerNight')})
+                        </option>
+                      );
+                    })}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={1.75} />
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -509,7 +542,7 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || availableRoomsForDates.length === 0 || !roomId}
               className="px-4 text-sm font-semibold py-2.5 text-white bg-slate-900 hover:bg-slate-800 rounded-md shadow-sm transition-colors disabled:opacity-50"
             >
               {isSubmitting ? t('res.submitting') : t('res.confirmReservation')}
