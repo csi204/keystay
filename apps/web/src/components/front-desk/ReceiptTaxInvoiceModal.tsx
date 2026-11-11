@@ -3,6 +3,7 @@ import { DetailedBill } from '../../hooks/useBilling';
 import { useI18n } from '../../lib/i18n';
 import { th } from '../../locales/th';
 import { en } from '../../locales/en';
+import { getAuthUser } from '../../lib/api';
 import { calculateItemTotal, calculateFolioSummary, localizeFolioDescription } from './FolioSplitScreen';
 import { X, Printer } from 'lucide-react';
 
@@ -10,12 +11,14 @@ export interface ReceiptTaxInvoiceModalProps {
   bill: DetailedBill | null;
   isOpen: boolean;
   onClose: () => void;
+  cashierName?: string;
 }
 
 export const ReceiptTaxInvoiceModal: React.FC<ReceiptTaxInvoiceModalProps> = ({
   bill,
   isOpen,
   onClose,
+  cashierName,
 }) => {
   const { locale, formatCurrency, formatDate } = useI18n();
   const [invoiceLocale, setInvoiceLocale] = useState<'th' | 'en'>(locale);
@@ -35,6 +38,20 @@ export const ReceiptTaxInvoiceModal: React.FC<ReceiptTaxInvoiceModalProps> = ({
   }, [isOpen, onClose]);
 
   if (!isOpen || !bill) return null;
+
+  const authUser = getAuthUser();
+  const resolvedCashier = cashierName || (
+    authUser?.fullName ||
+    (authUser?.firstName && authUser?.lastName
+      ? `${authUser.firstName} ${authUser.lastName}`
+      : authUser?.firstName || authUser?.username || 'เดียร์ (ธีรภัทร)')
+  );
+  const cashierRoleTitle = authUser?.role === 'owner'
+    ? 'Hotel Owner'
+    : authUser?.role === 'housekeeping'
+    ? 'Housekeeping'
+    : 'Front Desk';
+  const cashierDisplay = `${resolvedCashier} · ${cashierRoleTitle}`;
 
   const invT = (key: string): string => {
     if (invoiceLocale === 'th') return th[key] || en[key] || key;
@@ -170,7 +187,7 @@ export const ReceiptTaxInvoiceModal: React.FC<ReceiptTaxInvoiceModalProps> = ({
 
             <div className="text-right">
               <span className="text-slate-500 print:text-slate-700 block mb-0.5">{invT('invoice.cashier')}</span>
-              <span className="font-semibold text-slate-900 print:text-black">{invT('invoice.cashierName')}</span>
+              <span className="font-semibold text-slate-900 print:text-black">{cashierDisplay}</span>
               <span className="text-slate-600 print:text-slate-800 font-mono tabular-nums tracking-tight block text-[11px] mt-0.5">
                 {invT('common.status')}: {bill.status === 'paid' ? invT('payment.success') : invT('folio.pending')}
               </span>
@@ -248,6 +265,11 @@ export const ReceiptTaxInvoiceModal: React.FC<ReceiptTaxInvoiceModalProps> = ({
             <div>
               <div className="border-b border-slate-400 print:border-black w-48 mx-auto mb-1.5" />
               <span>{invT('invoice.cashierSignature')}</span>
+              {resolvedCashier && (
+                <div className="text-[11px] text-slate-500 print:text-black font-medium mt-0.5">
+                  ({resolvedCashier})
+                </div>
+              )}
             </div>
           </div>
         </div>
