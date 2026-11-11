@@ -316,7 +316,7 @@ async function runVerification() {
     console.log(`  Left pane room selector visible: ${await leftPaneSelector.count() > 0}`);
 
     // Verify right pane form fields
-    const nameInput = page.locator('input[placeholder="ชื่อ-นามสกุล"]');
+    const nameInput = page.locator('input[placeholder="ชื่อผู้เข้าพัก"], input[placeholder="ชื่อ-นามสกุล"], input[placeholder="Guest Name"]');
     console.log(`  Right pane guest name input visible: ${await nameInput.isVisible()}`);
 
     const phoneInput = page.locator('input[type="tel"]');
