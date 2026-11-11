@@ -10,6 +10,7 @@ import {
 } from '@/lib/localizeMetadata';
 import { ExtendedReservation } from '@/hooks/useReservations';
 import { ExtendStayModal } from './ExtendStayModal';
+import { SlipViewerModal } from './SlipViewerModal';
 import {
   X,
   BedDouble,
@@ -77,6 +78,10 @@ export interface RoomDetailsModalProps {
   currentReservation?: ExtendedReservation | null;
   initialMode?: 'details' | 'booking';
   onSubmitBooking?: (data: FastBookingFormData) => Promise<{ success: boolean; error?: string }>;
+  onVerifySlip?: (
+    reservationId: string,
+    data: { paymentSlipRef?: string; paymentSlipUrl?: string }
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
@@ -88,12 +93,14 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
   currentReservation,
   initialMode = 'details',
   onSubmitBooking,
+  onVerifySlip,
 }) => {
   const { t, formatCurrency, locale } = useI18n();
 
   // Mode: 'details' (single pane max-w-lg) or 'booking' (split pane max-w-4xl)
   const [mode, setMode] = useState<'details' | 'booking'>(initialMode);
   const [isExtendOpen, setIsExtendOpen] = useState(false);
+  const [isSlipViewerOpen, setIsSlipViewerOpen] = useState(false);
 
   // Fast Booking Form State
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
@@ -414,6 +421,61 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                   </h3>
                   <div className="p-3 bg-amber-50/70 rounded-xl border border-amber-200 text-xs leading-relaxed text-amber-950">
                     {localizeRoomNote(room.notes, locale)}
+                  </div>
+                </div>
+              )}
+
+              {/* Active Reservation & Payment Slip Card */}
+              {currentReservation && (
+                <div className="bg-slate-50 rounded-xl border border-slate-200/80 p-3.5 space-y-2.5 text-xs shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-slate-700 flex items-center gap-1.5">
+                      <User className="w-3.5 h-3.5 text-slate-500" />
+                      <span>{currentReservation.guest?.fullName || (currentReservation as any).guestName || t('drawer.guestInfo')}</span>
+                    </span>
+                    <span className="font-mono text-[11px] text-slate-500">
+                      {currentReservation.reservationCode}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 text-[11px]">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-slate-500">{locale === 'th' ? 'ช่องทาง:' : 'Source:'}</span>
+                      <span className="font-medium text-slate-800">
+                        {(currentReservation as any).bookingSource === 'phone'
+                          ? (locale === 'th' ? 'โทรศัพท์' : 'Phone')
+                          : (currentReservation as any).bookingSource === 'facebook'
+                          ? 'Facebook Page'
+                          : 'Walk-in'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-slate-500">{locale === 'th' ? 'สถานะ:' : 'Status:'}</span>
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-semibold ${
+                          (currentReservation as any).paymentStatus === 'paid'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : 'bg-amber-50 text-amber-700 border border-amber-200'
+                        }`}
+                      >
+                        {(currentReservation as any).paymentStatus === 'paid'
+                          ? (locale === 'th' ? 'ชำระแล้ว' : 'Paid')
+                          : (locale === 'th' ? 'รอชำระ' : 'Unpaid')}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Slip Action Button */}
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setIsSlipViewerOpen(true)}
+                      className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 rounded-lg text-xs font-medium transition-colors shadow-2xs"
+                    >
+                      <FileCheck2 className="w-3.5 h-3.5 text-slate-600" />
+                      <span>{locale === 'th' ? 'ดูหลักฐานสลิป / ยืนยันสลิป' : 'View / Verify Payment Slip'}</span>
+                    </button>
                   </div>
                 </div>
               )}
@@ -966,6 +1028,28 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
           roomType={roomType}
           isOpen={isExtendOpen}
           onClose={() => setIsExtendOpen(false)}
+        />
+      )}
+
+      {/* Slip Viewer & Verification Modal */}
+      {currentReservation && (
+        <SlipViewerModal
+          isOpen={isSlipViewerOpen}
+          onClose={() => setIsSlipViewerOpen(false)}
+          reservationId={currentReservation.id}
+          reservationCode={currentReservation.reservationCode || ''}
+          guestName={currentReservation.guest?.fullName || (currentReservation as any).guestName || 'Guest'}
+          bookingSource={(currentReservation as any).bookingSource || 'walk_in'}
+          paymentStatus={(currentReservation as any).paymentStatus || 'unpaid'}
+          paymentSlipUrl={(currentReservation as any).paymentSlipUrl}
+          paymentSlipRef={(currentReservation as any).paymentSlipRef}
+          paymentVerifiedAt={(currentReservation as any).paymentVerifiedAt}
+          onVerify={async (data) => {
+            if (onVerifySlip) {
+              return onVerifySlip(currentReservation.id, data);
+            }
+            return { success: true };
+          }}
         />
       )}
     </div>
