@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Room, RoomType } from '@keystay/types';
 import { useI18n } from '@/lib/i18n';
 import { localizeRoomType, localizeAmenity } from '@/lib/localizeMetadata';
+import { CustomDatePicker, formatDisplayDate } from '../common/CustomDatePicker';
 import { ROOM_STATUS_CONFIG } from './RoomCard';
 import {
   X,
@@ -308,7 +309,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
                   <div className="flex items-center justify-between text-xs text-slate-600">
                     <span>{locale === 'th' ? 'ระยะเวลาพัก' : 'Stay duration'}</span>
                     <span className="font-mono font-medium text-slate-900 tabular-nums">
-                      {todayStr} &rarr; {checkOutDate} ({nights} {locale === 'th' ? 'คืน' : (nights > 1 ? 'nights' : 'night')})
+                      {formatDisplayDate(todayStr, locale)} &rarr; {formatDisplayDate(checkOutDate, locale)} ({nights} {locale === 'th' ? 'คืน' : (nights > 1 ? 'nights' : 'night')})
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-xs text-slate-600">
@@ -387,12 +388,11 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
                         {nights} {locale === 'th' ? 'คืน' : (nights > 1 ? 'nights' : 'night')}
                       </span>
                     </div>
-                    <input
-                      type="date"
+                    <CustomDatePicker
                       required
                       min={tomorrowStr}
                       value={checkOutDate}
-                      onChange={(e) => setCheckOutDate(e.target.value)}
+                      onChange={setCheckOutDate}
                       className="w-full text-sm py-2 px-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono tabular-nums shadow-2xs"
                     />
                   </div>

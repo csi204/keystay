@@ -4,6 +4,7 @@ import { Room, RoomType } from '@keystay/types';
 import { useI18n } from '@/lib/i18n';
 import { localizeRoomType } from '@/lib/localizeMetadata';
 import { apiFetch } from '@/lib/api';
+import { CustomDatePicker } from '../common/CustomDatePicker';
 import {
   X,
   CalendarPlus,
@@ -236,20 +237,16 @@ export const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
             <label className="block text-sm font-medium text-slate-600 mb-1">
               {t('extend.newCheckOut')}
             </label>
-            <div className="relative">
-              <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="date"
-                required
-                min={minDateStr}
-                value={newCheckOutDate}
-                onChange={(e) => {
-                  setNewCheckOutDate(e.target.value);
-                  setError(null);
-                }}
-                className="w-full text-sm py-2 px-3 pl-9 bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono tabular-nums"
-              />
-            </div>
+            <CustomDatePicker
+              required
+              min={minDateStr}
+              value={newCheckOutDate}
+              onChange={(date) => {
+                setNewCheckOutDate(date);
+                setError(null);
+              }}
+              className="w-full text-sm py-2 px-3 bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono tabular-nums"
+            />
             {newCheckOutDate && newCheckOutDate <= reservation.checkOutDate && (
               <p className="text-xs text-red-600 mt-1">
                 {t('extend.errorInvalidDate')}

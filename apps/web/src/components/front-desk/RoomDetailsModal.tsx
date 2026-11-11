@@ -12,6 +12,7 @@ import { ExtendedReservation } from '@/hooks/useReservations';
 import { ExtendStayModal } from './ExtendStayModal';
 import { SlipViewerModal } from './SlipViewerModal';
 import { RequestAmenitiesModal } from './RequestAmenitiesModal';
+import { CustomDatePicker } from '../common/CustomDatePicker';
 import {
   X,
   BedDouble,
@@ -860,12 +861,11 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                     <label className="block text-xs font-medium text-slate-700 mb-1">
                       {t('res.checkInDate')} <span className="text-rose-500">*</span>
                     </label>
-                    <input
-                      type="date"
+                    <CustomDatePicker
                       required
                       value={checkInDate}
-                      onChange={(e) => {
-                        setCheckInDate(e.target.value);
+                      onChange={(date) => {
+                        setCheckInDate(date);
                         if (validationErrors.length > 0) setValidationErrors([]);
                       }}
                       className="w-full h-9 px-3 text-xs font-mono bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors"
@@ -881,12 +881,12 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                         {nightsCount} {locale === 'th' ? 'คืน' : 'night(s)'}
                       </span>
                     </div>
-                    <input
-                      type="date"
+                    <CustomDatePicker
                       required
+                      min={checkInDate}
                       value={checkOutDate}
-                      onChange={(e) => {
-                        setCheckOutDate(e.target.value);
+                      onChange={(date) => {
+                        setCheckOutDate(date);
                         if (validationErrors.length > 0) setValidationErrors([]);
                       }}
                       className="w-full h-9 px-3 text-xs font-mono bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors"

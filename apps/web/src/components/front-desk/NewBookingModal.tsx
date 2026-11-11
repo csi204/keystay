@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Room, RoomType } from '@keystay/types';
 import { useI18n } from '@/lib/i18n';
 import { localizeRoomType } from '@/lib/localizeMetadata';
+import { CustomDatePicker } from '../common/CustomDatePicker';
 import {
   X,
   Calendar,
@@ -358,11 +359,10 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
                 <label className="block text-sm font-semibold text-slate-800 mb-1">
                   {t('res.checkInDate')} *
                 </label>
-                <input
-                  type="date"
+                <CustomDatePicker
                   required
                   value={checkInDate}
-                  onChange={(e) => setCheckInDate(e.target.value)}
+                  onChange={setCheckInDate}
                   className="w-full text-sm py-2 px-3 bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono tabular-nums"
                 />
               </div>
@@ -371,12 +371,11 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
                 <label className="block text-sm font-semibold text-slate-800 mb-1">
                   {t('res.checkOutDate')} *
                 </label>
-                <input
-                  type="date"
+                <CustomDatePicker
                   required
                   min={checkInDate}
                   value={checkOutDate}
-                  onChange={(e) => setCheckOutDate(e.target.value)}
+                  onChange={setCheckOutDate}
                   className="w-full text-sm py-2 px-3 bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono tabular-nums"
                 />
               </div>

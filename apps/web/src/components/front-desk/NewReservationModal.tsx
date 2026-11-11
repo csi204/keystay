@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Room, RoomType } from '@keystay/types';
 import { useI18n } from '@/lib/i18n';
+import { CustomDatePicker } from '../common/CustomDatePicker';
 import { X, Calendar, User, Phone, Mail, DollarSign, BedDouble, AlertCircle } from 'lucide-react';
 
 export interface NewReservationModalProps {
@@ -240,11 +241,10 @@ export const NewReservationModal: React.FC<NewReservationModalProps> = ({
                 <label className="block text-xs font-medium text-slate-700 mb-1">
                   {t('res.checkInDate')} *
                 </label>
-                <input
-                  type="date"
+                <CustomDatePicker
                   required
                   value={checkInDate}
-                  onChange={(e) => setCheckInDate(e.target.value)}
+                  onChange={setCheckInDate}
                   className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono"
                 />
               </div>
@@ -253,12 +253,11 @@ export const NewReservationModal: React.FC<NewReservationModalProps> = ({
                 <label className="block text-xs font-medium text-slate-700 mb-1">
                   {t('res.checkOutDate')} *
                 </label>
-                <input
-                  type="date"
+                <CustomDatePicker
                   required
                   min={checkInDate}
                   value={checkOutDate}
-                  onChange={(e) => setCheckOutDate(e.target.value)}
+                  onChange={setCheckOutDate}
                   className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono"
                 />
               </div>
