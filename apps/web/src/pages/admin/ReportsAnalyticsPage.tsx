@@ -42,7 +42,7 @@ export const ReportsAnalyticsPage: React.FC = () => {
   const [previewLoading, setPreviewLoading] = useState<boolean>(false);
 
   // Date Range Filter for ภ.พ.30 Tax Report
-  const [taxPreset, setTaxPreset] = useState<'current_month' | 'prev_month' | 'last_30' | 'custom'>('current_month');
+  const [taxPreset, setTaxPreset] = useState<'current_month' | 'custom'>('current_month');
   const [startDate, setStartDate] = useState<string>('2026-11-01');
   const [endDate, setEndDate] = useState<string>('2026-11-30');
   const [apiWarning, setApiWarning] = useState<string | null>(null);
@@ -85,17 +85,11 @@ export const ReportsAnalyticsPage: React.FC = () => {
     loadKpiData();
   }, []);
 
-  const handleTaxPresetChange = (preset: 'current_month' | 'prev_month' | 'last_30' | 'custom') => {
+  const handleTaxPresetChange = (preset: 'current_month' | 'custom') => {
     setTaxPreset(preset);
     if (preset === 'current_month') {
       setStartDate('2026-11-01');
       setEndDate('2026-11-30');
-    } else if (preset === 'prev_month') {
-      setStartDate('2026-10-01');
-      setEndDate('2026-10-31');
-    } else if (preset === 'last_30') {
-      setStartDate('2026-10-12');
-      setEndDate('2026-11-11');
     }
   };
 
@@ -759,11 +753,9 @@ export const ReportsAnalyticsPage: React.FC = () => {
                     </label>
 
                     <div className="space-y-2.5">
-                      <div className="grid grid-cols-2 gap-1.5">
+                      <div className="grid grid-cols-2 gap-2">
                         {[
                           { id: 'current_month', label: 'เดือนปัจจุบัน (พ.ย. 2026)' },
-                          { id: 'prev_month', label: 'เดือนที่แล้ว (ต.ค. 2026)' },
-                          { id: 'last_30', label: '30 วันล่าสุด' },
                           { id: 'custom', label: 'กำหนดเอง' },
                         ].map((item) => (
                           <button
