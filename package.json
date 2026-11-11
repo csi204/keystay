@@ -14,6 +14,7 @@
     "lint": "pnpm dlx turbo run lint",
     "typecheck": "pnpm dlx turbo run typecheck",
     "test": "tsx scripts/run-mocha.ts",
+    "test:web": "node --import tsx --test apps/web/src/__tests__/*.test.ts",
     "test:spec": "tsx scripts/run-mocha.ts dynamic-pricing-and-extras",
     "test:ajarn-top": "tsx scripts/run-mocha.ts dynamic-pricing-and-extras",
     "test:reservation": "tsx scripts/run-mocha.ts reservation",

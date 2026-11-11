@@ -33,6 +33,11 @@ import {
   Phone,
   User,
   Check,
+  UserCheck,
+  MessageSquare,
+  UploadCloud,
+  FileCheck2,
+  Trash2,
 } from 'lucide-react';
 
 export type RoomModalAction =
@@ -55,6 +60,10 @@ export interface FastBookingFormData {
   guestsCount: number;
   depositAmount: string;
   paymentMethod: 'cash' | 'transfer' | 'credit_card' | 'qr_promptpay';
+  bookingSource?: 'walk_in' | 'phone' | 'facebook';
+  paymentStatus?: 'unpaid' | 'paid';
+  paymentSlipUrl?: string;
+  paymentSlipRef?: string;
 }
 
 export interface RoomDetailsModalProps {
@@ -103,6 +112,10 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
   const [paymentMethod, setPaymentMethod] = useState<
     'cash' | 'transfer' | 'credit_card' | 'qr_promptpay'
   >('cash');
+  const [bookingSource, setBookingSource] = useState<'walk_in' | 'phone' | 'facebook'>('walk_in');
+  const [paymentSlipRef, setPaymentSlipRef] = useState('');
+  const [paymentSlipUrl, setPaymentSlipUrl] = useState('');
+  const [slipPreview, setSlipPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -126,6 +139,10 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
       setGuestsCount(roomType?.capacity || 2);
       setDepositAmount('500');
       setPaymentMethod('cash');
+      setBookingSource('walk_in');
+      setPaymentSlipRef('');
+      setPaymentSlipUrl('');
+      setSlipPreview(null);
       setValidationErrors([]);
       setSubmitError(null);
     }
@@ -197,6 +214,27 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
     return errors;
   };
 
+  const handleSlipFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setSubmitError(locale === 'th' ? 'กรุณาเลือกไฟล์รูปภาพ (PNG, JPG, WEBP)' : 'Please select an image file');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      setSlipPreview(result);
+      setPaymentSlipUrl(result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeSlip = () => {
+    setSlipPreview(null);
+    setPaymentSlipUrl('');
+  };
+
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError(null);
@@ -210,6 +248,9 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
 
     setIsSubmitting(true);
     try {
+      const isPaid = bookingSource === 'walk_in' || Boolean(slipPreview || paymentSlipRef.trim());
+      const paymentStatus: 'unpaid' | 'paid' = isPaid ? 'paid' : 'unpaid';
+
       if (onSubmitBooking) {
         const result = await onSubmitBooking({
           guestName: guestName.trim(),
@@ -220,6 +261,10 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
           guestsCount,
           depositAmount,
           paymentMethod,
+          bookingSource,
+          paymentStatus,
+          paymentSlipUrl: paymentSlipUrl || undefined,
+          paymentSlipRef: paymentSlipRef.trim() || undefined,
         });
 
         if (!result.success) {
@@ -622,6 +667,55 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                   </div>
                 )}
 
+                {/* Booking Channel Selector */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    {locale === 'th' ? 'ช่องทางการจอง (Booking Source)' : 'Booking Source'}
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { id: 'walk_in', label: locale === 'th' ? 'Walk-in เคาน์เตอร์' : 'Walk-in', icon: UserCheck },
+                      { id: 'phone', label: locale === 'th' ? 'โทรศัพท์เข้ามาจอง' : 'Phone Call', icon: Phone },
+                      { id: 'facebook', label: locale === 'th' ? 'เพจ Facebook' : 'Facebook Page', icon: MessageSquare },
+                    ].map((c) => {
+                      const Icon = c.icon;
+                      const isSelected = bookingSource === c.id;
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => setBookingSource(c.id as any)}
+                          className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg border text-xs font-medium transition-all min-h-[36px] ${
+                            isSelected
+                              ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                              : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          <Icon className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate">{c.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Single Verification Point Rule Notice */}
+                {(bookingSource === 'phone' || bookingSource === 'facebook') && (
+                  <div className="p-2.5 bg-amber-50/90 border border-amber-300 rounded-xl flex items-start gap-2 text-xs text-amber-900 animate-in fade-in duration-150">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                    <div className="space-y-0.5 leading-snug">
+                      <span className="font-semibold block">
+                        {locale === 'th' ? 'นโยบายการยืนยันหลักฐานการชำระเงิน' : 'Single Verification Point Policy'}
+                      </span>
+                      <span className="text-[11px]">
+                        {locale === 'th'
+                          ? 'ลูกค้าต้องส่งสลิปยืนยันเข้าเพจ Facebook ของโรงแรม พนักงานสามารถตรวจสอบแชทเพจและแนบสลิปด้านล่างได้ทันที'
+                          : 'Guests must submit payment slip via official Facebook Page inbox. Staff can attach slip below.'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 {/* Form Fields: Guest Name & Phone */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
@@ -736,6 +830,62 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                       className="w-full h-9 px-3 text-xs font-mono bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors"
                     />
                   </div>
+                </div>
+
+                {/* Payment Slip Attachment (For phone, facebook or transfer) */}
+                <div className="space-y-2 pt-2 border-t border-slate-100">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                    <FileCheck2 className="w-3.5 h-3.5 text-slate-500" />
+                    <span>{locale === 'th' ? 'หลักฐานการโอนเงิน (Payment Slip)' : 'Payment Slip Details'}</span>
+                  </h3>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-700 mb-1">
+                        {locale === 'th' ? 'เลขอ้างอิงธุรกรรมธนาคาร' : 'Bank Reference No.'}
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. BBL-20261111-987654"
+                        value={paymentSlipRef}
+                        onChange={(e) => setPaymentSlipRef(e.target.value)}
+                        className="w-full h-9 px-3 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-slate-700 mb-1">
+                        {locale === 'th' ? 'แนบรูปภาพสลิป' : 'Upload Slip Image'}
+                      </label>
+                      <label className="flex items-center justify-center gap-2 w-full h-9 px-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 border-dashed rounded-lg cursor-pointer transition-colors text-slate-600 text-xs">
+                        <UploadCloud className="w-4 h-4 text-slate-500 shrink-0" />
+                        <span className="truncate">
+                          {slipPreview ? (locale === 'th' ? 'เปลี่ยนรูปสลิป' : 'Change Image') : (locale === 'th' ? 'เลือกรูปสลิป' : 'Choose Slip')}
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleSlipFileChange}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Slip Thumbnail Preview */}
+                  {slipPreview && (
+                    <div className="relative inline-block mt-1.5 border border-slate-200 rounded-lg overflow-hidden bg-slate-50 p-1">
+                      <img src={slipPreview} alt="Slip preview" className="h-16 w-auto object-cover rounded" />
+                      <button
+                        type="button"
+                        onClick={removeSlip}
+                        className="absolute top-1.5 right-1.5 p-1 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors shadow-xs"
+                        title="Remove slip"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Payment Method Selector (4 Methods) */}
