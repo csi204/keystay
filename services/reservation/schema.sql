@@ -38,6 +38,12 @@ CREATE TABLE IF NOT EXISTS reservations (
     deposit_amount REAL NOT NULL DEFAULT 0,
     total_amount REAL NOT NULL,
     special_requests TEXT,
+    booking_source TEXT NOT NULL DEFAULT 'walk_in' CHECK(booking_source IN ('walk_in', 'phone', 'facebook')),
+    payment_status TEXT NOT NULL DEFAULT 'unpaid' CHECK(payment_status IN ('unpaid', 'paid')),
+    payment_slip_url TEXT,
+    payment_slip_ref TEXT,
+    payment_verified_at TEXT,
+    payment_verified_by TEXT,
     created_by TEXT,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
@@ -76,7 +82,26 @@ CREATE INDEX IF NOT EXISTS idx_reservations_code ON reservations(reservation_cod
 CREATE INDEX IF NOT EXISTS idx_reservations_guest ON reservations(guest_id);
 CREATE INDEX IF NOT EXISTS idx_reservations_room ON reservations(room_id);
 CREATE INDEX IF NOT EXISTS idx_reservations_status ON reservations(status);
-CREATE INDEX IF NOT EXISTS idx_reservations_dates ON reservations(check_in_date, check_out_date);
+CREATE TABLE IF NOT EXISTS reservation_amenity_requests (
+    id TEXT PRIMARY KEY,
+    reservation_id TEXT NOT NULL REFERENCES reservations(id) ON DELETE CASCADE,
+    amenity_id TEXT NOT NULL,
+    amenity_name TEXT NOT NULL,
+    quantity INTEGER NOT NULL DEFAULT 1,
+    unit_price REAL NOT NULL DEFAULT 0.0,
+    total_price REAL NOT NULL DEFAULT 0.0,
+    is_chargeable INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'requested' CHECK(status IN ('requested', 'preparing', 'delivered', 'cancelled')),
+    billed_to_folio INTEGER NOT NULL DEFAULT 0,
+    bill_item_id TEXT,
+    notes TEXT,
+    requested_at TEXT NOT NULL,
+    delivered_at TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_amenity_req_res ON reservation_amenity_requests(reservation_id);
+CREATE INDEX IF NOT EXISTS idx_reservations_channel ON reservations(booking_source);
+CREATE INDEX IF NOT EXISTS idx_reservations_payment_status ON reservations(payment_status);
 CREATE INDEX IF NOT EXISTS idx_room_booked_dates_res ON room_booked_dates(reservation_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_guests_phone_unique ON guests(phone) WHERE phone IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_guests_id_card_unique ON guests(id_card_number) WHERE id_card_number IS NOT NULL;
