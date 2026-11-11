@@ -45,6 +45,36 @@ describe('Task 5 — Consolidated Daily Operations & Cashier Settlement Flow', (
     );
   });
 
+  it('verifies standardized typography across DailyOperationsPage tables, sub-tabs, body cells, and status badges', () => {
+    const pageCode = fs.readFileSync(dailyOpsPath, 'utf-8');
+
+    // Table headers must NOT contain font-mono on Thai labels
+    assert.doesNotMatch(
+      pageCode,
+      /<th[^>]*font-mono[^>]*>/,
+      'Table headers must not have font-mono applied to Thai text'
+    );
+
+    // Table headers use text-xs font-semibold text-slate-600 uppercase tracking-wider py-3 px-4 font-sans
+    assert.match(
+      pageCode,
+      /text-xs font-semibold text-slate-600 uppercase tracking-wider py-3 px-4 font-sans/
+    );
+
+    // Sub-tab label text uses font-sans and count badge uses font-mono font-bold tabular-nums
+    assert.match(pageCode, /<span className="font-sans font-semibold">/);
+    assert.match(pageCode, /text-xs font-mono font-bold tabular-nums/);
+
+    // Body cells: Thai text / guest names / room types use font-sans text-sm font-medium text-slate-800
+    assert.match(pageCode, /font-sans text-sm font-medium text-slate-800/);
+
+    // Body cells: Currency amounts use font-mono tabular-nums font-semibold
+    assert.match(pageCode, /font-mono tabular-nums font-semibold/);
+
+    // Status badges use font-sans text-xs font-medium
+    assert.match(pageCode, /font-sans text-xs font-medium/);
+  });
+
   it('verifies Billing History sub-tab renders ledger with search and ABB reprint capability', () => {
     const pageCode = fs.readFileSync(dailyOpsPath, 'utf-8');
 

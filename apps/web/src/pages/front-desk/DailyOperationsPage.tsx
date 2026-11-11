@@ -113,10 +113,10 @@ export const DailyOperationsPage: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight font-sans">
               {t('ops.title')}
             </h1>
-            <p className="text-sm text-slate-600 mt-0.5">
+            <p className="text-sm text-slate-600 mt-0.5 font-sans">
               {t('ops.todayDate', {
                 date: formatDate(todayStr, 'long'),
               })}
@@ -136,7 +136,7 @@ export const DailyOperationsPage: React.FC = () => {
 
             <button
               onClick={() => setIsWalkInOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-md shadow-sm transition-colors min-h-[36px]"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-md shadow-sm transition-colors min-h-[36px] font-sans"
             >
               <UserPlus className="w-4 h-4" aria-hidden="true" />
               <span>{t('ops.walkIn')}</span>
@@ -146,7 +146,7 @@ export const DailyOperationsPage: React.FC = () => {
 
         {/* Status notice */}
         {isOffline && (
-          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2 text-xs text-amber-800">
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2 text-xs text-amber-800 font-sans">
             <WifiOff className="w-4 h-4 text-amber-600 flex-shrink-0" aria-hidden="true" />
             <span>{t('folio.offlineNotice')}</span>
           </div>
@@ -157,19 +157,19 @@ export const DailyOperationsPage: React.FC = () => {
           {/* Sub-tab 1: Check-in / Arrivals Today */}
           <button
             onClick={() => setActiveSubTab('arrivals')}
-            className={`flex items-center gap-2 text-sm font-semibold py-2.5 px-4 rounded-lg transition-colors whitespace-nowrap min-h-[44px] ${
+            className={`flex items-center gap-2 text-sm font-semibold py-2.5 px-4 rounded-lg transition-colors whitespace-nowrap min-h-[44px] font-sans ${
               activeSubTab === 'arrivals'
                 ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs'
                 : 'text-slate-600 hover:bg-slate-100 border border-transparent'
             }`}
           >
             <LogIn className="w-4 h-4 text-emerald-600" aria-hidden="true" />
-            <span>{t('ops.subtabCheckInToday') || t('ops.arrivalsToday')}</span>
+            <span className="font-sans font-semibold">{t('ops.subtabCheckInToday') || t('ops.arrivalsToday')}</span>
             <span
               className={`text-xs font-mono font-bold tabular-nums px-2 py-0.5 rounded-full ${
                 activeSubTab === 'arrivals'
                   ? 'bg-emerald-200/80 text-emerald-900'
-                  : 'bg-slate-100 text-slate-600 font-medium'
+                  : 'bg-slate-100 text-slate-600'
               }`}
             >
               ({arrivals.length})
@@ -179,19 +179,19 @@ export const DailyOperationsPage: React.FC = () => {
           {/* Sub-tab 2: Check-out & Cashier / Departures Today */}
           <button
             onClick={() => setActiveSubTab('departures')}
-            className={`flex items-center gap-2 text-sm font-semibold py-2.5 px-4 rounded-lg transition-colors whitespace-nowrap min-h-[44px] ${
+            className={`flex items-center gap-2 text-sm font-semibold py-2.5 px-4 rounded-lg transition-colors whitespace-nowrap min-h-[44px] font-sans ${
               activeSubTab === 'departures'
                 ? 'bg-blue-50 text-blue-800 border border-blue-200 shadow-2xs'
                 : 'text-slate-600 hover:bg-slate-100 border border-transparent'
             }`}
           >
             <LogOut className="w-4 h-4 text-blue-600" aria-hidden="true" />
-            <span>{t('ops.subtabCheckOutAndCashier') || t('ops.departuresToday')}</span>
+            <span className="font-sans font-semibold">{t('ops.subtabCheckOutAndCashier') || t('ops.departuresToday')}</span>
             <span
               className={`text-xs font-mono font-bold tabular-nums px-2 py-0.5 rounded-full ${
                 activeSubTab === 'departures'
                   ? 'bg-blue-200/80 text-blue-900'
-                  : 'bg-slate-100 text-slate-600 font-medium'
+                  : 'bg-slate-100 text-slate-600'
               }`}
             >
               ({departures.length})
@@ -201,19 +201,19 @@ export const DailyOperationsPage: React.FC = () => {
           {/* Sub-tab 3: Billing & Settlement History with Receipt icon */}
           <button
             onClick={() => setActiveSubTab('billing')}
-            className={`flex items-center gap-2 text-sm font-semibold py-2.5 px-4 rounded-lg transition-colors whitespace-nowrap min-h-[44px] ${
+            className={`flex items-center gap-2 text-sm font-semibold py-2.5 px-4 rounded-lg transition-colors whitespace-nowrap min-h-[44px] font-sans ${
               activeSubTab === 'billing'
                 ? 'bg-purple-50 text-purple-800 border border-purple-200 shadow-2xs'
                 : 'text-slate-600 hover:bg-slate-100 border border-transparent'
             }`}
           >
             <Receipt className="w-4 h-4 text-purple-600" aria-hidden="true" />
-            <span>{t('ops.subtabBillingHistory')}</span>
+            <span className="font-sans font-semibold">{t('ops.subtabBillingHistory')}</span>
             <span
               className={`text-xs font-mono font-bold tabular-nums px-2 py-0.5 rounded-full ${
                 activeSubTab === 'billing'
                   ? 'bg-purple-200/80 text-purple-900'
-                  : 'bg-slate-100 text-slate-600 font-medium'
+                  : 'bg-slate-100 text-slate-600'
               }`}
             >
               ({bills.length})
@@ -224,9 +224,9 @@ export const DailyOperationsPage: React.FC = () => {
         {/* Content Section */}
         {activeSubTab === 'arrivals' && (
           <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-3 bg-emerald-50/50 border-b border-emerald-100 flex items-center justify-between text-sm text-emerald-900 font-medium">
+            <div className="p-3 bg-emerald-50/50 border-b border-emerald-100 flex items-center justify-between text-sm text-emerald-900 font-medium font-sans">
               <span>{t('ops.arrivalsDescription')}</span>
-              <span className="font-mono font-medium tabular-nums tracking-tight text-xs text-emerald-700">
+              <span className="font-sans text-xs text-emerald-700 font-medium">
                 {t('ops.totalItems', { count: arrivals.length })}
               </span>
             </div>
@@ -234,20 +234,20 @@ export const DailyOperationsPage: React.FC = () => {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-sm">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-700 uppercase tracking-wider py-3">
-                    <th className="py-3 px-4 font-mono font-medium tabular-nums tracking-tight">{t('res.bookingNumber')}</th>
-                    <th className="py-3 px-4">{t('common.guestName')}</th>
-                    <th className="py-3 px-4 font-mono font-medium tabular-nums tracking-tight">{t('common.room')}</th>
-                    <th className="py-3 px-4">{t('common.roomType')}</th>
-                    <th className="py-3 px-4 font-mono font-medium tabular-nums tracking-tight">{t('common.dates')}</th>
-                    <th className="py-3 px-4 text-right font-mono font-medium tabular-nums tracking-tight">{t('common.deposit')}</th>
-                    <th className="py-3 px-4 text-right">{t('common.actions')}</th>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="text-xs font-semibold text-slate-600 uppercase tracking-wider py-3 px-4 font-sans">{t('res.bookingNumber')}</th>
+                    <th className="text-xs font-semibold text-slate-600 uppercase tracking-wider py-3 px-4 font-sans">{t('common.guestName')}</th>
+                    <th className="text-xs font-semibold text-slate-600 uppercase tracking-wider py-3 px-4 font-sans">{t('common.room')}</th>
+                    <th className="text-xs font-semibold text-slate-600 uppercase tracking-wider py-3 px-4 font-sans">{t('common.roomType')}</th>
+                    <th className="text-xs font-semibold text-slate-600 uppercase tracking-wider py-3 px-4 font-sans">{t('common.dates')}</th>
+                    <th className="text-xs font-semibold text-slate-600 uppercase tracking-wider py-3 px-4 font-sans text-right">{t('common.deposit')}</th>
+                    <th className="text-xs font-semibold text-slate-600 uppercase tracking-wider py-3 px-4 font-sans text-right">{t('common.actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {arrivals.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="py-12 text-center text-slate-400 text-sm">
+                      <td colSpan={7} className="py-12 text-center text-slate-400 text-sm font-sans">
                         {t('ops.noArrivals')}
                       </td>
                     </tr>
@@ -260,31 +260,31 @@ export const DailyOperationsPage: React.FC = () => {
                       const guestDisplayName = resolveGuestName(res) || res.guestName || res.guest?.fullName || '—';
 
                       return (
-                        <tr key={res.id} className="hover:bg-slate-50 transition-colors text-sm text-slate-800">
-                          <td className="text-sm py-3.5 px-4 text-slate-800 font-mono font-medium tabular-nums tracking-tight text-slate-900">
+                        <tr key={res.id} className="hover:bg-slate-50 transition-colors">
+                          <td className="py-3.5 px-4 font-mono font-medium tabular-nums text-slate-900 text-sm">
                             {res.bookingNumber || res.id.slice(0, 8)}
                           </td>
-                          <td className="text-sm py-3.5 px-4 text-slate-800 font-medium">
+                          <td className="py-3.5 px-4 font-sans text-sm font-medium text-slate-800">
                             {guestDisplayName}
                           </td>
-                          <td className="text-sm py-3.5 px-4 text-slate-800 font-mono font-medium tabular-nums tracking-tight text-slate-900">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded bg-slate-100 text-slate-800 font-semibold text-xs border border-slate-200">
+                          <td className="py-3.5 px-4">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded bg-slate-100 text-slate-800 font-mono font-medium tabular-nums text-xs border border-slate-200">
                               {roomNum}
                             </span>
                           </td>
-                          <td className="text-sm py-3.5 px-4 text-slate-800 font-medium">
+                          <td className="py-3.5 px-4 font-sans text-sm font-medium text-slate-800">
                             {roomTypeName}
                           </td>
-                          <td className="text-sm py-3.5 px-4 text-slate-800 font-mono font-medium tabular-nums tracking-tight text-slate-600">
+                          <td className="py-3.5 px-4 font-mono font-medium tabular-nums text-slate-600 text-sm">
                             {formatDateRange(res.checkInDate, res.checkOutDate, res.totalNights)}
                           </td>
-                          <td className="text-sm py-3.5 px-4 text-slate-800 text-right font-mono tabular-nums text-emerald-700 font-medium tracking-tight">
+                          <td className="py-3.5 px-4 text-right font-mono tabular-nums font-semibold text-emerald-700 text-sm">
                             {formatCurrency(res.depositAmount || '0')}
                           </td>
-                          <td className="text-sm py-3.5 px-4 text-slate-800 text-right">
+                          <td className="py-3.5 px-4 text-right">
                             <button
                               onClick={() => setCheckInTarget(res)}
-                              className="inline-flex items-center gap-1.5 text-sm font-semibold py-1.5 px-3.5 text-white bg-slate-900 hover:bg-slate-800 rounded-md shadow-sm transition-colors min-h-[36px]"
+                              className="inline-flex items-center gap-1.5 text-sm font-semibold py-1.5 px-3.5 text-white bg-slate-900 hover:bg-slate-800 rounded-md shadow-sm transition-colors min-h-[36px] font-sans"
                             >
                               <LogIn className="w-3.5 h-3.5" aria-hidden="true" />
                               <span>{t('ops.checkIn')}</span>
@@ -303,9 +303,9 @@ export const DailyOperationsPage: React.FC = () => {
         {/* Departures & Cashier Sub-tab */}
         {activeSubTab === 'departures' && (
           <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-3 bg-blue-50/50 border-b border-blue-100 flex items-center justify-between text-sm text-blue-900 font-medium">
+            <div className="p-3 bg-blue-50/50 border-b border-blue-100 flex items-center justify-between text-sm text-blue-900 font-medium font-sans">
               <span>{t('ops.departuresDescription')}</span>
-              <span className="font-mono font-medium tabular-nums tracking-tight text-xs text-blue-700">
+              <span className="font-sans text-xs text-blue-700 font-medium">
                 {t('ops.totalItems', { count: departures.length })}
               </span>
             </div>
@@ -313,20 +313,20 @@ export const DailyOperationsPage: React.FC = () => {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-sm">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-700 uppercase tracking-wider py-3">
-                    <th className="py-3 px-4 font-mono font-medium tabular-nums tracking-tight">{t('res.bookingNumber')}</th>
-                    <th className="py-3 px-4">{t('common.guestName')}</th>
-                    <th className="py-3 px-4 font-mono font-medium tabular-nums tracking-tight">{t('common.room')}</th>
-                    <th className="py-3 px-4">{t('common.roomType')}</th>
-                    <th className="py-3 px-4 font-mono font-medium tabular-nums tracking-tight">{t('common.dates')}</th>
-                    <th className="py-3 px-4 text-right font-mono font-medium tabular-nums tracking-tight">{t('common.total')}</th>
-                    <th className="py-3 px-4 text-right">{t('common.actions')}</th>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="text-xs font-semibold text-slate-600 uppercase tracking-wider py-3 px-4 font-sans">{t('res.bookingNumber')}</th>
+                    <th className="text-xs font-semibold text-slate-600 uppercase tracking-wider py-3 px-4 font-sans">{t('common.guestName')}</th>
+                    <th className="text-xs font-semibold text-slate-600 uppercase tracking-wider py-3 px-4 font-sans">{t('common.room')}</th>
+                    <th className="text-xs font-semibold text-slate-600 uppercase tracking-wider py-3 px-4 font-sans">{t('common.roomType')}</th>
+                    <th className="text-xs font-semibold text-slate-600 uppercase tracking-wider py-3 px-4 font-sans">{t('common.dates')}</th>
+                    <th className="text-xs font-semibold text-slate-600 uppercase tracking-wider py-3 px-4 font-sans text-right">{t('common.total')}</th>
+                    <th className="text-xs font-semibold text-slate-600 uppercase tracking-wider py-3 px-4 font-sans text-right">{t('common.actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {departures.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="py-12 text-center text-slate-400 text-sm">
+                      <td colSpan={7} className="py-12 text-center text-slate-400 text-sm font-sans">
                         {t('ops.noDepartures')}
                       </td>
                     </tr>
@@ -339,32 +339,32 @@ export const DailyOperationsPage: React.FC = () => {
                       const guestDisplayName = resolveGuestName(res) || res.guestName || res.guest?.fullName || '—';
 
                       return (
-                        <tr key={res.id} className="hover:bg-slate-50 transition-colors text-sm text-slate-800">
-                          <td className="text-sm py-3.5 px-4 text-slate-800 font-mono font-medium tabular-nums tracking-tight text-slate-900">
+                        <tr key={res.id} className="hover:bg-slate-50 transition-colors">
+                          <td className="py-3.5 px-4 font-mono font-medium tabular-nums text-slate-900 text-sm">
                             {res.bookingNumber || res.id.slice(0, 8)}
                           </td>
-                          <td className="text-sm py-3.5 px-4 text-slate-800 font-medium">
+                          <td className="py-3.5 px-4 font-sans text-sm font-medium text-slate-800">
                             {guestDisplayName}
                           </td>
-                          <td className="text-sm py-3.5 px-4 text-slate-800 font-mono font-medium tabular-nums tracking-tight text-slate-900">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded bg-slate-100 text-slate-800 font-semibold text-xs border border-slate-200">
+                          <td className="py-3.5 px-4">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded bg-slate-100 text-slate-800 font-mono font-medium tabular-nums text-xs border border-slate-200">
                               {roomNum}
                             </span>
                           </td>
-                          <td className="text-sm py-3.5 px-4 text-slate-800 font-medium">
+                          <td className="py-3.5 px-4 font-sans text-sm font-medium text-slate-800">
                             {roomTypeName}
                           </td>
-                          <td className="text-sm py-3.5 px-4 text-slate-800 font-mono font-medium tabular-nums tracking-tight text-slate-600">
+                          <td className="py-3.5 px-4 font-mono font-medium tabular-nums text-slate-600 text-sm">
                             {formatDateRange(res.checkInDate, res.checkOutDate, res.totalNights)}
                           </td>
-                          <td className="text-sm py-3.5 px-4 text-slate-800 text-right font-mono tabular-nums text-slate-900 font-medium tracking-tight">
+                          <td className="py-3.5 px-4 text-right font-mono tabular-nums font-semibold text-slate-900 text-sm">
                             {formatCurrency(res.totalAmount || '0')}
                           </td>
-                          <td className="text-sm py-3.5 px-4 text-slate-800 text-right">
+                          <td className="py-3.5 px-4 text-right">
                             <div className="flex items-center justify-end gap-1.5">
                               <button
                                 onClick={() => setExtendTarget(res)}
-                                className="inline-flex items-center gap-1 text-sm font-semibold py-1.5 px-3.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors min-h-[36px]"
+                                className="inline-flex items-center gap-1 text-sm font-semibold py-1.5 px-3.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors min-h-[36px] font-sans"
                                 title={t('extend.button')}
                               >
                                 <CalendarPlus className="w-3.5 h-3.5 text-slate-500" aria-hidden="true" />
@@ -372,7 +372,7 @@ export const DailyOperationsPage: React.FC = () => {
                               </button>
                               <button
                                 onClick={() => setCheckOutTarget(res)}
-                                className="inline-flex items-center gap-1.5 text-sm font-semibold py-1.5 px-3.5 text-white bg-slate-900 hover:bg-slate-800 rounded-md shadow-sm transition-colors min-h-[36px]"
+                                className="inline-flex items-center gap-1.5 text-sm font-semibold py-1.5 px-3.5 text-white bg-slate-900 hover:bg-slate-800 rounded-md shadow-sm transition-colors min-h-[36px] font-sans"
                                 title={t('ops.checkOutAndSettle') || t('ops.checkOut')}
                               >
                                 <LogOut className="w-3.5 h-3.5" aria-hidden="true" />
@@ -406,7 +406,7 @@ export const DailyOperationsPage: React.FC = () => {
                 />
               </div>
 
-              <div className="text-xs text-slate-500 font-medium">
+              <div className="text-xs text-slate-500 font-medium font-sans">
                 {t('ops.totalItems', { count: filteredBills.length })}
               </div>
             </div>
@@ -416,28 +416,34 @@ export const DailyOperationsPage: React.FC = () => {
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse text-sm">
                   <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-700 uppercase tracking-wider py-3">
-                      <th className="py-3 px-4 font-mono font-medium tabular-nums tracking-tight">
+                    <tr className="bg-slate-50 border-b border-slate-200">
+                      <th className="text-xs font-semibold text-slate-600 uppercase tracking-wider py-3 px-4 font-sans">
                         {t('invoice.number')}
                       </th>
-                      <th className="py-3 px-4 font-mono font-medium tabular-nums tracking-tight">
+                      <th className="text-xs font-semibold text-slate-600 uppercase tracking-wider py-3 px-4 font-sans">
                         {t('common.room')}
                       </th>
-                      <th className="py-3 px-4">{t('common.guestName')}</th>
-                      <th className="py-3 px-4 font-mono font-medium tabular-nums tracking-tight">
+                      <th className="text-xs font-semibold text-slate-600 uppercase tracking-wider py-3 px-4 font-sans">
+                        {t('common.guestName')}
+                      </th>
+                      <th className="text-xs font-semibold text-slate-600 uppercase tracking-wider py-3 px-4 font-sans">
                         {t('common.dates')}
                       </th>
-                      <th className="py-3 px-4 text-right font-mono font-medium tabular-nums tracking-tight">
+                      <th className="text-xs font-semibold text-slate-600 uppercase tracking-wider py-3 px-4 font-sans text-right">
                         {t('common.total')}
                       </th>
-                      <th className="py-3 px-4 text-center">{t('common.status')}</th>
-                      <th className="py-3 px-4 text-right">{t('common.actions')}</th>
+                      <th className="text-xs font-semibold text-slate-600 uppercase tracking-wider py-3 px-4 font-sans text-center">
+                        {t('common.status')}
+                      </th>
+                      <th className="text-xs font-semibold text-slate-600 uppercase tracking-wider py-3 px-4 font-sans text-right">
+                        {t('common.actions')}
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {filteredBills.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="py-12 text-center text-slate-400 text-sm">
+                        <td colSpan={7} className="py-12 text-center text-slate-400 text-sm font-sans">
                           {t('ops.noBillingHistory')}
                         </td>
                       </tr>
@@ -447,27 +453,27 @@ export const DailyOperationsPage: React.FC = () => {
                         const billTotal = parseFloat(b.netAmount || b.subtotal || '0');
 
                         return (
-                          <tr key={b.id} className="hover:bg-slate-50 transition-colors text-sm text-slate-800">
-                            <td className="text-sm py-3.5 px-4 text-slate-800 font-mono font-medium tabular-nums tracking-tight text-slate-900">
+                          <tr key={b.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="py-3.5 px-4 font-mono font-medium tabular-nums text-slate-900 text-sm">
                               INV-{b.id.slice(0, 8).toUpperCase()}
                             </td>
-                            <td className="text-sm py-3.5 px-4 text-slate-800 font-mono font-medium tabular-nums tracking-tight text-slate-900">
-                              <span className="inline-flex items-center px-2 py-0.5 rounded bg-slate-100 text-slate-800 font-semibold text-xs border border-slate-200">
+                            <td className="py-3.5 px-4">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded bg-slate-100 text-slate-800 font-mono font-medium tabular-nums text-xs border border-slate-200">
                                 {b.roomNumber || '—'}
                               </span>
                             </td>
-                            <td className="text-sm py-3.5 px-4 text-slate-800 font-medium">
+                            <td className="py-3.5 px-4 font-sans text-sm font-medium text-slate-800">
                               {b.guestName || t('common.guest')}
                             </td>
-                            <td className="text-sm py-3.5 px-4 text-slate-800 font-mono font-medium tabular-nums tracking-tight text-slate-600">
+                            <td className="py-3.5 px-4 font-mono font-medium tabular-nums text-slate-600 text-sm">
                               {formatDate(b.createdAt, 'medium')}
                             </td>
-                            <td className="text-sm py-3.5 px-4 text-slate-800 text-right font-mono tabular-nums text-slate-900 font-bold tracking-tight">
+                            <td className="py-3.5 px-4 text-right font-mono tabular-nums font-semibold text-slate-900 text-sm">
                               {formatCurrency(billTotal)}
                             </td>
-                            <td className="text-sm py-3.5 px-4 text-center">
+                            <td className="py-3.5 px-4 text-center">
                               <span
-                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold font-mono tabular-nums border ${
+                                className={`inline-flex items-center px-2 py-0.5 rounded-full font-sans text-xs font-medium border ${
                                   isPaid
                                     ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                                     : 'bg-amber-50 text-amber-800 border-amber-200'
@@ -476,10 +482,10 @@ export const DailyOperationsPage: React.FC = () => {
                                 {isPaid ? t('folio.paid') : t('folio.pending')}
                               </span>
                             </td>
-                            <td className="text-sm py-3.5 px-4 text-slate-800 text-right">
+                            <td className="py-3.5 px-4 text-right">
                               <button
                                 onClick={() => handleOpenReprintInvoice(b)}
-                                className="inline-flex items-center text-xs sm:text-sm font-semibold py-1.5 px-3 text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-md shadow-2xs transition-colors min-h-[36px] active:scale-[0.98]"
+                                className="inline-flex items-center text-xs sm:text-sm font-semibold py-1.5 px-3 text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-md shadow-2xs transition-colors min-h-[36px] active:scale-[0.98] font-sans"
                                 title="พิมพ์สลิป (80mm)"
                               >
                                 <Printer className="w-3.5 h-3.5 mr-1 text-slate-500" strokeWidth={1.75} aria-hidden="true" />

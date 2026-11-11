@@ -138,15 +138,15 @@ describe('Page 3 — Daily Operations Workflows (Space & Localization Polish)', 
     // Queue sub-tabs use text-sm font-semibold
     assert.match(pageCode, /text-sm font-semibold py-2\.5 px-4/);
 
-    // Table rows / cells render with text-sm text-slate-800
-    assert.match(pageCode, /text-sm py-3\.5 px-4 text-slate-800/);
+    // Table rows / cells render with font-sans text-sm font-medium text-slate-800
+    assert.match(pageCode, /font-sans text-sm font-medium text-slate-800/);
 
     // Action buttons use text-sm font-semibold
     assert.match(pageCode, /text-sm font-semibold py-1\.5 px-3\.5/);
 
     // DailyOperationsPage title and header
     assert.match(pageCode, /text-2xl font-bold text-slate-900/);
-    assert.match(pageCode, /text-xs font-bold text-slate-700 uppercase tracking-wider py-3/);
+    assert.match(pageCode, /text-xs font-semibold text-slate-600 uppercase tracking-wider py-3 px-4 font-sans/);
 
     // Operational modals typography scale
     assert.match(checkInCode, /text-xl font-bold text-slate-900/);
