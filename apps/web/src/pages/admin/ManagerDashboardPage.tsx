@@ -264,7 +264,7 @@ export const ManagerDashboardPage: React.FC = () => {
   return (
     <AdminLayout activePath="/admin/dashboard" isBackendOffline={isOffline}>
       {/* 1. Executive Context Header (Date badge next to H1 removed completely) */}
-      <div className="bg-white border-b border-slate-200/80 px-4 py-3.5 mb-4 shadow-2xs">
+      <div className="bg-white px-4 py-3.5 shadow-2xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs text-slate-500 mb-1.5">
@@ -522,11 +522,8 @@ export const ManagerDashboardPage: React.FC = () => {
               </CardTitle>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold">
-                {isEn ? 'Revenue Dept PP.30' : 'ภ.พ.30 สรรพากร'}
-              </Badge>
-              <span className="text-[11px] text-slate-400 font-mono">
-                {isEn ? 'VAT 7% Inclusive' : 'รวมภาษี 7%'}
+              <span className="text-xs text-slate-500 font-medium">
+                {isEn ? 'Form PP.30 · VAT 7% Included' : 'แบบ ภ.พ.30 · รวมภาษีมูลค่าเพิ่ม 7%'}
               </span>
             </div>
           </CardHeader>

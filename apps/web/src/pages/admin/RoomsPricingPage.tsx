@@ -564,7 +564,7 @@ export const RoomsPricingPage: React.FC = () => {
   return (
     <AdminLayout activePath="/admin/rooms" isBackendOffline={isOffline}>
       {/* ── Page Header ── */}
-      <div className="bg-white border-b border-slate-200/80 px-4 py-3.5 mb-4 shadow-2xs">
+      <div className="bg-white px-4 py-3.5 mb-4 shadow-2xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
@@ -619,7 +619,7 @@ export const RoomsPricingPage: React.FC = () => {
         </div>
 
         {/* ── Tabs ── */}
-        <div className="flex gap-1 mt-4 border-b border-slate-200 -mb-3.5 overflow-x-auto">
+        <div className="flex gap-1 mt-4  -mb-3.5 overflow-x-auto">
           {(
             [
               { key: 'types', label: t('tab.roomTypes'), icon: <BedDouble className="w-3.5 h-3.5" /> },

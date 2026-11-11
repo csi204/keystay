@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { apiFetch, getAuthRole } from '@/lib/api';
 import { useTranslation } from '@/lib/i18n';
@@ -558,11 +557,8 @@ export const ReportsAnalyticsPage: React.FC = () => {
               </CardTitle>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold">
-                {isEn ? 'Revenue Dept PP.30' : 'ภ.พ.30 สรรพากร'}
-              </Badge>
-              <span className="text-[11px] text-slate-400 font-mono">
-                {isEn ? 'VAT 7% Inclusive' : 'รวมภาษี 7%'}
+              <span className="text-xs text-slate-500 font-medium">
+                {isEn ? 'Form PP.30 · VAT 7% Included' : 'แบบ ภ.พ.30 · รวมภาษีมูลค่าเพิ่ม 7%'}
               </span>
             </div>
           </CardHeader>
@@ -696,10 +692,12 @@ export const ReportsAnalyticsPage: React.FC = () => {
                 </div>
                 <div>
                   <h2 className="text-base font-bold text-slate-900">
-                    รายงานภาษีขายสำหรับยื่นภาษี (Sales Tax Report ภ.พ.30)
+                    {isEn ? 'Sales Tax Report (Form PP.30)' : 'รายงานภาษีขายสำหรับยื่นภาษี (ภ.พ.30)'}
                   </h2>
                   <p className="text-xs text-slate-500">
-                    จัดทำรายงานภาษีขายตามมาตรฐานกรมสรรพากร พร้อมส่งออกไฟล์ PDF (A4) และ CSV Spreadsheet
+                    {isEn
+                      ? 'Generate sales tax reports compliant with Revenue Department standards with PDF and CSV export'
+                      : 'จัดทำรายงานภาษีขายตามมาตรฐานกรมสรรพากร พร้อมส่งออกไฟล์ PDF และ CSV'}
                   </p>
                 </div>
               </div>
@@ -719,20 +717,19 @@ export const ReportsAnalyticsPage: React.FC = () => {
                   {/* Step 1: Report Topic Info Card */}
                   <div>
                     <label className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2.5 block">
-                      1. หัวข้อรายงาน (Report Topic)
+                      {isEn ? '1. Report Topic' : '1. หัวข้อรายงาน'}
                     </label>
                     <div className="p-3.5 rounded-xl border border-[#F97316] bg-orange-50/40 shadow-2xs ring-1 ring-[#F97316]">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                          รายงานภาษีขายสำหรับยื่นภาษี (ภ.พ.30)
-                          <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-semibold">
-                            สรรพากร
-                          </Badge>
+                        <span className="text-xs font-bold text-slate-900">
+                          {isEn ? 'Sales Tax Report (Form PP.30)' : 'รายงานภาษีขายสำหรับยื่นภาษี (ภ.พ.30)'}
                         </span>
                         <CheckCircle2 className="w-4 h-4 text-[#F97316]" />
                       </div>
                       <p className="text-[11px] text-slate-600 leading-relaxed">
-                        รายงานสรุปมูลค่าขายก่อนภาษี (Net Amount), ภาษีมูลค่าเพิ่ม 7% (VAT), และยอดรวมสุทธิ ตามเกณฑ์มาตรฐานกรมสรรพากร มาตรา 87 (1)
+                        {isEn
+                          ? 'Monthly sales tax summary complying with Revenue Department Section 87 (1) standards.'
+                          : 'รายงานสรุปมูลค่าขายก่อนภาษี ภาษีมูลค่าเพิ่ม 7% และยอดรวมสุทธิ ตามเกณฑ์มาตรฐานกรมสรรพากร มาตรา 87 (1)'}
                       </p>
                     </div>
                   </div>
@@ -740,7 +737,7 @@ export const ReportsAnalyticsPage: React.FC = () => {
                   {/* Step 2: Select Format */}
                   <div>
                     <label className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2.5 block">
-                      2. รูปแบบไฟล์ที่ต้องการ (Export Format)
+                      {isEn ? '2. Export Format' : '2. รูปแบบไฟล์ที่ต้องการ'}
                     </label>
                     <div className="grid grid-cols-2 gap-3">
                       <button
@@ -753,7 +750,7 @@ export const ReportsAnalyticsPage: React.FC = () => {
                         }`}
                       >
                         <FileText className="w-4 h-4 text-[#F97316]" />
-                        <span>PDF Report (A4)</span>
+                        <span>{isEn ? 'PDF Document (A4)' : 'เอกสาร PDF (A4)'}</span>
                       </button>
 
                       <button
@@ -766,7 +763,7 @@ export const ReportsAnalyticsPage: React.FC = () => {
                         }`}
                       >
                         <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
-                        <span>CSV Spreadsheet</span>
+                        <span>{isEn ? 'CSV Spreadsheet' : 'ไฟล์ตาราง CSV'}</span>
                       </button>
                     </div>
                   </div>
@@ -774,14 +771,14 @@ export const ReportsAnalyticsPage: React.FC = () => {
                   {/* Step 3: Select Date Range */}
                   <div>
                     <label className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2.5 block">
-                      3. ช่วงเวลาของรายงาน (Date Range)
+                      {isEn ? '3. Date Range' : '3. ช่วงเวลาของรายงาน'}
                     </label>
 
                     <div className="space-y-2.5">
                       <div className="grid grid-cols-2 gap-2">
                         {[
-                          { id: 'current_month', label: 'เดือนปัจจุบัน (พ.ย. 2026)' },
-                          { id: 'custom', label: 'กำหนดเอง' },
+                          { id: 'current_month', label: isEn ? 'Current Month' : 'เดือนปัจจุบัน' },
+                          { id: 'custom', label: isEn ? 'Custom Range' : 'กำหนดเอง' },
                         ].map((item) => (
                           <button
                             key={item.id}
@@ -803,7 +800,7 @@ export const ReportsAnalyticsPage: React.FC = () => {
                           <div className="grid grid-cols-2 gap-2">
                             <div>
                               <label className="text-[11px] text-slate-500 font-medium block mb-1">
-                                ตั้งแต่วันที่
+                                {isEn ? 'Start Date' : 'ตั้งแต่วันที่'}
                               </label>
                               <input
                                 type="date"
@@ -814,7 +811,7 @@ export const ReportsAnalyticsPage: React.FC = () => {
                             </div>
                             <div>
                               <label className="text-[11px] text-slate-500 font-medium block mb-1">
-                                ถึงวันที่
+                                {isEn ? 'End Date' : 'ถึงวันที่'}
                               </label>
                               <input
                                 type="date"
@@ -826,7 +823,9 @@ export const ReportsAnalyticsPage: React.FC = () => {
                             </div>
                           </div>
                           <p className="text-[10px] text-slate-400">
-                            * กรมสรรพากรกำหนดให้จัดทำรายงานภาษีขายแยกเป็นรายเดือนภาษี
+                            {isEn
+                              ? '* Revenue Department requires sales tax reports to be prepared by tax month'
+                              : '* กรมสรรพากรกำหนดให้จัดทำรายงานภาษีขายแยกเป็นรายเดือนภาษี'}
                           </p>
                         </div>
                       )}
@@ -852,12 +851,12 @@ export const ReportsAnalyticsPage: React.FC = () => {
                       {isExporting ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin text-[#F97316]" />
-                          <span>กำลังบันทึก PDF ลงเครื่อง...</span>
+                          <span>{isEn ? 'Saving PDF...' : 'กำลังบันทึก PDF ลงเครื่อง...'}</span>
                         </>
                       ) : (
                         <>
                           <Download className="w-4 h-4 text-[#F97316]" />
-                          <span>ดาวน์โหลดรายงาน PDF (ภ.พ.30)</span>
+                          <span>{isEn ? 'Download PDF Report (Form PP.30)' : 'ดาวน์โหลดรายงาน PDF (ภ.พ.30)'}</span>
                         </>
                       )}
                     </Button>
@@ -870,12 +869,12 @@ export const ReportsAnalyticsPage: React.FC = () => {
                       {isExporting ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin text-white" />
-                          <span>กำลังส่งออกข้อมูล CSV...</span>
+                          <span>{isEn ? 'Exporting CSV...' : 'กำลังส่งออกข้อมูล CSV...'}</span>
                         </>
                       ) : (
                         <>
                           <Download className="w-4 h-4" />
-                          <span>ดาวน์โหลดไฟล์ CSV (ภ.พ.30)</span>
+                          <span>{isEn ? 'Download CSV File (Form PP.30)' : 'ดาวน์โหลดไฟล์ตาราง CSV'}</span>
                         </>
                       )}
                     </Button>
@@ -892,16 +891,18 @@ export const ReportsAnalyticsPage: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
                         <span className="font-bold text-slate-800">
-                          ตัวอย่างข้อมูลตาราง Spreadsheet (CSV Preview)
+                          {isEn ? 'Spreadsheet Preview (CSV)' : 'ตัวอย่างข้อมูลตาราง (CSV)'}
                         </span>
                         <span className="text-slate-400">|</span>
                         <span className="text-slate-500">
-                          รวม {taxRows.length} รายการ ({startDate} ถึง {endDate})
+                          {isEn
+                            ? `Total ${taxRows.length} items (${startDate} to ${endDate})`
+                            : `รวม ${taxRows.length} รายการ (${startDate} ถึง ${endDate})`}
                         </span>
                       </div>
-                      <Badge variant="outline" className="text-[10px] font-mono border-slate-200">
-                        UTF-8 BOM Included
-                      </Badge>
+                      <span className="text-[11px] text-slate-400 font-mono">
+                        UTF-8 BOM
+                      </span>
                     </div>
 
                     <div className="w-full bg-white rounded-lg border border-slate-200 shadow-xs overflow-hidden">
@@ -962,16 +963,15 @@ export const ReportsAnalyticsPage: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-emerald-500" />
                         <span className="font-bold text-slate-800">
-                          ตัวอย่างเอกสาร PDF (ทุกหน้าต่อเนื่อง)
+                          {isEn ? 'PDF Document Preview' : 'ตัวอย่างเอกสาร PDF'}
                         </span>
                         <span className="text-slate-400">|</span>
                         <span className="text-slate-500">
-                          ทั้งหมด {totalPages} หน้า A4 · รายงานภาษีขาย ภ.พ.30
+                          {isEn
+                            ? `Total ${totalPages} Pages (A4) · Form PP.30`
+                            : `ทั้งหมด ${totalPages} หน้า (A4) · แบบ ภ.พ.30`}
                         </span>
                       </div>
-                      <Badge variant="outline" className="text-[10px] border-emerald-300 bg-emerald-50 text-emerald-800 font-medium">
-                        แบบภาษีสรรพากร
-                      </Badge>
                     </div>
 
                     {/* Stacked A4 Sheets Container (Captured directly by html2canvas when downloading!) */}
@@ -1052,7 +1052,7 @@ export const ReportsAnalyticsPage: React.FC = () => {
                                         <span className="font-bold text-slate-900 font-mono">{startDate} {isEn ? 'to' : 'ถึง'} {endDate}</span>
                                       </p>
                                       <p className="mt-0.5 text-slate-500">
-                                        {isEn ? 'Key Deposit is tax-exempt from VAT' : 'เงินมัดจำกุญแจห้องได้รับการยกเว้นไม่ต้องนำมารวมคำนวณ VAT'}
+                                        {isEn ? 'Key Deposit is tax-exempt from VAT' : 'เงินมัดจำกุญแจห้องได้รับการยกเว้นไม่ต้องนำมารวมคำนวณภาษีมูลค่าเพิ่ม'}
                                       </p>
                                     </div>
                                   </div>
