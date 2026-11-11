@@ -24,7 +24,7 @@ import {
 
 export const DailyOperationsPage: React.FC = () => {
   const navigate = useNavigate();
-  const { t, locale, formatDate, formatDateRange, formatCurrency, formatRelativeTime } = useI18n();
+  const { t, locale, formatDate, formatDateRange, formatCurrency } = useI18n();
   const todayStr = new Date().toISOString().split('T')[0];
 
   const {
@@ -60,6 +60,11 @@ export const DailyOperationsPage: React.FC = () => {
   const handleManualRefresh = async () => {
     await Promise.all([refreshReservations(), refreshRooms(), refreshBilling()]);
   };
+
+  const refreshTimeStr = lastRefreshed.toLocaleTimeString(
+    locale === 'th' ? 'th-TH' : 'en-US',
+    { hour: '2-digit', minute: '2-digit', second: '2-digit' }
+  );
 
   // Available rooms for Walk-in
   const availableRooms = useMemo(() => {
@@ -119,15 +124,14 @@ export const DailyOperationsPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-xs sm:text-sm text-slate-500 font-mono tabular-nums tracking-tight hidden sm:inline">
-              {formatRelativeTime(lastRefreshed, locale)}
-            </span>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200/80 text-[11px] font-medium text-slate-600">
-              <span className="relative flex h-2 w-2" aria-hidden="true">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            <div className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-50 rounded-lg border border-slate-200/60 shrink-0">
+              <span
+                className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"
+                aria-hidden="true"
+              />
+              <span className="font-mono tabular-nums text-xs text-slate-500 font-medium">
+                {locale === 'th' ? `อัปเดตอัตโนมัติ: ${refreshTimeStr}` : `Auto-refresh: ${refreshTimeStr}`}
               </span>
-              <span>{locale === 'th' ? 'อัปเดตอัตโนมัติ' : 'Auto-refresh'}</span>
             </div>
 
             <button

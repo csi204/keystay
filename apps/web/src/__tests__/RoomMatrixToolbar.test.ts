@@ -59,7 +59,7 @@ describe('RoomMatrixPage — Unified Toolbar, Popover Filter, Auto-Refresh & Sub
 
     // Tabular numbers and font-mono timestamp
     assert.match(pageCode, /font-mono\s+tabular-nums\s+text-xs\s+text-slate-500/);
-    assert.match(pageCode, /matrix\.autoRefresh/);
+    assert.match(pageCode, /refreshTimeStr/);
   });
 
   it('provides sub-tabs switching between Matrix Grid and Reservations Table with zero data loss', () => {

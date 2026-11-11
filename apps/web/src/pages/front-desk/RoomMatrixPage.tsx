@@ -38,7 +38,7 @@ const RESERVATION_STATUS_STYLES: Record<
 
 export const RoomMatrixPage: React.FC = () => {
   const navigate = useNavigate();
-  const { t, locale, formatDateRange, formatCurrency, formatRelativeTime } = useI18n();
+  const { t, locale, formatDateRange, formatCurrency } = useI18n();
 
   const {
     rooms,
@@ -124,7 +124,12 @@ export const RoomMatrixPage: React.FC = () => {
     const guests: Record<string, string> = {};
     const checkouts: Record<string, string> = {};
     reservations.forEach((r) => {
-      if (r.roomId && (r.status === 'checked_in' || r.status === 'confirmed')) {
+      if (
+        r.roomId &&
+        (r.status === 'checked_in' ||
+          r.status === 'confirmed' ||
+          (r.status as string) === 'extended')
+      ) {
         const name = r.guestName || resolveGuestName(r);
         if (name) guests[r.roomId] = name;
         if (r.checkOutDate) checkouts[r.roomId] = r.checkOutDate;
@@ -132,6 +137,27 @@ export const RoomMatrixPage: React.FC = () => {
     });
     return { roomGuests: guests, roomCheckouts: checkouts };
   }, [reservations]);
+
+  // Live rooms with dynamic occupied status for checked_in or extended reservations
+  const liveRooms = useMemo(() => {
+    const activeCheckedInByRoomId = new Map<string, (typeof reservations)[0]>();
+    reservations.forEach((r) => {
+      if (r.roomId && (r.status === 'checked_in' || (r.status as string) === 'extended')) {
+        activeCheckedInByRoomId.set(r.roomId, r);
+      }
+    });
+
+    return rooms.map((room) => {
+      const activeRes = activeCheckedInByRoomId.get(room.id);
+      if (activeRes && room.status !== 'occupied') {
+        return {
+          ...room,
+          status: 'occupied' as const,
+        };
+      }
+      return room;
+    });
+  }, [rooms, reservations]);
 
   // Active reservation for currently selected room
   const activeReservation = useMemo(() => {
@@ -269,8 +295,6 @@ export const RoomMatrixPage: React.FC = () => {
       second: '2-digit',
     }
   );
-  // Micro-UX relative refresh tracker: formatRelativeTime
-  const _relativeRefresh = formatRelativeTime ? formatRelativeTime(lastRefreshed, locale) : refreshTimeStr;
 
   return (
     <FrontDeskLayout activeTab="matrix">
@@ -538,22 +562,14 @@ export const RoomMatrixPage: React.FC = () => {
               </button>
             )}
 
-            <div className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200/80 text-[11px] font-medium text-slate-600">
-              <span className="relative flex h-2 w-2" aria-hidden="true">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-              </span>
-              <span>{locale === 'th' ? 'อัปเดตอัตโนมัติ' : 'Auto-refresh'}</span>
-            </div>
-
             {/* Live Auto-Refresh Indicator with Pulse Dot and Tabular Numbers */}
             <div className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-50 rounded-lg border border-slate-200/60 shrink-0">
               <span
                 className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"
                 aria-hidden="true"
               />
-              <span className="font-mono tabular-nums text-xs text-slate-500">
-                {t('matrix.autoRefresh', { time: refreshTimeStr })}
+              <span className="font-mono tabular-nums text-xs text-slate-500 font-medium">
+                {locale === 'th' ? `อัปเดตอัตโนมัติ: ${refreshTimeStr}` : `Auto-refresh: ${refreshTimeStr}`}
               </span>
             </div>
           </div>
@@ -597,7 +613,7 @@ export const RoomMatrixPage: React.FC = () => {
               </div>
             ) : (
               <RoomMatrixGrid
-                rooms={rooms}
+                rooms={liveRooms}
                 roomTypes={roomTypes}
                 selectedRoom={selectedRoom}
                 onSelectRoom={handleSelectRoom}
