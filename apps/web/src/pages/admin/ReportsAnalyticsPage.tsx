@@ -1024,8 +1024,8 @@ export const ReportsAnalyticsPage: React.FC = () => {
                                       </div>
                                     </div>
                                     <div className="text-right">
-                                      <div className="border border-slate-900 px-3 py-1 font-bold text-[11px] text-slate-900 uppercase tracking-wider inline-block">
-                                        {isEn ? 'Form ภ.พ.30' : 'แบบ ภ.พ.30'}
+                                      <div className="inline-flex items-center justify-center border border-slate-900 px-3 h-6 text-center font-bold text-[11px] text-slate-900 uppercase tracking-wider leading-none">
+                                        <span className="-translate-y-[1px]">{isEn ? 'Form ภ.พ.30' : 'แบบ ภ.พ.30'}</span>
                                       </div>
                                       <div className="text-[9px] text-slate-500 font-mono mt-1">
                                         {isEn ? 'Date of Issue:' : 'วันที่ออกเอกสาร:'} {new Date().toISOString().replace('T', ' ').slice(0, 10)}
