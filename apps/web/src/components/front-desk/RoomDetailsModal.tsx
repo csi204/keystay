@@ -863,9 +863,13 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                     </label>
                     <CustomDatePicker
                       required
+                      min={todayStr}
                       value={checkInDate}
                       onChange={(date) => {
                         setCheckInDate(date);
+                        if (checkOutDate && date > checkOutDate) {
+                          setCheckOutDate(date);
+                        }
                         if (validationErrors.length > 0) setValidationErrors([]);
                       }}
                       className="w-full h-9 px-3 text-xs font-mono bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors"
@@ -884,6 +888,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                     <CustomDatePicker
                       required
                       min={checkInDate}
+                      placement="top"
                       value={checkOutDate}
                       onChange={(date) => {
                         setCheckOutDate(date);

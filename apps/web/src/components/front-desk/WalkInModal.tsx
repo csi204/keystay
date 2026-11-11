@@ -61,11 +61,19 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
   const [guestName, setGuestName] = useState('');
   const [phone, setPhone] = useState('');
   const [nationalIdOrPassport, setNationalIdOrPassport] = useState('');
+  const [checkInDate, setCheckInDate] = useState(todayStr);
   const [checkOutDate, setCheckOutDate] = useState(tomorrowStr);
   const [depositAmount, setDepositAmount] = useState('500');
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const handleCheckInDateChange = (date: string) => {
+    setCheckInDate(date);
+    if (checkOutDate && date > checkOutDate) {
+      setCheckOutDate(date);
+    }
+  };
 
   useEffect(() => {
     if (preselectedRoomId) {
@@ -99,7 +107,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
     return diffDays > 0 ? diffDays : 1;
   };
 
-  const nights = calculateNights(todayStr, checkOutDate);
+  const nights = calculateNights(checkInDate, checkOutDate);
   const nightlyRate = selectedRoomType ? parseFloat(selectedRoomType.basePrice || '1200') : 1200;
   const parsedDeposit = parseFloat(depositAmount) || 0;
   const roomSubtotal = nights * nightlyRate;
@@ -164,7 +172,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
       guestName: guestName.trim(),
       phone: phone.trim(),
       nationalIdOrPassport: nationalIdOrPassport.trim(),
-      checkInDate: todayStr,
+      checkInDate: checkInDate || todayStr,
       checkOutDate,
       depositAmount: depositAmount.trim() || '0',
       paymentMethod,
@@ -309,7 +317,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
                   <div className="flex items-center justify-between text-xs text-slate-600">
                     <span>{locale === 'th' ? 'ระยะเวลาพัก' : 'Stay duration'}</span>
                     <span className="font-mono font-medium text-slate-900 tabular-nums">
-                      {formatDisplayDate(todayStr, locale)} &rarr; {formatDisplayDate(checkOutDate, locale)} ({nights} {locale === 'th' ? 'คืน' : (nights > 1 ? 'nights' : 'night')})
+                      {formatDisplayDate(checkInDate, locale)} &rarr; {formatDisplayDate(checkOutDate, locale)} ({nights} {locale === 'th' ? 'คืน' : (nights > 1 ? 'nights' : 'night')})
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-xs text-slate-600">
@@ -360,7 +368,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
                   </div>
                 </div>
 
-                {/* Phone & Check-Out Date */}
+                {/* Phone & National ID */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-sm font-semibold text-slate-800 mb-1">
@@ -380,6 +388,39 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
                   </div>
 
                   <div>
+                    <label className="block text-sm font-semibold text-slate-800 mb-1">
+                      {t('res.nationalIdOrPassport')} *
+                    </label>
+                    <div className="relative">
+                      <ShieldCheck className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        required
+                        placeholder={t('res.nationalIdOrPassport')}
+                        value={nationalIdOrPassport}
+                        onChange={(e) => setNationalIdOrPassport(e.target.value)}
+                        className="w-full text-sm py-2 px-3 pl-9 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono tabular-nums shadow-2xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stay Dates: Check-In & Check-Out */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-800 mb-1">
+                      {t('res.checkInDate')} *
+                    </label>
+                    <CustomDatePicker
+                      required
+                      min={todayStr}
+                      value={checkInDate}
+                      onChange={handleCheckInDateChange}
+                      className="w-full text-sm py-2 px-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono tabular-nums shadow-2xs"
+                    />
+                  </div>
+
+                  <div>
                     <div className="flex items-center justify-between mb-1">
                       <label className="block text-sm font-semibold text-slate-800">
                         {t('res.checkOutDate')} *
@@ -390,28 +431,11 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
                     </div>
                     <CustomDatePicker
                       required
-                      min={tomorrowStr}
+                      min={checkInDate}
+                      placement="top"
                       value={checkOutDate}
                       onChange={setCheckOutDate}
                       className="w-full text-sm py-2 px-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono tabular-nums shadow-2xs"
-                    />
-                  </div>
-                </div>
-
-                {/* National ID / Passport */}
-                <div>
-                  <label className="block text-sm font-semibold text-slate-800 mb-1">
-                    {t('res.nationalIdOrPassport')} *
-                  </label>
-                  <div className="relative">
-                    <ShieldCheck className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      required
-                      placeholder={t('res.nationalIdOrPassport')}
-                      value={nationalIdOrPassport}
-                      onChange={(e) => setNationalIdOrPassport(e.target.value)}
-                      className="w-full text-sm py-2 px-3 pl-9 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono tabular-nums shadow-2xs"
                     />
                   </div>
                 </div>

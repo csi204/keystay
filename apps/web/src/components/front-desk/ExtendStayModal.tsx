@@ -239,6 +239,7 @@ export const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
             <CustomDatePicker
               required
               min={minDateStr}
+              placement="top"
               value={newCheckOutDate}
               onChange={(date) => {
                 setNewCheckOutDate(date);

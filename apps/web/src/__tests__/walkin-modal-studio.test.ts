@@ -69,8 +69,8 @@ describe('Task 3: Overhaul WalkInModal to Split 2-Pane Studio Layout with Live C
     assert.match(code, /ShieldCheck.*w-4 h-4 text-slate-400/);
     assert.match(code, /Banknote.*w-4 h-4 text-slate-400/);
 
-    // Min check-out date set to tomorrow and dynamic nights counter chip
-    assert.match(code, /min=\{tomorrowStr\}/);
+    // Min check-out date set to checkInDate / tomorrow and dynamic nights counter chip
+    assert.match(code, /min=\{checkInDate\}|min=\{tomorrowStr\}/);
     assert.match(code, /nights.*คืน|nights.*night/);
   });
 

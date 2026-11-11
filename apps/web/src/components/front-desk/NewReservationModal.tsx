@@ -243,8 +243,14 @@ export const NewReservationModal: React.FC<NewReservationModalProps> = ({
                 </label>
                 <CustomDatePicker
                   required
+                  min={todayStr}
                   value={checkInDate}
-                  onChange={setCheckInDate}
+                  onChange={(date) => {
+                    setCheckInDate(date);
+                    if (checkOutDate && date > checkOutDate) {
+                      setCheckOutDate(date);
+                    }
+                  }}
                   className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono"
                 />
               </div>
@@ -256,6 +262,7 @@ export const NewReservationModal: React.FC<NewReservationModalProps> = ({
                 <CustomDatePicker
                   required
                   min={checkInDate}
+                  placement="top"
                   value={checkOutDate}
                   onChange={setCheckOutDate}
                   className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono"

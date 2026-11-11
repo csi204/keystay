@@ -361,8 +361,14 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
                 </label>
                 <CustomDatePicker
                   required
+                  min={todayStr}
                   value={checkInDate}
-                  onChange={setCheckInDate}
+                  onChange={(date) => {
+                    setCheckInDate(date);
+                    if (checkOutDate && date > checkOutDate) {
+                      setCheckOutDate(date);
+                    }
+                  }}
                   className="w-full text-sm py-2 px-3 bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono tabular-nums"
                 />
               </div>
@@ -374,6 +380,7 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
                 <CustomDatePicker
                   required
                   min={checkInDate}
+                  placement="top"
                   value={checkOutDate}
                   onChange={setCheckOutDate}
                   className="w-full text-sm py-2 px-3 bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono tabular-nums"

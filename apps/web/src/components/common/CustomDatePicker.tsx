@@ -13,6 +13,32 @@ export interface CustomDatePickerProps {
   className?: string;
   id?: string;
   name?: string;
+  placement?: 'top' | 'bottom' | 'auto';
+  defaultOpen?: boolean;
+}
+
+/**
+ * Determine popover placement based on element bounding rect and window height.
+ */
+export function computePlacement(
+  rect?: { bottom: number; top?: number } | null,
+  windowHeight: number = typeof window !== 'undefined' ? window.innerHeight : 800,
+  popoverHeight: number = 320
+): 'top' | 'bottom' {
+  if (!rect) return 'bottom';
+  if (rect.bottom + popoverHeight > windowHeight) {
+    return 'top';
+  }
+  return 'bottom';
+}
+
+/**
+ * Checks whether a given ISO date string satisfies min and max constraints.
+ */
+export function isDateWithinConstraints(dateIso: string, min?: string, max?: string): boolean {
+  if (min && dateIso < min) return false;
+  if (max && dateIso > max) return false;
+  return true;
 }
 
 const THAI_MONTHS = [
@@ -109,6 +135,8 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   className = '',
   id,
   name,
+  placement = 'auto',
+  defaultOpen = false,
 }) => {
   const { locale } = useLanguage();
   const isThai = locale === 'th';
@@ -116,8 +144,49 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(defaultOpen);
   const [displayText, setDisplayText] = useState(() => formatDisplayDate(value, locale));
+
+  const [popoverDirection, setPopoverDirection] = useState<'top' | 'bottom'>(
+    placement === 'top' ? 'top' : 'bottom'
+  );
+
+  const updatePlacement = () => {
+    if (placement === 'top') {
+      setPopoverDirection('top');
+      return;
+    }
+    if (placement === 'bottom') {
+      setPopoverDirection('bottom');
+      return;
+    }
+    // placement === 'auto'
+    if (typeof window !== 'undefined') {
+      const el = inputRef.current || containerRef.current;
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        if (rect.bottom + 320 > window.innerHeight) {
+          setPopoverDirection('top');
+        } else {
+          setPopoverDirection('bottom');
+        }
+      }
+    }
+  };
+
+  const handleOpen = () => {
+    if (!disabled) {
+      updatePlacement();
+      inputRef.current?.focus();
+      setIsOpen(true);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      updatePlacement();
+    }
+  }, [isOpen, placement]);
 
   // Determine initial calendar view
   const getInitialView = () => {
@@ -230,6 +299,9 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   };
 
   const handleSelectDate = (iso: string) => {
+    if (disabled) return;
+    if (min && iso < min) return;
+    if (max && iso > max) return;
     onChange(iso);
     setDisplayText(formatDisplayDate(iso, locale));
     setIsOpen(false);
@@ -287,15 +359,13 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
     ? `${THAI_MONTHS[viewMonth]} ${viewYear + 543}`
     : `${ENGLISH_MONTHS[viewMonth]} ${viewYear}`;
 
+  const resolvedPlacement: 'top' | 'bottom' =
+    placement && placement !== 'auto' ? placement : popoverDirection;
+
   return (
     <div ref={containerRef} className="relative w-full">
       <div
-        onClick={() => {
-          if (!disabled) {
-            inputRef.current?.focus();
-            setIsOpen(true);
-          }
-        }}
+        onClick={handleOpen}
         className={`flex items-center w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg font-mono tabular-nums text-sm transition-colors cursor-pointer ${
           disabled
             ? 'opacity-50 cursor-not-allowed bg-slate-100'
@@ -314,7 +384,7 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
           required={required}
           onChange={handleInputChange}
           onBlur={handleInputBlur}
-          onFocus={() => !disabled && setIsOpen(true)}
+          onFocus={handleOpen}
           className="w-full bg-transparent border-0 p-0 text-slate-900 focus:outline-none focus:ring-0 font-mono tabular-nums text-inherit"
         />
       </div>
@@ -323,7 +393,10 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
         <div
           role="dialog"
           aria-modal="true"
-          className="absolute left-0 mt-1.5 z-[80] bg-white rounded-xl shadow-xl border border-slate-200 p-3 w-72 sm:w-80 select-none animate-in fade-in zoom-in-95 duration-100"
+          data-placement={resolvedPlacement}
+          className={`absolute left-0 z-50 bg-white rounded-xl shadow-lg border border-slate-200 p-3 w-72 sm:w-80 select-none animate-in fade-in zoom-in-95 duration-100 ${
+            resolvedPlacement === 'top' ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
+          }`}
         >
           {/* Header */}
           <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
@@ -379,24 +452,31 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
               );
 
               let btnClass =
-                'h-8 w-8 mx-auto flex items-center justify-center text-xs font-mono tabular-nums rounded-lg transition-colors cursor-pointer ';
-              if (isSelected) {
-                btnClass += 'bg-slate-900 text-white font-bold rounded-lg shadow-sm';
-              } else if (isDayDisabled) {
-                btnClass += 'text-slate-300 opacity-40 cursor-not-allowed';
+                'h-8 w-8 mx-auto flex items-center justify-center text-xs font-mono tabular-nums rounded-lg transition-colors ';
+              if (isDayDisabled) {
+                btnClass +=
+                  'text-slate-300 dark:text-slate-600 cursor-not-allowed hover:bg-transparent';
+              } else if (isSelected) {
+                btnClass +=
+                  'bg-slate-900 text-white font-bold rounded-lg shadow-sm cursor-pointer';
               } else if (isToday) {
                 btnClass +=
-                  'border border-slate-900/40 text-slate-900 font-bold hover:bg-slate-100';
+                  'border border-slate-900/40 text-slate-900 font-bold hover:bg-slate-100 cursor-pointer';
               } else {
-                btnClass += 'text-slate-700 hover:bg-slate-100 font-medium';
+                btnClass += 'text-slate-700 hover:bg-slate-100 font-medium cursor-pointer';
               }
 
               return (
                 <button
                   key={dateIso}
                   type="button"
+                  data-date={dateIso}
                   disabled={isDayDisabled}
-                  onClick={() => handleSelectDate(dateIso)}
+                  onClick={() => {
+                    if (!isDayDisabled) {
+                      handleSelectDate(dateIso);
+                    }
+                  }}
                   className={btnClass}
                 >
                   {day}
