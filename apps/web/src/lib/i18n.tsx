@@ -95,6 +95,7 @@ const translations: Record<Language, Translations> = {
     'filter.showingUnits': 'แสดง {count} จากทั้งหมด {total} ห้อง',
 
     // Room Fields
+    'field.roomType': 'ประเภทห้องพัก',
     'field.roomTypeName': 'ชื่อประเภทห้องพัก',
     'field.description': 'รายละเอียดห้องพัก',
     'field.basePrice': 'ราคาพื้นฐานต่อคืน',
@@ -231,6 +232,7 @@ const translations: Record<Language, Translations> = {
     'filter.showingUnits': 'Showing {count} of {total} rooms',
 
     // Room Fields
+    'field.roomType': 'Room Type',
     'field.roomTypeName': 'Room Type Name',
     'field.description': 'Description',
     'field.basePrice': 'Base Nightly Rate',

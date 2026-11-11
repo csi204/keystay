@@ -29,6 +29,7 @@ import {
   Package,
   ChevronLeft,
   ChevronRight,
+  Layers,
 } from 'lucide-react';
 import { SeasonalPricingTab } from './SeasonalPricingTab';
 import { AmenitiesCatalogTab } from './AmenitiesCatalogTab';
@@ -810,6 +811,54 @@ export const RoomsPricingPage: React.FC = () => {
       ══════════════════════════════════════════════════════════════ */}
       {activeTab === 'units' && (
         <div className="px-4 pb-6 space-y-4">
+          {/* Floor Quick Selector Tabs (1-Click Switcher - No More Endless Scrolling!) */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+            <button
+              onClick={() => setFloorFilter('all')}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-semibold whitespace-nowrap transition-all ${
+                floorFilter === 'all'
+                  ? 'bg-slate-900 border-slate-900 text-white shadow-2xs'
+                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+              }`}
+            >
+              <Building2 className={`w-3.5 h-3.5 ${floorFilter === 'all' ? 'text-white' : 'text-slate-400'}`} />
+              <span>{t('filter.allFloors')}</span>
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                  floorFilter === 'all' ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-500'
+                }`}
+              >
+                {rooms.length}
+              </span>
+            </button>
+
+            {floors.map((f) => {
+              const floorRoomCount = rooms.filter((r) => r.floorId === f.id).length;
+              const isSelected = floorFilter === f.id;
+              return (
+                <button
+                  key={f.id}
+                  onClick={() => setFloorFilter(f.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium whitespace-nowrap transition-all ${
+                    isSelected
+                      ? 'bg-slate-900 border-slate-900 text-white shadow-2xs'
+                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+                  }`}
+                >
+                  <Layers className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-slate-400'}`} />
+                  <span>{f.name}</span>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                      isSelected ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-500'
+                    }`}
+                  >
+                    {floorRoomCount}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
           {/* Clean Professional Toolbar with Matching Height (h-9) */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2.5 flex-1">
