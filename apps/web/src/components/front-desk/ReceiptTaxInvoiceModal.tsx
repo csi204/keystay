@@ -111,28 +111,40 @@ export const ReceiptTaxInvoiceModal: React.FC<ReceiptTaxInvoiceModalProps> = ({
         @media print {
           @page {
             size: 80mm auto;
-            margin: 0;
+            margin: 0mm;
           }
-          body {
+          html, body {
             background: white !important;
-            color: black !important;
             margin: 0 !important;
             padding: 0 !important;
+            width: 80mm !important;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
-          .print\\:hidden {
-            display: none !important;
+          body * {
+            visibility: hidden !important;
+          }
+          .receipt-80mm-paper, .receipt-80mm-paper * {
+            visibility: visible !important;
           }
           .receipt-80mm-paper {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
             width: 80mm !important;
             max-width: 80mm !important;
-            margin: 0 auto !important;
+            min-width: 80mm !important;
+            margin: 0 !important;
             padding: 4mm 3mm !important;
             box-shadow: none !important;
             border: none !important;
             border-radius: 0 !important;
+            background: white !important;
             color: black !important;
+            display: block !important;
+          }
+          .print\\:hidden {
+            display: none !important;
           }
         }
       `}</style>
@@ -144,7 +156,7 @@ export const ReceiptTaxInvoiceModal: React.FC<ReceiptTaxInvoiceModalProps> = ({
         aria-hidden="true"
       />
 
-      <div className="relative z-10 flex flex-col items-center my-auto py-4 print:py-0 print:my-0">
+      <div className="relative z-10 flex flex-col items-center my-auto py-4 print:static print:p-0 print:m-0 print:py-0 print:my-0">
         {/* Top Action Toolbar (hidden during print) */}
         <div className="w-[360px] max-w-[360px] mb-3 bg-slate-800 text-white rounded-lg p-3 shadow-xl border border-slate-700/60 print:hidden">
           <div className="flex items-center justify-between pb-2 border-b border-slate-700/80">

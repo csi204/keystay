@@ -70,10 +70,45 @@ describe('Task 5: Transform ReceiptTaxInvoiceModal to authentic 80mm POS thermal
 
     // @page { size: 80mm auto; margin: 0; }
     assert.match(code, /size:\s*80mm\s+auto;/);
-    assert.match(code, /margin:\s*0;/);
+    assert.match(code, /margin:\s*0(mm)?;/);
 
     // Tuning padding in print: 4mm 3mm
     assert.match(code, /padding:\s*4mm\s+3mm\s*!important;/);
+  });
+
+  it('verifies 100% print isolation rules hiding background DOM and showing only receipt paper', () => {
+    const code = fs.readFileSync(modalPath, 'utf-8');
+
+    // Hide all background elements in the DOM
+    assert.match(
+      code,
+      /body\s+\*\s*\{\s*visibility:\s*hidden\s*!important;\s*\}/,
+      'Must hide all body elements during print'
+    );
+
+    // Keep receipt paper and all its children visible
+    assert.match(
+      code,
+      /\.receipt-80mm-paper,\s*\.receipt-80mm-paper\s+\*\s*\{\s*visibility:\s*visible\s*!important;\s*\}/,
+      'Must keep receipt-80mm-paper and its children visible during print'
+    );
+
+    // Absolute positioning at top left with 80mm width
+    assert.match(
+      code,
+      /position:\s*absolute\s*!important;/,
+      'receipt paper must be absolutely positioned for print'
+    );
+    assert.match(
+      code,
+      /left:\s*0\s*!important;/,
+      'receipt paper must align to left: 0'
+    );
+    assert.match(
+      code,
+      /top:\s*0\s*!important;/,
+      'receipt paper must align to top: 0'
+    );
   });
 
   it('verifies Header branding contains Keystay hotel branding, Tax ID, and POS-01 station', () => {
