@@ -67,7 +67,7 @@ export const th: Record<string, string> = {
   'ops.checkIn': 'เช็คอิน',
   'ops.checkOut': 'เช็คเอาท์',
   'ops.checkOutAndSettle': 'เช็คเอาต์ & คิดเงิน',
-  'ops.reprintAbb': 'พิมพ์ใบเสร็จ ABB',
+  'ops.reprintAbb': 'พิมพ์สลิป (80mm)',
   'ops.noBillingHistory': 'ไม่มีประวัติบิลการชำระเงิน',
   'ops.allPaidBills': 'บิลที่ปิดยอดแล้วทั้งหมด',
   'ops.searchBillingPlaceholder': 'ค้นหาตามเลขห้อง, ชื่อแขก หรือเลขที่บิล...',

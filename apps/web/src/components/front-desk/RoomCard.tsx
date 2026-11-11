@@ -174,16 +174,16 @@ export const RoomCard: React.FC<RoomCardProps> = ({
         {room.status === 'available' && (
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="bg-slate-50 border border-slate-200 text-slate-700 text-[11px] px-2 py-0.5 rounded-md font-medium inline-flex items-center gap-1">
-              <BedDouble className="w-3.5 h-3.5 text-slate-500 shrink-0" aria-hidden="true" />
-              <span>{bedLabel}</span>
+              <BedDouble className="w-3.5 h-3.5 text-slate-500 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+              <span className="leading-none">{bedLabel}</span>
             </span>
             <span className="bg-slate-50 border border-slate-200 text-slate-700 text-[11px] px-2 py-0.5 rounded-md font-medium inline-flex items-center gap-1">
-              <Users className="w-3.5 h-3.5 text-slate-500 shrink-0" aria-hidden="true" />
-              <span>{capacityLabel}</span>
+              <Users className="w-3.5 h-3.5 text-slate-500 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+              <span className="leading-none">{capacityLabel}</span>
             </span>
             <span className="bg-slate-50 border border-slate-200 text-slate-700 text-[11px] px-2 py-0.5 rounded-md font-medium inline-flex items-center gap-1">
-              <Bath className="w-3.5 h-3.5 text-slate-500 shrink-0" aria-hidden="true" />
-              <span>{bathLabel}</span>
+              <Bath className="w-3.5 h-3.5 text-slate-500 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+              <span className="leading-none">{bathLabel}</span>
             </span>
           </div>
         )}
@@ -192,13 +192,13 @@ export const RoomCard: React.FC<RoomCardProps> = ({
         {room.status === 'occupied' && (
           <div className="flex flex-wrap items-center gap-1.5">
             <div className="inline-flex items-center gap-1.5 bg-blue-50/80 border border-blue-200 text-xs sm:text-sm font-semibold text-blue-900 px-2 py-1 rounded-md max-w-full">
-              <User className="w-3.5 h-3.5 text-blue-600 shrink-0" aria-hidden="true" />
-              <span className="truncate">{displayGuest || t('common.guest')}</span>
+              <User className="w-3.5 h-3.5 text-blue-600 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+              <span className="truncate leading-none">{displayGuest || t('common.guest')}</span>
             </div>
             {displayCheckout && (
               <div className="inline-flex items-center gap-1 bg-blue-50/80 border border-blue-200 text-blue-900 text-xs px-2 py-1 rounded-md font-mono">
-                <Calendar className="w-3 h-3 text-blue-600 shrink-0" aria-hidden="true" />
-                <span>{locale === 'th' ? `ออก: ${displayCheckout}` : `Out: ${displayCheckout}`}</span>
+                <Calendar className="w-3 h-3 text-blue-600 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+                <span className="leading-none">{locale === 'th' ? `ออก: ${displayCheckout}` : `Out: ${displayCheckout}`}</span>
               </div>
             )}
           </div>
@@ -207,8 +207,8 @@ export const RoomCard: React.FC<RoomCardProps> = ({
         {/* Maintenance & Out of Order: Prominent reason notice box */}
         {(room.status === 'maintenance' || room.status === 'out_of_order') && (
           <div className="bg-amber-50/90 border border-amber-200 text-amber-800 text-xs px-2.5 py-1.5 rounded-md font-medium flex items-center gap-1.5">
-            <Wrench className="w-3.5 h-3.5 text-amber-600 shrink-0" aria-hidden="true" />
-            <span className="truncate">{maintenanceReason}</span>
+            <Wrench className="w-3.5 h-3.5 text-amber-600 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+            <span className="truncate leading-none">{maintenanceReason}</span>
           </div>
         )}
 
@@ -234,9 +234,9 @@ export const RoomCard: React.FC<RoomCardProps> = ({
               e.stopPropagation();
               onQuickBook(room);
             }}
-            className="w-full py-2 px-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-md shadow-md flex items-center justify-center gap-1 cursor-pointer min-h-[44px] focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-1"
+            className="w-full py-2 px-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-md shadow-md flex items-center justify-center gap-1 cursor-pointer min-h-[44px] focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-1 active:scale-[0.98]"
           >
-            <Zap className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" />
+            <Zap className="w-3.5 h-3.5 text-amber-400" strokeWidth={1.75} aria-hidden="true" />
             <span>{locale === 'th' ? 'เปิดห้องทันที (Walk-In)' : 'Quick Walk-In'}</span>
           </button>
         </div>

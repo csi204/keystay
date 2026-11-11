@@ -387,16 +387,16 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setIsReceiptOpen(true)}
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 min-h-[44px] text-sm font-semibold text-slate-900 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg shadow-sm transition-colors"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 min-h-[44px] text-sm font-semibold text-slate-900 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg shadow-sm transition-all active:scale-[0.98]"
                   >
-                    <Printer className="w-4 h-4 text-slate-700" aria-hidden="true" />
+                    <Printer className="w-4 h-4 text-slate-700" strokeWidth={1.75} aria-hidden="true" />
                     <span>{t('checkout.printReceiptAbb')}</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={handleFinish}
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 min-h-[44px] text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-sm transition-colors"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 min-h-[44px] text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-sm transition-all active:scale-[0.98]"
                   >
                     <span>{t('checkout.closeSettled')}</span>
                   </button>
@@ -665,7 +665,7 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
                     type="button"
                     onClick={onClose}
                     disabled={isSubmitting}
-                    className="px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors min-h-[44px]"
+                    className="px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors min-h-[44px] active:scale-[0.98]"
                   >
                     {t('common.cancel')}
                   </button>
@@ -673,9 +673,9 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="text-sm font-semibold py-2.5 px-6 text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2 min-h-[44px] disabled:opacity-50"
+                    className="text-sm font-semibold py-2.5 px-6 text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-sm transition-all active:scale-[0.98] flex items-center justify-center gap-2 min-h-[44px] disabled:opacity-50"
                   >
-                    <LogOut className="w-4 h-4" aria-hidden="true" />
+                    <LogOut className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
                     <span>
                       {isSubmitting
                         ? t('checkout.submitting')

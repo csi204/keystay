@@ -481,11 +481,11 @@ export const DailyOperationsPage: React.FC = () => {
                             <td className="text-sm py-3.5 px-4 text-slate-800 text-right">
                               <button
                                 onClick={() => handleOpenReprintInvoice(b)}
-                                className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold py-1.5 px-3 text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-md shadow-2xs transition-colors min-h-[36px]"
-                                title={t('ops.reprintAbb')}
+                                className="inline-flex items-center text-xs sm:text-sm font-semibold py-1.5 px-3 text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-md shadow-2xs transition-colors min-h-[36px] active:scale-[0.98]"
+                                title="พิมพ์สลิป (80mm)"
                               >
-                                <Printer className="w-3.5 h-3.5 text-slate-500" aria-hidden="true" />
-                                <span>{t('ops.reprintAbb')}</span>
+                                <Printer className="w-3.5 h-3.5 mr-1 text-slate-500" strokeWidth={1.75} aria-hidden="true" />
+                                <span>{locale === 'th' ? 'พิมพ์สลิป (80mm)' : 'พิมพ์สลิป (80mm)'}</span>
                               </button>
                             </td>
                           </tr>
