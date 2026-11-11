@@ -485,7 +485,7 @@ export const DailyOperationsPage: React.FC = () => {
                                 title="พิมพ์สลิป (80mm)"
                               >
                                 <Printer className="w-3.5 h-3.5 mr-1 text-slate-500" strokeWidth={1.75} aria-hidden="true" />
-                                <span>{locale === 'th' ? 'พิมพ์สลิป (80mm)' : 'พิมพ์สลิป (80mm)'}</span>
+                                <span>{locale === 'th' ? 'พิมพ์สลิป (80mm)' : 'Print Slip (80mm)'}</span>
                               </button>
                             </td>
                           </tr>
