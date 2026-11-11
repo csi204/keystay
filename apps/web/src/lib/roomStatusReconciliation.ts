@@ -84,20 +84,24 @@ export function reconcileLiveRooms(
       return room;
     }
 
-    // 2. confirmed -> reserved
+    // 2. confirmed -> reserved (do not override active maintenance or out_of_order)
     if (confirmedByRoomId.has(room.id)) {
-      if (room.status !== 'reserved') {
+      if (
+        room.status !== 'reserved' &&
+        room.status !== 'maintenance' &&
+        room.status !== 'out_of_order'
+      ) {
         return { ...room, status: 'reserved' as const };
       }
       return room;
     }
 
-    // 3. checked_out (today) -> cleaning
-    if (checkedOutTodayByRoomId.has(room.id)) {
-      if (room.status !== 'cleaning') {
-        return { ...room, status: 'cleaning' as const };
-      }
-      return room;
+    // 3. checked_out (today) -> cleaning (only if currently occupied, reserved, or checked_out)
+    if (
+      checkedOutTodayByRoomId.has(room.id) &&
+      (room.status === 'occupied' || room.status === 'reserved' || room.status === 'checked_out')
+    ) {
+      return { ...room, status: 'cleaning' as const };
     }
 
     // 4. Stale reserved check: if DB status is 'reserved' but no confirmed reservation exists

@@ -261,6 +261,147 @@ describe('Task 1: Room Matrix Live Status Reconciliation & Webhook Resilience', 
     );
   });
 
+  it('guards against overwriting available or maintenance room states in reconciliation', () => {
+    const today = '2026-11-12';
+    const testRooms: Room[] = [
+      {
+        id: 'room-cleaned',
+        roomNumber: '201',
+        roomTypeId: 'deluxe',
+        floor: '2',
+        status: 'available', // cleaned by housekeeping earlier today
+        createdAt: '2026-01-01T00:00:00Z',
+        updatedAt: '2026-01-01T00:00:00Z',
+      },
+      {
+        id: 'room-maint-out',
+        roomNumber: '202',
+        roomTypeId: 'deluxe',
+        floor: '2',
+        status: 'maintenance', // manager marked for maintenance
+        createdAt: '2026-01-01T00:00:00Z',
+        updatedAt: '2026-01-01T00:00:00Z',
+      },
+      {
+        id: 'room-maint-conf',
+        roomNumber: '203',
+        roomTypeId: 'deluxe',
+        floor: '2',
+        status: 'maintenance',
+        createdAt: '2026-01-01T00:00:00Z',
+        updatedAt: '2026-01-01T00:00:00Z',
+      },
+      {
+        id: 'room-ooo-conf',
+        roomNumber: '204',
+        roomTypeId: 'deluxe',
+        floor: '2',
+        status: 'out_of_order',
+        createdAt: '2026-01-01T00:00:00Z',
+        updatedAt: '2026-01-01T00:00:00Z',
+      },
+    ];
+
+    const reservations: ExtendedReservation[] = [
+      {
+        id: 'res-out-cleaned',
+        bookingNumber: 'BK-CLEANED',
+        guestId: 'g-1',
+        roomId: 'room-cleaned',
+        guestName: 'Checked Out Guest',
+        checkInDate: '2026-11-10',
+        checkOutDate: today,
+        actualCheckOut: `${today}T09:00:00Z`,
+        totalNights: '2',
+        totalAmount: '3000',
+        depositAmount: '500',
+        status: 'checked_out',
+        createdAt: '2026-11-10T00:00:00Z',
+        updatedAt: `${today}T09:00:00Z`,
+      },
+      {
+        id: 'res-out-maint',
+        bookingNumber: 'BK-MAINT',
+        guestId: 'g-2',
+        roomId: 'room-maint-out',
+        guestName: 'Maint Room Guest',
+        checkInDate: '2026-11-10',
+        checkOutDate: today,
+        actualCheckOut: `${today}T10:00:00Z`,
+        totalNights: '2',
+        totalAmount: '3000',
+        depositAmount: '500',
+        status: 'checked_out',
+        createdAt: '2026-11-10T00:00:00Z',
+        updatedAt: `${today}T10:00:00Z`,
+      },
+      {
+        id: 'res-conf-maint',
+        bookingNumber: 'BK-CONF-MAINT',
+        guestId: 'g-3',
+        roomId: 'room-maint-conf',
+        guestName: 'Maint Conf Booker',
+        checkInDate: today,
+        checkOutDate: '2026-11-15',
+        totalNights: '3',
+        totalAmount: '4500',
+        depositAmount: '500',
+        status: 'confirmed',
+        createdAt: '2026-11-10T00:00:00Z',
+        updatedAt: '2026-11-10T00:00:00Z',
+      },
+      {
+        id: 'res-conf-ooo',
+        bookingNumber: 'BK-CONF-OOO',
+        guestId: 'g-4',
+        roomId: 'room-ooo-conf',
+        guestName: 'OOO Booker',
+        checkInDate: today,
+        checkOutDate: '2026-11-15',
+        totalNights: '3',
+        totalAmount: '4500',
+        depositAmount: '500',
+        status: 'confirmed',
+        createdAt: '2026-11-10T00:00:00Z',
+        updatedAt: '2026-11-10T00:00:00Z',
+      },
+    ];
+
+    const live = reconcileLiveRooms(testRooms, reservations, today);
+    const roomCleaned = live.find((r) => r.id === 'room-cleaned');
+    const roomMaintOut = live.find((r) => r.id === 'room-maint-out');
+    const roomMaintConf = live.find((r) => r.id === 'room-maint-conf');
+    const roomOooConf = live.find((r) => r.id === 'room-ooo-conf');
+
+    assert.ok(roomCleaned);
+    assert.strictEqual(
+      roomCleaned.status,
+      'available',
+      'room with DB status available that had checkout earlier today remains available'
+    );
+
+    assert.ok(roomMaintOut);
+    assert.strictEqual(
+      roomMaintOut.status,
+      'maintenance',
+      'room with DB status maintenance that had checkout today must remain maintenance'
+    );
+
+    assert.ok(roomMaintConf);
+    assert.strictEqual(
+      roomMaintConf.status,
+      'maintenance',
+      'room with DB status maintenance that has confirmed booking must remain maintenance'
+    );
+
+    assert.ok(roomOooConf);
+    assert.strictEqual(
+      roomOooConf.status,
+      'out_of_order',
+      'room with DB status out_of_order with confirmed reservation must remain out_of_order'
+    );
+  });
+
   it('verifies RoomMatrixPage.tsx source code invokes reconciliation and updates liveRooms and roomGuests', () => {
     const code = fs.readFileSync(roomMatrixPath, 'utf-8');
 
