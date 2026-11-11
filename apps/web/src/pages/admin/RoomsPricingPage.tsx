@@ -27,6 +27,8 @@ import {
   RefreshCw,
   TrendingUp,
   Package,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { SeasonalPricingTab } from './SeasonalPricingTab';
 import { AmenitiesCatalogTab } from './AmenitiesCatalogTab';
@@ -314,6 +316,20 @@ export const RoomsPricingPage: React.FC = () => {
     const matchOcc = occupancyFilter === 'all' || tItem.maxOccupancy.toString() === occupancyFilter;
     return matchSearch && matchBed && matchOcc;
   });
+
+  // Pagination for Room Types (Max 9 cards per page)
+  const TYPE_ITEMS_PER_PAGE = 9;
+  const [typePage, setTypePage] = useState<number>(1);
+
+  useEffect(() => {
+    setTypePage(1);
+  }, [searchQuery, bedTypeFilter, occupancyFilter]);
+
+  const totalTypePages = Math.ceil(filteredTypes.length / TYPE_ITEMS_PER_PAGE) || 1;
+  const paginatedTypes = filteredTypes.slice(
+    (typePage - 1) * TYPE_ITEMS_PER_PAGE,
+    typePage * TYPE_ITEMS_PER_PAGE
+  );
 
   // ══════════════════════════════════════════════
   //  TAB 2 — Room Units
@@ -687,7 +703,7 @@ export const RoomsPricingPage: React.FC = () => {
 
           {/* Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {filteredTypes.map((tItem) => (
+            {paginatedTypes.map((tItem) => (
               <Card key={tItem.id} className="border-slate-200 bg-white shadow-sm hover:border-slate-300 transition-all">
                 <CardHeader className="py-3 px-4 flex flex-row items-center justify-between border-b border-slate-100">
                   <div className="flex items-center gap-2">
@@ -736,61 +752,56 @@ export const RoomsPricingPage: React.FC = () => {
             ))}
           </div>
 
-          {/* Detailed Table */}
-          <Card className="border-slate-200 shadow-sm bg-white overflow-hidden">
-            <CardHeader className="py-3 px-5 border-b border-slate-100">
-              <CardTitle className="text-sm font-bold text-slate-900">
-                {t('header.roomTypes.title')} (Master Data)
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 text-[11px] text-slate-500 font-semibold border-b border-slate-200 uppercase tracking-wider">
-                    <tr>
-                      <th className="py-3 px-4">{t('field.roomTypeName')}</th>
-                      <th className="py-3 px-3">{t('field.bedType')}</th>
-                      <th className="py-3 px-3 text-center">{t('field.sizeSqm')}</th>
-                      <th className="py-3 px-3 text-center">{t('field.bathrooms')}</th>
-                      <th className="py-3 px-3 text-center">{t('field.maxOccupancy')}</th>
-                      <th className="py-3 px-3 text-right">{t('field.basePrice')}</th>
-                      {isOwner && <th className="py-3 px-4 text-center">{t('field.actions')}</th>}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {filteredTypes.map((tItem) => (
-                      <tr key={tItem.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="py-3 px-4">
-                          <div className="font-semibold text-slate-900">{tItem.name}</div>
-                          <div className="text-[11px] text-slate-500 truncate max-w-xs">{tItem.description}</div>
-                        </td>
-                        <td className="py-3 px-3 text-slate-700">{tItem.bedType}</td>
-                        <td className="py-3 px-3 text-center font-mono text-slate-600">{tItem.sizeSqm}</td>
-                        <td className="py-3 px-3 text-center font-mono text-slate-600">{tItem.bathrooms || 1}</td>
-                        <td className="py-3 px-3 text-center font-mono text-slate-600">{tItem.maxOccupancy}</td>
-                        <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
-                          ฿{tItem.basePrice.toLocaleString()}
-                        </td>
-                        {isOwner && (
-                          <td className="py-3 px-4 text-center">
-                            <div className="flex items-center justify-center gap-1.5">
-                              <Button variant="outline" size="sm" disabled={isOffline} onClick={() => openEditModal(tItem)} className="h-7 text-xs px-2.5 border-slate-300 text-slate-700 gap-1 font-medium">
-                                <Pencil className="w-3 h-3 text-slate-500" />
-                                <span>{t('action.edit')}</span>
-                              </Button>
-                              <Button variant="outline" size="sm" disabled={isOffline} onClick={() => setDeletingType(tItem)} className="h-7 text-xs px-2 border-red-200 text-red-600 hover:bg-red-50">
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          </td>
-                        )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          {/* Pagination Controls for Room Types (When cards > 9) */}
+          {filteredTypes.length > TYPE_ITEMS_PER_PAGE && (
+            <div className="flex items-center justify-between bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-2xs mt-4">
+              <div className="text-xs text-slate-500 font-medium">
+                แสดง <span className="font-semibold text-slate-800">{(typePage - 1) * TYPE_ITEMS_PER_PAGE + 1}</span> -{' '}
+                <span className="font-semibold text-slate-800">
+                  {Math.min(typePage * TYPE_ITEMS_PER_PAGE, filteredTypes.length)}
+                </span>{' '}
+                จากทั้งหมด <span className="font-semibold text-slate-800">{filteredTypes.length}</span> ประเภทห้องพัก (9 การ์ดต่อหน้า)
               </div>
-            </CardContent>
-          </Card>
+
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={typePage === 1}
+                  onClick={() => setTypePage((p) => Math.max(1, p - 1))}
+                  className="h-8 px-2.5 text-xs text-slate-600 border-slate-200 hover:bg-slate-50 disabled:opacity-40"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5 mr-1" />
+                  ก่อนหน้า
+                </Button>
+
+                {Array.from({ length: totalTypePages }, (_, i) => i + 1).map((pageNum) => (
+                  <button
+                    key={pageNum}
+                    onClick={() => setTypePage(pageNum)}
+                    className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all ${
+                      typePage === pageNum
+                        ? 'bg-slate-900 text-white shadow-2xs'
+                        : 'text-slate-600 hover:bg-slate-100 border border-transparent'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                ))}
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={typePage === totalTypePages}
+                  onClick={() => setTypePage((p) => Math.min(totalTypePages, p + 1))}
+                  className="h-8 px-2.5 text-xs text-slate-600 border-slate-200 hover:bg-slate-50 disabled:opacity-40"
+                >
+                  ถัดไป
+                  <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
