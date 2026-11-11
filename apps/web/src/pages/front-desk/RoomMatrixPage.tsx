@@ -83,12 +83,12 @@ export const RoomMatrixPage: React.FC = () => {
   const error = roomsError || reservationsError;
   const loading = roomsLoading && reservationsLoading;
 
-  // Silent 30s background auto-refresh & immediate refetch on tab focus
+  // Silent 1-minute background auto-refresh & immediate refetch on tab focus
   useEffect(() => {
     const interval = setInterval(() => {
       refreshRooms();
       refreshReservations();
-    }, 30000);
+    }, 60000);
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
@@ -492,6 +492,14 @@ export const RoomMatrixPage: React.FC = () => {
                 <span>{t('res.newReservation')}</span>
               </button>
             )}
+
+            <div className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200/80 text-[11px] font-medium text-slate-600">
+              <span className="relative flex h-2 w-2" aria-hidden="true">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              </span>
+              <span>{locale === 'th' ? 'อัปเดตอัตโนมัติทุก 1 นาที' : 'Auto-refreshes every 1 min'}</span>
+            </div>
 
             {/* Live Auto-Refresh Indicator with Pulse Dot and Tabular Numbers */}
             <div className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-50 rounded-lg border border-slate-200/60 shrink-0">

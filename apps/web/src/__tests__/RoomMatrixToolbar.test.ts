@@ -54,6 +54,9 @@ describe('RoomMatrixPage — Unified Toolbar, Popover Filter, Auto-Refresh & Sub
     // Emerald pulse dot
     assert.match(pageCode, /w-2\s+h-2\s+rounded-full\s+bg-emerald-500\s+animate-pulse/);
 
+    // Live auto-refreshes every 1 min pulse badge
+    assert.match(pageCode, /อัปเดตอัตโนมัติทุก 1 นาที|Auto-refreshes every 1 min/);
+
     // Tabular numbers and font-mono timestamp
     assert.match(pageCode, /font-mono\s+tabular-nums\s+text-xs\s+text-slate-500/);
     assert.match(pageCode, /matrix\.autoRefresh/);
@@ -78,9 +81,9 @@ describe('RoomMatrixPage — Unified Toolbar, Popover Filter, Auto-Refresh & Sub
     assert.match(pageCode, /res\.newReservation/);
   });
 
-  it('implements silent 30s background auto-refresh and immediate visibilitychange refetch', () => {
-    // 30-second interval
-    assert.match(pageCode, /30000|30\s*\*\s*1000/);
+  it('implements silent 1-minute background auto-refresh and immediate visibilitychange refetch', () => {
+    // 60-second (1-minute) interval
+    assert.match(pageCode, /60000|60\s*\*\s*1000/);
     assert.match(pageCode, /setInterval/);
     assert.match(pageCode, /clearInterval/);
 
