@@ -104,8 +104,8 @@ export function useReservations() {
 
   const checkInReservation = async (id: string, nationalIdOrPassport: string) => {
     const res = await apiFetch(`/api/reservations/${id}/check-in`, {
-      method: 'PUT',
-      body: JSON.stringify({ nationalIdOrPassport }),
+      method: 'POST',
+      body: JSON.stringify({ nationalIdOrPassport, idCardNumber: nationalIdOrPassport }),
     });
     if (!res.error) {
       await fetchReservations();

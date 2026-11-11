@@ -1,4 +1,4 @@
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { type Env, mapReservation, mapAmenityRequest } from '../types';
 import {
   createReservationSchema,
@@ -1264,9 +1264,9 @@ reservations.delete('/:id', async (c) => {
 });
 
 // ==========================================
-// 36. POST /reservations/:id/check-in — เช็คอินเข้าพัก
+// 36. POST & PUT /reservations/:id/check-in — เช็คอินเข้าพัก
 // ==========================================
-reservations.post('/:id/check-in', async (c) => {
+const handleCheckIn = async (c: Context<{ Bindings: Env }>) => {
   try {
     const id = c.req.param('id');
     const body = await c.req.json().catch(() => ({}));
@@ -1324,9 +1324,10 @@ reservations.post('/:id/check-in', async (c) => {
     );
 
     // 2. Update guest idCardNumber if provided
-    if (data.idCardNumber && !existing.id_card_number) {
+    const idCard = (data.idCardNumber || (data as any).nationalIdOrPassport || (body as any)?.nationalIdOrPassport)?.trim();
+    if (idCard && !existing.id_card_number) {
       stmts.push(
-        c.env.DB.prepare('UPDATE guests SET id_card_number = ?, updated_at = ? WHERE id = ?').bind(data.idCardNumber.trim(), now, existing.guest_id)
+        c.env.DB.prepare('UPDATE guests SET id_card_number = ?, updated_at = ? WHERE id = ?').bind(idCard, now, existing.guest_id)
       );
     }
 
@@ -1385,7 +1386,10 @@ reservations.post('/:id/check-in', async (c) => {
   } catch (error: any) {
     return c.json({ success: false, error: { message: error.message || 'Failed to process check-in' } }, 500);
   }
-});
+};
+
+reservations.post('/:id/check-in', handleCheckIn);
+reservations.put('/:id/check-in', handleCheckIn);
 
 // ==========================================
 // 37. POST /reservations/:id/check-out — เช็คเอาท์และกระจาย Event Fan-out 1:4
@@ -1763,12 +1767,12 @@ reservations.put('/:id/modify-dates', async (c) => {
 });
 
 // ==========================================
-// 49. POST /reservations/:id/extend-stay — ขยายเวลาการเข้าพัก
+// 49. POST & PUT /reservations/:id/extend-stay & /extend — ขยายเวลาการเข้าพัก
 // ==========================================
-reservations.post('/:id/extend-stay', async (c) => {
+const handleExtendStay = async (c: Context<{ Bindings: Env }>) => {
   try {
     const id = c.req.param('id');
-    const body = await c.req.json();
+    const body = await c.req.json().catch(() => ({}));
     const parsed = extendStaySchema.safeParse(body);
 
     if (!parsed.success) {
@@ -1899,7 +1903,12 @@ reservations.post('/:id/extend-stay', async (c) => {
   } catch (error: any) {
     return c.json({ success: false, error: { message: error.message || 'Failed to extend stay' } }, 500);
   }
-});
+};
+
+reservations.post('/:id/extend-stay', handleExtendStay);
+reservations.put('/:id/extend-stay', handleExtendStay);
+reservations.post('/:id/extend', handleExtendStay);
+reservations.put('/:id/extend', handleExtendStay);
 
 // ==========================================
 // 50. POST /reservations/:id/upgrade-room — ขออัปเกรดประเภทห้องพัก

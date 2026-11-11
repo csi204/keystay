@@ -188,6 +188,48 @@ describe('Reservation Service (Dear - @allmusgus)', () => {
       expect(json.success).to.be.false;
       expect(json.error.code).to.be.oneOf(['ALREADY_CHECKED_IN', 'INVALID_STATE_TRANSITION']);
     });
+
+    it('SUCCESS: allows check-in via PUT method and accepts nationalIdOrPassport', async () => {
+      const createRes = await app.request(
+        '/reservations',
+        {
+          method: 'POST',
+          headers: HEADERS,
+          body: JSON.stringify({
+            roomId: 'rm-put-checkin',
+            roomNumber: '109',
+            roomTypeName: 'Standard Room',
+            guestName: 'PUT Test Guest',
+            checkInDate: '2026-12-01',
+            checkOutDate: '2026-12-03',
+            nightlyRate: 1000,
+            bookingType: 'advance',
+          }),
+        },
+        env
+      );
+      const created = await createRes.json();
+      expect(created.success).to.be.true;
+
+      const res = await app.request(
+        `/reservations/${created.data.id}/check-in`,
+        {
+          method: 'PUT',
+          headers: HEADERS,
+          body: JSON.stringify({
+            nationalIdOrPassport: '1234567890123',
+            depositAmount: 500,
+          }),
+        },
+        env
+      );
+
+      expect(res.status).to.equal(200);
+      const json = await res.json();
+      expect(json.success).to.be.true;
+      expect(json.data.status).to.equal('checked_in');
+      expect(json.data.guest.idCardNumber).to.equal('1234567890123');
+    });
   });
 
   describe('API #49: Extend Stay (POST /reservations/:id/extend-stay)', () => {
@@ -214,6 +256,27 @@ describe('Reservation Service (Dear - @allmusgus)', () => {
       expect(json.data.checkOutDate).to.equal('2026-09-30');
       expect(Number(json.data.totalNights)).to.equal(6);
       expect(Number(json.data.subtotal)).to.equal(21000.00);
+    });
+
+    it('SUCCESS: extends stay via PUT and /extend alias', async () => {
+      const res = await app.request(
+        '/reservations/res-001/extend',
+        {
+          method: 'PUT',
+          headers: HEADERS,
+          body: JSON.stringify({
+            newCheckOutDate: '2026-10-02',
+            additionalDeposit: 0,
+          }),
+        },
+        env
+      );
+
+      expect(res.status).to.equal(200);
+      const json = await res.json();
+      expect(json.success).to.be.true;
+      expect(json.data.status).to.equal('extended');
+      expect(json.data.checkOutDate).to.equal('2026-10-02');
     });
 
     it('BAD: returns 400 when newCheckOutDate is earlier or same as current checkout', async () => {

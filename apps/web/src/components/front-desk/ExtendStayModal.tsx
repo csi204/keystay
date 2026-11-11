@@ -142,12 +142,11 @@ export const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
           setError(res.error || t('extend.errorGeneral'));
         }
       } else {
-        const res = await apiFetch(`/api/reservations/${reservation.id}/extend`, {
-          method: 'PUT',
+        const res = await apiFetch(`/api/reservations/${reservation.id}/extend-stay`, {
+          method: 'POST',
           body: JSON.stringify({
             newCheckOutDate,
-            extraNights,
-            extraCharge,
+            additionalDeposit: 0,
           }),
         });
 

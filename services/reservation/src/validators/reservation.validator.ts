@@ -62,6 +62,7 @@ export const updateReservationSchema = z.object({
 export const checkInReservationSchema = z.object({
   actualCheckIn: z.string().optional(),
   idCardNumber: z.string().optional().nullable(),
+  nationalIdOrPassport: z.string().optional().nullable(),
   depositAmount: z.coerce.number().min(0, 'Deposit amount must be non-negative').optional(),
   specialNotes: z.string().optional().nullable(),
 });
