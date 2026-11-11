@@ -17,6 +17,7 @@ import {
   LogIn,
   LogOut,
   Receipt,
+  ReceiptText,
   CalendarPlus,
   WifiOff,
   Search,
@@ -368,6 +369,25 @@ export const DailyOperationsPage: React.FC = () => {
                           </td>
                           <td className="py-3.5 px-4 text-right">
                             <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={() =>
+                                  navigate('/front-desk/billing', {
+                                    state: {
+                                      roomId: res.roomId || room?.id,
+                                      roomNumber: roomNum,
+                                      reservationId: res.id,
+                                      guestName: guestDisplayName,
+                                      billId: (res as any)?.billId,
+                                      action: 'folio',
+                                    },
+                                  })
+                                }
+                                className="inline-flex items-center gap-1.5 text-sm font-semibold py-1.5 px-3 text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-md shadow-xs transition-colors min-h-[36px] font-sans"
+                                title={t('ops.openFolio') || 'เปิด Folio / บิล'}
+                              >
+                                <ReceiptText className="w-3.5 h-3.5 text-slate-500" strokeWidth={1.75} aria-hidden="true" />
+                                <span>{t('ops.openFolio') || 'เปิด Folio / บิล'}</span>
+                              </button>
                               <button
                                 onClick={() => setExtendTarget(res)}
                                 className="inline-flex items-center gap-1 text-sm font-semibold py-1.5 px-3.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors min-h-[36px] font-sans"

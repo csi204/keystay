@@ -68,6 +68,7 @@ export const en: Record<string, string> = {
   'ops.checkIn': 'Check In',
   'ops.checkOut': 'Check Out',
   'ops.checkOutAndSettle': 'Check-out & Cashier',
+  'ops.openFolio': 'Open Folio / Bill',
   'ops.reprintAbb': 'Print Tax Receipt (ABB)',
   'ops.noBillingHistory': 'No billing or settlement history found',
   'ops.allPaidBills': 'All Settled Bills',

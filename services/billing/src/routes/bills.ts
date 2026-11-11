@@ -279,7 +279,8 @@ bills.post('/', async (c) => {
     const depositDeducted = Number(data.depositDeducted || 0);
     const amountPaid = 0;
     const amountDue = Math.max(0, Number((totalAmount - depositDeducted).toFixed(2)));
-    const status = amountDue === 0 && depositDeducted >= totalAmount ? 'paid' : 'pending';
+    // Decision A1: Newly created bills (especially with 0 items or totalAmount 0) start in 'pending' status so staff can add charges
+    const status = items.length > 0 && totalAmount > 0 && depositDeducted >= totalAmount ? 'paid' : 'pending';
 
     const insertBillStmt = c.env.DB.prepare(
       `INSERT INTO bills (id, bill_number, reservation_id, guest_name, room_number, subtotal, discount_amount, tax_rate, tax_amount, service_charge, total_amount, deposit_deducted, amount_paid, amount_due, status, created_at, updated_at)

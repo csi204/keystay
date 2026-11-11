@@ -13,6 +13,7 @@ import {
   PanelLeft,
   Menu,
   X,
+  ReceiptText,
 } from 'lucide-react';
 import { getAuthUser, clearAuthSession } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
@@ -89,7 +90,7 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
     navigate('/login');
   };
 
-  // 2 Primary Consolidated Nav Workflows
+  // Primary Consolidated Nav Workflows
   const navTabs = [
     {
       key: 'matrix',
@@ -109,8 +110,15 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
       icon: UserCheck,
       isActive:
         activeTab === 'operations' ||
+        location.pathname === '/front-desk/daily-operations',
+    },
+    {
+      key: 'billing',
+      title: t('nav.billing') || 'แคชเชียร์และบิล',
+      path: '/front-desk/billing',
+      icon: ReceiptText,
+      isActive:
         activeTab === 'billing' ||
-        location.pathname === '/front-desk/daily-operations' ||
         location.pathname === '/front-desk/billing',
     },
   ];

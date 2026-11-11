@@ -24,8 +24,8 @@ describe('FrontDeskLayout — Collapsible Left Sidebar & 2-Menu Navigation', () 
     assert.match(code, /PanelLeftClose|PanelLeft/);
   });
 
-  it('consolidates navigation down to 2 primary operational menus', () => {
-    // 2 Primary workflows:
+  it('consolidates navigation down to primary operational menus including Cashier Hub', () => {
+    // Primary workflows:
     // 1. Matrix & Reservations (/front-desk/room-matrix)
     assert.match(code, /nav\.matrixAndReservations/);
     assert.match(code, /\/front-desk\/room-matrix/);
@@ -36,13 +36,17 @@ describe('FrontDeskLayout — Collapsible Left Sidebar & 2-Menu Navigation', () 
     assert.match(code, /\/front-desk\/daily-operations/);
     assert.match(code, /UserCheck/);
 
-    // Primary nav list should NOT contain separate tabs for /front-desk/reservations or /front-desk/billing
-    // Check that nav items array only has 2 items
+    // 3. Cashier & Folios (/front-desk/billing)
+    assert.match(code, /nav\.billing/);
+    assert.match(code, /\/front-desk\/billing/);
+    assert.match(code, /ReceiptText/);
+
+    // Check that nav items array contains 3 primary items
     const navItemsMatch = code.match(/const\s+navTabs\s*=\s*\[([\s\S]*?)\];/);
     assert.ok(navItemsMatch, 'navTabs should be defined');
     const navTabsContent = navItemsMatch[1];
     const pathMatches = navTabsContent.match(/path:\s*['"][^'"]+['"]/g) || [];
-    assert.strictEqual(pathMatches.length, 2, 'Primary navTabs should only contain 2 items');
+    assert.strictEqual(pathMatches.length, 3, 'Primary navTabs should contain 3 items');
   });
 
   it('contains Emergency Outsource button with ShieldCheck, Live Clock with tabular numbers, Language switch, and Logout', () => {

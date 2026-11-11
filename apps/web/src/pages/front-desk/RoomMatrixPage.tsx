@@ -239,6 +239,12 @@ export const RoomMatrixPage: React.FC = () => {
           roomId: room.id,
           roomNumber: room.roomNumber,
           reservationId: roomRes?.id || activeReservation?.id,
+          guestName:
+            roomRes?.guestName ||
+            activeReservation?.guestName ||
+            roomGuests[room.id] ||
+            (selectedRoom ? roomGuests[selectedRoom.id] : '') ||
+            '',
           billId: (roomRes as any)?.billId || (activeReservation as any)?.billId,
           action,
         },

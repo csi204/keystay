@@ -23,6 +23,10 @@ export interface BillPayment {
 }
 
 export interface DetailedBill extends Bill {
+  billNumber?: string;
+  totalAmount?: string | number;
+  depositDeducted?: string | number;
+  amountDue?: string | number;
   guestName?: string;
   roomNumber?: string;
   roomId?: string;

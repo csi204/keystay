@@ -9,13 +9,14 @@ import { ReceiptTaxInvoiceModal } from '@/components/front-desk/ReceiptTaxInvoic
 import { useI18n } from '@/lib/i18n';
 import { apiFetch } from '@/lib/api';
 import {
-  RotateCw,
   Search,
   WifiOff,
+  Receipt,
+  ReceiptText,
 } from 'lucide-react';
 
 export const CashierFolioPage: React.FC = () => {
-  const { t, locale, formatRelativeTime } = useI18n();
+  const { t, locale, formatRelativeTime, formatCurrency } = useI18n();
   const location = useLocation();
   const navState = location.state as {
     reservationId?: string;
@@ -45,8 +46,8 @@ export const CashierFolioPage: React.FC = () => {
   const [isAddChargeOpen, setIsAddChargeOpen] = useState(false);
   const [isAmenitiesOpen, setIsAmenitiesOpen] = useState(false);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterTab, setFilterTab] = useState<'all' | 'pending' | 'paid'>('all');
   const autoCreatedRef = useRef(false);
 
   // Auto-select bill from navigation state if passed, or auto-create folio on the fly if none exists
@@ -126,134 +127,249 @@ export const CashierFolioPage: React.FC = () => {
     }
   }, [navState?.action]);
 
-  const handleManualRefresh = async () => {
-    setIsRefreshing(true);
-    await refresh();
-    if (selectedBill) {
-      await loadBillDetails(selectedBill.id);
+  const refreshTimeStr = lastRefreshed.toLocaleTimeString(
+    locale === 'th' ? 'th-TH' : 'en-US',
+    {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
     }
-    setIsRefreshing(false);
-  };
+  );
+
+  const pendingCount = bills.filter((b) => b.status !== 'paid').length;
+  const paidCount = bills.filter((b) => b.status === 'paid').length;
 
   const filteredBills = bills.filter((b) => {
+    // Status filter tab
+    if (filterTab === 'pending' && b.status === 'paid') return false;
+    if (filterTab === 'paid' && b.status !== 'paid') return false;
+
+    // Search query
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase().trim();
     const matchesGuest = b.guestName?.toLowerCase().includes(q) || false;
     const matchesRoom = b.roomNumber?.toLowerCase().includes(q) || false;
+    const matchesBillNum = (b.billNumber || '').toLowerCase().includes(q);
     const matchesId = b.id.toLowerCase().includes(q);
-    return matchesGuest || matchesRoom || matchesId;
+    return matchesGuest || matchesRoom || matchesBillNum || matchesId;
   });
 
   return (
     <FrontDeskLayout activeTab="billing">
       <div className="space-y-4">
-        {/* Header */}
+        {/* Header with Standard Pulse Auto-Refresh Badge */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight font-sans">
               {t('folio.title')}
             </h1>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-sm text-slate-600 mt-0.5 font-sans">
               {t('folio.subtitle')}
             </p>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-[11px] text-slate-500 font-mono tabular-nums tracking-tight hidden sm:inline">
-              {formatRelativeTime(lastRefreshed, locale)}
-            </span>
-            <button
-              onClick={handleManualRefresh}
-              disabled={loading || isRefreshing}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-md transition-colors shadow-sm disabled:opacity-50"
+            <div
+              title={formatRelativeTime(lastRefreshed, locale)}
+              className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-200/60 shrink-0"
             >
-              <RotateCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">{t('folio.refreshBills')}</span>
-            </button>
+              <span
+                className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"
+                aria-hidden="true"
+              />
+              <span className="font-mono tabular-nums text-xs text-slate-500 font-medium">
+                {locale === 'th' ? `อัปเดตอัตโนมัติ: ${refreshTimeStr}` : `Auto-refresh: ${refreshTimeStr}`}
+              </span>
+            </div>
           </div>
         </div>
 
         {/* Status notice */}
         {isOffline && (
-          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2 text-xs text-amber-800">
-            <WifiOff className="w-4 h-4 text-amber-600 flex-shrink-0" />
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2 text-xs text-amber-800 font-sans">
+            <WifiOff className="w-4 h-4 text-amber-600 flex-shrink-0" aria-hidden="true" />
             <span>{t('folio.offlineNotice')}</span>
           </div>
         )}
 
-        {/* Bill Selector Ribbon */}
-        <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-          <div className="relative w-full md:w-72 shrink-0">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder={t('folio.searchPlaceholder')}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-sans"
-            />
-          </div>
+        {/* Swiss Master-Detail Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+          {/* Left Column (Master Panel): Search, Filter Tabs & Bill Cards */}
+          <div className="lg:col-span-4 bg-white rounded-xl border border-slate-200 shadow-xs flex flex-col overflow-hidden">
+            {/* Search Input */}
+            <div className="p-3 border-b border-slate-200 bg-slate-50/50">
+              <div className="relative">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+                <input
+                  type="text"
+                  placeholder={locale === 'th' ? 'ค้นหาเลขห้อง ชื่อ หรือเลขบิล...' : 'Search room, guest, or bill...'}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-900 font-sans"
+                />
+              </div>
+            </div>
 
-          <div className="flex gap-2 overflow-x-auto no-scrollbar py-0.5 flex-1 min-w-0">
-            {filteredBills.length === 0 ? (
-              <span className="text-xs text-slate-400 py-1.5 px-2 italic">
-                {t('res.noReservationsFound')}
-              </span>
-            ) : (
-              filteredBills.map((b) => {
-                const isSelected = selectedBill?.id === b.id;
-                return (
-                  <button
-                    key={b.id}
-                    onClick={() => loadBillDetails(b.id)}
-                    className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg border text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
-                      isSelected
-                        ? 'border-slate-900 bg-slate-900 text-white shadow-sm'
-                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                    }`}
-                  >
-                    <span className="font-mono font-medium tabular-nums tracking-tight">
-                      {t('common.room')} {b.roomNumber || '—'}
-                    </span>
-                    <span className="opacity-80 truncate max-w-[110px]">
-                      {b.guestName || t('common.guest')}
-                    </span>
-                    <span
-                      className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono font-medium tabular-nums tracking-tight border ${
+            {/* Filter Tabs */}
+            <div className="flex border-b border-slate-200 bg-slate-50/30 overflow-x-auto no-scrollbar text-xs">
+              <button
+                type="button"
+                onClick={() => setFilterTab('all')}
+                className={`flex-1 py-2.5 px-3 font-semibold text-center whitespace-nowrap transition-colors border-b-2 ${
+                  filterTab === 'all'
+                    ? 'border-slate-900 text-slate-900 bg-white'
+                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                {locale === 'th' ? 'ทั้งหมด' : 'All'}
+                <span className="ml-1.5 px-1.5 py-0.2 rounded-full font-mono tabular-nums text-[10px] bg-slate-100 text-slate-600">
+                  {bills.length}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterTab('pending')}
+                className={`flex-1 py-2.5 px-3 font-semibold text-center whitespace-nowrap transition-colors border-b-2 ${
+                  filterTab === 'pending'
+                    ? 'border-amber-500 text-amber-900 bg-white'
+                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                {locale === 'th' ? 'เปิดบิลอยู่ / กำลังพัก' : 'Pending'}
+                <span className="ml-1.5 px-1.5 py-0.2 rounded-full font-mono tabular-nums text-[10px] bg-amber-100 text-amber-800">
+                  {pendingCount}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterTab('paid')}
+                className={`flex-1 py-2.5 px-3 font-semibold text-center whitespace-nowrap transition-colors border-b-2 ${
+                  filterTab === 'paid'
+                    ? 'border-emerald-600 text-emerald-900 bg-white'
+                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                {locale === 'th' ? 'ชำระแล้ว' : 'Paid'}
+                <span className="ml-1.5 px-1.5 py-0.2 rounded-full font-mono tabular-nums text-[10px] bg-emerald-100 text-emerald-800">
+                  {paidCount}
+                </span>
+              </button>
+            </div>
+
+            {/* Bill List Cards */}
+            <div className="p-3 space-y-2 max-h-[calc(100vh-270px)] overflow-y-auto">
+              {filteredBills.length === 0 ? (
+                <div className="py-12 px-4 text-center text-slate-400 text-xs font-sans">
+                  {locale === 'th' ? 'ไม่พบบิลตามเงื่อนไขที่ค้นหา' : 'No bills found matching criteria'}
+                </div>
+              ) : (
+                filteredBills.map((b) => {
+                  const isSelected = selectedBill?.id === b.id;
+                  const isPaid = b.status === 'paid';
+                  const roomNum = b.roomNumber || '—';
+                  const total = b.totalAmount || b.subtotal || 0;
+
+                  return (
+                    <button
+                      key={b.id}
+                      type="button"
+                      onClick={() => loadBillDetails(b.id)}
+                      className={`w-full text-left p-3 rounded-lg border transition-all ${
                         isSelected
-                          ? b.status === 'paid'
-                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                            : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
-                          : b.status === 'paid'
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            : 'bg-amber-50 text-amber-700 border-amber-200'
+                          ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                          : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800'
                       }`}
                     >
-                      {b.status === 'paid' ? t('folio.paid') : t('folio.pending')}
-                    </span>
-                  </button>
-                );
-              })
+                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span
+                            className={`font-mono font-bold text-xs px-2 py-0.5 rounded border tabular-nums ${
+                              isSelected
+                                ? 'bg-white/10 text-white border-white/20'
+                                : 'bg-slate-100 text-slate-800 border-slate-200'
+                            }`}
+                          >
+                            {roomNum}
+                          </span>
+                          <span
+                            className={`font-sans font-semibold text-sm truncate ${
+                              isSelected ? 'text-white' : 'text-slate-900'
+                            }`}
+                          >
+                            {b.guestName || t('common.guest')}
+                          </span>
+                        </div>
+                        <span
+                          className={`text-[11px] px-2 py-0.5 rounded-full font-mono font-medium tabular-nums tracking-tight border shrink-0 ${
+                            isSelected
+                              ? isPaid
+                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                                : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                              : isPaid
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                : 'bg-amber-50 text-amber-700 border-amber-200'
+                          }`}
+                        >
+                          {isPaid ? (locale === 'th' ? 'ชำระแล้ว' : 'Paid') : (locale === 'th' ? 'รอชำระ' : 'Pending')}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs mt-2 pt-2 border-t border-slate-100/10">
+                        <span
+                          className={`font-mono text-[11px] truncate ${
+                            isSelected ? 'text-slate-400' : 'text-slate-500'
+                          }`}
+                        >
+                          {b.billNumber || b.id.slice(0, 12)}
+                        </span>
+                        <span
+                          className={`font-mono font-bold tabular-nums text-sm ${
+                            isSelected ? 'text-emerald-300' : 'text-slate-900'
+                          }`}
+                        >
+                          {formatCurrency(total)}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          {/* Right Column (Detail Panel): Folio Details or Empty State */}
+          <div className="lg:col-span-8">
+            {selectedBill ? (
+              <FolioSplitScreen
+                bill={selectedBill}
+                depositAmount="500"
+                onAddCharge={() => setIsAddChargeOpen(true)}
+                onRequestAmenities={() => setIsAmenitiesOpen(true)}
+                onDeleteItem={(itemId) => {
+                  if (selectedBill) deleteChargeItem(selectedBill.id, itemId);
+                }}
+                onPay={async (method, amount) => {
+                  if (!selectedBill) return false;
+                  const res = await settleBillPayment(selectedBill.id, method, amount);
+                  return !!res.success;
+                }}
+                onViewInvoice={() => setIsReceiptOpen(true)}
+              />
+            ) : (
+              <div className="bg-white rounded-xl border border-slate-200 p-12 text-center text-slate-500 shadow-xs flex flex-col items-center justify-center min-h-[420px]">
+                <Receipt className="w-12 h-12 text-slate-300 mx-auto mb-3" aria-hidden="true" />
+                <h3 className="text-base font-semibold text-slate-700 font-sans">
+                  {locale === 'th' ? 'กรุณาเลือกบิลเพื่อดูรายละเอียด' : 'Select a bill to view details'}
+                </h3>
+                <p className="text-xs text-slate-400 mt-1 max-w-sm font-sans">
+                  {locale === 'th'
+                    ? 'เลือกบิลห้องพักจากรายการทางด้านซ้ายเพื่อดูรายละเอียด คิดเงิน และเพิ่มค่าใช้จ่าย'
+                    : 'Select a room bill from the list on the left to inspect charges, settle balance, or add extras.'}
+                </p>
+              </div>
             )}
           </div>
         </div>
-
-        {/* Split Screen Component */}
-        <FolioSplitScreen
-          bill={selectedBill}
-          depositAmount="500"
-          onAddCharge={() => setIsAddChargeOpen(true)}
-          onRequestAmenities={() => setIsAmenitiesOpen(true)}
-          onDeleteItem={(itemId) => {
-            if (selectedBill) deleteChargeItem(selectedBill.id, itemId);
-          }}
-          onPay={async (method, amount) => {
-            if (!selectedBill) return false;
-            const res = await settleBillPayment(selectedBill.id, method, amount);
-            return !!res.success;
-          }}
-          onViewInvoice={() => setIsReceiptOpen(true)}
-        />
       </div>
 
       {/* Add Extra Charge Modal */}
