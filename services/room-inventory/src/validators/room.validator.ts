@@ -42,7 +42,7 @@ export const UpdateRoomSchema = z.object({
   roomNumber: z.string().min(1).optional(),
   roomTypeId: z.string().min(1).optional(),
   floorId: z.string().min(1).optional(),
-  notes: z.string().optional(),
+  notes: z.string().nullable().optional(),
   isActive: z.coerce.number().int().min(0).max(1).optional(),
 });
 

@@ -45,7 +45,7 @@ export interface Room {
   roomTypeId: string;
   floor: string;
   status: RoomStatus;
-  notes?: string;
+  notes?: string | null;
   createdAt: string;
   updatedAt: string;
 }

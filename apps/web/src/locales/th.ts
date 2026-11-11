@@ -25,6 +25,7 @@ export const th: Record<string, string> = {
   'status.pending': 'รอชำระ',
   'status.refunded': 'คืนเงินแล้ว',
   'status.checked_in': 'เข้าพักแล้ว',
+  'status.extended': 'ขยายเวลาพัก',
   'status.no_show': 'ไม่เข้าพัก',
 
   // Table columns & Common
@@ -251,6 +252,10 @@ export const th: Record<string, string> = {
   'drawer.capacityCount': '{count} ท่าน',
   'drawer.amenities': 'สิ่งอำนวยความสะดวก',
   'drawer.notes': 'บันทึกเพิ่มเติม',
+  'notes.savedTitle': 'บันทึกสำเร็จ',
+  'notes.savedDesc': 'อัปเดตบันทึกห้องพักเรียบร้อยแล้ว',
+  'notes.noNotes': 'ไม่มีบันทึกเพิ่มเติม / No additional notes',
+  'notes.placeholder': 'พิมพ์บันทึกหรือหมายเหตุสำหรับห้องพักนี้...',
   'drawer.price': 'ราคาต่อคืน',
   'drawer.requestCleaning': 'แจ้งแม่บ้านทำความสะอาด',
   'drawer.newBooking': 'สร้างการจองใหม่ห้องนี้',

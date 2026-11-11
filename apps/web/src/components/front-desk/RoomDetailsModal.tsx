@@ -13,6 +13,8 @@ import { ExtendStayModal } from './ExtendStayModal';
 import { SlipViewerModal } from './SlipViewerModal';
 import { RequestAmenitiesModal } from './RequestAmenitiesModal';
 import { CustomDatePicker } from '../common/CustomDatePicker';
+import { apiFetch } from '@/lib/api';
+import { useToast } from '@/context/ToastContext';
 import {
   X,
   BedDouble,
@@ -41,6 +43,8 @@ import {
   UploadCloud,
   FileCheck2,
   Trash2,
+  Pencil,
+  Loader2,
 } from 'lucide-react';
 
 export type RoomModalAction =
@@ -120,6 +124,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
   onAddFolioCharge,
 }) => {
   const { t, formatCurrency, locale } = useI18n();
+  const toast = useToast();
 
   const [currentReservation, setCurrentReservation] = useState<ExtendedReservation | null | undefined>(
     initialReservation
@@ -128,6 +133,55 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
   useEffect(() => {
     setCurrentReservation(initialReservation);
   }, [initialReservation]);
+
+  // Editable Room Notes State
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [editedNotes, setEditedNotes] = useState(room?.notes || '');
+  const [isSavingNotes, setIsSavingNotes] = useState(false);
+  const [currentNotes, setCurrentNotes] = useState<string | null>(room?.notes ?? null);
+
+  useEffect(() => {
+    setEditedNotes(room?.notes || '');
+    setCurrentNotes(room?.notes ?? null);
+    setIsEditingNotes(false);
+  }, [room?.id, room?.notes]);
+
+  const handleSaveNotes = async () => {
+    if (!room) return;
+    setIsSavingNotes(true);
+    try {
+      const trimmedNotes = editedNotes.trim() || null;
+      const res = await apiFetch<{ success: boolean; data: any }>(`/api/rooms/${room.id}/notes`, {
+        method: 'PATCH',
+        body: JSON.stringify({ notes: trimmedNotes }),
+      });
+
+      if (res.error) {
+        toast.showError(t('common.error') || 'เกิดข้อผิดพลาด', res.error);
+        return;
+      }
+
+      setCurrentNotes(trimmedNotes);
+      setIsEditingNotes(false);
+      toast.showSuccess(
+        t('notes.savedTitle') || 'บันทึกสำเร็จ',
+        t('notes.savedDesc') || 'อัปเดตบันทึกห้องพักเรียบร้อยแล้ว'
+      );
+      onAction?.('refresh', {
+        ...room,
+        notes: trimmedNotes,
+      });
+    } catch (err: any) {
+      toast.showError(t('common.error') || 'เกิดข้อผิดพลาด', err?.message || 'Failed to update notes');
+    } finally {
+      setIsSavingNotes(false);
+    }
+  };
+
+  const handleCancelEditNotes = () => {
+    setEditedNotes(currentNotes || '');
+    setIsEditingNotes(false);
+  };
 
   // Mode: 'details' (single pane max-w-lg) or 'booking' (split pane max-w-4xl)
   const [mode, setMode] = useState<'details' | 'booking'>(initialMode);
@@ -446,17 +500,80 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
               )}
 
               {/* Notes Section */}
-              {room.notes && (
-                <div className="space-y-1.5">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
                   <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5 text-slate-400" />
+                    <FileText className="w-3.5 h-3.5 text-slate-400" strokeWidth={1.75} />
                     <span>{t('drawer.notes')}</span>
                   </h3>
-                  <div className="p-3 bg-amber-50/70 rounded-xl border border-amber-200 text-xs leading-relaxed text-amber-950">
-                    {localizeRoomNote(room.notes, locale)}
-                  </div>
+                  {!isEditingNotes && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditedNotes(currentNotes || '');
+                        setIsEditingNotes(true);
+                      }}
+                      className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                      title={t('common.edit') || 'แก้ไขบันทึก'}
+                      aria-label="Edit room notes"
+                    >
+                      <Pencil className="w-3.5 h-3.5" strokeWidth={1.75} />
+                    </button>
+                  )}
                 </div>
-              )}
+
+                {!isEditingNotes ? (
+                  currentNotes ? (
+                    <div className="p-3 bg-amber-50/70 rounded-xl border border-amber-200 text-xs leading-relaxed text-amber-950 whitespace-pre-wrap">
+                      {localizeRoomNote(currentNotes, locale)}
+                    </div>
+                  ) : (
+                    <p className="text-xs italic text-slate-400 py-1">
+                      {t('notes.noNotes') || 'ไม่มีบันทึกเพิ่มเติม / No additional notes'}
+                    </p>
+                  )
+                ) : (
+                  <div className="space-y-2">
+                    <textarea
+                      value={editedNotes}
+                      onChange={(e) => setEditedNotes(e.target.value)}
+                      maxLength={500}
+                      rows={3}
+                      placeholder={t('notes.placeholder') || 'พิมพ์บันทึกหรือหมายเหตุสำหรับห้องพักนี้...'}
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-800 placeholder-slate-400 bg-white resize-none transition-colors"
+                    />
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-slate-400 font-mono">
+                        {editedNotes.length}/500
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={handleCancelEditNotes}
+                          disabled={isSavingNotes}
+                          className="px-2.5 py-1 text-xs font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors flex items-center gap-1"
+                        >
+                          <X className="w-3.5 h-3.5" strokeWidth={1.75} />
+                          <span>{t('common.cancel') || 'ยกเลิก'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSaveNotes}
+                          disabled={isSavingNotes}
+                          className="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-lg transition-colors flex items-center gap-1 shadow-xs"
+                        >
+                          {isSavingNotes ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={1.75} />
+                          ) : (
+                            <Check className="w-3.5 h-3.5" strokeWidth={1.75} />
+                          )}
+                          <span>{t('common.save') || 'บันทึก'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* Active Reservation & Payment Slip Card */}
               {currentReservation && (

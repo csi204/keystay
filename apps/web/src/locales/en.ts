@@ -25,6 +25,7 @@ export const en: Record<string, string> = {
   'status.pending': 'Pending',
   'status.refunded': 'Refunded',
   'status.checked_in': 'Checked In',
+  'status.extended': 'Extended',
   'status.no_show': 'No Show',
 
   // Table columns & Common
@@ -251,6 +252,10 @@ export const en: Record<string, string> = {
   'drawer.capacityCount': '{count} guests',
   'drawer.amenities': 'Amenities',
   'drawer.notes': 'Notes',
+  'notes.savedTitle': 'Saved Successfully',
+  'notes.savedDesc': 'Room notes updated successfully',
+  'notes.noNotes': 'No additional notes',
+  'notes.placeholder': 'Enter notes or remarks for this room...',
   'drawer.price': 'Price per night',
   'drawer.requestCleaning': 'Request Housekeeping',
   'drawer.newBooking': 'New Reservation for Room',

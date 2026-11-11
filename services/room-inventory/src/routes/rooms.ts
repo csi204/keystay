@@ -223,6 +223,30 @@ roomsRoute.put('/:id', async (c) => {
   return c.json({ success: true, data: updated });
 });
 
+// API: PATCH /rooms/:id/notes - อัปเดตบันทึกเพิ่มเติมของห้องพัก (Room Notes)
+roomsRoute.patch('/:id/notes', async (c) => {
+  const id = c.req.param('id');
+  const body = await c.req.json().catch(() => ({}));
+  const db = getDb(c.env.DB);
+
+  const existing = await db.select().from(rooms).where(eq(rooms.id, id)).get();
+  if (!existing) {
+    return c.json({ success: false, error: 'NOT_FOUND', message: 'Room not found' }, 404);
+  }
+
+  const rawNotes = body.notes;
+  const newNotes =
+    rawNotes === null || rawNotes === undefined || String(rawNotes).trim() === ''
+      ? null
+      : String(rawNotes).trim();
+
+  const now = new Date().toISOString();
+  await db.update(rooms).set({ notes: newNotes, updatedAt: now }).where(eq(rooms.id, id));
+  const updated = await db.select().from(rooms).where(eq(rooms.id, id)).get();
+
+  return c.json({ success: true, data: updated });
+});
+
 // API #17: DELETE /rooms/:id - ปิดการใช้งานห้องพัก (Soft delete)
 roomsRoute.delete('/:id', async (c) => {
   const id = c.req.param('id');
