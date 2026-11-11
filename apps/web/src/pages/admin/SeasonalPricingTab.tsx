@@ -11,84 +11,82 @@ import {
   Pencil,
   Trash2,
   Search,
-  Calendar,
-  DollarSign,
   AlertTriangle,
   X,
   Save,
-  CheckCircle2,
-  Percent,
-  Calculator,
   Layers,
-  Sparkles,
+  RotateCcw,
 } from 'lucide-react';
 import type { RoomTypeItem } from './RoomsPricingPage';
 
 export interface SeasonalPricingRule {
   id: string;
   name: string;
-  tier: 'high' | 'low' | 'regular';
+  tier: string;
   roomTypeId: string | null;
   startDate: string;
   endDate: string;
   daysOfWeek: number[] | null; // [5, 6, 0] for Fri, Sat, Sun
   adjustmentType: 'percent' | 'fixed_amount';
   adjustmentValue: number;
-  priority: number;
+  priority?: number;
   isActive: boolean;
 }
+
+export const DEFAULT_TIERS = [
+  'High Season',
+  'Regular',
+  'Low Season',
+  'Special Holiday (วันหยุดพิเศษ)',
+];
 
 const SEED_SEASONAL_RULES: SeasonalPricingRule[] = [
   {
     id: 'rule-high-winter',
     name: 'High Season ภาคเหนือ (พ.ย. - ก.พ.)',
-    tier: 'high',
+    tier: 'High Season',
     roomTypeId: null,
     startDate: '2026-11-01',
     endDate: '2027-02-28',
     daysOfWeek: null,
     adjustmentType: 'percent',
     adjustmentValue: 5.0,
-    priority: 10,
     isActive: true,
   },
   {
     id: 'rule-countdown',
     name: 'คืนเคานต์ดาวน์ปีใหม่ (31 ธ.ค. - 1 ม.ค.)',
-    tier: 'high',
+    tier: 'Special Holiday (วันหยุดพิเศษ)',
     roomTypeId: null,
     startDate: '2026-12-31',
     endDate: '2027-01-01',
     daysOfWeek: null,
     adjustmentType: 'fixed_amount',
     adjustmentValue: 300.0,
-    priority: 25,
     isActive: true,
   },
   {
     id: 'rule-weekend-regular',
     name: 'วันหยุดสุดสัปดาห์ (ศุกร์ - เสาร์ - อาทิตย์)',
-    tier: 'regular',
+    tier: 'Regular',
     roomTypeId: null,
     startDate: '2026-01-01',
     endDate: '2026-12-31',
     daysOfWeek: [5, 6, 0],
     adjustmentType: 'fixed_amount',
     adjustmentValue: 200.0,
-    priority: 15,
     isActive: true,
   },
   {
     id: 'rule-low-rainy',
     name: 'Low Season หน้าฝน วันธรรมดา (มิ.ย. - ก.ย.)',
-    tier: 'low',
+    tier: 'Low Season',
     roomTypeId: null,
     startDate: '2026-06-01',
     endDate: '2026-09-30',
     daysOfWeek: [1, 2, 3, 4],
     adjustmentType: 'percent',
     adjustmentValue: -10.0,
-    priority: 10,
     isActive: true,
   },
 ];
@@ -110,9 +108,8 @@ export const SeasonalPricingTab: React.FC<SeasonalPricingTabProps> = ({
   const [tierFilter, setTierFilter] = useState<string>('all');
   const [roomTypeFilter, setRoomTypeFilter] = useState<string>('all');
 
-  // Simulator State
-  const [simRoomTypeId, setSimRoomTypeId] = useState<string>(roomTypes[0]?.id || 'rt-std');
-  const [simDate, setSimDate] = useState<string>('2026-12-31');
+  // Dynamic Tier management (supports adding custom tiers)
+  const [availableTiers, setAvailableTiers] = useState<string[]>(DEFAULT_TIERS);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -122,14 +119,15 @@ export const SeasonalPricingTab: React.FC<SeasonalPricingTabProps> = ({
 
   const [form, setForm] = useState({
     name: '',
-    tier: 'high' as 'high' | 'low' | 'regular',
+    tier: 'High Season',
+    isCustomTier: false,
+    customTierName: '',
     roomTypeId: 'all',
     startDate: '2026-11-01',
     endDate: '2027-02-28',
     daysSelection: 'all', // 'all' | 'weekend' | 'weekday'
     adjustmentType: 'percent' as 'percent' | 'fixed_amount',
     adjustmentValue: '5',
-    priority: '10',
   });
 
   // Load rules from backend if available
@@ -140,6 +138,9 @@ export const SeasonalPricingTab: React.FC<SeasonalPricingTabProps> = ({
         const res = await apiFetch<SeasonalPricingRule[]>('/api/v1/pricing/rules');
         if (isMounted && res.data && Array.isArray(res.data) && res.data.length > 0) {
           setRules(res.data);
+          // Add any new tiers from backend
+          const backendTiers = res.data.map((r) => r.tier).filter(Boolean);
+          setAvailableTiers((prev) => Array.from(new Set([...prev, ...backendTiers])));
         }
       } catch {
         // Fallback to initial seeds
@@ -160,60 +161,19 @@ export const SeasonalPricingTab: React.FC<SeasonalPricingTabProps> = ({
     return matchesSearch && matchesTier && matchesRoom;
   });
 
-  // Calculate simulated rate for a given room and date
-  const selectedSimRoom = roomTypes.find((rt) => rt.id === simRoomTypeId) || roomTypes[0];
-  const simCalculation = (() => {
-    if (!selectedSimRoom) return null;
-    const basePrice = selectedSimRoom.basePrice;
-    const targetDate = new Date(simDate);
-    const dayOfWeek = targetDate.getDay(); // 0 is Sunday, 6 is Saturday
-
-    // Match rules that cover this date & room
-    const matchingRules = rules.filter((r) => {
-      if (!r.isActive) return false;
-      if (r.roomTypeId && r.roomTypeId !== selectedSimRoom.id) return false;
-      if (simDate < r.startDate || simDate > r.endDate) return false;
-      if (r.daysOfWeek && !r.daysOfWeek.includes(dayOfWeek)) return false;
-      return true;
-    });
-
-    // Sort by priority desc
-    matchingRules.sort((a, b) => b.priority - a.priority);
-    const appliedRule = matchingRules[0] || null;
-
-    let effectiveRate = basePrice;
-    let adjustmentText = 'ราคาปกติ (Base Price)';
-
-    if (appliedRule) {
-      if (appliedRule.adjustmentType === 'percent') {
-        effectiveRate = Math.round(basePrice * (1 + appliedRule.adjustmentValue / 100));
-        adjustmentText = `${appliedRule.adjustmentValue > 0 ? '+' : ''}${appliedRule.adjustmentValue}%`;
-      } else {
-        effectiveRate = Math.round(basePrice + appliedRule.adjustmentValue);
-        adjustmentText = `${appliedRule.adjustmentValue > 0 ? '+' : ''}฿${appliedRule.adjustmentValue.toLocaleString()}`;
-      }
-    }
-
-    return {
-      basePrice,
-      effectiveRate,
-      appliedRule,
-      adjustmentText,
-    };
-  })();
-
   const openCreateModal = () => {
     setEditingRule(null);
     setForm({
       name: '',
-      tier: 'high',
+      tier: availableTiers[0] || 'High Season',
+      isCustomTier: false,
+      customTierName: '',
       roomTypeId: 'all',
       startDate: new Date().toISOString().split('T')[0],
       endDate: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
       daysSelection: 'all',
       adjustmentType: 'percent',
       adjustmentValue: '5',
-      priority: '10',
     });
     setValidationError('');
     setIsModalOpen(true);
@@ -228,16 +188,19 @@ export const SeasonalPricingTab: React.FC<SeasonalPricingTabProps> = ({
       daysSel = 'weekday';
     }
 
+    const isExistingTier = availableTiers.includes(rule.tier);
+
     setForm({
       name: rule.name,
       tier: rule.tier,
+      isCustomTier: !isExistingTier,
+      customTierName: isExistingTier ? '' : rule.tier,
       roomTypeId: rule.roomTypeId || 'all',
       startDate: rule.startDate,
       endDate: rule.endDate,
       daysSelection: daysSel,
       adjustmentType: rule.adjustmentType,
       adjustmentValue: String(rule.adjustmentValue),
-      priority: String(rule.priority),
     });
     setValidationError('');
     setIsModalOpen(true);
@@ -265,6 +228,19 @@ export const SeasonalPricingTab: React.FC<SeasonalPricingTabProps> = ({
       return;
     }
 
+    let finalTier = form.tier;
+    if (form.isCustomTier) {
+      const trimmedCustom = form.customTierName.trim();
+      if (!trimmedCustom) {
+        setValidationError('กรุณาระบุชื่อ Tier ใหม่');
+        return;
+      }
+      finalTier = trimmedCustom;
+      if (!availableTiers.includes(finalTier)) {
+        setAvailableTiers((prev) => [...prev, finalTier]);
+      }
+    }
+
     let daysOfWeek: number[] | null = null;
     if (form.daysSelection === 'weekend') daysOfWeek = [5, 6, 0];
     if (form.daysSelection === 'weekday') daysOfWeek = [1, 2, 3, 4];
@@ -272,14 +248,13 @@ export const SeasonalPricingTab: React.FC<SeasonalPricingTabProps> = ({
     const ruleData: SeasonalPricingRule = {
       id: editingRule ? editingRule.id : `rule-${Date.now()}`,
       name: form.name.trim(),
-      tier: form.tier,
+      tier: finalTier,
       roomTypeId: form.roomTypeId === 'all' ? null : form.roomTypeId,
       startDate: form.startDate,
       endDate: form.endDate,
       daysOfWeek,
       adjustmentType: form.adjustmentType,
       adjustmentValue: val,
-      priority: parseInt(form.priority, 10) || 10,
       isActive: editingRule ? editingRule.isActive : true,
     };
 
@@ -298,112 +273,18 @@ export const SeasonalPricingTab: React.FC<SeasonalPricingTabProps> = ({
     setDeletingRule(null);
   };
 
-  const getTierBadge = (tier: string) => {
-    switch (tier) {
-      case 'high':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-            High Season
-          </span>
-        );
-      case 'regular':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-            Regular
-          </span>
-        );
-      case 'low':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            Low Season
-          </span>
-        );
-      default:
-        return null;
-    }
-  };
-
   return (
     <div className="space-y-4">
-      {/* ── Interactive Rate Simulator Card ── */}
-      <Card className="border border-orange-200/90 bg-gradient-to-br from-orange-50/50 via-white to-amber-50/30 shadow-2xs">
-        <CardContent className="p-4">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <Calculator className="w-4 h-4 text-[#F97316]" />
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                  เครื่องมือจำลองอัตราค่าห้องตามฤดูกาล (Rate Calculation Simulator)
-                </h3>
-              </div>
-              <p className="text-[11px] text-slate-500">
-                ทดลองเลือกประเภทห้องและวันที่เข้าพัก เพื่อดูว่ากฎราคาใดจะมีผลบังคับใช้ (คำนวณจาก Priority สูงสุด)
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2.5">
-              <div className="w-44">
-                <Select
-                  value={simRoomTypeId}
-                  onChange={(e) => setSimRoomTypeId(e.target.value)}
-                  className="text-xs h-8 bg-white"
-                >
-                  {roomTypes.map((rt) => (
-                    <option key={rt.id} value={rt.id}>
-                      {rt.name} (฿{rt.basePrice.toLocaleString()})
-                    </option>
-                  ))}
-                </Select>
-              </div>
-
-              <div className="w-36">
-                <Input
-                  type="date"
-                  value={simDate}
-                  onChange={(e) => setSimDate(e.target.value)}
-                  className="text-xs font-mono h-8 bg-white"
-                />
-              </div>
-
-              {simCalculation && (
-                <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-2xs">
-                  <div className="text-right">
-                    <span className="text-[10px] text-slate-400 block">ราคาคำนวณจริง</span>
-                    <span className="text-sm font-bold font-mono text-[#F97316]">
-                      ฿{simCalculation.effectiveRate.toLocaleString()}
-                    </span>
-                    <span className="text-[10px] text-slate-400"> / คืน</span>
-                  </div>
-                  <div className="border-l border-slate-200 pl-2.5 text-left">
-                    <span className="text-[10px] font-semibold text-slate-600 block">
-                      {simCalculation.appliedRule
-                        ? simCalculation.appliedRule.name
-                        : 'ราคาฐานปกติ'}
-                    </span>
-                    <span className="text-[10px] font-mono text-emerald-600 font-medium">
-                      {simCalculation.adjustmentText}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* ── Toolbar: Search & Filters ── */}
-      <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <div className="flex flex-1 flex-wrap items-center gap-2">
-          <div className="relative flex-1 min-w-[200px] max-w-xs">
+      {/* ── Toolbar: Search & Filters (Clean, Matching Tab 1 & Tab 2) ── */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2.5 flex-1">
+          <div className="relative min-w-[200px] flex-1 max-w-xs">
             <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <Input
               placeholder="ค้นหาชื่อกฎราคา..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8 pr-8 text-xs h-9 bg-white"
+              className="pl-9 pr-8 text-xs h-9 bg-white border-slate-200"
             />
             {searchQuery && (
               <button
@@ -416,20 +297,22 @@ export const SeasonalPricingTab: React.FC<SeasonalPricingTabProps> = ({
             )}
           </div>
 
-          <div className="w-36">
+          <div className="w-48">
             <Select
               value={tierFilter}
               onChange={(e) => setTierFilter(e.target.value)}
               className="text-xs h-9 bg-white"
             >
               <option value="all">ทุก Tier ฤดูกาล</option>
-              <option value="high">High Season</option>
-              <option value="regular">Regular</option>
-              <option value="low">Low Season</option>
+              {availableTiers.map((tier) => (
+                <option key={tier} value={tier}>
+                  {tier}
+                </option>
+              ))}
             </Select>
           </div>
 
-          <div className="w-44">
+          <div className="w-48">
             <Select
               value={roomTypeFilter}
               onChange={(e) => setRoomTypeFilter(e.target.value)}
@@ -444,6 +327,22 @@ export const SeasonalPricingTab: React.FC<SeasonalPricingTabProps> = ({
               ))}
             </Select>
           </div>
+
+          {(searchQuery || tierFilter !== 'all' || roomTypeFilter !== 'all') && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSearchQuery('');
+                setTierFilter('all');
+                setRoomTypeFilter('all');
+              }}
+              className="h-9 text-xs text-slate-500 hover:text-slate-800"
+            >
+              <RotateCcw className="w-3 h-3 mr-1" />
+              ล้างตัวกรอง
+            </Button>
+          )}
         </div>
 
         {isOwner && (
@@ -458,11 +357,11 @@ export const SeasonalPricingTab: React.FC<SeasonalPricingTabProps> = ({
         )}
       </div>
 
-      {/* ── Rules Table ── */}
-      <Card className="border border-slate-200 shadow-sm overflow-hidden">
-        <CardHeader className="py-3 px-4 border-b border-slate-100 flex flex-row items-center justify-between">
+      {/* ── Rules Table (Clean Enterprise Design) ── */}
+      <Card className="border-slate-200 shadow-sm bg-white overflow-hidden">
+        <CardHeader className="py-2.5 px-4 border-b border-slate-100 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-[#F97316]" />
+            <TrendingUp className="w-4 h-4 text-slate-400" />
             <CardTitle className="text-sm font-bold text-slate-800">
               รายการกฎการปรับราคาตามฤดูกาลและเทศกาล ({filteredRules.length} กฎ)
             </CardTitle>
@@ -474,23 +373,22 @@ export const SeasonalPricingTab: React.FC<SeasonalPricingTabProps> = ({
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+              <thead className="bg-slate-50 text-[11px] text-slate-500 font-semibold border-b border-slate-200 uppercase tracking-wider">
                 <tr>
-                  <th className="py-2.5 px-3">ชื่อกฎราคา</th>
+                  <th className="py-2.5 px-4">ชื่อกฎราคา</th>
                   <th className="py-2.5 px-3 text-center">ระดับ (Tier)</th>
                   <th className="py-2.5 px-3">ประเภทห้องที่ใช้</th>
                   <th className="py-2.5 px-3">ช่วงวันที่บังคับใช้</th>
                   <th className="py-2.5 px-3">เงื่อนไขวัน</th>
                   <th className="py-2.5 px-3 text-right">การปรับราคา</th>
-                  <th className="py-2.5 px-3 text-center">Priority</th>
                   <th className="py-2.5 px-3 text-center">สถานะ</th>
-                  {isOwner && <th className="py-2.5 px-3 text-center">การจัดการ</th>}
+                  {isOwner && <th className="py-2.5 px-4 text-center">การจัดการ</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredRules.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="py-8 text-center text-slate-400 text-xs">
+                    <td colSpan={8} className="py-8 text-center text-slate-400 text-xs">
                       ไม่พบกฎการปรับราคาที่ตรงกับเงื่อนไข
                     </td>
                   </tr>
@@ -498,14 +396,16 @@ export const SeasonalPricingTab: React.FC<SeasonalPricingTabProps> = ({
                   filteredRules.map((rule) => {
                     const targetRoom = roomTypes.find((rt) => rt.id === rule.roomTypeId);
                     return (
-                      <tr key={rule.id} className="hover:bg-slate-50/70 transition-colors">
-                        <td className="py-3 px-3 font-semibold text-slate-800">
+                      <tr key={rule.id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="py-3 px-4 font-semibold text-slate-900">
                           {rule.name}
                         </td>
                         <td className="py-3 px-3 text-center">
-                          {getTierBadge(rule.tier)}
+                          <span className="inline-block px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700">
+                            {rule.tier}
+                          </span>
                         </td>
-                        <td className="py-3 px-3 text-slate-600">
+                        <td className="py-3 px-3 text-slate-700">
                           {targetRoom ? (
                             <span className="font-medium text-slate-800">{targetRoom.name}</span>
                           ) : (
@@ -521,11 +421,11 @@ export const SeasonalPricingTab: React.FC<SeasonalPricingTabProps> = ({
                         <td className="py-3 px-3 text-[11px] text-slate-600">
                           {rule.daysOfWeek ? (
                             rule.daysOfWeek.includes(5) ? (
-                              <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 font-medium">
+                              <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-medium">
                                 ศ.-ส.-อา.
                               </span>
                             ) : (
-                              <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-medium">
+                              <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-medium">
                                 จ.-พฤ.
                               </span>
                             )
@@ -533,40 +433,31 @@ export const SeasonalPricingTab: React.FC<SeasonalPricingTabProps> = ({
                             <span className="text-slate-400">ทุกวัน</span>
                           )}
                         </td>
-                        <td className="py-3 px-3 text-right font-mono font-bold">
-                          <span
-                            className={
-                              rule.adjustmentValue >= 0 ? 'text-rose-600' : 'text-emerald-600'
-                            }
-                          >
-                            {rule.adjustmentValue > 0 ? '+' : ''}
-                            {rule.adjustmentType === 'percent'
-                              ? `${rule.adjustmentValue}%`
-                              : `฿${rule.adjustmentValue.toLocaleString()}`}
-                          </span>
+                        {/* Neutral monochrome price adjustment (Zero AI Slop) */}
+                        <td className="py-3 px-3 text-right font-mono font-semibold text-slate-900">
+                          {rule.adjustmentValue > 0 ? '+' : ''}
+                          {rule.adjustmentType === 'percent'
+                            ? `${rule.adjustmentValue}%`
+                            : `฿${rule.adjustmentValue.toLocaleString()}`}
                         </td>
-                        <td className="py-3 px-3 text-center font-mono text-slate-500">
-                          {rule.priority}
-                        </td>
+                        {/* Minimal enterprise status dot */}
                         <td className="py-3 px-3 text-center">
                           <button
+                            type="button"
                             onClick={() => handleToggleActive(rule.id)}
-                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors ${
-                              rule.isActive
-                                ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                                : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                            }`}
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 transition-colors"
+                            title="คลิกเพื่อสลับสถานะเปิด/ปิด"
                           >
                             <span
-                              className={`w-1.5 h-1.5 rounded-full ${
-                                rule.isActive ? 'bg-emerald-500' : 'bg-slate-400'
+                              className={`w-2 h-2 rounded-full shrink-0 ${
+                                rule.isActive ? 'bg-emerald-500' : 'bg-slate-300'
                               }`}
                             />
-                            {rule.isActive ? 'เปิดใช้' : 'ปิด'}
+                            <span>{rule.isActive ? 'เปิดใช้' : 'ปิด'}</span>
                           </button>
                         </td>
                         {isOwner && (
-                          <td className="py-3 px-3 text-center">
+                          <td className="py-3 px-4 text-center">
                             <div className="flex items-center justify-center gap-1">
                               <Button
                                 variant="outline"
@@ -643,13 +534,22 @@ export const SeasonalPricingTab: React.FC<SeasonalPricingTabProps> = ({
                     ระดับ Tier *
                   </label>
                   <Select
-                    value={form.tier}
-                    onChange={(e) => setForm({ ...form, tier: e.target.value as any })}
+                    value={form.isCustomTier ? '__custom__' : form.tier}
+                    onChange={(e) => {
+                      if (e.target.value === '__custom__') {
+                        setForm({ ...form, isCustomTier: true, customTierName: '' });
+                      } else {
+                        setForm({ ...form, tier: e.target.value, isCustomTier: false });
+                      }
+                    }}
                     className="text-xs h-9"
                   >
-                    <option value="high">High Season (บวกเพิ่ม)</option>
-                    <option value="regular">Regular (วันหยุด)</option>
-                    <option value="low">Low Season (ลดราคา)</option>
+                    {availableTiers.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                    <option value="__custom__">+ กำหนดชื่อ Tier ใหม่...</option>
                   </Select>
                 </div>
 
@@ -671,6 +571,21 @@ export const SeasonalPricingTab: React.FC<SeasonalPricingTabProps> = ({
                   </Select>
                 </div>
               </div>
+
+              {form.isCustomTier && (
+                <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+                  <label className="text-xs font-semibold text-slate-800 block mb-1">
+                    ระบุชื่อ Tier ใหม่ *
+                  </label>
+                  <Input
+                    required
+                    placeholder="เช่น Songkran Festival, Early Bird, etc."
+                    value={form.customTierName}
+                    onChange={(e) => setForm({ ...form, customTierName: e.target.value })}
+                    className="text-xs h-9 bg-white"
+                  />
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -699,33 +614,19 @@ export const SeasonalPricingTab: React.FC<SeasonalPricingTabProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    เงื่อนไขวันในสัปดาห์
-                  </label>
-                  <Select
-                    value={form.daysSelection}
-                    onChange={(e) => setForm({ ...form, daysSelection: e.target.value })}
-                    className="text-xs h-9"
-                  >
-                    <option value="all">ทุกวันในสัปดาห์</option>
-                    <option value="weekend">เฉพาะ ศุกร์-เสาร์-อาทิตย์</option>
-                    <option value="weekday">เฉพาะ จันทร์-พฤหัสบดี</option>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    Priority ลำดับความสำคัญ
-                  </label>
-                  <Input
-                    type="number"
-                    value={form.priority}
-                    onChange={(e) => setForm({ ...form, priority: e.target.value })}
-                    className="text-xs font-mono h-9"
-                  />
-                </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  เงื่อนไขวันในสัปดาห์
+                </label>
+                <Select
+                  value={form.daysSelection}
+                  onChange={(e) => setForm({ ...form, daysSelection: e.target.value })}
+                  className="text-xs h-9"
+                >
+                  <option value="all">ทุกวันในสัปดาห์</option>
+                  <option value="weekend">เฉพาะ ศุกร์-เสาร์-อาทิตย์</option>
+                  <option value="weekday">เฉพาะ จันทร์-พฤหัสบดี</option>
+                </Select>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -819,4 +720,3 @@ export const SeasonalPricingTab: React.FC<SeasonalPricingTabProps> = ({
     </div>
   );
 };
-

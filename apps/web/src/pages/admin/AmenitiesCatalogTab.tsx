@@ -11,15 +11,12 @@ import {
   Pencil,
   Trash2,
   Search,
-  CheckCircle2,
   AlertTriangle,
   X,
   Save,
-  Tag,
-  DollarSign,
-  Gift,
+  RotateCcw,
   Receipt,
-  Layers,
+  Gift,
 } from 'lucide-react';
 
 export interface AmenityItem {
@@ -172,11 +169,6 @@ export const AmenitiesCatalogTab: React.FC<AmenitiesCatalogTabProps> = ({
     return matchesSearch && matchesCategory && matchesChargeable;
   });
 
-  // Metrics
-  const totalCount = items.length;
-  const freeCount = items.filter((it) => !it.isChargeable).length;
-  const paidCount = items.filter((it) => it.isChargeable).length;
-
   const openCreateModal = () => {
     setEditingItem(null);
     setForm({
@@ -272,55 +264,16 @@ export const AmenitiesCatalogTab: React.FC<AmenitiesCatalogTabProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* ── Metric Summary Chips ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-2xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
-              รายการทั้งหมด
-            </span>
-            <span className="text-xl font-bold font-mono text-slate-800">{totalCount} รายการ</span>
-          </div>
-          <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600">
-            <Package className="w-4 h-4" />
-          </div>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-lg border border-emerald-200/80 shadow-2xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-semibold text-emerald-700 uppercase tracking-wider block">
-              บริการฟรี (ไม่ลงบิล)
-            </span>
-            <span className="text-xl font-bold font-mono text-emerald-800">{freeCount} รายการ</span>
-          </div>
-          <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
-            <Gift className="w-4 h-4" />
-          </div>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-lg border border-orange-200/80 shadow-2xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-semibold text-orange-700 uppercase tracking-wider block">
-              มีค่าบริการ (ลงบิล Folio อัตโนมัติ)
-            </span>
-            <span className="text-xl font-bold font-mono text-[#F97316]">{paidCount} รายการ</span>
-          </div>
-          <div className="w-9 h-9 rounded-lg bg-orange-50 flex items-center justify-center text-[#F97316]">
-            <Receipt className="w-4 h-4" />
-          </div>
-        </div>
-      </div>
-
-      {/* ── Toolbar: Search & Filters ── */}
-      <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <div className="flex flex-1 flex-wrap items-center gap-2">
-          <div className="relative flex-1 min-w-[200px] max-w-xs">
+      {/* ── Toolbar: Search & Filters (Clean, Matching Tab 1 & Tab 2) ── */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2.5 flex-1">
+          <div className="relative min-w-[200px] flex-1 max-w-xs">
             <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <Input
               placeholder="ค้นหาชื่อของใช้ (ไทย/EN)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8 pr-8 text-xs h-9 bg-white"
+              className="pl-9 pr-8 text-xs h-9 bg-white border-slate-200"
             />
             {searchQuery && (
               <button
@@ -333,7 +286,7 @@ export const AmenitiesCatalogTab: React.FC<AmenitiesCatalogTabProps> = ({
             )}
           </div>
 
-          <div className="w-40">
+          <div className="w-48">
             <Select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
@@ -348,7 +301,7 @@ export const AmenitiesCatalogTab: React.FC<AmenitiesCatalogTabProps> = ({
             </Select>
           </div>
 
-          <div className="w-40">
+          <div className="w-48">
             <Select
               value={chargeableFilter}
               onChange={(e) => setChargeableFilter(e.target.value)}
@@ -359,6 +312,22 @@ export const AmenitiesCatalogTab: React.FC<AmenitiesCatalogTabProps> = ({
               <option value="paid">เฉพาะมีค่าบริการ (ลงบิล)</option>
             </Select>
           </div>
+
+          {(searchQuery || categoryFilter !== 'all' || chargeableFilter !== 'all') && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSearchQuery('');
+                setCategoryFilter('all');
+                setChargeableFilter('all');
+              }}
+              className="h-9 text-xs text-slate-500 hover:text-slate-800"
+            >
+              <RotateCcw className="w-3 h-3 mr-1" />
+              ล้างตัวกรอง
+            </Button>
+          )}
         </div>
 
         {isOwner && (
@@ -373,11 +342,11 @@ export const AmenitiesCatalogTab: React.FC<AmenitiesCatalogTabProps> = ({
         )}
       </div>
 
-      {/* ── Amenities Table ── */}
-      <Card className="border border-slate-200 shadow-sm overflow-hidden">
-        <CardHeader className="py-3 px-4 border-b border-slate-100 flex flex-row items-center justify-between">
+      {/* ── Amenities Table (Clean Enterprise Design) ── */}
+      <Card className="border-slate-200 shadow-sm bg-white overflow-hidden">
+        <CardHeader className="py-2.5 px-4 border-b border-slate-100 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
-            <Package className="w-4 h-4 text-[#F97316]" />
+            <Package className="w-4 h-4 text-slate-400" />
             <CardTitle className="text-sm font-bold text-slate-800">
               แคตตาล็อกของใช้และบริการเสริม ({filteredItems.length} รายการ)
             </CardTitle>
@@ -389,16 +358,16 @@ export const AmenitiesCatalogTab: React.FC<AmenitiesCatalogTabProps> = ({
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+              <thead className="bg-slate-50 text-[11px] text-slate-500 font-semibold border-b border-slate-200 uppercase tracking-wider">
                 <tr>
-                  <th className="py-2.5 px-3">ชื่อรายการ (TH / EN)</th>
+                  <th className="py-2.5 px-4">ชื่อรายการ (TH / EN)</th>
                   <th className="py-2.5 px-3">หมวดหมู่</th>
-                  <th className="py-2.5 px-3 text-center">ประเภทการคิดเงิน</th>
+                  <th className="py-2.5 px-3">ประเภทการคิดเงิน</th>
                   <th className="py-2.5 px-3 text-right">ราคาต่อหน่วย</th>
                   <th className="py-2.5 px-3 text-center">หน่วยนับ</th>
                   <th className="py-2.5 px-3 text-center">คงเหลือในสต็อก</th>
                   <th className="py-2.5 px-3 text-center">สถานะ</th>
-                  {isOwner && <th className="py-2.5 px-3 text-center">การจัดการ</th>}
+                  {isOwner && <th className="py-2.5 px-4 text-center">การจัดการ</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -410,36 +379,38 @@ export const AmenitiesCatalogTab: React.FC<AmenitiesCatalogTabProps> = ({
                   </tr>
                 ) : (
                   filteredItems.map((item) => (
-                    <tr key={item.id} className="hover:bg-slate-50/70 transition-colors">
-                      <td className="py-3 px-3">
-                        <div className="font-semibold text-slate-800">{item.nameTh}</div>
+                    <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="py-3 px-4">
+                        <div className="font-semibold text-slate-900">{item.nameTh}</div>
                         <div className="text-[11px] text-slate-400 font-sans">{item.nameEn}</div>
                       </td>
                       <td className="py-3 px-3 text-slate-600">
-                        <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-medium">
+                        <span className="inline-block px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700">
                           {getCategoryLabel(item.category)}
                         </span>
                       </td>
-                      <td className="py-3 px-3 text-center">
+                      {/* Subtle, zero-slop billing type text */}
+                      <td className="py-3 px-3">
                         {item.isChargeable ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-orange-50 text-orange-700 border border-orange-200">
-                            <Receipt className="w-3 h-3 text-[#F97316]" />
-                            มีค่าบริการ (ลงบิล Folio)
+                          <span className="inline-flex items-center gap-1.5 text-xs text-slate-800 font-medium">
+                            <Receipt className="w-3.5 h-3.5 text-slate-500" />
+                            มีค่าบริการ (ลงบิล)
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            <Gift className="w-3 h-3 text-emerald-600" />
-                            ฟรี (ไม่คิดเงิน)
+                          <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
+                            <Gift className="w-3.5 h-3.5 text-slate-400" />
+                            ฟรี
                           </span>
                         )}
                       </td>
-                      <td className="py-3 px-3 text-right font-mono font-bold">
+                      {/* Neutral monochrome price */}
+                      <td className="py-3 px-3 text-right font-mono font-semibold">
                         {item.isChargeable ? (
                           <span className="text-slate-900">
                             ฿{item.unitPrice.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                           </span>
                         ) : (
-                          <span className="text-emerald-600">฿0.00</span>
+                          <span className="text-slate-400">฿0.00</span>
                         )}
                       </td>
                       <td className="py-3 px-3 text-center text-slate-600 text-[11px]">
@@ -452,25 +423,24 @@ export const AmenitiesCatalogTab: React.FC<AmenitiesCatalogTabProps> = ({
                           <span className="font-semibold text-slate-700">{item.stockQuantity}</span>
                         )}
                       </td>
+                      {/* Minimal enterprise status dot */}
                       <td className="py-3 px-3 text-center">
                         <button
+                          type="button"
                           onClick={() => handleToggleActive(item.id)}
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors ${
-                            item.isActive
-                              ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                              : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                          }`}
+                          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 transition-colors"
+                          title="คลิกเพื่อสลับสถานะเปิด/ปิด"
                         >
                           <span
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              item.isActive ? 'bg-emerald-500' : 'bg-slate-400'
+                            className={`w-2 h-2 rounded-full shrink-0 ${
+                              item.isActive ? 'bg-emerald-500' : 'bg-slate-300'
                             }`}
                           />
-                          {item.isActive ? 'เปิดบริการ' : 'ปิดชั่วคราว'}
+                          <span>{item.isActive ? 'เปิดบริการ' : 'ปิดชั่วคราว'}</span>
                         </button>
                       </td>
                       {isOwner && (
-                        <td className="py-3 px-3 text-center">
+                        <td className="py-3 px-4 text-center">
                           <div className="flex items-center justify-center gap-1">
                             <Button
                               variant="outline"
@@ -530,7 +500,7 @@ export const AmenitiesCatalogTab: React.FC<AmenitiesCatalogTabProps> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    ชื่อภาษาไทย *
+                    ชื่อรายการ (ไทย) *
                   </label>
                   <Input
                     required
@@ -542,7 +512,7 @@ export const AmenitiesCatalogTab: React.FC<AmenitiesCatalogTabProps> = ({
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    ชื่อภาษาอังกฤษ
+                    ชื่อรายการ (EN)
                   </label>
                   <Input
                     placeholder="เช่น Extra Bed"
@@ -576,48 +546,58 @@ export const AmenitiesCatalogTab: React.FC<AmenitiesCatalogTabProps> = ({
                     ประเภทการคิดเงิน *
                   </label>
                   <Select
-                    value={form.isChargeable ? 'paid' : 'free'}
+                    value={form.isChargeable ? 'chargeable' : 'free'}
                     onChange={(e) => {
-                      const isPaid = e.target.value === 'paid';
+                      const chargeable = e.target.value === 'chargeable';
                       setForm({
                         ...form,
-                        isChargeable: isPaid,
-                        unitPrice: isPaid && form.unitPrice === '0' ? '100' : isPaid ? form.unitPrice : '0',
+                        isChargeable: chargeable,
+                        unitPrice: chargeable ? (form.unitPrice === '0' ? '100' : form.unitPrice) : '0',
                       });
                     }}
                     className="text-xs h-9"
                   >
-                    <option value="free">ฟรี (ไม่คิดเงิน)</option>
-                    <option value="paid">มีค่าบริการ (ลงบิล Folio)</option>
+                    <option value="free">บริการฟรี (฿0)</option>
+                    <option value="chargeable">มีค่าบริการ (ลงบิล Folio)</option>
                   </Select>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    ราคาต่อหน่วย (THB) {form.isChargeable && '*'}
+                    ราคาต่อหน่วย (บาท) {form.isChargeable && '*'}
                   </label>
                   <Input
-                    required={form.isChargeable}
-                    disabled={!form.isChargeable}
                     type="number"
-                    min="0"
                     step="any"
-                    value={form.isChargeable ? form.unitPrice : '0'}
+                    disabled={!form.isChargeable}
+                    placeholder="0.00"
+                    value={form.unitPrice}
                     onChange={(e) => setForm({ ...form, unitPrice: e.target.value })}
-                    className={`text-xs font-mono h-9 ${!form.isChargeable ? 'bg-slate-50 text-slate-400' : ''}`}
+                    className="text-xs font-mono h-9 disabled:bg-slate-100 disabled:text-slate-400"
                   />
                 </div>
-
                 <div>
                   <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    หน่วยนับ (ไทย / EN)
+                    หน่วยนับ (ไทย) *
                   </label>
                   <Input
-                    placeholder="เช่น หลัง/คืน, ชิ้น, ผืน"
+                    required
+                    placeholder="เช่น หลัง, ชิ้น, ชุด"
                     value={form.unitNameTh}
                     onChange={(e) => setForm({ ...form, unitNameTh: e.target.value })}
+                    className="text-xs h-9"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    หน่วยนับ (EN)
+                  </label>
+                  <Input
+                    placeholder="เช่น bed, piece"
+                    value={form.unitNameEn}
+                    onChange={(e) => setForm({ ...form, unitNameEn: e.target.value })}
                     className="text-xs h-9"
                   />
                 </div>
@@ -625,11 +605,11 @@ export const AmenitiesCatalogTab: React.FC<AmenitiesCatalogTabProps> = ({
 
               <div>
                 <label className="text-xs font-semibold text-slate-700 block mb-1">
-                  จำนวนคงเหลือในสต็อก (-1 คือไม่จำกัด)
+                  จำนวนสต็อกคงเหลือ (-1 หากไม่จำกัด)
                 </label>
                 <Input
                   type="number"
-                  placeholder="-1"
+                  placeholder="-1 หรือ จำนวนชิ้น"
                   value={form.stockQuantity}
                   onChange={(e) => setForm({ ...form, stockQuantity: e.target.value })}
                   className="text-xs font-mono h-9"
@@ -669,7 +649,7 @@ export const AmenitiesCatalogTab: React.FC<AmenitiesCatalogTabProps> = ({
               <h3 className="font-bold text-sm">ยืนยันการลบรายการของใช้</h3>
             </div>
             <p className="text-xs text-slate-600 mb-4">
-              คุณต้องการลบ <strong>"{deletingItem.nameTh}"</strong> ใช่หรือไม่? รายการนี้จะถูกลบออกจากแคตตาล็อก
+              คุณต้องการลบรายการ <strong>"{deletingItem.nameTh}"</strong> ใช่หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้
             </p>
             <div className="flex items-center justify-end gap-2">
               <Button
@@ -694,4 +674,3 @@ export const AmenitiesCatalogTab: React.FC<AmenitiesCatalogTabProps> = ({
     </div>
   );
 };
-
