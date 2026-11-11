@@ -258,8 +258,6 @@ export const UsersManagementPage: React.FC = () => {
             <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
               <span>{t('nav.home')}</span>
               <span>/</span>
-              <span>{t('nav.management')}</span>
-              <span>/</span>
               <span className="font-semibold text-slate-800">{t('nav.usersRoles')}</span>
             </div>
             <h1 className="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">

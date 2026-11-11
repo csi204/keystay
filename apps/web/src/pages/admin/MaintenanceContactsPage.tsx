@@ -32,6 +32,8 @@ import {
   Key,
   Hammer,
   Bug,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import {
   EmergencyOutsourceContact,
@@ -136,6 +138,20 @@ export const MaintenanceContactsPage: React.FC = () => {
       selectedCategory === 'all' || c.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
+
+  // Pagination (Max 9 cards per page)
+  const ITEMS_PER_PAGE = 9;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedCategory]);
+
+  const totalPages = Math.ceil(filteredContacts.length / ITEMS_PER_PAGE) || 1;
+  const paginatedContacts = filteredContacts.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   const openCreateModal = () => {
     setEditingContact(null);
@@ -300,8 +316,6 @@ export const MaintenanceContactsPage: React.FC = () => {
             <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
               <span>{t('nav.home')}</span>
               <span>/</span>
-              <span>{t('nav.management')}</span>
-              <span>/</span>
               <span className="font-semibold text-slate-800">ช่างซ่อมบำรุงและคู่ค้า</span>
             </div>
             <h1 className="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
@@ -403,112 +417,111 @@ export const MaintenanceContactsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* ── Technicians Cards Grid (Direct Match with Image 2) ── */}
+        {/* ── Technicians Cards Grid (Clean Enterprise Cards - Anti-Slop) ── */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredContacts.length === 0 ? (
             <div className="col-span-full py-12 text-center bg-white rounded-xl border border-slate-200 text-slate-400 text-xs">
               ไม่พบรายชื่อช่างซ่อมบำรุงที่ตรงกับเงื่อนไข
             </div>
           ) : (
-            filteredContacts.map((contact) => (
+            paginatedContacts.map((contact) => (
               <Card
                 key={contact.id}
-                className={`border transition-all shadow-2xs hover:shadow-sm ${
+                className={`border rounded-xl transition-all shadow-2xs hover:shadow-xs hover:border-slate-300 flex flex-col justify-between ${
                   contact.isActive
                     ? 'border-slate-200 bg-white'
                     : 'border-slate-200/60 bg-slate-50/60 opacity-60'
                 }`}
               >
-                <CardContent className="p-4 space-y-3">
-                  {/* Card Header: Name + Category + Rating + Management actions */}
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="space-y-1 min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <h3 className="font-bold text-sm text-slate-900 truncate">
-                          {contact.name}
-                        </h3>
-                        {contact.isEmergency && (
-                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-bold bg-rose-50 text-rose-600 border border-rose-200">
-                            <Clock className="w-2.5 h-2.5" />
-                            24 ชม.
-                          </span>
+                <CardContent className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+                  <div className="space-y-2.5">
+                    {/* Card Header: Name + Badge + Rating + Actions */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-bold text-sm text-slate-900 truncate">
+                            {contact.name}
+                          </h3>
+                          {contact.isEmergency && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-orange-50 text-orange-700 border border-orange-200">
+                              <Clock className="w-2.5 h-2.5 text-orange-600" />
+                              24 ชม.
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">
+                          {contact.serviceType}
+                        </p>
+                      </div>
+
+                      {/* Header Right: Rating + Edit/Delete */}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-50 text-slate-700 border border-slate-200 text-[11px] font-mono font-medium">
+                          <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                          {contact.rating || '4.8'}
+                        </span>
+
+                        {isOwner && (
+                          <div className="flex items-center gap-0.5">
+                            <button
+                              onClick={() => openEditModal(contact)}
+                              title="แก้ไขข้อมูล"
+                              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setDeletingContact(contact)}
+                              title="ลบรายชื่อ"
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         )}
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        {getCategoryBadge(contact.category)}
-                      </div>
                     </div>
 
-                    <div className="flex items-center gap-1 shrink-0">
-                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold font-mono">
-                        <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                        {contact.rating || '4.8'}
-                      </span>
-
-                      {isOwner && (
-                        <div className="flex items-center gap-0.5 ml-1">
-                          <button
-                            onClick={() => openEditModal(contact)}
-                            title="แก้ไขข้อมูล"
-                            className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => setDeletingContact(contact)}
-                            title="ลบรายชื่อ"
-                            className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      )}
+                    {/* Category Tag */}
+                    <div>
+                      {getCategoryBadge(contact.category)}
                     </div>
-                  </div>
 
-                  {/* Service Description */}
-                  <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
-                    {contact.serviceType}
-                  </p>
-
-                  {/* Metadata: Hours, LINE, Rates */}
-                  <div className="space-y-1.5 pt-1 border-t border-slate-100 text-xs">
-                    <div className="flex items-center justify-between text-slate-500">
-                      <div className="flex items-center gap-1 text-rose-600 font-semibold text-[11px]">
-                        <Clock className="w-3 h-3" />
-                        <span>{contact.availableHours}</span>
+                    {/* Metadata Specs (Clean key-value info) */}
+                    <div className="pt-2 border-t border-slate-100 space-y-1.5 text-xs text-slate-600">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">เวลาทำการ:</span>
+                        <span className="font-medium text-slate-800">{contact.availableHours}</span>
                       </div>
                       {contact.lineId && (
-                        <div className="flex items-center gap-1 font-mono text-[11px] text-emerald-700">
-                          <span className="font-sans font-bold">LINE:</span>
-                          <span>{contact.lineId}</span>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400">LINE ID:</span>
+                          <span className="font-mono font-medium text-slate-800">{contact.lineId}</span>
+                        </div>
+                      )}
+                      {contact.priceRateNote && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400">อัตราค่าบริการ:</span>
+                          <span className="font-medium text-slate-800">{contact.priceRateNote}</span>
+                        </div>
+                      )}
+                      {contact.notes && (
+                        <div className="mt-2 p-2 bg-slate-50/80 rounded-lg border border-slate-100 text-[11px] text-slate-600 leading-relaxed">
+                          <span className="font-semibold text-slate-700">หมายเหตุ: </span>
+                          <span>{contact.notes}</span>
                         </div>
                       )}
                     </div>
-
-                    {contact.priceRateNote && (
-                      <div className="text-[11px] text-slate-600">
-                        <span className="text-slate-400">อัตราค่าบริการ: </span>
-                        <span className="font-medium text-slate-800">{contact.priceRateNote}</span>
-                      </div>
-                    )}
-
-                    {contact.notes && (
-                      <div className="p-2 bg-slate-50 rounded-md border border-slate-200/60 text-[11px] text-slate-600 leading-relaxed">
-                        <span className="font-semibold text-slate-700">หมายเหตุ: </span>
-                        <span>{contact.notes}</span>
-                      </div>
-                    )}
                   </div>
 
-                  {/* Action Buttons (Matches Image 2) */}
-                  <div className="pt-2 flex items-center gap-2">
+                  {/* Clean Enterprise Card Footer Actions */}
+                  <div className="pt-3 border-t border-slate-100 flex items-center gap-2">
                     <a
                       href={`tel:${contact.phonePrimary.replace(/[^0-9]/g, '')}`}
-                      className="flex-1 flex items-center justify-center gap-1.5 h-9 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-2xs transition-colors"
+                      className="flex-1 h-8.5 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium shadow-2xs flex items-center justify-center gap-1.5 transition-colors"
                     >
-                      <Phone className="w-3.5 h-3.5" />
-                      <span>โทรออก {contact.phonePrimary}</span>
+                      <Phone className="w-3.5 h-3.5 text-slate-300" />
+                      <span>โทร {contact.phonePrimary}</span>
                     </a>
 
                     <Button
@@ -516,13 +529,14 @@ export const MaintenanceContactsPage: React.FC = () => {
                       size="sm"
                       onClick={() => handleCopy(contact.phonePrimary, `phone-${contact.id}`)}
                       title="คัดลอกเบอร์โทร"
-                      className="h-9 px-2.5 border-slate-200 text-slate-700 hover:bg-slate-50"
+                      className="h-8.5 px-2.5 border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-medium"
                     >
                       {copiedId === `phone-${contact.id}` ? (
                         <Check className="w-3.5 h-3.5 text-emerald-600" />
                       ) : (
                         <Copy className="w-3.5 h-3.5 text-slate-500" />
                       )}
+                      <span className="ml-1 text-[11px]">คัดลอก</span>
                     </Button>
 
                     {contact.lineId && (
@@ -531,14 +545,14 @@ export const MaintenanceContactsPage: React.FC = () => {
                         size="sm"
                         onClick={() => handleCopy(contact.lineId || '', `line-${contact.id}`)}
                         title="คัดลอก LINE ID"
-                        className="h-9 px-2.5 border-slate-200 text-slate-700 hover:bg-slate-50 text-[11px] gap-1"
+                        className="h-8.5 px-2.5 border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-medium"
                       >
                         {copiedId === `line-${contact.id}` ? (
-                          <Check className="w-3 h-3 text-emerald-600" />
+                          <Check className="w-3.5 h-3.5 text-emerald-600" />
                         ) : (
                           <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
                         )}
-                        <span>คัดลอก LINE</span>
+                        <span className="ml-1 text-[11px]">LINE</span>
                       </Button>
                     )}
                   </div>
@@ -547,6 +561,57 @@ export const MaintenanceContactsPage: React.FC = () => {
             ))
           )}
         </div>
+
+        {/* ── Pagination Bar (Active when cards > 9) ── */}
+        {filteredContacts.length > ITEMS_PER_PAGE && (
+          <div className="flex items-center justify-between bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-2xs mt-4">
+            <div className="text-xs text-slate-500">
+              แสดง <span className="font-semibold text-slate-800">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> ถึง{' '}
+              <span className="font-semibold text-slate-800">
+                {Math.min(currentPage * ITEMS_PER_PAGE, filteredContacts.length)}
+              </span>{' '}
+              จากทั้งหมด <span className="font-semibold text-slate-800">{filteredContacts.length}</span> รายชื่อ
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className="h-8 px-2.5 text-xs text-slate-600 border-slate-200 hover:bg-slate-50 disabled:opacity-40"
+              >
+                <ChevronLeft className="w-3.5 h-3.5 mr-1" />
+                ก่อนหน้า
+              </Button>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                <button
+                  key={pageNum}
+                  onClick={() => setCurrentPage(pageNum)}
+                  className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all ${
+                    currentPage === pageNum
+                      ? 'bg-slate-900 text-white shadow-2xs'
+                      : 'text-slate-600 hover:bg-slate-100 border border-transparent'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              ))}
+
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                className="h-8 px-2.5 text-xs text-slate-600 border-slate-200 hover:bg-slate-50 disabled:opacity-40"
+              >
+                ถัดไป
+                <ChevronRight className="w-3.5 h-3.5 ml-1" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Modal: Add / Edit Technician ── */}
