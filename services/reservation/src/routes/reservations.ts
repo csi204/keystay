@@ -529,6 +529,13 @@ reservations.post('/walk-in', async (c) => {
 
     // 5. Fire Event to QStash
     await publishToQStash(c.env, 'hotel.reservation.checkin', checkinEvent, outboxId);
+    if (!c.env.QSTASH_URL) {
+      fetch('http://127.0.0.1:8789/webhooks/checkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(checkinEvent),
+      }).catch((err) => console.warn('[Local Checkin Webhook] Failed to notify room-inventory:', err.message));
+    }
 
     // 6. Return mapped result
     const createdRow = await c.env.DB.prepare(`
@@ -1374,6 +1381,13 @@ const handleCheckIn = async (c: Context<{ Bindings: Env }>) => {
 
     // 5. Fire event to Upstash Topic: hotel.reservation.checkin
     await publishToQStash(c.env, 'hotel.reservation.checkin', checkinEvent, outboxId);
+    if (!c.env.QSTASH_URL) {
+      fetch('http://127.0.0.1:8789/webhooks/checkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(checkinEvent),
+      }).catch((err) => console.warn('[Local Checkin Webhook] Failed to notify room-inventory:', err.message));
+    }
 
     // 6. Return response
     const updated = await c.env.DB.prepare(query).bind(existing.id, existing.id).first();
@@ -1511,6 +1525,13 @@ reservations.post('/:id/check-out', async (c) => {
 
     // 4. Fire QStash Fan-out to Upstash Topic: hotel.reservation.checkout
     await publishToQStash(c.env, 'hotel.reservation.checkout', checkoutEvent, outboxId);
+    if (!c.env.QSTASH_URL) {
+      fetch('http://127.0.0.1:8789/webhooks/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(checkoutEvent),
+      }).catch((err) => console.warn('[Local Checkout Webhook] Failed to notify room-inventory:', err.message));
+    }
 
     const updated = await c.env.DB.prepare(query).bind(existing.id, existing.id).first();
 

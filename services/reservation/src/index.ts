@@ -4,11 +4,20 @@ import { type Env } from './types';
 import guests from './routes/guests';
 import reservations from './routes/reservations';
 import { runNightAudit } from './cron/night-audit';
+import { ensureReservationSchema } from './db/auto-migrate';
 
 const app = new Hono<{ Bindings: Env }>();
 
 // CORS middleware
 app.use('*', cors());
+
+// Startup auto-migration middleware (safe & idempotent)
+app.use('*', async (c, next) => {
+  if (c.env?.DB) {
+    await ensureReservationSchema(c.env.DB);
+  }
+  await next();
+});
 
 // Health check endpoint
 app.get('/health', (c) => {
