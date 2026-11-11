@@ -34,6 +34,7 @@ import {
   Bug,
   ChevronLeft,
   ChevronRight,
+  DollarSign,
 } from 'lucide-react';
 import {
   EmergencyOutsourceContact,
@@ -267,43 +268,20 @@ export const MaintenanceContactsPage: React.FC = () => {
     setDeletingContact(null);
   };
 
-  const getCategoryBadge = (category: string) => {
+  const getCategoryInfo = (category: string) => {
     switch (category) {
       case 'air_conditioning':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-sky-50 text-sky-700 border border-sky-200">
-            <Flame className="w-3 h-3 text-sky-500" />
-            แอร์ / ระบบปรับอากาศ
-          </span>
-        );
+        return { label: 'แอร์ / ปรับอากาศ', icon: Flame };
       case 'plumbing':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-cyan-50 text-cyan-700 border border-cyan-200">
-            <Droplets className="w-3 h-3 text-cyan-500" />
-            ประปา / สุขาภิบาล
-          </span>
-        );
+        return { label: 'ประปา / สุขาภิบาล', icon: Droplets };
       case 'electrical':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-            <Zap className="w-3 h-3 text-amber-500" />
-            ระบบไฟฟ้า
-          </span>
-        );
+        return { label: 'ระบบไฟฟ้า', icon: Zap };
       case 'locksmith':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">
-            <Key className="w-3 h-3 text-purple-500" />
-            ช่างกุญแจ / กลอนประตู
-          </span>
-        );
+        return { label: 'ช่างกุญแจ / กลอน', icon: Key };
+      case 'pest_control':
+        return { label: 'กำจัดแมลง', icon: Bug };
       default:
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-            <Wrench className="w-3 h-3 text-slate-500" />
-            ซ่อมบำรุงทั่วไป
-          </span>
-        );
+        return { label: 'ซ่อมบำรุงทั่วไป', icon: Wrench };
     }
   };
 
@@ -424,141 +402,174 @@ export const MaintenanceContactsPage: React.FC = () => {
               ไม่พบรายชื่อช่างซ่อมบำรุงที่ตรงกับเงื่อนไข
             </div>
           ) : (
-            paginatedContacts.map((contact) => (
-              <Card
-                key={contact.id}
-                className={`border rounded-xl transition-all shadow-2xs hover:shadow-xs hover:border-slate-300 flex flex-col justify-between ${
-                  contact.isActive
-                    ? 'border-slate-200 bg-white'
-                    : 'border-slate-200/60 bg-slate-50/60 opacity-60'
-                }`}
-              >
-                <CardContent className="p-4 space-y-3 flex-1 flex flex-col justify-between">
-                  <div className="space-y-2.5">
-                    {/* Card Header: Name + Badge + Rating + Actions */}
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-bold text-sm text-slate-900 truncate">
-                            {contact.name}
-                          </h3>
-                          {contact.isEmergency && (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-orange-50 text-orange-700 border border-orange-200">
-                              <Clock className="w-2.5 h-2.5 text-orange-600" />
-                              24 ชม.
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">
-                          {contact.serviceType}
+            paginatedContacts.map((contact) => {
+              const catInfo = getCategoryInfo(contact.category);
+              const CatIcon = catInfo.icon;
+              return (
+                <Card
+                  key={contact.id}
+                  className={`border rounded-xl transition-all shadow-2xs hover:shadow-xs hover:border-slate-300 flex flex-col justify-between overflow-hidden ${
+                    contact.isActive
+                      ? 'border-slate-200 bg-white'
+                      : 'border-slate-200/60 bg-slate-50/60 opacity-60'
+                  }`}
+                >
+                  <CardHeader className="py-3 px-4 flex flex-row items-center justify-between border-b border-slate-100 space-y-0">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center shrink-0">
+                        <CatIcon className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="font-bold text-sm text-slate-900 truncate">
+                          {contact.name}
+                        </h3>
+                        <p className="text-[11px] text-slate-500 truncate">
+                          {catInfo.label}
                         </p>
                       </div>
+                    </div>
 
-                      {/* Header Right: Rating + Edit/Delete */}
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-50 text-slate-700 border border-slate-200 text-[11px] font-mono font-medium">
-                          <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                          {contact.rating || '4.8'}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {contact.isEmergency && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-rose-50 text-rose-700 border border-rose-200/60">
+                          <Clock className="w-2.5 h-2.5 text-rose-500" />
+                          24 ชม.
                         </span>
+                      )}
+                    </div>
+                  </CardHeader>
 
-                        {isOwner && (
-                          <div className="flex items-center gap-0.5">
+                  <CardContent className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+                    <div className="space-y-2 text-xs">
+                      {/* Service Type Description */}
+                      <p className="text-xs text-slate-600 line-clamp-2 min-h-[32px]">
+                        {contact.serviceType}
+                      </p>
+
+                      {/* Contact Specs Grid */}
+                      <div className="pt-2 border-t border-slate-100 space-y-1.5 text-slate-600">
+                        {/* Phone */}
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-slate-400 flex items-center gap-1.5">
+                            <Phone className="w-3.5 h-3.5 text-slate-400" />
+                            เบอร์โทร
+                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono font-semibold text-slate-900">
+                              {contact.phonePrimary}
+                            </span>
                             <button
-                              onClick={() => openEditModal(contact)}
-                              title="แก้ไขข้อมูล"
-                              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors"
+                              onClick={() => handleCopy(contact.phonePrimary, `phone-${contact.id}`)}
+                              className="text-slate-400 hover:text-slate-700 p-0.5 transition-colors"
+                              title="คัดลอกเบอร์โทร"
                             >
-                              <Pencil className="w-3.5 h-3.5" />
+                              {copiedId === `phone-${contact.id}` ? (
+                                <Check className="w-3 h-3 text-emerald-600" />
+                              ) : (
+                                <Copy className="w-3 h-3" />
+                              )}
                             </button>
-                            <button
-                              onClick={() => setDeletingContact(contact)}
-                              title="ลบรายชื่อ"
-                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                          </div>
+                        </div>
+
+                        {/* LINE ID */}
+                        {contact.lineId && (
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-slate-400 flex items-center gap-1.5">
+                              <MessageCircle className="w-3.5 h-3.5 text-slate-400" />
+                              LINE ID
+                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-mono text-slate-800">
+                                {contact.lineId}
+                              </span>
+                              <button
+                                onClick={() => handleCopy(contact.lineId || '', `line-${contact.id}`)}
+                                className="text-slate-400 hover:text-slate-700 p-0.5 transition-colors"
+                                title="คัดลอก LINE ID"
+                              >
+                                {copiedId === `line-${contact.id}` ? (
+                                  <Check className="w-3 h-3 text-emerald-600" />
+                                ) : (
+                                  <Copy className="w-3 h-3" />
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Available Hours */}
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-slate-400 flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5 text-slate-400" />
+                            เวลาทำการ
+                          </span>
+                          <span className="font-medium text-slate-800">
+                            {contact.availableHours}
+                          </span>
+                        </div>
+
+                        {/* Price Rate Note */}
+                        {contact.priceRateNote && (
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-slate-400 flex items-center gap-1.5">
+                              <DollarSign className="w-3.5 h-3.5 text-slate-400" />
+                              อัตราค่าบริการ
+                            </span>
+                            <span className="font-medium text-slate-800">
+                              {contact.priceRateNote}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Notes */}
+                        {contact.notes && (
+                          <div className="pt-1 text-[11px] text-slate-500 leading-relaxed border-t border-slate-50">
+                            <span className="text-slate-400">หมายเหตุ:</span> {contact.notes}
                           </div>
                         )}
                       </div>
                     </div>
 
-                    {/* Category Tag */}
-                    <div>
-                      {getCategoryBadge(contact.category)}
-                    </div>
-
-                    {/* Metadata Specs (Clean key-value info) */}
-                    <div className="pt-2 border-t border-slate-100 space-y-1.5 text-xs text-slate-600">
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-400">เวลาทำการ:</span>
-                        <span className="font-medium text-slate-800">{contact.availableHours}</span>
-                      </div>
-                      {contact.lineId && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-slate-400">LINE ID:</span>
-                          <span className="font-mono font-medium text-slate-800">{contact.lineId}</span>
-                        </div>
-                      )}
-                      {contact.priceRateNote && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-slate-400">อัตราค่าบริการ:</span>
-                          <span className="font-medium text-slate-800">{contact.priceRateNote}</span>
-                        </div>
-                      )}
-                      {contact.notes && (
-                        <div className="mt-2 p-2 bg-slate-50/80 rounded-lg border border-slate-100 text-[11px] text-slate-600 leading-relaxed">
-                          <span className="font-semibold text-slate-700">หมายเหตุ: </span>
-                          <span>{contact.notes}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Clean Enterprise Card Footer Actions */}
-                  <div className="pt-3 border-t border-slate-100 flex items-center gap-2">
-                    <a
-                      href={`tel:${contact.phonePrimary.replace(/[^0-9]/g, '')}`}
-                      className="flex-1 h-8.5 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium shadow-2xs flex items-center justify-center gap-1.5 transition-colors"
-                    >
-                      <Phone className="w-3.5 h-3.5 text-slate-300" />
-                      <span>โทร {contact.phonePrimary}</span>
-                    </a>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleCopy(contact.phonePrimary, `phone-${contact.id}`)}
-                      title="คัดลอกเบอร์โทร"
-                      className="h-8.5 px-2.5 border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-medium"
-                    >
-                      {copiedId === `phone-${contact.id}` ? (
-                        <Check className="w-3.5 h-3.5 text-emerald-600" />
-                      ) : (
-                        <Copy className="w-3.5 h-3.5 text-slate-500" />
-                      )}
-                      <span className="ml-1 text-[11px]">คัดลอก</span>
-                    </Button>
-
-                    {contact.lineId && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleCopy(contact.lineId || '', `line-${contact.id}`)}
-                        title="คัดลอก LINE ID"
-                        className="h-8.5 px-2.5 border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-medium"
+                    {/* Card Actions: Primary Call on left, Edit & Delete on right */}
+                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                      <a
+                        href={`tel:${contact.phonePrimary.replace(/[^0-9]/g, '')}`}
+                        className="h-8 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium shadow-2xs inline-flex items-center gap-1.5 transition-colors"
                       >
-                        {copiedId === `line-${contact.id}` ? (
-                          <Check className="w-3.5 h-3.5 text-emerald-600" />
-                        ) : (
-                          <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
-                        )}
-                        <span className="ml-1 text-[11px]">LINE</span>
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))
+                        <Phone className="w-3.5 h-3.5" />
+                        <span>โทร {contact.phonePrimary}</span>
+                      </a>
+
+                      {isOwner && (
+                        <div className="flex items-center gap-1.5">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={isOffline}
+                            onClick={() => openEditModal(contact)}
+                            className="h-8 text-xs px-2.5 border-slate-300 text-slate-700 gap-1 font-medium"
+                          >
+                            <Pencil className="w-3 h-3 text-slate-500" />
+                            <span>แก้ไข</span>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={isOffline}
+                            onClick={() => setDeletingContact(contact)}
+                            className="h-8 text-xs px-2 border-red-200 text-red-600 hover:bg-red-50"
+                            title="ลบ"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })
           )}
         </div>
 
