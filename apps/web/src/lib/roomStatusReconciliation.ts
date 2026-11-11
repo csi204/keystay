@@ -50,6 +50,7 @@ export function getRoomGuestMapping(reservations: ExtendedReservation[]): {
  * 2. confirmed -> reserved
  * 3. checked_out (today) -> cleaning
  * 4. DB status 'reserved' with no confirmed reservation -> available
+ * 5. Strict PMS Auto-Healing Invariant: DB status 'occupied' with no active checked_in/extended reservation -> available
  */
 export function reconcileLiveRooms(
   rooms: Room[],
@@ -106,6 +107,13 @@ export function reconcileLiveRooms(
 
     // 4. Stale reserved check: if DB status is 'reserved' but no confirmed reservation exists
     if (room.status === 'reserved' && !confirmedByRoomId.has(room.id)) {
+      return { ...room, status: 'available' as const };
+    }
+
+    // 5. Strict PMS Auto-Healing Invariant:
+    // If a room has status 'occupied' in DB, but has no active checked_in or extended reservation,
+    // auto-heal and reconcile it to 'available'.
+    if (room.status === 'occupied' && !checkedInByRoomId.has(room.id)) {
       return { ...room, status: 'available' as const };
     }
 

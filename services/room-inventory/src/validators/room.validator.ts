@@ -48,6 +48,8 @@ export const UpdateRoomSchema = z.object({
 
 export const UpdateRoomStatusSchema = z.object({
   status: RoomStatusEnum,
+  reservationId: z.string().optional(),
+  eventSource: z.string().optional(),
   changedBy: z.string().optional(),
   changeReason: z.string().optional(),
 });

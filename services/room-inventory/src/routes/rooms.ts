@@ -304,6 +304,24 @@ roomsRoute.put('/:id/status', async (c) => {
   const previousStatus = room.status;
   const newStatus = parsed.data.status;
 
+  // Strict PMS Prevention Invariant:
+  // Transitioning to 'occupied' requires either a reservationId or eventSource === 'hotel.reservation.checkin'
+  if (newStatus === 'occupied') {
+    const hasReservationContext = Boolean(
+      parsed.data.reservationId || parsed.data.eventSource === 'hotel.reservation.checkin'
+    );
+    if (!hasReservationContext) {
+      return c.json(
+        {
+          success: false,
+          error: 'INVALID_ORPHAN_STATUS',
+          message: 'Cannot mark room as occupied without an active reservation',
+        },
+        400,
+      );
+    }
+  }
+
   // Enforce State Machine Transition Matrix
   if (previousStatus !== newStatus) {
     const allowed = ALLOWED_TRANSITIONS[previousStatus] ?? [];
@@ -328,6 +346,8 @@ roomsRoute.put('/:id/status', async (c) => {
     roomNumber: room.roomNumber,
     previousStatus,
     newStatus,
+    reservationId: parsed.data.reservationId ?? null,
+    eventSource: parsed.data.eventSource ?? 'manual',
     changedBy: parsed.data.changedBy ?? 'system',
     timestamp: now,
   });
@@ -342,7 +362,7 @@ roomsRoute.put('/:id/status', async (c) => {
       newStatus,
       changedBy: parsed.data.changedBy ?? null,
       changeReason: parsed.data.changeReason ?? 'Manual status update',
-      eventSource: 'manual',
+      eventSource: parsed.data.eventSource ?? 'manual',
       createdAt: now,
     }),
     db.insert(outboxEvents).values({
