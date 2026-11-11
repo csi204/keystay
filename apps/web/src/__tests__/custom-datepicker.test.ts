@@ -139,7 +139,7 @@ describe('CustomDatePicker & Date Formatting Helpers', () => {
       assert.strictEqual(placement, 'top');
     });
 
-    it('renders popover with placement="top" positioned above input (bottom-full mb-1.5)', () => {
+    it('renders popover with placement="top" positioned above input with z-[9999] fixed placement', () => {
       const html = renderToStaticMarkup(
         React.createElement(CustomDatePicker, {
           value: '2026-11-11',
@@ -149,12 +149,11 @@ describe('CustomDatePicker & Date Formatting Helpers', () => {
         })
       );
       assert.ok(html.includes('data-placement="top"'), 'Should have data-placement="top"');
-      assert.ok(html.includes('bottom-full mb-1.5'), 'Should contain bottom-full mb-1.5 classes');
-      assert.ok(html.includes('z-50'), 'Should contain z-50 for high stacking context');
-      assert.ok(!html.includes('top-full mt-1.5'), 'Should not contain top-full mt-1.5 classes');
+      assert.ok(html.includes('fixed'), 'Should contain fixed positioning');
+      assert.ok(html.includes('z-[9999]') || html.includes('z-index: 9999'), 'Should contain z-[9999] for high stacking context');
     });
 
-    it('renders popover with placement="bottom" positioned below input (top-full mt-1.5)', () => {
+    it('renders popover with placement="bottom" positioned below input with z-[9999] fixed placement', () => {
       const html = renderToStaticMarkup(
         React.createElement(CustomDatePicker, {
           value: '2026-11-11',
@@ -164,9 +163,8 @@ describe('CustomDatePicker & Date Formatting Helpers', () => {
         })
       );
       assert.ok(html.includes('data-placement="bottom"'), 'Should have data-placement="bottom"');
-      assert.ok(html.includes('top-full mt-1.5'), 'Should contain top-full mt-1.5 classes');
-      assert.ok(html.includes('z-50'), 'Should contain z-50');
-      assert.ok(!html.includes('bottom-full mb-1.5'), 'Should not contain bottom-full mb-1.5 classes');
+      assert.ok(html.includes('fixed'), 'Should contain fixed positioning');
+      assert.ok(html.includes('z-[9999]') || html.includes('z-index: 9999'), 'Should contain z-[9999]');
     });
   });
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Room, RoomType } from '@keystay/types';
 import { useI18n } from '@/lib/i18n';
 import { CustomDatePicker } from '../common/CustomDatePicker';
-import { X, Calendar, User, Phone, Mail, DollarSign, BedDouble, AlertCircle } from 'lucide-react';
+import { X, Calendar, User, Phone, Mail, DollarSign, BedDouble, AlertCircle, ChevronDown } from 'lucide-react';
 
 export interface NewReservationModalProps {
   isOpen: boolean;
@@ -220,20 +220,23 @@ export const NewReservationModal: React.FC<NewReservationModalProps> = ({
               <label className="block text-xs font-medium text-slate-700 mb-1">
                 {t('res.selectRoom')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
               </label>
-              <select
-                value={roomId}
-                onChange={(e) => setRoomId(e.target.value)}
-                className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"
-              >
-                {rooms.map((r) => {
-                  const type = roomTypes.find((t) => t.id === r.roomTypeId);
-                  return (
-                    <option key={r.id} value={r.id}>
-                      {t('common.room')} {r.roomNumber} ({type?.name || 'Standard'} · {formatCurrency(type?.basePrice || '1200')}{t('common.pricePerNight')})
-                    </option>
-                  );
-                })}
-              </select>
+              <div className="relative">
+                <select
+                  value={roomId}
+                  onChange={(e) => setRoomId(e.target.value)}
+                  className="w-full pl-3 pr-8 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 appearance-none"
+                >
+                  {rooms.map((r) => {
+                    const type = roomTypes.find((t) => t.id === r.roomTypeId);
+                    return (
+                      <option key={r.id} value={r.id}>
+                        {t('common.room')} {r.roomNumber} ({type?.name || 'Standard'} · {formatCurrency(type?.basePrice || '1200')}{t('common.pricePerNight')})
+                      </option>
+                    );
+                  })}
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={1.75} />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -282,7 +285,7 @@ export const NewReservationModal: React.FC<NewReservationModalProps> = ({
                   step="50"
                   value={depositAmount}
                   onChange={(e) => setDepositAmount(e.target.value)}
-                  className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono"
+                  className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
               </div>
             </div>

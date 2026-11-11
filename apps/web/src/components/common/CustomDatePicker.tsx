@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -17,6 +18,12 @@ export interface CustomDatePickerProps {
   defaultOpen?: boolean;
 }
 
+export interface PopoverCoords {
+  top: number;
+  left: number;
+  placement: 'top' | 'bottom';
+}
+
 /**
  * Determine popover placement based on element bounding rect and window height.
  * Returns 'top' when popover would overflow bottom bounds or clearance is < 300px.
@@ -24,14 +31,52 @@ export interface CustomDatePickerProps {
 export function computePlacement(
   rect?: { bottom: number; top?: number } | null,
   windowHeight: number = typeof window !== 'undefined' ? window.innerHeight : 800,
-  popoverHeight: number = 320
+  popoverHeight: number = 340
 ): 'top' | 'bottom' {
   if (!rect) return 'bottom';
   const clearanceBelow = windowHeight - rect.bottom;
-  if (clearanceBelow < popoverHeight || clearanceBelow < 300 || rect.bottom + popoverHeight > windowHeight) {
+  const topVal = rect.top ?? 0;
+  if (clearanceBelow < popoverHeight || (clearanceBelow < 340 && topVal > 340) || rect.bottom + popoverHeight > windowHeight) {
     return 'top';
   }
   return 'bottom';
+}
+
+/**
+ * Calculates fixed portal coordinates anchored to trigger input element.
+ * Ensures the popover stays within viewport bounds and flips above if clearance below is insufficient.
+ */
+export function computePopoverCoords(
+  rect: { top: number; bottom: number; left: number },
+  windowWidth: number = typeof window !== 'undefined' ? window.innerWidth : 1024,
+  windowHeight: number = typeof window !== 'undefined' ? window.innerHeight : 768,
+  placementProp: 'top' | 'bottom' | 'auto' = 'auto',
+  popoverWidth: number = 320,
+  popoverHeight: number = 340
+): PopoverCoords {
+  const spaceBelow = windowHeight - rect.bottom;
+  const spaceAbove = rect.top;
+
+  let placement: 'top' | 'bottom';
+  if (placementProp === 'top') {
+    placement = 'top';
+  } else if (placementProp === 'bottom') {
+    placement = 'bottom';
+  } else {
+    // If placement === 'top' or (available space below rect.bottom < 340 && rect.top > 340): place above
+    if (spaceBelow < popoverHeight && spaceAbove > popoverHeight) {
+      placement = 'top';
+    } else if (spaceBelow < 340 && spaceAbove > 340) {
+      placement = 'top';
+    } else {
+      placement = 'bottom';
+    }
+  }
+
+  const top = placement === 'top' ? rect.top - popoverHeight - 6 : rect.bottom + 6;
+  const left = Math.max(16, Math.min(rect.left, windowWidth - popoverWidth - 16));
+
+  return { top, left, placement };
 }
 
 /**
@@ -145,48 +190,36 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
 
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [displayText, setDisplayText] = useState(() => formatDisplayDate(value, locale));
 
-  const [popoverDirection, setPopoverDirection] = useState<'top' | 'bottom'>(
-    placement === 'top' ? 'top' : 'bottom'
-  );
+  const [coords, setCoords] = useState<PopoverCoords>(() => ({
+    top: 0,
+    left: 16,
+    placement: placement === 'top' ? 'top' : 'bottom',
+  }));
 
-  const updatePlacement = () => {
-    if (placement === 'top') {
-      setPopoverDirection('top');
-      return;
-    }
-    if (placement === 'bottom') {
-      setPopoverDirection('bottom');
-      return;
-    }
-    // placement === 'auto'
-    if (typeof window !== 'undefined') {
-      const el = inputRef.current || containerRef.current;
-      if (el) {
-        const rect = el.getBoundingClientRect();
-        // Check window bottom bounds AND modal/dialog bottom boundary
-        const dialog =
-          el.closest('[role="dialog"]') ||
-          el.closest('.overflow-y-auto') ||
-          el.closest('.modal-content') ||
-          el.closest('[aria-modal="true"]');
-        let availableHeight = window.innerHeight;
-        if (dialog) {
-          const dialogRect = dialog.getBoundingClientRect();
-          availableHeight = Math.min(window.innerHeight, dialogRect.bottom);
-        }
-        const direction = computePlacement(rect, availableHeight, 320);
-        setPopoverDirection(direction);
-      }
-    }
+  const updateCoords = () => {
+    if (typeof window === 'undefined') return;
+    const el = inputRef.current || containerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const newCoords = computePopoverCoords(
+      rect,
+      window.innerWidth,
+      window.innerHeight,
+      placement,
+      320,
+      340
+    );
+    setCoords(newCoords);
   };
 
   const handleOpen = () => {
     if (!disabled) {
-      updatePlacement();
+      updateCoords();
       inputRef.current?.focus();
       setIsOpen(true);
     }
@@ -194,8 +227,25 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      updatePlacement();
+      updateCoords();
     }
+  }, [isOpen, placement]);
+
+  // Wire passive scroll & resize listeners on window to update coords in real time
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleUpdate = () => {
+      updateCoords();
+    };
+
+    window.addEventListener('scroll', handleUpdate, { passive: true, capture: true });
+    window.addEventListener('resize', handleUpdate, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', handleUpdate, { capture: true });
+      window.removeEventListener('resize', handleUpdate);
+    };
   }, [isOpen, placement]);
 
   // Determine initial calendar view
@@ -230,7 +280,11 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
     if (!isOpen) return;
 
     function handleClickOutside(event: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const clickedInsideContainer = containerRef.current?.contains(target);
+      const clickedInsidePopover = popoverRef.current?.contains(target);
+
+      if (!clickedInsideContainer && !clickedInsidePopover) {
         setIsOpen(false);
       }
     }
@@ -369,8 +423,130 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
     ? `${THAI_MONTHS[viewMonth]} ${viewYear + 543}`
     : `${ENGLISH_MONTHS[viewMonth]} ${viewYear}`;
 
-  const resolvedPlacement: 'top' | 'bottom' =
-    placement && placement !== 'auto' ? placement : popoverDirection;
+  const popoverContent = (
+    <div
+      ref={popoverRef}
+      role="dialog"
+      aria-modal="true"
+      data-placement={coords.placement}
+      style={{
+        position: 'fixed',
+        top: `${coords.top}px`,
+        left: `${coords.left}px`,
+        zIndex: 9999,
+        width: '320px',
+      }}
+      className="fixed z-[9999] bg-white rounded-xl shadow-xl border border-slate-200 p-3 select-none animate-in fade-in zoom-in-95 duration-100"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+        <button
+          type="button"
+          onClick={handlePrevMonth}
+          disabled={isPrevMonthDisabled}
+          aria-label="Previous month"
+          className="p-1 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+        >
+          <ChevronLeft className="w-4 h-4" strokeWidth={1.75} />
+        </button>
+        <span className="text-sm font-semibold text-slate-800 tracking-tight font-sans">
+          {monthTitle}
+        </span>
+        <button
+          type="button"
+          onClick={handleNextMonth}
+          disabled={isNextMonthDisabled}
+          aria-label="Next month"
+          className="p-1 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+        >
+          <ChevronRight className="w-4 h-4" strokeWidth={1.75} />
+        </button>
+      </div>
+
+      {/* Days of week header */}
+      <div className="grid grid-cols-7 gap-1 text-center mb-1">
+        {(isThai ? THAI_DAYS : ENGLISH_DAYS).map((dayName, idx) => (
+          <div
+            key={dayName + idx}
+            className="h-6 flex items-center justify-center text-[11px] font-semibold text-slate-400 select-none"
+          >
+            {dayName}
+          </div>
+        ))}
+      </div>
+
+      {/* Days Grid */}
+      <div className="grid grid-cols-7 gap-1">
+        {Array.from({ length: firstDayOfWeek }).map((_, i) => (
+          <div key={`empty-${i}`} className="h-8 w-8" />
+        ))}
+        {Array.from({ length: daysInMonth }).map((_, i) => {
+          const day = i + 1;
+          const dayStr = String(day).padStart(2, '0');
+          const monthStr = String(viewMonth + 1).padStart(2, '0');
+          const dateIso = `${viewYear}-${monthStr}-${dayStr}`;
+          const isSelected = value === dateIso;
+          const isToday = todayIso === dateIso;
+          const isDayDisabled = Boolean(
+            (min && dateIso < min) || (max && dateIso > max) || disabled
+          );
+
+          let btnClass =
+            'h-8 w-8 mx-auto flex items-center justify-center text-xs font-mono tabular-nums rounded-lg transition-colors ';
+          if (isDayDisabled) {
+            btnClass +=
+              'text-slate-300 dark:text-slate-600 cursor-not-allowed hover:bg-transparent';
+          } else if (isSelected) {
+            btnClass +=
+              'bg-slate-900 text-white font-bold rounded-lg shadow-sm cursor-pointer';
+          } else if (isToday) {
+            btnClass +=
+              'border border-slate-900/40 text-slate-900 font-bold hover:bg-slate-100 cursor-pointer';
+          } else {
+            btnClass += 'text-slate-700 hover:bg-slate-100 font-medium cursor-pointer';
+          }
+
+          return (
+            <button
+              key={dateIso}
+              type="button"
+              data-date={dateIso}
+              disabled={isDayDisabled}
+              onClick={() => {
+                if (!isDayDisabled) {
+                  handleSelectDate(dateIso);
+                }
+              }}
+              className={btnClass}
+            >
+              {day}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Quick actions footer */}
+      <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-slate-100 text-xs">
+        <button
+          type="button"
+          onClick={handleSelectToday}
+          disabled={isTodayDisabled}
+          className="font-medium text-slate-700 hover:text-slate-900 hover:underline disabled:opacity-40 disabled:no-underline transition-colors px-1 py-0.5 rounded cursor-pointer disabled:cursor-not-allowed"
+        >
+          {isThai ? 'วันนี้' : 'Today'}
+        </button>
+        {!required && (
+          <button
+            type="button"
+            onClick={handleClear}
+            className="font-medium text-rose-600 hover:text-rose-700 hover:underline transition-colors px-1 py-0.5 rounded cursor-pointer"
+          >
+            {isThai ? 'ล้างค่า' : 'Clear'}
+          </button>
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <div ref={containerRef} className="relative w-full">
@@ -400,122 +576,9 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
       </div>
 
       {isOpen && !disabled && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          data-placement={resolvedPlacement}
-          className={`absolute left-0 z-50 bg-white rounded-xl shadow-lg border border-slate-200 p-3 w-72 sm:w-80 select-none animate-in fade-in zoom-in-95 duration-100 ${
-            resolvedPlacement === 'top' ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
-          }`}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
-            <button
-              type="button"
-              onClick={handlePrevMonth}
-              disabled={isPrevMonthDisabled}
-              aria-label="Previous month"
-              className="p-1 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
-            >
-              <ChevronLeft className="w-4 h-4" strokeWidth={1.75} />
-            </button>
-            <span className="text-sm font-semibold text-slate-800 tracking-tight font-sans">
-              {monthTitle}
-            </span>
-            <button
-              type="button"
-              onClick={handleNextMonth}
-              disabled={isNextMonthDisabled}
-              aria-label="Next month"
-              className="p-1 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
-            >
-              <ChevronRight className="w-4 h-4" strokeWidth={1.75} />
-            </button>
-          </div>
-
-          {/* Days of week header */}
-          <div className="grid grid-cols-7 gap-1 text-center mb-1">
-            {(isThai ? THAI_DAYS : ENGLISH_DAYS).map((dayName, idx) => (
-              <div
-                key={dayName + idx}
-                className="h-6 flex items-center justify-center text-[11px] font-semibold text-slate-400 select-none"
-              >
-                {dayName}
-              </div>
-            ))}
-          </div>
-
-          {/* Days Grid */}
-          <div className="grid grid-cols-7 gap-1">
-            {Array.from({ length: firstDayOfWeek }).map((_, i) => (
-              <div key={`empty-${i}`} className="h-8 w-8" />
-            ))}
-            {Array.from({ length: daysInMonth }).map((_, i) => {
-              const day = i + 1;
-              const dayStr = String(day).padStart(2, '0');
-              const monthStr = String(viewMonth + 1).padStart(2, '0');
-              const dateIso = `${viewYear}-${monthStr}-${dayStr}`;
-              const isSelected = value === dateIso;
-              const isToday = todayIso === dateIso;
-              const isDayDisabled = Boolean(
-                (min && dateIso < min) || (max && dateIso > max) || disabled
-              );
-
-              let btnClass =
-                'h-8 w-8 mx-auto flex items-center justify-center text-xs font-mono tabular-nums rounded-lg transition-colors ';
-              if (isDayDisabled) {
-                btnClass +=
-                  'text-slate-300 dark:text-slate-600 cursor-not-allowed hover:bg-transparent';
-              } else if (isSelected) {
-                btnClass +=
-                  'bg-slate-900 text-white font-bold rounded-lg shadow-sm cursor-pointer';
-              } else if (isToday) {
-                btnClass +=
-                  'border border-slate-900/40 text-slate-900 font-bold hover:bg-slate-100 cursor-pointer';
-              } else {
-                btnClass += 'text-slate-700 hover:bg-slate-100 font-medium cursor-pointer';
-              }
-
-              return (
-                <button
-                  key={dateIso}
-                  type="button"
-                  data-date={dateIso}
-                  disabled={isDayDisabled}
-                  onClick={() => {
-                    if (!isDayDisabled) {
-                      handleSelectDate(dateIso);
-                    }
-                  }}
-                  className={btnClass}
-                >
-                  {day}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Quick actions footer */}
-          <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-slate-100 text-xs">
-            <button
-              type="button"
-              onClick={handleSelectToday}
-              disabled={isTodayDisabled}
-              className="font-medium text-slate-700 hover:text-slate-900 hover:underline disabled:opacity-40 disabled:no-underline transition-colors px-1 py-0.5 rounded cursor-pointer disabled:cursor-not-allowed"
-            >
-              {isThai ? 'วันนี้' : 'Today'}
-            </button>
-            {!required && (
-              <button
-                type="button"
-                onClick={handleClear}
-                className="font-medium text-rose-600 hover:text-rose-700 hover:underline transition-colors px-1 py-0.5 rounded cursor-pointer"
-              >
-                {isThai ? 'ล้างค่า' : 'Clear'}
-              </button>
-            )}
-          </div>
-        </div>
+        typeof document !== 'undefined' && document.body
+          ? createPortal(popoverContent, document.body)
+          : popoverContent
       )}
     </div>
   );

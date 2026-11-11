@@ -20,6 +20,7 @@ import {
   LogIn,
   AlertCircle,
   Loader2,
+  ChevronDown,
 } from 'lucide-react';
 
 export interface FastBookingFormData {
@@ -264,21 +265,24 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
                   <label className="block text-sm font-semibold text-slate-800 mb-1">
                     {t('res.selectAvailableRoom')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
                   </label>
-                  <select
-                    value={roomId}
-                    onChange={(e) => setRoomId(e.target.value)}
-                    className="w-full text-sm py-2 px-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-sans shadow-2xs"
-                  >
-                    {availableRooms.map((r) => {
-                      const type = roomTypes.find((t) => t.id === r.roomTypeId);
-                      const typeName = localizeRoomType(type?.name, locale) || type?.name || 'Standard';
-                      return (
-                        <option key={r.id} value={r.id}>
-                          {t('common.room')} {r.roomNumber} ({typeName} · {formatCurrency(type?.basePrice || '1200')}{t('common.pricePerNight')})
-                        </option>
-                      );
-                    })}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={roomId}
+                      onChange={(e) => setRoomId(e.target.value)}
+                      className="w-full text-sm py-2 px-3 pr-9 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-sans shadow-2xs appearance-none"
+                    >
+                      {availableRooms.map((r) => {
+                        const type = roomTypes.find((t) => t.id === r.roomTypeId);
+                        const typeName = localizeRoomType(type?.name, locale) || type?.name || 'Standard';
+                        return (
+                          <option key={r.id} value={r.id}>
+                            {t('common.room')} {r.roomNumber} ({typeName} · {formatCurrency(type?.basePrice || '1200')}{t('common.pricePerNight')})
+                          </option>
+                        );
+                      })}
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={1.75} />
+                  </div>
                 </div>
 
                 {/* Selected Room Highlight Card */}
@@ -473,7 +477,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
                       placeholder="500"
                       value={depositAmount}
                       onChange={(e) => setDepositAmount(e.target.value)}
-                      className="w-full text-sm py-2 px-3 pl-9 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono tabular-nums shadow-2xs"
+                      className="w-full text-sm py-2 px-3 pl-9 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono tabular-nums shadow-2xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                   </div>
                 </div>
