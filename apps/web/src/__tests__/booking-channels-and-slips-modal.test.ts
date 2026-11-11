@@ -46,4 +46,13 @@ describe('Task 3: Front Desk Booking Channels & Slip Attachment in Reservation M
     assert.match(code, /เพจ Facebook|Facebook Page/);
     assert.match(code, /paymentSlipRef/);
   });
+
+  it('RoomDetailsModal back button has ArrowLeft icon without duplicate literal arrow character', () => {
+    const code = fs.readFileSync(roomDetailsModalPath, 'utf-8');
+    assert.doesNotMatch(code, /←/);
+    assert.match(code, /กลับไปดูรายละเอียดห้อง/);
+    assert.match(code, /Back to room details/);
+    assert.match(code, /ArrowLeft/);
+  });
 });
+

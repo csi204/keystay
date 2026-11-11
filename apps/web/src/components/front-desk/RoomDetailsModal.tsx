@@ -702,10 +702,10 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setMode('details')}
-                  className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 px-3 py-2 rounded-lg transition-colors w-full justify-center min-h-[44px]"
+                  className="group inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 px-3 py-2 rounded-lg transition-colors w-full justify-center min-h-[44px]"
                 >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>{locale === 'th' ? '← กลับไปดูรายละเอียดห้อง' : '← Back to room details'}</span>
+                  <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" strokeWidth={1.75} aria-hidden="true" />
+                  <span>{locale === 'th' ? 'กลับไปดูรายละเอียดห้อง' : 'Back to room details'}</span>
                 </button>
               </div>
             </div>
