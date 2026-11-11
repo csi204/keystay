@@ -159,5 +159,54 @@ describe('Outsource Contacts API & Mapping', () => {
     const body3 = (await res3.json()) as { success: boolean; data: OutsourceContactDTO };
     assert.strictEqual(body3.success, true);
     assert.strictEqual(body3.data.id, 'out-001');
+
+    // Test POST /housekeeping/outsource-contacts
+    const resPost = await app.request(
+      '/housekeeping/outsource-contacts',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'ช่างไฟด่วน 24 ชม.',
+          category: 'electrical',
+          serviceType: 'ระบบไฟฟ้าลัดวงจร',
+          phonePrimary: '086-555-4321',
+          lineId: '@bkk_electric',
+        }),
+      },
+      { DB: mockDb }
+    );
+    assert.strictEqual(resPost.status, 201);
+    const bodyPost = (await resPost.json()) as { success: boolean; data: OutsourceContactDTO };
+    assert.strictEqual(bodyPost.success, true);
+    assert.strictEqual(bodyPost.data.name, 'ช่างไฟด่วน 24 ชม.');
+    assert.strictEqual(bodyPost.data.category, 'electrical');
+
+    // Test PUT /housekeeping/outsource-contacts/:id
+    const resPut = await app.request(
+      '/housekeeping/outsource-contacts/out-001',
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'บจก. สยามแอร์เซอร์วิส (อัปเดต)',
+          priceRateNote: 'เริ่มต้น 600 บาท / ครั้ง',
+        }),
+      },
+      { DB: mockDb }
+    );
+    assert.strictEqual(resPut.status, 200);
+    const bodyPut = (await resPut.json()) as { success: boolean; data: OutsourceContactDTO };
+    assert.strictEqual(bodyPut.success, true);
+
+    // Test DELETE /housekeeping/outsource-contacts/:id (Soft delete)
+    const resDel = await app.request(
+      '/housekeeping/outsource-contacts/out-001',
+      { method: 'DELETE' },
+      { DB: mockDb }
+    );
+    assert.strictEqual(resDel.status, 200);
+    const bodyDel = (await resDel.json()) as { success: boolean; message: string };
+    assert.strictEqual(bodyDel.success, true);
   });
 });

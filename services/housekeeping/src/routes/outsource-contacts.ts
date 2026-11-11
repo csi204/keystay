@@ -125,3 +125,187 @@ outsourceContactsRoute.get('/:id', async (c) => {
     data: mapOutsourceContact(rows[0]),
   });
 });
+
+// ==========================================
+// API #103: POST /housekeeping/outsource-contacts - เพิ่มข้อมูลคู่ค้า/ช่าง Outsource ใหม่
+// ==========================================
+outsourceContactsRoute.post('/', async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const name = body.name?.trim();
+  const category = body.category?.trim();
+  const serviceType = (body.serviceType ?? body.service_type)?.trim();
+  const phonePrimary = (body.phonePrimary ?? body.phone_primary)?.trim();
+
+  if (!name || !category || !serviceType || !phonePrimary) {
+    return c.json(
+      {
+        success: false,
+        error: 'VALIDATION_ERROR',
+        message: 'name, category, serviceType, and phonePrimary are required',
+      },
+      400
+    );
+  }
+
+  const db = getDb(c.env.DB);
+  const now = new Date().toISOString();
+  const id = body.id || `out-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+
+  const isEmergencyVal =
+    body.is_emergency !== undefined
+      ? (body.is_emergency ? 1 : 0)
+      : body.isEmergency !== undefined
+        ? (body.isEmergency ? 1 : 0)
+        : 1;
+
+  const isActiveVal =
+    body.is_active !== undefined
+      ? (body.is_active ? 1 : 0)
+      : body.isActive !== undefined
+        ? (body.isActive ? 1 : 0)
+        : 1;
+
+  const newRecord = {
+    id,
+    name,
+    category: category as any,
+    serviceType,
+    phonePrimary,
+    phoneSecondary: (body.phoneSecondary ?? body.phone_secondary) || null,
+    lineId: (body.lineId ?? body.line_id) || null,
+    isEmergency: isEmergencyVal,
+    availableHours: (body.availableHours ?? body.available_hours) || '24 ชั่วโมง',
+    priceRateNote: (body.priceRateNote ?? body.price_rate_note) || null,
+    rating: body.rating !== undefined ? Number(body.rating) : 5.0,
+    address: body.address || null,
+    notes: body.notes || null,
+    isActive: isActiveVal,
+    createdBy: body.createdBy || 'system',
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  await db.insert(outsourceContacts).values(newRecord).run();
+
+  return c.json(
+    {
+      success: true,
+      data: mapOutsourceContact(newRecord),
+    },
+    201
+  );
+});
+
+// ==========================================
+// API #104: PUT /housekeeping/outsource-contacts/:id - แก้ไขข้อมูลช่างและเงื่อนไขการติดต่อ
+// ==========================================
+outsourceContactsRoute.put('/:id', async (c) => {
+  const id = c.req.param('id');
+  const body = await c.req.json().catch(() => ({}));
+  const db = getDb(c.env.DB);
+
+  const existing = await db
+    .select()
+    .from(outsourceContacts)
+    .where(eq(outsourceContacts.id, id))
+    .all();
+
+  if (!existing || existing.length === 0) {
+    return c.json(
+      {
+        success: false,
+        error: 'NOT_FOUND',
+        message: `Outsource contact with id ${id} not found`,
+      },
+      404
+    );
+  }
+
+  const now = new Date().toISOString();
+  const updateData: any = {
+    updatedAt: now,
+  };
+
+  if (body.name !== undefined) updateData.name = body.name.trim();
+  if (body.category !== undefined) updateData.category = body.category.trim();
+  if (body.serviceType !== undefined || body.service_type !== undefined) {
+    updateData.serviceType = (body.serviceType ?? body.service_type).trim();
+  }
+  if (body.phonePrimary !== undefined || body.phone_primary !== undefined) {
+    updateData.phonePrimary = (body.phonePrimary ?? body.phone_primary).trim();
+  }
+  if (body.phoneSecondary !== undefined || body.phone_secondary !== undefined) {
+    updateData.phoneSecondary = (body.phoneSecondary ?? body.phone_secondary) || null;
+  }
+  if (body.lineId !== undefined || body.line_id !== undefined) {
+    updateData.lineId = (body.lineId ?? body.line_id) || null;
+  }
+  if (body.isEmergency !== undefined || body.is_emergency !== undefined) {
+    updateData.isEmergency = (body.isEmergency ?? body.is_emergency) ? 1 : 0;
+  }
+  if (body.availableHours !== undefined || body.available_hours !== undefined) {
+    updateData.availableHours = (body.availableHours ?? body.available_hours) || '24 ชั่วโมง';
+  }
+  if (body.priceRateNote !== undefined || body.price_rate_note !== undefined) {
+    updateData.priceRateNote = (body.priceRateNote ?? body.price_rate_note) || null;
+  }
+  if (body.rating !== undefined) updateData.rating = Number(body.rating);
+  if (body.address !== undefined) updateData.address = body.address || null;
+  if (body.notes !== undefined) updateData.notes = body.notes || null;
+  if (body.isActive !== undefined || body.is_active !== undefined) {
+    updateData.isActive = (body.isActive ?? body.is_active) ? 1 : 0;
+  }
+
+  await db.update(outsourceContacts).set(updateData).where(eq(outsourceContacts.id, id)).run();
+
+  const updatedRows = await db
+    .select()
+    .from(outsourceContacts)
+    .where(eq(outsourceContacts.id, id))
+    .all();
+
+  return c.json({
+    success: true,
+    data: mapOutsourceContact(updatedRows[0]),
+  });
+});
+
+// ==========================================
+// API #105: DELETE /housekeeping/outsource-contacts/:id - ระงับการใช้งานช่าง/คู่ค้า (Soft Delete)
+// ==========================================
+outsourceContactsRoute.delete('/:id', async (c) => {
+  const id = c.req.param('id');
+  const db = getDb(c.env.DB);
+
+  const existing = await db
+    .select()
+    .from(outsourceContacts)
+    .where(eq(outsourceContacts.id, id))
+    .all();
+
+  if (!existing || existing.length === 0) {
+    return c.json(
+      {
+        success: false,
+        error: 'NOT_FOUND',
+        message: `Outsource contact with id ${id} not found`,
+      },
+      404
+    );
+  }
+
+  const now = new Date().toISOString();
+  await db
+    .update(outsourceContacts)
+    .set({
+      isActive: 0,
+      updatedAt: now,
+    })
+    .where(eq(outsourceContacts.id, id))
+    .run();
+
+  return c.json({
+    success: true,
+    message: 'Outsource contact deactivated successfully',
+  });
+});

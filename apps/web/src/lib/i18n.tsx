@@ -18,8 +18,10 @@ const translations: Record<Language, Translations> = {
     'nav.roomsPricing': 'ห้องและราคา',
     'nav.minibar': 'มินิบาร์',
     'nav.reports': 'รายงาน',
+    'nav.technicians': 'ช่างซ่อมบำรุง',
     'nav.usersRoles': 'ผู้ใช้และสิทธิ์',
     'nav.logout': 'ออกจากระบบ',
+    'nav.changePassword': 'เปลี่ยนรหัสผ่าน',
     'nav.switchLang': 'สลับภาษา',
     'nav.langName': 'ภาษาไทย',
 
@@ -31,12 +33,18 @@ const translations: Record<Language, Translations> = {
     // Tabs
     'tab.roomTypes': 'ประเภทห้องพัก',
     'tab.roomUnits': 'ห้องจริง (Room Units)',
+    'tab.pricingRules': 'กฎราคาตามฤดูกาล',
+    'tab.amenities': 'ของใช้และบริการเสริม',
 
     // Page Headers
     'header.roomTypes.title': 'ประเภทห้องพักและอัตราค่าบริการพื้นฐาน',
     'header.roomTypes.desc': 'กำหนดราคาต่อคืน (Base Price) จำนวนผู้เข้าพัก ขนาดห้อง และเตียงนอนที่ให้บริการ',
     'header.roomUnits.title': 'จัดการห้องพักจริง (Room Units)',
     'header.roomUnits.desc': 'เพิ่ม ปิดการใช้งาน แก้ไขข้อมูล หรือเปลี่ยนสถานะห้องพักรายห้อง แยกตามชั้น',
+    'header.pricingRules.title': 'ระบบคำนวณราคาตามฤดูกาลและเทศกาล (Dynamic Seasonal Pricing)',
+    'header.pricingRules.desc': 'ปรับอัตราค่าห้องพักตามฤดูกาลหรือเทศกาล โดยคงราคาฐานเดิมไว้ (Base Price ไม่เปลี่ยนแปลง)',
+    'header.amenities.title': 'แคตตาล็อกของใช้และบริการเสริม (Extra Amenities Catalog)',
+    'header.amenities.desc': 'กำหนดรายการของใช้ฟรีและของใช้คิดเงิน เพื่อส่งคำขอให้แม่บ้านและลงบิล Folio อัตโนมัติ',
     'header.minibar.title': 'สินค้าและราคามินิบาร์ (Master Data / Catalog)',
     'header.minibar.desc': 'กำหนดรายการสินค้ามินิบาร์ ราคาขายต่อชิ้น และจัดการสต็อก (กำหนดโดย Owner)',
     'header.reports.title': 'รายงานสถิติและการเงิน (Reports & Analytics)',
@@ -65,6 +73,9 @@ const translations: Record<Language, Translations> = {
     'action.exportPdf': 'ส่งออก PDF',
     'action.createUser': 'สร้างผู้ใช้ใหม่',
     'action.addItem': 'เพิ่มสินค้า',
+    'action.addRule': 'เพิ่มกฎราคาใหม่',
+    'action.addAmenity': 'เพิ่มของใช้/บริการ',
+    'action.exportTaxReport': 'ส่งออกรายงานภาษีขาย (ภ.พ.30)',
 
     // Filters & Search
     'filter.searchRoomType': 'ค้นหาชื่อประเภทห้องพัก...',
@@ -143,8 +154,10 @@ const translations: Record<Language, Translations> = {
     'nav.roomsPricing': 'Rooms & Pricing',
     'nav.minibar': 'Minibar',
     'nav.reports': 'Reports',
+    'nav.technicians': 'Technicians',
     'nav.usersRoles': 'Users & Roles',
     'nav.logout': 'Sign Out',
+    'nav.changePassword': 'Change Password',
     'nav.switchLang': 'Switch Language',
     'nav.langName': 'English',
 
@@ -156,12 +169,18 @@ const translations: Record<Language, Translations> = {
     // Tabs
     'tab.roomTypes': 'Room Types',
     'tab.roomUnits': 'Room Units',
+    'tab.pricingRules': 'Seasonal Pricing',
+    'tab.amenities': 'Extra Amenities',
 
     // Page Headers
     'header.roomTypes.title': 'Room Types & Base Rates',
     'header.roomTypes.desc': 'Configure base nightly rates, capacity, dimensions, and bedding offerings',
     'header.roomUnits.title': 'Room Units Management',
     'header.roomUnits.desc': 'Add, deactivate, update, or transition status for individual rooms per floor',
+    'header.pricingRules.title': 'Dynamic Seasonal & Festival Pricing',
+    'header.pricingRules.desc': 'Set seasonal rate rules without mutating base room prices (immutable baseline)',
+    'header.amenities.title': 'Extra Amenities & Services Catalog',
+    'header.amenities.desc': 'Manage free & paid amenities for housekeeping delivery and automatic folio billing',
     'header.minibar.title': 'Minibar Items & Pricing (Master Data / Catalog)',
     'header.minibar.desc': 'Manage minibar item catalog, selling price per unit, and inventory (Owner controlled)',
     'header.reports.title': 'Reports & Analytics',
@@ -190,6 +209,9 @@ const translations: Record<Language, Translations> = {
     'action.exportPdf': 'Export PDF',
     'action.createUser': 'Create User',
     'action.addItem': 'Add Item',
+    'action.addRule': 'Add Pricing Rule',
+    'action.addAmenity': 'Add Amenity',
+    'action.exportTaxReport': 'Export Sales Tax (PP.30)',
 
     // Filters & Search
     'filter.searchRoomType': 'Search room types...',

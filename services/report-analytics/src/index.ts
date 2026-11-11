@@ -3,7 +3,7 @@ import { Receiver } from '@upstash/qstash';
 import { getDb } from './db/client';
 import { ReportService } from './services/report.service';
 import { auditEvents, dailyStats, revenueRecords } from './db/schema';
-import { sql } from 'drizzle-orm';
+import { sql, desc } from 'drizzle-orm';
 
 export interface Env {
   DB: D1Database;
@@ -316,15 +316,39 @@ app.get('/reports/export/csv', async (c) => {
     const reportType = c.req.query('type') || 'daily_stats';
     const today = getBangkokDate();
     const filename = `keystay_${reportType}_${today}.csv`;
-    const { reportService } = getService(c.env);
+    const { db, reportService } = getService(c.env);
 
     let csvContent = '';
     if (reportType === 'daily_stats') {
       const res = await reportService.getDailyStats(100);
-      csvContent = 'Date,Total Rooms,Occupied,Available,Occupancy %,Check-ins,Check-outs,Total Revenue,Room Revenue,Minibar Revenue\n';
+      // Clean daily stats: removed check-ins/check-outs, added Net Sales and VAT 7%
+      csvContent = 'Date,Total Rooms,Occupied,Available,Occupancy %,Net Sales (Before VAT),VAT 7% (THB),Total Revenue,Room Revenue,Minibar Revenue\n';
       for (const r of res.rows) {
-        csvContent += `${r.statDate},${r.totalRooms},${r.occupiedRooms},${r.availableRooms},${r.occupancyRate}%,${r.totalCheckins},${r.totalCheckouts},${r.totalRevenue},${r.roomRevenue},${r.minibarRevenue}\n`;
+        const total = Number(r.totalRevenue || 0);
+        const net = Math.round((total / 1.07) * 100) / 100;
+        const vat = Math.round((total - net) * 100) / 100;
+        csvContent += `${r.statDate},${r.totalRooms},${r.occupiedRooms},${r.availableRooms},${r.occupancyRate}%,${net.toFixed(2)},${vat.toFixed(2)},${total.toFixed(2)},${Number(r.roomRevenue || 0).toFixed(2)},${Number(r.minibarRevenue || 0).toFixed(2)}\n`;
       }
+    } else if (reportType === 'tax_report' || reportType === 'sales_vat') {
+      // Standard Sales Tax Report (ภ.พ.30)
+      const records = await db.select().from(revenueRecords).orderBy(desc(revenueRecords.recordDate)).limit(200);
+      csvContent = 'No,Tax Invoice / Ref,Date,Reservation Code,Description,Net Amount Before Tax (THB),VAT 7% (THB),Grand Total (THB),Payment Method\n';
+      let idx = 1;
+      let sumNet = 0;
+      let sumVat = 0;
+      let sumTotal = 0;
+      for (const r of records) {
+        const grandTotal = Number(r.amount);
+        const netAmount = Math.round((grandTotal / 1.07) * 100) / 100;
+        const vatAmount = Math.round((grandTotal - netAmount) * 100) / 100;
+        sumNet += netAmount;
+        sumVat += vatAmount;
+        sumTotal += grandTotal;
+        const refNo = r.billId || r.reservationId || `INV-${r.id.slice(0, 8)}`;
+        const desc = r.roomTypeName ? `Room: ${r.roomTypeName}` : (r.revenueType || 'Hotel Service');
+        csvContent += `${idx++},"${refNo}","${r.recordDate}","${r.reservationId || '-'}","${desc}",${netAmount.toFixed(2)},${vatAmount.toFixed(2)},${grandTotal.toFixed(2)},"${r.paymentMethod || 'TRANSFER'}"\n`;
+      }
+      csvContent += `\n"TOTAL",,,,,"${sumNet.toFixed(2)}","${sumVat.toFixed(2)}","${sumTotal.toFixed(2)}",\n`;
     } else if (reportType === 'room_performance') {
       const month = today.slice(0, 7);
       const res = await reportService.getRoomPerformance(month, 50);

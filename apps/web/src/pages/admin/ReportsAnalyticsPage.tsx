@@ -24,7 +24,7 @@ import {
   Check,
 } from 'lucide-react';
 
-type ReportTopic = 'daily_stats' | 'room_performance' | 'monthly_revenue';
+type ReportTopic = 'daily_stats' | 'tax_sales' | 'room_performance' | 'monthly_revenue';
 type ExportFormat = 'pdf' | 'csv';
 
 export const ReportsAnalyticsPage: React.FC = () => {
@@ -236,10 +236,34 @@ export const ReportsAnalyticsPage: React.FC = () => {
       const filename = `keystay_${topic}_${today}.csv`;
 
       if (topic === 'daily_stats') {
-        content = 'Date (YYYY-MM-DD),Total Rooms,Occupied,Available,Occupancy %,Check-ins,Check-outs,Total Revenue,Room Revenue,Minibar Revenue\n';
+        content = 'Date (YYYY-MM-DD),Total Rooms,Occupied,Available,Occupancy %,Net Sales (Before VAT),VAT 7% (THB),Total Revenue,Room Revenue,Minibar Revenue\n';
         dailyStatsList.forEach((r) => {
-          content += `\t${getDailyDate(r)},${r.totalRooms},${r.occupiedRooms},${r.availableRooms},${r.occupancyRate}%,${r.totalCheckins},${r.totalCheckouts},${r.totalRevenue},${r.roomRevenue},${r.minibarRevenue}\n`;
+          const total = Number(r.totalRevenue || 0);
+          const net = Math.round((total / 1.07) * 100) / 100;
+          const vat = Math.round((total - net) * 100) / 100;
+          content += `\t${getDailyDate(r)},${r.totalRooms},${r.occupiedRooms},${r.availableRooms},${r.occupancyRate}%,${net.toFixed(2)},${vat.toFixed(2)},${total.toFixed(2)},${Number(r.roomRevenue || 0).toFixed(2)},${Number(r.minibarRevenue || 0).toFixed(2)}\n`;
         });
+      } else if (topic === 'tax_sales') {
+        content = '"KEYSTAY HOTEL — รายงานภาษีขาย (Sales Tax Report ภ.พ.30)"\n';
+        content += `"ประจำงวด: ${today} | สกุลเงิน: บาท (THB) | เลขประจำตัวผู้เสียภาษี: 0105559876543"\n`;
+        content += '"หมายเหตุ: เงินมัดจำกุญแจห้อง (Key Deposit) ได้รับการยกเว้นไม่ต้องนำมารวมคำนวณภาษีมูลค่าเพิ่ม"\n\n';
+        content += 'ลำดับ,วันที่ (Date),เลขที่ใบกำกับ/อ้างอิง,รายการ (Description),มูลค่าสินค้าก่อนภาษี (Net Sales),ภาษีมูลค่าเพิ่ม 7% (VAT),ยอดรวมทั้งสิ้น (Grand Total),ช่องทางชำระเงิน\n';
+        let idx = 1;
+        let sumNet = 0;
+        let sumVat = 0;
+        let sumTotal = 0;
+        dailyStatsList.forEach((r) => {
+          const total = Number(r.totalRevenue || 0);
+          if (total > 0) {
+            const net = Math.round((total / 1.07) * 100) / 100;
+            const vat = Math.round((total - net) * 100) / 100;
+            sumNet += net;
+            sumVat += vat;
+            sumTotal += total;
+            content += `${idx++},\t${getDailyDate(r)},"INV-${getDailyDate(r).replace(/-/g, '')}","ยอดขายห้องพักและบริการ",${net.toFixed(2)},${vat.toFixed(2)},${total.toFixed(2)},"TRANSFER / CARD"\n`;
+          }
+        });
+        content += `\n"ยอดรวมทั้งสิ้น (TOTAL)",,,,"${sumNet.toFixed(2)}","${sumVat.toFixed(2)}","${sumTotal.toFixed(2)}",\n`;
       } else if (topic === 'room_performance') {
         content = 'Room Number,Room Type,Total Bookings,Nights Sold,Total Revenue (THB)\n';
         roomPerformanceList.forEach((r) => {
@@ -687,6 +711,32 @@ export const ReportsAnalyticsPage: React.FC = () => {
                           ภาพรวมรายรับสุทธิ อัตราเฉลี่ย ADR / RevPAR และยอดการจองรายเดือน ย้อนหลัง {monthlyPreset} เดือน
                         </p>
                       </button>
+
+                      {/* Option 4: Standard Sales Tax Report (ภ.พ.30) */}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTopic('tax_sales')}
+                        className={`w-full text-left p-3.5 rounded-xl border transition-all ${
+                          selectedTopic === 'tax_sales'
+                            ? 'border-[#F97316] bg-orange-50/40 shadow-2xs ring-1 ring-[#F97316]'
+                            : 'border-slate-200 hover:border-slate-300 bg-white'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                            4. รายงานภาษีขายสำหรับยื่นภาษี (Sales Tax Report ภ.พ.30)
+                            <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-semibold">
+                              สรรพากร
+                            </Badge>
+                          </span>
+                          {selectedTopic === 'tax_sales' && (
+                            <CheckCircle2 className="w-4 h-4 text-[#F97316]" />
+                          )}
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                          รายงานสรุปมูลค่าขายก่อนภาษี (Net Amount), ภาษีมูลค่าเพิ่ม 7% (VAT), และยอดรวมสุทธิ ตามเกณฑ์มาตรฐานกรมสรรพากร (ตัด Check-in/Check-out ออก)
+                        </p>
+                      </button>
                     </div>
                   </div>
 
@@ -917,29 +967,70 @@ export const ReportsAnalyticsPage: React.FC = () => {
                                   <th className="py-2 px-3 border-r border-slate-200 text-center">Occupied</th>
                                   <th className="py-2 px-3 border-r border-slate-200 text-center">Available</th>
                                   <th className="py-2 px-3 border-r border-slate-200 text-center">Occupancy %</th>
-                                  <th className="py-2 px-3 border-r border-slate-200 text-center">Check-ins</th>
-                                  <th className="py-2 px-3 border-r border-slate-200 text-center">Check-outs</th>
+                                  <th className="py-2 px-3 border-r border-slate-200 text-right">Net Sales (Before VAT)</th>
+                                  <th className="py-2 px-3 border-r border-slate-200 text-right">VAT 7%</th>
                                   <th className="py-2 px-3 border-r border-slate-200 text-right">Room Rev</th>
                                   <th className="py-2 px-3 border-r border-slate-200 text-right">Minibar</th>
                                   <th className="py-2 px-3 text-right">Total Rev</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-slate-200 font-mono text-[11px]">
-                                {dailyStatsList.map((r, i) => (
-                                  <tr key={i} className="hover:bg-slate-50/90">
-                                    <td className="py-1.5 px-3 border-r border-slate-200 text-center text-slate-400 bg-slate-50/50">{i + 1}</td>
-                                    <td className="py-1.5 px-3 border-r border-slate-200 font-sans font-medium text-slate-900">{getDailyDate(r)}</td>
-                                    <td className="py-1.5 px-3 border-r border-slate-200 text-center text-slate-600">{r.totalRooms}</td>
-                                    <td className="py-1.5 px-3 border-r border-slate-200 text-center text-slate-700">{r.occupiedRooms}</td>
-                                    <td className="py-1.5 px-3 border-r border-slate-200 text-center text-slate-500">{r.availableRooms}</td>
-                                    <td className="py-1.5 px-3 border-r border-slate-200 text-center font-bold text-emerald-700">{r.occupancyRate}%</td>
-                                    <td className="py-1.5 px-3 border-r border-slate-200 text-center text-slate-600">{r.totalCheckins}</td>
-                                    <td className="py-1.5 px-3 border-r border-slate-200 text-center text-slate-600">{r.totalCheckouts}</td>
-                                    <td className="py-1.5 px-3 border-r border-slate-200 text-right text-slate-700">฿{Number(r.roomRevenue).toLocaleString()}</td>
-                                    <td className="py-1.5 px-3 border-r border-slate-200 text-right text-slate-700">฿{Number(r.minibarRevenue).toLocaleString()}</td>
-                                    <td className="py-1.5 px-3 text-right font-bold text-slate-900">฿{Number(r.totalRevenue).toLocaleString()}</td>
-                                  </tr>
-                                ))}
+                                {dailyStatsList.map((r, i) => {
+                                  const total = Number(r.totalRevenue || 0);
+                                  const net = Math.round((total / 1.07) * 100) / 100;
+                                  const vat = Math.round((total - net) * 100) / 100;
+                                  return (
+                                    <tr key={i} className="hover:bg-slate-50/90">
+                                      <td className="py-1.5 px-3 border-r border-slate-200 text-center text-slate-400 bg-slate-50/50">{i + 1}</td>
+                                      <td className="py-1.5 px-3 border-r border-slate-200 font-sans font-medium text-slate-900">{getDailyDate(r)}</td>
+                                      <td className="py-1.5 px-3 border-r border-slate-200 text-center text-slate-600">{r.totalRooms}</td>
+                                      <td className="py-1.5 px-3 border-r border-slate-200 text-center text-slate-700">{r.occupiedRooms}</td>
+                                      <td className="py-1.5 px-3 border-r border-slate-200 text-center text-slate-500">{r.availableRooms}</td>
+                                      <td className="py-1.5 px-3 border-r border-slate-200 text-center font-bold text-emerald-700">{r.occupancyRate}%</td>
+                                      <td className="py-1.5 px-3 border-r border-slate-200 text-right text-slate-700">฿{net.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                                      <td className="py-1.5 px-3 border-r border-slate-200 text-right text-orange-600 font-semibold">฿{vat.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                                      <td className="py-1.5 px-3 border-r border-slate-200 text-right text-slate-700">฿{Number(r.roomRevenue).toLocaleString()}</td>
+                                      <td className="py-1.5 px-3 border-r border-slate-200 text-right text-slate-700">฿{Number(r.minibarRevenue).toLocaleString()}</td>
+                                      <td className="py-1.5 px-3 text-right font-bold text-slate-900">฿{total.toLocaleString()}</td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </>
+                          )}
+
+                          {selectedTopic === 'tax_sales' && (
+                            <>
+                              <thead className="bg-slate-100/90 text-slate-600 font-semibold border-b border-slate-300 sticky top-0 z-10 text-[11px]">
+                                <tr>
+                                  <th className="py-2 px-3 border-r border-slate-200 w-12 text-center text-slate-400 font-mono">#</th>
+                                  <th className="py-2 px-3 border-r border-slate-200">Date (YYYY-MM-DD)</th>
+                                  <th className="py-2 px-3 border-r border-slate-200">Tax Invoice / Ref</th>
+                                  <th className="py-2 px-3 border-r border-slate-200">Description</th>
+                                  <th className="py-2 px-3 border-r border-slate-200 text-right">Net Sales (Before VAT)</th>
+                                  <th className="py-2 px-3 border-r border-slate-200 text-right">VAT 7% (THB)</th>
+                                  <th className="py-2 px-3 border-r border-slate-200 text-right">Grand Total (THB)</th>
+                                  <th className="py-2 px-3 text-center">Payment Method</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-200 font-mono text-[11px]">
+                                {dailyStatsList.filter((r) => Number(r.totalRevenue || 0) > 0).map((r, i) => {
+                                  const total = Number(r.totalRevenue || 0);
+                                  const net = Math.round((total / 1.07) * 100) / 100;
+                                  const vat = Math.round((total - net) * 100) / 100;
+                                  return (
+                                    <tr key={i} className="hover:bg-slate-50/90">
+                                      <td className="py-1.5 px-3 border-r border-slate-200 text-center text-slate-400 bg-slate-50/50">{i + 1}</td>
+                                      <td className="py-1.5 px-3 border-r border-slate-200 font-sans font-medium text-slate-900">{getDailyDate(r)}</td>
+                                      <td className="py-1.5 px-3 border-r border-slate-200 text-slate-700">INV-{getDailyDate(r).replace(/-/g, '')}</td>
+                                      <td className="py-1.5 px-3 border-r border-slate-200 font-sans text-slate-600">ยอดขายห้องพักและบริการ</td>
+                                      <td className="py-1.5 px-3 border-r border-slate-200 text-right text-slate-900">฿{net.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                                      <td className="py-1.5 px-3 border-r border-slate-200 text-right text-orange-600 font-semibold">฿{vat.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                                      <td className="py-1.5 px-3 border-r border-slate-200 text-right font-bold text-slate-900">฿{total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                                      <td className="py-1.5 px-3 text-center text-[10px] text-slate-500 font-sans">TRANSFER / QR</td>
+                                    </tr>
+                                  );
+                                })}
                               </tbody>
                             </>
                           )}

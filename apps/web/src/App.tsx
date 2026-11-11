@@ -23,6 +23,7 @@ const RoomsPricingPage = React.lazy(() => import('./pages/admin/RoomsPricingPage
 const UsersManagementPage = React.lazy(() => import('./pages/admin/UsersManagementPage'));
 const ReportsAnalyticsPage = React.lazy(() => import('./pages/admin/ReportsAnalyticsPage'));
 const MinibarCatalogPage = React.lazy(() => import('./pages/admin/MinibarCatalogPage'));
+const MaintenanceContactsPage = React.lazy(() => import('./pages/admin/MaintenanceContactsPage'));
 const RoomMatrixPage = React.lazy(() => import('./pages/front-desk/RoomMatrixPage'));
 const ReservationsPage = React.lazy(() => import('./pages/front-desk/ReservationsPage'));
 const DailyOperationsPage = React.lazy(() => import('./pages/front-desk/DailyOperationsPage'));
@@ -272,6 +273,14 @@ export const App: React.FC = () => {
             element={
               <RequireAuth>
                 <MinibarCatalogPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/admin/technicians"
+            element={
+              <RequireAuth>
+                <MaintenanceContactsPage />
               </RequireAuth>
             }
           />

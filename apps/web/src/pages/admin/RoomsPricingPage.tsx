@@ -25,7 +25,11 @@ import {
   CheckCircle2,
   RotateCcw,
   RefreshCw,
+  TrendingUp,
+  Package,
 } from 'lucide-react';
+import { SeasonalPricingTab } from './SeasonalPricingTab';
+import { AmenitiesCatalogTab } from './AmenitiesCatalogTab';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -167,7 +171,7 @@ export const RoomsPricingPage: React.FC = () => {
   const { t } = useTranslation();
 
   // Tab
-  const [activeTab, setActiveTab] = useState<'types' | 'units'>('types');
+  const [activeTab, setActiveTab] = useState<'types' | 'units' | 'pricing_rules' | 'amenities'>('types');
   const [isOffline, setIsOffline] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [refreshSuccess, setRefreshSuccess] = useState<boolean>(false);
@@ -554,10 +558,22 @@ export const RoomsPricingPage: React.FC = () => {
               <span className="font-semibold text-slate-800">{t('nav.roomsPricing')}</span>
             </div>
             <h1 className="text-xl font-bold tracking-tight text-slate-900">
-              {activeTab === 'types' ? t('header.roomTypes.title') : t('header.roomUnits.title')}
+              {activeTab === 'types'
+                ? t('header.roomTypes.title')
+                : activeTab === 'units'
+                ? t('header.roomUnits.title')
+                : activeTab === 'pricing_rules'
+                ? t('header.pricingRules.title')
+                : t('header.amenities.title')}
             </h1>
             <p className="text-xs text-slate-500 mt-1">
-              {activeTab === 'types' ? t('header.roomTypes.desc') : t('header.roomUnits.desc')}
+              {activeTab === 'types'
+                ? t('header.roomTypes.desc')
+                : activeTab === 'units'
+                ? t('header.roomUnits.desc')
+                : activeTab === 'pricing_rules'
+                ? t('header.pricingRules.desc')
+                : t('header.amenities.desc')}
             </p>
           </div>
 
@@ -573,7 +589,7 @@ export const RoomsPricingPage: React.FC = () => {
               <span>{refreshSuccess ? t('action.refreshSuccess') : t('action.refresh')}</span>
             </Button>
 
-            {isOwner && (
+            {isOwner && (activeTab === 'types' || activeTab === 'units') && (
               <Button
                 size="sm"
                 disabled={isOffline}
@@ -588,17 +604,19 @@ export const RoomsPricingPage: React.FC = () => {
         </div>
 
         {/* ── Tabs ── */}
-        <div className="flex gap-1 mt-4 border-b border-slate-200 -mb-3.5">
+        <div className="flex gap-1 mt-4 border-b border-slate-200 -mb-3.5 overflow-x-auto">
           {(
             [
               { key: 'types', label: t('tab.roomTypes'), icon: <BedDouble className="w-3.5 h-3.5" /> },
               { key: 'units', label: t('tab.roomUnits'), icon: <Building2 className="w-3.5 h-3.5" /> },
+              { key: 'pricing_rules', label: t('tab.pricingRules'), icon: <TrendingUp className="w-3.5 h-3.5" /> },
+              { key: 'amenities', label: t('tab.amenities'), icon: <Package className="w-3.5 h-3.5" /> },
             ] as const
           ).map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-1.5 px-4 py-2 text-xs font-semibold border-b-2 transition-colors ${
+              className={`flex items-center gap-1.5 px-4 py-2 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === tab.key
                   ? 'border-[#F97316] text-[#F97316]'
                   : 'border-transparent text-slate-500 hover:text-slate-700'
@@ -970,6 +988,31 @@ export const RoomsPricingPage: React.FC = () => {
               </Card>
             ))
           )}
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════
+          TAB 3 — SEASONAL PRICING RULES (SPEC MODULE 1)
+      ══════════════════════════════════════════════════════════════ */}
+      {activeTab === 'pricing_rules' && (
+        <div className="px-4 pb-6">
+          <SeasonalPricingTab
+            isOwner={isOwner}
+            roomTypes={roomTypes}
+            isOffline={isOffline}
+          />
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════
+          TAB 4 — AMENITIES CATALOG (SPEC MODULE 3)
+      ══════════════════════════════════════════════════════════════ */}
+      {activeTab === 'amenities' && (
+        <div className="px-4 pb-6">
+          <AmenitiesCatalogTab
+            isOwner={isOwner}
+            isOffline={isOffline}
+          />
         </div>
       )}
 
