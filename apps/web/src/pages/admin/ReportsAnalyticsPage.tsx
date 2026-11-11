@@ -554,14 +554,16 @@ export const ReportsAnalyticsPage: React.FC = () => {
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-slate-500" />
               <CardTitle className="text-sm font-bold text-slate-900">
-                สรุปผลประกอบการและฐานภาษีรายวัน (Financial & Tax Daily Statement)
+                {isEn ? 'Financial & Tax Daily Statement' : 'สรุปผลประกอบการและฐานภาษีรายวัน'}
               </CardTitle>
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold">
-                ภ.พ.30 สรรพากร
+                {isEn ? 'Revenue Dept PP.30' : 'ภ.พ.30 สรรพากร'}
               </Badge>
-              <span className="text-[11px] text-slate-400 font-mono">VAT 7% Inclusive</span>
+              <span className="text-[11px] text-slate-400 font-mono">
+                {isEn ? 'VAT 7% Inclusive' : 'รวมภาษี 7%'}
+              </span>
             </div>
           </CardHeader>
           <CardContent className="p-0">
@@ -569,14 +571,14 @@ export const ReportsAnalyticsPage: React.FC = () => {
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50 text-[11px] text-slate-600 font-semibold border-b border-slate-200 uppercase tracking-wider">
                   <tr>
-                    <th className="py-3 px-5">วันที่ (Date)</th>
-                    <th className="py-3 px-4 text-center">ห้องที่ขายได้</th>
-                    <th className="py-3 px-4 text-center">อัตราเข้าพัก (%)</th>
-                    <th className="py-3 px-4 text-right">ค่าห้องพัก (Room)</th>
-                    <th className="py-3 px-4 text-right">มินิบาร์/บริการ</th>
-                    <th className="py-3 px-4 text-right font-bold text-slate-700">ยอดขายก่อนภาษี (Net)</th>
-                    <th className="py-3 px-4 text-right font-bold text-orange-600">ภาษี 7% (VAT)</th>
-                    <th className="py-3 px-5 text-right font-bold text-slate-900">รายได้รวมสุทธิ (Total)</th>
+                    <th className="py-3 px-5">{isEn ? 'Date' : 'วันที่'}</th>
+                    <th className="py-3 px-4 text-center">{isEn ? 'Rooms Sold' : 'ห้องที่ขายได้'}</th>
+                    <th className="py-3 px-4 text-center">{isEn ? 'Occupancy (%)' : 'อัตราเข้าพัก (%)'}</th>
+                    <th className="py-3 px-4 text-right">{isEn ? 'Room Revenue' : 'ค่าห้องพัก'}</th>
+                    <th className="py-3 px-4 text-right">{isEn ? 'Minibar & Services' : 'มินิบาร์และบริการ'}</th>
+                    <th className="py-3 px-4 text-right font-bold text-slate-700">{isEn ? 'Net Sales' : 'ยอดขายก่อนภาษี'}</th>
+                    <th className="py-3 px-4 text-right font-bold text-orange-600">{isEn ? 'VAT 7%' : 'ภาษีมูลค่าเพิ่ม 7%'}</th>
+                    <th className="py-3 px-5 text-right font-bold text-slate-900">{isEn ? 'Total Revenue' : 'รายได้รวมสุทธิ'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-mono">
