@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { DetailedBill, BillItem } from '../../hooks/useBilling';
 import { useI18n } from '../../lib/i18n';
 import { localizeFolioDescription } from '../../lib/localizeMetadata';
+import { FolioCategoryBadge } from '../../lib/folioCategory';
 
 export { localizeFolioDescription };
 import {
@@ -169,24 +170,6 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
     }
   };
 
-  const categoryLabels: Record<string, string> = {
-    room: t('category.room'),
-    minibar: t('category.minibar'),
-    laundry: t('category.laundry'),
-    damage: t('category.damage'),
-    service: t('category.service'),
-    other: t('category.other'),
-  };
-
-  const categoryBadgeStyles: Record<string, string> = {
-    room: 'bg-blue-50 text-blue-700 border-blue-200',
-    minibar: 'bg-amber-50 text-amber-700 border-amber-200',
-    laundry: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-    damage: 'bg-rose-50 text-rose-700 border-rose-200',
-    service: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    other: 'bg-slate-100 text-slate-700 border-slate-200',
-  };
-
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
       {/* Left Pane: Itemized Folio Items (7 Cols) */}
@@ -248,9 +231,7 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
                 items.map((it) => (
                   <tr key={it.id} className="hover:bg-slate-50/70 transition-colors">
                     <td className="text-sm py-3.5 px-4 text-slate-800">
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium border ${categoryBadgeStyles[it.category] || categoryBadgeStyles.other}`}>
-                        {categoryLabels[it.category] || it.category}
-                      </span>
+                      <FolioCategoryBadge item={it} />
                     </td>
                     <td className="text-sm py-3.5 px-4 font-medium text-slate-900">
                       {localizeFolioDescription(it.description, locale)}

@@ -7,6 +7,7 @@ import { localizeRoomType, localizeFolioDescription } from '@/lib/localizeMetada
 import { calculateFolioSummary, FolioItemLike } from '@/components/front-desk/FolioSplitScreen';
 import { AddExtraChargeModal } from '@/components/front-desk/AddExtraChargeModal';
 import { ReceiptTaxInvoiceModal } from '@/components/front-desk/ReceiptTaxInvoiceModal';
+import { FolioCategoryBadge } from '@/lib/folioCategory';
 import { apiFetch } from '@/lib/api';
 import {
   X,
@@ -471,7 +472,7 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
                           </tr>
                         ) : (
                           folioItems.map((item) => {
-                            const isRoom = item.category === 'room';
+                            const isRoom = item.category === 'room' || item.id?.startsWith('room-');
                             const itemPrice = parseFloat(item.unitPrice || '0') || 0;
                             const itemTotal = parseFloat(item.totalAmount || '0') || itemPrice * (item.quantity || 1);
 
@@ -479,17 +480,7 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
                               <tr key={item.id} className="hover:bg-slate-50 transition-colors">
                                 <td className="py-2.5 px-3 text-slate-800 font-medium">
                                   <div className="flex items-center gap-2">
-                                    <span
-                                      className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border uppercase ${
-                                        isRoom
-                                          ? 'bg-blue-50 text-blue-700 border-blue-200'
-                                          : item.category === 'minibar'
-                                            ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                            : 'bg-slate-100 text-slate-700 border-slate-200'
-                                      }`}
-                                    >
-                                      {t(`category.${item.category}`) || item.category}
-                                    </span>
+                                    <FolioCategoryBadge item={item} />
                                     <span className="truncate max-w-[220px] sm:max-w-xs">
                                       {localizeFolioDescription(item.description, locale)}
                                     </span>
