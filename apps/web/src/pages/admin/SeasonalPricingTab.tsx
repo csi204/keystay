@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useImperativeHandle } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,7 +14,6 @@ import {
   AlertTriangle,
   X,
   Save,
-  Layers,
   RotateCcw,
 } from 'lucide-react';
 import type { RoomTypeItem } from './RoomsPricingPage';
@@ -37,13 +36,13 @@ export const DEFAULT_TIERS = [
   'High Season',
   'Regular',
   'Low Season',
-  'Special Holiday (วันหยุดพิเศษ)',
+  'Special Holiday',
 ];
 
 const SEED_SEASONAL_RULES: SeasonalPricingRule[] = [
   {
     id: 'rule-high-winter',
-    name: 'High Season ภาคเหนือ (พ.ย. - ก.พ.)',
+    name: 'High Season ภาคเหนือ',
     tier: 'High Season',
     roomTypeId: null,
     startDate: '2026-11-01',
@@ -55,8 +54,8 @@ const SEED_SEASONAL_RULES: SeasonalPricingRule[] = [
   },
   {
     id: 'rule-countdown',
-    name: 'คืนเคานต์ดาวน์ปีใหม่ (31 ธ.ค. - 1 ม.ค.)',
-    tier: 'Special Holiday (วันหยุดพิเศษ)',
+    name: 'คืนเคานต์ดาวน์ปีใหม่',
+    tier: 'Special Holiday',
     roomTypeId: null,
     startDate: '2026-12-31',
     endDate: '2027-01-01',
@@ -67,7 +66,7 @@ const SEED_SEASONAL_RULES: SeasonalPricingRule[] = [
   },
   {
     id: 'rule-weekend-regular',
-    name: 'วันหยุดสุดสัปดาห์ (ศุกร์ - เสาร์ - อาทิตย์)',
+    name: 'วันหยุดสุดสัปดาห์ ศุกร์ - อาทิตย์',
     tier: 'Regular',
     roomTypeId: null,
     startDate: '2026-01-01',
@@ -79,7 +78,7 @@ const SEED_SEASONAL_RULES: SeasonalPricingRule[] = [
   },
   {
     id: 'rule-low-rainy',
-    name: 'Low Season หน้าฝน วันธรรมดา (มิ.ย. - ก.ย.)',
+    name: 'Low Season หน้าฝน วันธรรมดา',
     tier: 'Low Season',
     roomTypeId: null,
     startDate: '2026-06-01',
@@ -91,17 +90,21 @@ const SEED_SEASONAL_RULES: SeasonalPricingRule[] = [
   },
 ];
 
+export interface SeasonalPricingTabRef {
+  openCreate: () => void;
+}
+
 interface SeasonalPricingTabProps {
   isOwner: boolean;
   roomTypes: RoomTypeItem[];
   isOffline: boolean;
 }
 
-export const SeasonalPricingTab: React.FC<SeasonalPricingTabProps> = ({
+export const SeasonalPricingTab = React.forwardRef<SeasonalPricingTabRef, SeasonalPricingTabProps>(({
   isOwner,
   roomTypes,
   isOffline,
-}) => {
+}, ref) => {
   const { t } = useTranslation();
   const [rules, setRules] = useState<SeasonalPricingRule[]>(SEED_SEASONAL_RULES);
   const [searchQuery, setSearchQuery] = useState('');
@@ -116,6 +119,10 @@ export const SeasonalPricingTab: React.FC<SeasonalPricingTabProps> = ({
   const [editingRule, setEditingRule] = useState<SeasonalPricingRule | null>(null);
   const [deletingRule, setDeletingRule] = useState<SeasonalPricingRule | null>(null);
   const [validationError, setValidationError] = useState('');
+
+  useImperativeHandle(ref, () => ({
+    openCreate: () => openCreateModal(),
+  }));
 
   const [form, setForm] = useState({
     name: '',
@@ -319,7 +326,7 @@ export const SeasonalPricingTab: React.FC<SeasonalPricingTabProps> = ({
               className="text-xs h-9 bg-white"
             >
               <option value="all">ทุกประเภทห้อง</option>
-              <option value="all_rooms">บังคับใช้ทุกห้อง (Global)</option>
+              <option value="all_rooms">บังคับใช้ทุกห้อง</option>
               {roomTypes.map((rt) => (
                 <option key={rt.id} value={rt.id}>
                   {rt.name}
@@ -344,39 +351,28 @@ export const SeasonalPricingTab: React.FC<SeasonalPricingTabProps> = ({
             </Button>
           )}
         </div>
-
-        {isOwner && (
-          <Button
-            size="sm"
-            onClick={openCreateModal}
-            className="text-xs font-semibold gap-1.5 h-9 bg-[#F97316] hover:bg-[#ea580c] text-white shrink-0"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>{t('action.addRule')}</span>
-          </Button>
-        )}
       </div>
 
       {/* ── Rules Table (Clean Enterprise Design) ── */}
-      <Card className="border-slate-200 shadow-sm bg-white overflow-hidden">
-        <CardHeader className="py-2.5 px-4 border-b border-slate-100 flex flex-row items-center justify-between">
+      <Card className="border-slate-200 shadow-2xs bg-white overflow-hidden rounded-xl">
+        <CardHeader className="py-3 px-4 border-b border-slate-100 flex flex-row items-center justify-between bg-white">
           <div className="flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-slate-400" />
-            <CardTitle className="text-sm font-bold text-slate-800">
-              รายการกฎการปรับราคาตามฤดูกาลและเทศกาล ({filteredRules.length} กฎ)
+            <CardTitle className="text-sm font-bold text-slate-900">
+              รายการกฎการปรับราคาตามฤดูกาลและเทศกาล · {filteredRules.length} กฎ
             </CardTitle>
           </div>
           <span className="text-[11px] text-slate-400 font-mono">
-            * Base Price ในประเภทห้องพักจะไม่ถูกแตะต้อง
+            * ราคาพื้นฐานในประเภทห้องพักจะไม่ถูกเปลี่ยนแปลง
           </span>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-[11px] text-slate-500 font-semibold border-b border-slate-200 uppercase tracking-wider">
+              <thead className="bg-white text-[11px] text-slate-500 font-semibold border-b border-slate-100 uppercase tracking-wider">
                 <tr>
                   <th className="py-2.5 px-4">ชื่อกฎราคา</th>
-                  <th className="py-2.5 px-3 text-center">ระดับ (Tier)</th>
+                  <th className="py-2.5 px-3 text-center">ระดับราคา</th>
                   <th className="py-2.5 px-3">ประเภทห้องที่ใช้</th>
                   <th className="py-2.5 px-3">ช่วงวันที่บังคับใช้</th>
                   <th className="py-2.5 px-3">เงื่อนไขวัน</th>
@@ -401,36 +397,35 @@ export const SeasonalPricingTab: React.FC<SeasonalPricingTabProps> = ({
                           {rule.name}
                         </td>
                         <td className="py-3 px-3 text-center">
-                          <span className="inline-block px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700">
+                          <span className="text-xs text-slate-700">
                             {rule.tier}
                           </span>
                         </td>
                         <td className="py-3 px-3 text-slate-700">
                           {targetRoom ? (
-                            <span className="font-medium text-slate-800">{targetRoom.name}</span>
+                            <span className="text-xs text-slate-700">{targetRoom.name}</span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-[11px] text-slate-500">
-                              <Layers className="w-3 h-3 text-slate-400" />
-                              ทุกประเภทห้อง (Global)
+                            <span className="text-xs text-slate-500">
+                              ทุกประเภทห้อง
                             </span>
                           )}
                         </td>
                         <td className="py-3 px-3 font-mono text-[11px] text-slate-600">
                           {rule.startDate} ถึง {rule.endDate}
                         </td>
-                        <td className="py-3 px-3 text-[11px] text-slate-600">
+                        <td className="py-3 px-3 text-[11px]">
                           {rule.daysOfWeek ? (
                             rule.daysOfWeek.includes(5) ? (
-                              <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-medium">
-                                ศ.-ส.-อา.
+                              <span className="text-xs text-slate-700">
+                                ศุกร์ - อาทิตย์
                               </span>
                             ) : (
-                              <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-medium">
-                                จ.-พฤ.
+                              <span className="text-xs text-slate-700">
+                                จันทร์ - พฤหัสบดี
                               </span>
                             )
                           ) : (
-                            <span className="text-slate-400">ทุกวัน</span>
+                            <span className="text-xs text-slate-400">ทุกวัน</span>
                           )}
                         </td>
                         {/* Neutral monochrome price adjustment (Zero AI Slop) */}
@@ -445,7 +440,7 @@ export const SeasonalPricingTab: React.FC<SeasonalPricingTabProps> = ({
                           <button
                             type="button"
                             onClick={() => handleToggleActive(rule.id)}
-                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 transition-colors"
+                            className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 hover:text-slate-900 transition-colors"
                             title="คลิกเพื่อสลับสถานะเปิด/ปิด"
                           >
                             <span
@@ -521,7 +516,7 @@ export const SeasonalPricingTab: React.FC<SeasonalPricingTabProps> = ({
                 </label>
                 <Input
                   required
-                  placeholder="เช่น High Season ภาคเหนือ (พ.ย.-ก.พ.)"
+                  placeholder="เช่น High Season ภาคเหนือ"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   className="text-xs h-9"
@@ -562,7 +557,7 @@ export const SeasonalPricingTab: React.FC<SeasonalPricingTabProps> = ({
                     onChange={(e) => setForm({ ...form, roomTypeId: e.target.value })}
                     className="text-xs h-9"
                   >
-                    <option value="all">ทุกประเภทห้อง (Global)</option>
+                    <option value="all">ทุกประเภทห้อง</option>
                     {roomTypes.map((rt) => (
                       <option key={rt.id} value={rt.id}>
                         {rt.name}
@@ -624,8 +619,8 @@ export const SeasonalPricingTab: React.FC<SeasonalPricingTabProps> = ({
                   className="text-xs h-9"
                 >
                   <option value="all">ทุกวันในสัปดาห์</option>
-                  <option value="weekend">เฉพาะ ศุกร์-เสาร์-อาทิตย์</option>
-                  <option value="weekday">เฉพาะ จันทร์-พฤหัสบดี</option>
+                  <option value="weekend">เฉพาะ ศุกร์ - อาทิตย์</option>
+                  <option value="weekday">เฉพาะ จันทร์ - พฤหัสบดี</option>
                 </Select>
               </div>
 
@@ -641,14 +636,14 @@ export const SeasonalPricingTab: React.FC<SeasonalPricingTabProps> = ({
                     }
                     className="text-xs h-9"
                   >
-                    <option value="percent">เปอร์เซ็นต์ (%)</option>
-                    <option value="fixed_amount">จำนวนเงินคงที่ (บาท)</option>
+                    <option value="percent">เปอร์เซ็นต์ %</option>
+                    <option value="fixed_amount">จำนวนเงินคงที่ บาท</option>
                   </Select>
                 </div>
 
                 <div>
                   <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    ค่าปรับราคา ({form.adjustmentType === 'percent' ? '%' : 'บาท'}) *
+                    ค่าปรับราคา {form.adjustmentType === 'percent' ? '%' : 'บาท'} *
                   </label>
                   <Input
                     required
@@ -719,4 +714,6 @@ export const SeasonalPricingTab: React.FC<SeasonalPricingTabProps> = ({
       )}
     </div>
   );
-};
+});
+
+SeasonalPricingTab.displayName = 'SeasonalPricingTab';

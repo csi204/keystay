@@ -469,7 +469,7 @@ export const ReportsAnalyticsPage: React.FC = () => {
               className="text-xs font-semibold gap-2 h-9 bg-[#F97316] hover:bg-orange-600 text-white shadow-2xs"
             >
               <Printer className="w-3.5 h-3.5 text-white" />
-              <span>พิมพ์รายงานภาษีขาย (ภ.พ.30) / ส่งออกข้อมูล</span>
+              <span>พิมพ์รายงานภาษีขาย ภ.พ.30 · ส่งออกข้อมูล</span>
             </Button>
           </div>
         </div>
@@ -531,7 +531,7 @@ export const ReportsAnalyticsPage: React.FC = () => {
 
           <div className="bg-white rounded-xl border border-slate-200/90 p-5 shadow-2xs hover:border-slate-300 transition-all flex flex-col justify-between">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-slate-500">ภาษีขาย 7% ประจำเดือน (ภ.พ.30)</span>
+              <span className="text-xs font-semibold text-slate-500">ภาษีขาย 7% ประจำเดือน ภ.พ.30</span>
               <div className="w-8 h-8 rounded-lg bg-orange-50 text-[#F97316] flex items-center justify-center">
                 <BarChart3 className="w-4 h-4" />
               </div>
@@ -549,7 +549,7 @@ export const ReportsAnalyticsPage: React.FC = () => {
 
         {/* 3. Live Financial & Tax Statements (5 Days) */}
         <Card className="border-slate-200/90 shadow-2xs bg-white overflow-hidden rounded-xl">
-          <CardHeader className="py-3.5 px-5 border-b border-slate-100 flex flex-row items-center justify-between bg-slate-50/50">
+          <CardHeader className="py-3.5 px-5 border-b border-slate-100 flex flex-row items-center justify-between bg-white">
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-slate-500" />
               <CardTitle className="text-sm font-bold text-slate-900">
@@ -565,11 +565,11 @@ export const ReportsAnalyticsPage: React.FC = () => {
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 text-[11px] text-slate-600 font-semibold border-b border-slate-200 uppercase tracking-wider">
+                <thead className="bg-white text-[11px] text-slate-500 font-semibold border-b border-slate-100 uppercase tracking-wider">
                   <tr>
                     <th className="py-3 px-5">{isEn ? 'Date' : 'วันที่'}</th>
                     <th className="py-3 px-4 text-center">{isEn ? 'Rooms Sold' : 'ห้องที่ขายได้'}</th>
-                    <th className="py-3 px-4 text-center">{isEn ? 'Occupancy (%)' : 'อัตราเข้าพัก (%)'}</th>
+                    <th className="py-3 px-4 text-center">{isEn ? 'Occupancy' : 'อัตราเข้าพัก'}</th>
                     <th className="py-3 px-4 text-right">{isEn ? 'Room Revenue' : 'ค่าห้องพัก'}</th>
                     <th className="py-3 px-4 text-right">{isEn ? 'Minibar & Services' : 'มินิบาร์และบริการ'}</th>
                     <th className="py-3 px-4 text-right font-bold text-slate-700">{isEn ? 'Net Sales' : 'ยอดขายก่อนภาษี'}</th>
@@ -692,7 +692,7 @@ export const ReportsAnalyticsPage: React.FC = () => {
                 </div>
                 <div>
                   <h2 className="text-base font-bold text-slate-900">
-                    {isEn ? 'Sales Tax Report (Form PP.30)' : 'รายงานภาษีขายสำหรับยื่นภาษี (ภ.พ.30)'}
+                    {isEn ? 'Sales Tax Report · Form PP.30' : 'รายงานภาษีขายสำหรับยื่นภาษี ภ.พ.30'}
                   </h2>
                   <p className="text-xs text-slate-500">
                     {isEn
@@ -722,7 +722,7 @@ export const ReportsAnalyticsPage: React.FC = () => {
                     <div className="p-3.5 rounded-xl border border-[#F97316] bg-orange-50/40 shadow-2xs ring-1 ring-[#F97316]">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-xs font-bold text-slate-900">
-                          {isEn ? 'Sales Tax Report (Form PP.30)' : 'รายงานภาษีขายสำหรับยื่นภาษี (ภ.พ.30)'}
+                          {isEn ? 'Sales Tax Report · Form PP.30' : 'รายงานภาษีขายสำหรับยื่นภาษี ภ.พ.30'}
                         </span>
                         <CheckCircle2 className="w-4 h-4 text-[#F97316]" />
                       </div>
@@ -856,7 +856,7 @@ export const ReportsAnalyticsPage: React.FC = () => {
                       ) : (
                         <>
                           <Download className="w-4 h-4 text-[#F97316]" />
-                          <span>{isEn ? 'Download PDF Report (Form PP.30)' : 'ดาวน์โหลดรายงาน PDF (ภ.พ.30)'}</span>
+                          <span>{isEn ? 'Download PDF Report · Form PP.30' : 'ดาวน์โหลดรายงาน PDF ภ.พ.30'}</span>
                         </>
                       )}
                     </Button>
@@ -1026,8 +1026,8 @@ export const ReportsAnalyticsPage: React.FC = () => {
                                       </div>
                                     </div>
                                     <div className="text-right">
-                                      <div className="inline-flex items-center justify-center border border-slate-900 px-3 h-6 text-center font-bold text-[11px] text-slate-900 uppercase tracking-wider leading-none">
-                                        <span className="-translate-y-[1px]">{isEn ? 'Form ภ.พ.30' : 'แบบ ภ.พ.30'}</span>
+                                      <div className="inline-flex items-center justify-center border border-slate-900 px-3 py-1 text-center font-bold text-[11px] text-slate-900 uppercase tracking-wider leading-normal">
+                                        <span>{isEn ? 'Form ภ.พ.30' : 'แบบ ภ.พ.30'}</span>
                                       </div>
                                       <div className="text-[9px] text-slate-500 font-mono mt-1">
                                         {isEn ? 'Date of Issue:' : 'วันที่ออกเอกสาร:'} {new Date().toISOString().replace('T', ' ').slice(0, 10)}

@@ -313,7 +313,7 @@ export const UsersManagementPage: React.FC = () => {
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
               >
-                <option value="all">ทั้งหมด (All Roles)</option>
+                <option value="all">ทั้งหมด</option>
                 <option value="owner">Owner</option>
                 <option value="front_desk">Front Desk</option>
                 <option value="housekeeping">Housekeeping</option>
@@ -328,20 +328,20 @@ export const UsersManagementPage: React.FC = () => {
 
         {/* Users Table */}
         <Card className="border-slate-200 shadow-sm bg-white overflow-hidden">
-          <CardHeader className="py-3 px-5 border-b border-slate-100 flex flex-row items-center justify-between">
+          <CardHeader className="py-3 px-5 border-b border-slate-100 flex flex-row items-center justify-between bg-white">
             <CardTitle className="text-sm font-bold text-slate-900">
-              รายชื่อผู้ใช้งานระบบ (Keystay Enterprise Directory)
+              รายชื่อผู้ใช้งานระบบ
             </CardTitle>
             <span className="text-[11px] text-slate-400 font-mono">Live RBAC Directory</span>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 text-[11px] text-slate-500 font-semibold border-b border-slate-200 uppercase tracking-wider">
+                <thead className="bg-white text-[11px] text-slate-500 font-semibold border-b border-slate-100 uppercase tracking-wider">
                   <tr>
                     <th className="py-3 px-4">ชื่อ - นามสกุล</th>
                     <th className="py-3 px-3">อีเมล</th>
-                    <th className="py-3 px-3 text-center">บทบาท (ROLE)</th>
+                    <th className="py-3 px-3 text-center">บทบาท</th>
                     <th className="py-3 px-3 text-center">สถานะ</th>
                     <th className="py-3 px-3">วันที่สร้าง</th>
                     <th className="py-3 px-4 text-center">การจัดการ</th>
@@ -510,15 +510,15 @@ export const UsersManagementPage: React.FC = () => {
 
               <div>
                 <label className="text-xs font-semibold text-slate-700 block mb-1">
-                  บทบาทและสิทธิ์การใช้งาน (RBAC) *
+                  บทบาทและสิทธิ์การใช้งาน *
                 </label>
                 <Select
                   value={createForm.role}
                   onChange={(e) => setCreateForm({ ...createForm, role: e.target.value as any })}
                 >
-                  <option value="owner">เจ้าของกิจการ (Owner)</option>
-                  <option value="front_desk">พนักงานต้อนรับ (Front Desk)</option>
-                  <option value="housekeeping">แผนกแม่บ้าน (Housekeeping)</option>
+                  <option value="owner">เจ้าของกิจการ</option>
+                  <option value="front_desk">พนักงานต้อนรับ</option>
+                  <option value="housekeeping">แผนกแม่บ้าน</option>
                 </Select>
               </div>
 
@@ -605,7 +605,7 @@ export const UsersManagementPage: React.FC = () => {
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-xs font-semibold text-slate-700">
-                    บทบาท (Role) *
+                    บทบาท *
                   </label>
                   {Boolean(
                     editingUser?.id === currentUser?.id ||
@@ -629,9 +629,9 @@ export const UsersManagementPage: React.FC = () => {
                   value={editForm.role}
                   onChange={(e) => setEditForm({ ...editForm, role: e.target.value as any })}
                 >
-                  <option value="owner">เจ้าของกิจการ (Owner)</option>
-                  <option value="front_desk">พนักงานต้อนรับ (Front Desk)</option>
-                  <option value="housekeeping">แผนกแม่บ้าน (Housekeeping)</option>
+                  <option value="owner">เจ้าของกิจการ</option>
+                  <option value="front_desk">พนักงานต้อนรับ</option>
+                  <option value="housekeeping">แผนกแม่บ้าน</option>
                 </Select>
               </div>
 
@@ -644,7 +644,7 @@ export const UsersManagementPage: React.FC = () => {
                   className="rounded border-slate-300 text-[#F97316] focus:ring-[#F97316]"
                 />
                 <label htmlFor="isActiveToggle" className="text-xs text-slate-700 font-medium select-none cursor-pointer">
-                  สถานะเปิดใช้งานบัญชี (Active Account)
+                  สถานะเปิดใช้งานบัญชี
                 </label>
               </div>
 

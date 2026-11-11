@@ -264,7 +264,7 @@ export const ManagerDashboardPage: React.FC = () => {
   return (
     <AdminLayout activePath="/admin/dashboard" isBackendOffline={isOffline}>
       {/* 1. Executive Context Header (Date badge next to H1 removed completely) */}
-      <div className="bg-white px-4 py-3.5 shadow-2xs">
+      <div className="bg-white px-4 mb-4 py-3.5 shadow-2xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs text-slate-500 mb-1.5">
@@ -313,7 +313,7 @@ export const ManagerDashboardPage: React.FC = () => {
                 {data.kpi.occupancy_rate.toFixed(1)}%
               </div>
               <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-2">
-                <span className="font-semibold text-slate-700 font-mono">{roomCounts.occupied}</span>
+                <span className="">{roomCounts.occupied}</span>
                 <span>{isEn ? `of ${roomCounts.total} rooms` : `จากทั้งหมด ${roomCounts.total} ห้อง`}</span>
               </div>
             </div>
@@ -325,7 +325,7 @@ export const ManagerDashboardPage: React.FC = () => {
               <span className="text-xs font-semibold text-slate-500">
                 {isEn ? 'Total Revenue Today' : 'รายได้รวมวันนี้'}
               </span>
-              <div className="w-8 h-8 rounded-lg bg-slate-50 text-slate-700 flex items-center justify-center border border-slate-200/60">
+              <div className="w-8 h-8 rounded-lg bg-orange-50 text-[#F97316] flex items-center justify-center">
                 <DollarSign className="w-4 h-4" />
               </div>
             </div>
@@ -345,7 +345,7 @@ export const ManagerDashboardPage: React.FC = () => {
               <span className="text-xs font-semibold text-slate-500">
                 {isEn ? 'Average Daily Rate (ADR)' : 'ราคาเฉลี่ยต่อห้องพัก'}
               </span>
-              <div className="w-8 h-8 rounded-lg bg-slate-50 text-slate-700 flex items-center justify-center border border-slate-200/60">
+              <div className="w-8 h-8 rounded-lg bg-orange-50 text-[#F97316] flex items-center justify-center">
                 <TrendingUp className="w-4 h-4" />
               </div>
             </div>
@@ -394,7 +394,7 @@ export const ManagerDashboardPage: React.FC = () => {
                     {isEn ? 'Live room breakdown by operational status' : 'จำนวนห้องพักแยกตามสถานะการใช้งานจริงประจำวัน'}
                   </p>
                 </div>
-                <Badge variant="outline" className="text-xs font-mono text-slate-600 bg-slate-50 border-slate-200 px-2.5 py-1">
+                <Badge variant="outline" className="border-none text-xs text-slate-500">
                   {isEn ? `Total ${roomCounts.total} rooms` : `ทั้งหมด ${roomCounts.total} ห้อง`}
                 </Badge>
               </div>
@@ -425,10 +425,10 @@ export const ManagerDashboardPage: React.FC = () => {
                   <LogIn className="w-4 h-4 text-slate-600" />
                 </div>
                 <div>
-                  <span className="text-xs text-slate-500 block">
+                  <span className="text-sm font-bold text-slate-900 font-mono block">
                     {isEn ? 'Check-ins Today' : 'เช็คอินวันนี้'}
                   </span>
-                  <span className="text-sm font-bold text-slate-900 font-mono">
+                  <span className="text-xs text-slate-500">
                     {data.kpi.checkins_today} {isEn ? 'guests' : 'รายการ'}
                   </span>
                 </div>
@@ -441,10 +441,10 @@ export const ManagerDashboardPage: React.FC = () => {
                   <LogOut className="w-4 h-4 text-slate-600" />
                 </div>
                 <div>
-                  <span className="text-xs text-slate-500 block">
+                  <span className="text-sm font-bold text-slate-900 font-mono block">
                     {isEn ? 'Check-outs Today' : 'เช็คเอาท์วันนี้'}
                   </span>
-                  <span className="text-sm font-bold text-slate-900 font-mono">
+                  <span className="text-xs text-slate-500">
                     {data.kpi.checkouts_today} {isEn ? 'guests' : 'รายการ'}
                   </span>
                 </div>
@@ -466,7 +466,7 @@ export const ManagerDashboardPage: React.FC = () => {
                 <h2 className="text-sm font-bold text-slate-900">
                   {isEn ? 'Monthly Performance' : 'สรุปสะสมประจำเดือน'}
                 </h2>
-                <Badge variant="outline" className="font-mono text-[10px] bg-slate-50 border-slate-200">
+                <Badge variant="outline" className="text-xs font-medium text-slate-500 border-none">
                   {data.monthly_mtd.month}
                 </Badge>
               </div>
@@ -501,7 +501,7 @@ export const ManagerDashboardPage: React.FC = () => {
 
                 <div className="flex items-center justify-between py-1 border-t border-slate-50 pt-2.5">
                   <span className="text-slate-500 font-medium">
-                    {isEn ? 'RevPAR (Month):' : 'รายได้ต่อห้องพร้อมขาย:'}
+                    {isEn ? 'RevPAR Monthly:' : 'รายได้ต่อห้องพร้อมขาย:'}
                   </span>
                   <span className="font-mono font-bold text-[#F97316]">
                     ฿{data.monthly_mtd.revpar.toLocaleString()}
@@ -514,7 +514,7 @@ export const ManagerDashboardPage: React.FC = () => {
 
         {/* 4. Financial & Daily Tax Statement Table (Replaces Top Performing Rooms) */}
         <Card className="border-slate-200/90 shadow-2xs bg-white overflow-hidden rounded-xl">
-          <CardHeader className="py-3.5 px-5 border-b border-slate-100 flex flex-row items-center justify-between bg-slate-50/50">
+          <CardHeader className="py-3.5 px-5 border-b border-slate-100 flex flex-row items-center justify-between bg-white">
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-slate-500" />
               <CardTitle className="text-sm font-bold text-slate-900">
@@ -530,7 +530,7 @@ export const ManagerDashboardPage: React.FC = () => {
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 text-[11px] text-slate-600 font-semibold border-b border-slate-200 uppercase tracking-wider">
+                <thead className="bg-white text-[11px] text-slate-500 font-semibold border-b border-slate-100 uppercase tracking-wider">
                   <tr>
                     <th className="py-3 px-5">{isEn ? 'Date' : 'วันที่'}</th>
                     <th className="py-3 px-4 text-center">{isEn ? 'Rooms Sold' : 'ห้องที่ขายได้'}</th>

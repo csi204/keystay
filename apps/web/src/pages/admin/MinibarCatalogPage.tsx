@@ -124,7 +124,7 @@ export const MinibarCatalogPage: React.FC = () => {
               <RefreshCw className="w-3.5 h-3.5 text-slate-600" />
               <span>{refreshSuccess ? t('action.refreshSuccess') : t('action.refresh')}</span>
             </Button>
-            <Button onClick={openCreate} className="bg-orange-500 hover:bg-orange-600 text-white text-sm px-3 h-9 flex items-center gap-1.5 font-semibold">
+            <Button onClick={openCreate} className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold px-3 h-9 flex items-center gap-1.5">
               <Plus className="w-4 h-4" />
               {t('action.addItem')}
             </Button>
@@ -135,7 +135,7 @@ export const MinibarCatalogPage: React.FC = () => {
         <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 flex items-start gap-2 text-xs text-amber-800">
           <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
           <span>
-            <strong>หมายเหตุ (Dev):</strong> ข้อมูลนี้ยังเป็น mock data ในเครื่อง — รอ <code>/api/room-inventory/minibar-items</code> จากบุญ (@Legxcy77) ก่อน deploy จริง
+            <strong>หมายเหตุ:</strong> ข้อมูลนี้ยังเป็น mock data ในเครื่อง — รอ <code>/api/room-inventory/minibar-items</code> จากบุญ (@Legxcy77) ก่อน deploy จริง
           </span>
         </div>
 
@@ -188,14 +188,14 @@ export const MinibarCatalogPage: React.FC = () => {
           <CardHeader className="pb-2 pt-3 px-4">
             <CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
               <Package className="w-4 h-4" />
-              รายการสินค้า ({filtered.length})
+              รายการสินค้า · {filtered.length} รายการ
             </CardTitle>
           </CardHeader>
           <CardContent className="px-0 pb-0">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50">
+                  <tr className="border-b border-slate-100 bg-white">
                     <th className="py-2.5 px-4 text-left text-xs font-semibold text-slate-500">ชื่อสินค้า</th>
                     <th className="py-2.5 px-4 text-left text-xs font-semibold text-slate-500">หมวดหมู่</th>
                     <th className="py-2.5 px-4 text-right text-xs font-semibold text-slate-500">ราคา/หน่วย</th>
@@ -306,7 +306,7 @@ export const MinibarCatalogPage: React.FC = () => {
                 </div>
               </div>
               <div>
-                <label className="text-xs font-medium text-slate-600 mb-1 block">ราคาต่อหน่วย (฿) *</label>
+                <label className="text-xs font-medium text-slate-600 mb-1 block">ราคาต่อหน่วย · บาท *</label>
                 <Input
                   type="number"
                   min={0}

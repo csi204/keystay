@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { apiFetch, getAuthRole } from '@/lib/api';
 import { useTranslation } from '@/lib/i18n';
+import { localizeRoomDescription, localizeRoomType, localizeAmenity } from '@/lib/localizeMetadata';
 import {
   BedDouble,
   Plus,
@@ -31,8 +32,8 @@ import {
   ChevronRight,
   Layers,
 } from 'lucide-react';
-import { SeasonalPricingTab } from './SeasonalPricingTab';
-import { AmenitiesCatalogTab } from './AmenitiesCatalogTab';
+import { SeasonalPricingTab, type SeasonalPricingTabRef } from './SeasonalPricingTab';
+import { AmenitiesCatalogTab, type AmenitiesCatalogTabRef } from './AmenitiesCatalogTab';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -171,13 +172,17 @@ const MOCK_ROOMS: RoomUnit[] = [
 
 export const RoomsPricingPage: React.FC = () => {
   const isOwner = getAuthRole() === 'owner';
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
 
-  // Tab
-  const [activeTab, setActiveTab] = useState<'types' | 'units' | 'pricing_rules' | 'amenities'>('types');
+  // Tab (Tab 1: Room Units, Tab 2: Room Types, Tab 3: Pricing Rules, Tab 4: Amenities)
+  const [activeTab, setActiveTab] = useState<'units' | 'types' | 'pricing_rules' | 'amenities'>('units');
   const [isOffline, setIsOffline] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [refreshSuccess, setRefreshSuccess] = useState<boolean>(false);
+
+  // Refs for Sub-Tabs
+  const seasonalTabRef = useRef<SeasonalPricingTabRef>(null);
+  const amenitiesTabRef = useRef<AmenitiesCatalogTabRef>(null);
 
   // ══════════════════════════════════════════════
   //  TAB 1 — Room Types
@@ -604,32 +609,46 @@ export const RoomsPricingPage: React.FC = () => {
               <span>{refreshSuccess ? t('action.refreshSuccess') : t('action.refresh')}</span>
             </Button>
 
-            {isOwner && (activeTab === 'types' || activeTab === 'units') && (
+            {isOwner && (
               <Button
                 size="sm"
                 disabled={isOffline}
-                onClick={() => activeTab === 'types' ? setIsCreateOpen(true) : setIsCreateRoomOpen(true)}
+                onClick={() => {
+                  if (activeTab === 'units') setIsCreateRoomOpen(true);
+                  else if (activeTab === 'types') setIsCreateOpen(true);
+                  else if (activeTab === 'pricing_rules') seasonalTabRef.current?.openCreate();
+                  else if (activeTab === 'amenities') amenitiesTabRef.current?.openCreate();
+                }}
                 className="text-xs font-semibold gap-1.5 h-9 bg-[#F97316] hover:bg-[#ea580c] text-white"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>{activeTab === 'types' ? t('action.addRoomType') : t('action.addRoomUnit')}</span>
+                <span>
+                  {activeTab === 'units'
+                    ? t('action.addRoomUnit')
+                    : activeTab === 'types'
+                    ? t('action.addRoomType')
+                    : activeTab === 'pricing_rules'
+                    ? (locale === 'en' ? 'Add Price Rule' : 'เพิ่มกฎราคาใหม่')
+                    : (locale === 'en' ? 'Add Amenity' : 'เพิ่มของใช้/บริการ')}
+                </span>
               </Button>
             )}
           </div>
         </div>
 
-        {/* ── Tabs ── */}
+        {/* ── Tabs (Tab 1: Room Units First, Tab 2: Room Types) ── */}
         <div className="flex gap-1 mt-4  -mb-3.5 overflow-x-auto">
           {(
             [
-              { key: 'types', label: t('tab.roomTypes'), icon: <BedDouble className="w-3.5 h-3.5" /> },
               { key: 'units', label: t('tab.roomUnits'), icon: <Building2 className="w-3.5 h-3.5" /> },
+              { key: 'types', label: t('tab.roomTypes'), icon: <BedDouble className="w-3.5 h-3.5" /> },
               { key: 'pricing_rules', label: t('tab.pricingRules'), icon: <TrendingUp className="w-3.5 h-3.5" /> },
               { key: 'amenities', label: t('tab.amenities'), icon: <Package className="w-3.5 h-3.5" /> },
             ] as const
           ).map((tab) => (
             <button
               key={tab.key}
+              data-tab={tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={`flex items-center gap-1.5 px-4 py-2 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === tab.key
@@ -709,7 +728,7 @@ export const RoomsPricingPage: React.FC = () => {
                 <CardHeader className="py-3 px-4 flex flex-row items-center justify-between border-b border-slate-100">
                   <div className="flex items-center gap-2">
                     <BedDouble className="w-4 h-4 text-[#F97316]" />
-                    <span className="text-xs font-bold text-slate-900">{tItem.name}</span>
+                    <span className="text-xs font-bold text-slate-900">{localizeRoomType(tItem.name, locale)}</span>
                   </div>
                   <span className="text-xs font-bold text-[#F97316] font-mono">
                     ฿{tItem.basePrice.toLocaleString()}
@@ -717,8 +736,8 @@ export const RoomsPricingPage: React.FC = () => {
                   </span>
                 </CardHeader>
                 <CardContent className="p-4 space-y-3">
-                  <p className="text-xs text-slate-500 min-h-[32px] line-clamp-2">
-                    {tItem.description || '—'}
+                  <p className="text-xs text-slate-600 min-h-[32px] line-clamp-2 leading-relaxed">
+                    {localizeRoomDescription(tItem.description, locale) || '—'}
                   </p>
                   <div className="grid grid-cols-4 gap-1.5 pt-2 border-t border-slate-100 text-[11px] text-slate-600">
                     <div className="flex items-center gap-1">
@@ -733,8 +752,8 @@ export const RoomsPricingPage: React.FC = () => {
                       <Bath className="w-3.5 h-3.5 text-slate-400" />
                       <span>{tItem.bathrooms || 1} {t('unit.rooms')}</span>
                     </div>
-                    <div className="truncate text-right text-slate-500 font-medium" title={tItem.bedType}>
-                      {tItem.bedType}
+                    <div className="truncate text-right text-slate-600 font-medium" title={localizeAmenity(tItem.bedType, locale)}>
+                      {localizeAmenity(tItem.bedType, locale)}
                     </div>
                   </div>
                   {isOwner && (
@@ -761,7 +780,7 @@ export const RoomsPricingPage: React.FC = () => {
                 <span className="font-semibold text-slate-800">
                   {Math.min(typePage * TYPE_ITEMS_PER_PAGE, filteredTypes.length)}
                 </span>{' '}
-                จากทั้งหมด <span className="font-semibold text-slate-800">{filteredTypes.length}</span> ประเภทห้องพัก (9 การ์ดต่อหน้า)
+                จากทั้งหมด <span className="font-semibold text-slate-800">{filteredTypes.length}</span> ประเภทห้องพัก · 9 การ์ดต่อหน้า
               </div>
 
               <div className="flex items-center gap-1.5">
@@ -881,9 +900,9 @@ export const RoomsPricingPage: React.FC = () => {
           ) : (
             roomsByFloor.map(({ floor, rooms: floorRooms }) => (
               <Card key={floor.id} className="border-slate-200 shadow-sm bg-white overflow-hidden">
-                <CardHeader className="py-2.5 px-5 border-b border-slate-100 flex flex-row items-center gap-2">
+                <CardHeader className="py-2.5 px-5 border-b border-slate-100 flex flex-row items-center gap-2 bg-white">
                   <Building2 className="w-4 h-4 text-slate-400" />
-                  <CardTitle className="text-sm font-bold text-slate-800">
+                  <CardTitle className="text-sm font-bold text-slate-900">
                     {floor.name}
                   </CardTitle>
                   <span className="text-[11px] text-slate-400 font-normal">
@@ -893,14 +912,14 @@ export const RoomsPricingPage: React.FC = () => {
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-50 text-[11px] text-slate-500 font-semibold border-b border-slate-200 uppercase tracking-wider">
+                      <thead className="bg-white text-[11px] text-slate-500 font-semibold border-b border-slate-100 uppercase tracking-wider">
                         <tr>
                           <th className="py-2.5 px-4 w-28">{t('field.roomNumber')}</th>
-                          <th className="py-2.5 px-3">{t('field.roomType')}</th>
-                          <th className="py-2.5 px-3 text-right">{t('field.basePrice')}</th>
-                          <th className="py-2.5 px-3 text-center">{t('field.status')}</th>
-                          <th className="py-2.5 px-3 text-center">{t('field.isActive')}</th>
-                          {isOwner && <th className="py-2.5 px-4 text-center">{t('field.actions')}</th>}
+                          <th className="py-2.5 px-3 w-64">{t('field.roomType')}</th>
+                          <th className="py-2.5 px-3 text-right w-36">{t('field.basePrice')}</th>
+                          <th className="py-2.5 px-3 text-center w-40">{t('field.status')}</th>
+                          <th className="py-2.5 px-3 text-center w-28">{t('field.isActive')}</th>
+                          {isOwner && <th className="py-2.5 px-4 text-center w-56">{t('field.actions')}</th>}
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
@@ -908,19 +927,16 @@ export const RoomsPricingPage: React.FC = () => {
                           const isOccupiedOrReserved = room.status === 'occupied' || room.status === 'reserved';
                           return (
                             <tr key={room.id} className={`hover:bg-slate-50/80 transition-colors ${room.isActive === 0 ? 'opacity-50' : ''}`}>
-                              <td className="py-3 px-4">
-                                <div className="flex items-center gap-1.5 font-bold text-slate-900 font-mono">
-                                  <Hash className="w-3 h-3 text-slate-400" />
-                                  {room.roomNumber}
-                                </div>
+                              <td className="py-3 px-4 font-mono font-bold text-slate-900 text-xs">
+                                {room.roomNumber}
                               </td>
-                              <td className="py-3 px-3 text-slate-700">{room.roomType?.name ?? '—'}</td>
-                              <td className="py-3 px-3 text-right font-mono text-slate-600">
+                              <td className="py-3 px-3 text-slate-700">{localizeRoomType(room.roomType?.name, locale) ?? '—'}</td>
+                              <td className="py-3 px-3 text-right font-mono text-slate-700 font-medium text-xs">
                                 {room.roomType ? `฿${room.roomType.basePrice.toLocaleString()}` : '—'}
                               </td>
                               {/* Minimal Enterprise Status Dot (Zero AI Slop) */}
                               <td className="py-3 px-3 text-center">
-                                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-800">
+                                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
                                   <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[room.status]}`} />
                                   <span>{t(`status.${room.status}`)}</span>
                                 </span>
@@ -1007,6 +1023,7 @@ export const RoomsPricingPage: React.FC = () => {
       {activeTab === 'pricing_rules' && (
         <div className="px-4 pb-6">
           <SeasonalPricingTab
+            ref={seasonalTabRef}
             isOwner={isOwner}
             roomTypes={roomTypes}
             isOffline={isOffline}
@@ -1020,6 +1037,7 @@ export const RoomsPricingPage: React.FC = () => {
       {activeTab === 'amenities' && (
         <div className="px-4 pb-6">
           <AmenitiesCatalogTab
+            ref={amenitiesTabRef}
             isOwner={isOwner}
             isOffline={isOffline}
           />
@@ -1062,11 +1080,11 @@ export const RoomsPricingPage: React.FC = () => {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.basePrice')} (THB) *</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.basePrice')} *</label>
                   <Input required type="number" placeholder="1500" value={createForm.basePrice} onChange={(e) => setCreateForm({ ...createForm, basePrice: e.target.value })} className="text-xs font-mono h-9" />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.maxOccupancy')} ({t('unit.persons')}) *</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.maxOccupancy')} *</label>
                   <Input required type="number" min="1" max="10" value={createForm.maxOccupancy} onChange={(e) => setCreateForm({ ...createForm, maxOccupancy: e.target.value })} className="text-xs font-mono h-9" />
                 </div>
               </div>
@@ -1133,11 +1151,11 @@ export const RoomsPricingPage: React.FC = () => {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.basePrice')} (THB) *</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.basePrice')} *</label>
                   <Input required type="number" value={editForm.basePrice} onChange={(e) => setEditForm({ ...editForm, basePrice: e.target.value })} className="text-xs font-mono h-9" />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.maxOccupancy')} ({t('unit.persons')}) *</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.maxOccupancy')} *</label>
                   <Input required type="number" min="1" max="10" value={editForm.maxOccupancy} onChange={(e) => setEditForm({ ...editForm, maxOccupancy: e.target.value })} className="text-xs font-mono h-9" />
                 </div>
               </div>
@@ -1226,13 +1244,13 @@ export const RoomsPricingPage: React.FC = () => {
 
             <form onSubmit={handleCreateRoomSubmit} className="py-4 space-y-3.5">
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.roomNumber')} *</label>
+                <label className="text-xs font-semibold text-slate-700 block mb-1 leading-normal pt-0.5">{t('field.roomNumber')} *</label>
                 <Input required placeholder="เช่น 205, 301A" value={createRoomForm.roomNumber} onChange={(e) => setCreateRoomForm({ ...createRoomForm, roomNumber: e.target.value })} className="text-xs font-mono h-9" />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.floor')} *</label>
+                <label className="text-xs font-semibold text-slate-700 block mb-1 leading-normal pt-0.5">{t('field.floor')} *</label>
                 <Select value={createRoomForm.floorId} onChange={(e) => setCreateRoomForm({ ...createRoomForm, floorId: e.target.value })} className="text-xs h-9">
-                  <option value="">{t('modal.selectFloorPlaceholder')}</option>
+                  <option value="">{locale === 'en' ? 'Select Floor' : 'เลือกชั้น'}</option>
                   {floors.map((f) => (
                     <option key={f.id} value={f.id}>{f.name}</option>
                   ))}
@@ -1282,11 +1300,11 @@ export const RoomsPricingPage: React.FC = () => {
 
             <form onSubmit={handleEditRoomSubmit} className="py-4 space-y-3.5">
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.roomNumber')} *</label>
+                <label className="text-xs font-semibold text-slate-700 block mb-1 leading-normal pt-0.5">{t('field.roomNumber')} *</label>
                 <Input required value={editRoomForm.roomNumber} onChange={(e) => setEditRoomForm({ ...editRoomForm, roomNumber: e.target.value })} className="text-xs font-mono h-9" />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.floor')} *</label>
+                <label className="text-xs font-semibold text-slate-700 block mb-1 leading-normal pt-0.5">{t('field.floor')} *</label>
                 <Select value={editRoomForm.floorId} onChange={(e) => setEditRoomForm({ ...editRoomForm, floorId: e.target.value })} className="text-xs h-9">
                   {floors.map((f) => (
                     <option key={f.id} value={f.id}>{f.name}</option>

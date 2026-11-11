@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useImperativeHandle } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,8 +15,6 @@ import {
   X,
   Save,
   RotateCcw,
-  Receipt,
-  Gift,
 } from 'lucide-react';
 
 export interface AmenityItem {
@@ -35,7 +33,7 @@ export interface AmenityItem {
 const SEED_AMENITIES: AmenityItem[] = [
   {
     id: 'am-extra-bed',
-    nameTh: 'เตียงเสริม (Extra Bed)',
+    nameTh: 'เตียงเสริม',
     nameEn: 'Extra Bed',
     category: 'bedding',
     isChargeable: true,
@@ -107,15 +105,19 @@ const SEED_AMENITIES: AmenityItem[] = [
   },
 ];
 
+export interface AmenitiesCatalogTabRef {
+  openCreate: () => void;
+}
+
 interface AmenitiesCatalogTabProps {
   isOwner: boolean;
   isOffline: boolean;
 }
 
-export const AmenitiesCatalogTab: React.FC<AmenitiesCatalogTabProps> = ({
+export const AmenitiesCatalogTab = React.forwardRef<AmenitiesCatalogTabRef, AmenitiesCatalogTabProps>(({
   isOwner,
   isOffline,
-}) => {
+}, ref) => {
   const { t } = useTranslation();
   const [items, setItems] = useState<AmenityItem[]>(SEED_AMENITIES);
   const [searchQuery, setSearchQuery] = useState('');
@@ -127,6 +129,10 @@ export const AmenitiesCatalogTab: React.FC<AmenitiesCatalogTabProps> = ({
   const [editingItem, setEditingItem] = useState<AmenityItem | null>(null);
   const [deletingItem, setDeletingItem] = useState<AmenityItem | null>(null);
   const [validationError, setValidationError] = useState('');
+
+  useImperativeHandle(ref, () => ({
+    openCreate: () => openCreateModal(),
+  }));
 
   const [form, setForm] = useState({
     nameTh: '',
@@ -270,7 +276,7 @@ export const AmenitiesCatalogTab: React.FC<AmenitiesCatalogTabProps> = ({
           <div className="relative min-w-[200px] flex-1 max-w-xs">
             <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <Input
-              placeholder="ค้นหาชื่อของใช้ (ไทย/EN)..."
+              placeholder="ค้นหาชื่อของใช้..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9 pr-8 text-xs h-9 bg-white border-slate-200"
@@ -308,8 +314,8 @@ export const AmenitiesCatalogTab: React.FC<AmenitiesCatalogTabProps> = ({
               className="text-xs h-9 bg-white"
             >
               <option value="all">ทุกประเภทการคิดเงิน</option>
-              <option value="free">เฉพาะบริการฟรี (฿0)</option>
-              <option value="paid">เฉพาะมีค่าบริการ (ลงบิล)</option>
+              <option value="free">เฉพาะบริการฟรี</option>
+              <option value="paid">เฉพาะมีค่าบริการ</option>
             </Select>
           </div>
 
@@ -329,38 +335,27 @@ export const AmenitiesCatalogTab: React.FC<AmenitiesCatalogTabProps> = ({
             </Button>
           )}
         </div>
-
-        {isOwner && (
-          <Button
-            size="sm"
-            onClick={openCreateModal}
-            className="text-xs font-semibold gap-1.5 h-9 bg-[#F97316] hover:bg-[#ea580c] text-white shrink-0"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>{t('action.addAmenity')}</span>
-          </Button>
-        )}
       </div>
 
       {/* ── Amenities Table (Clean Enterprise Design) ── */}
-      <Card className="border-slate-200 shadow-sm bg-white overflow-hidden">
-        <CardHeader className="py-2.5 px-4 border-b border-slate-100 flex flex-row items-center justify-between">
+      <Card className="border-slate-200 shadow-2xs bg-white overflow-hidden rounded-xl">
+        <CardHeader className="py-3 px-4 border-b border-slate-100 flex flex-row items-center justify-between bg-white">
           <div className="flex items-center gap-2">
             <Package className="w-4 h-4 text-slate-400" />
-            <CardTitle className="text-sm font-bold text-slate-800">
-              แคตตาล็อกของใช้และบริการเสริม ({filteredItems.length} รายการ)
+            <CardTitle className="text-sm font-bold text-slate-900">
+              แคตตาล็อกของใช้และบริการเสริม · {filteredItems.length} รายการ
             </CardTitle>
           </div>
           <span className="text-[11px] text-slate-400 font-mono">
-            * รายการคิดเงินจะถูกนำไปรวมกับบิล Folio เพื่อคำนวณ VAT 7% ตอนเช็คเอาท์
+            * รายการคิดเงินจะรวมกับบิลเพื่อคำนวณภาษีมูลค่าเพิ่ม 7% ตอนเช็คเอาท์
           </span>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-[11px] text-slate-500 font-semibold border-b border-slate-200 uppercase tracking-wider">
+              <thead className="bg-white text-[11px] text-slate-500 font-semibold border-b border-slate-100 uppercase tracking-wider">
                 <tr>
-                  <th className="py-2.5 px-4">ชื่อรายการ (TH / EN)</th>
+                  <th className="py-2.5 px-4">ชื่อรายการ</th>
                   <th className="py-2.5 px-3">หมวดหมู่</th>
                   <th className="py-2.5 px-3">ประเภทการคิดเงิน</th>
                   <th className="py-2.5 px-3 text-right">ราคาต่อหน่วย</th>
@@ -384,39 +379,37 @@ export const AmenitiesCatalogTab: React.FC<AmenitiesCatalogTabProps> = ({
                         <div className="font-semibold text-slate-900">{item.nameTh}</div>
                         <div className="text-[11px] text-slate-400 font-sans">{item.nameEn}</div>
                       </td>
-                      <td className="py-3 px-3 text-slate-600">
-                        <span className="inline-block px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700">
+                      <td className="py-3 px-3 text-slate-700">
+                        <span className="text-xs text-slate-700">
                           {getCategoryLabel(item.category)}
                         </span>
                       </td>
                       {/* Subtle, zero-slop billing type text */}
                       <td className="py-3 px-3">
                         {item.isChargeable ? (
-                          <span className="inline-flex items-center gap-1.5 text-xs text-slate-800 font-medium">
-                            <Receipt className="w-3.5 h-3.5 text-slate-500" />
-                            มีค่าบริการ (ลงบิล)
+                          <span className="text-xs text-slate-700 font-medium">
+                            มีค่าบริการ
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
-                            <Gift className="w-3.5 h-3.5 text-slate-400" />
+                          <span className="text-xs text-slate-500">
                             ฟรี
                           </span>
                         )}
                       </td>
                       {/* Neutral monochrome price */}
-                      <td className="py-3 px-3 text-right font-mono font-semibold">
+                      <td className="py-3 px-3 text-right font-mono font-medium text-slate-900">
                         {item.isChargeable ? (
-                          <span className="text-slate-900">
+                          <span>
                             ฿{item.unitPrice.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                           </span>
                         ) : (
                           <span className="text-slate-400">฿0.00</span>
                         )}
                       </td>
-                      <td className="py-3 px-3 text-center text-slate-600 text-[11px]">
+                      <td className="py-3 px-3 text-center text-slate-700 text-xs">
                         {item.unitNameTh}
                       </td>
-                      <td className="py-3 px-3 text-center font-mono text-[11px]">
+                      <td className="py-3 px-3 text-center font-mono text-xs">
                         {item.stockQuantity === -1 ? (
                           <span className="text-slate-400">ไม่จำกัด</span>
                         ) : (
@@ -428,7 +421,7 @@ export const AmenitiesCatalogTab: React.FC<AmenitiesCatalogTabProps> = ({
                         <button
                           type="button"
                           onClick={() => handleToggleActive(item.id)}
-                          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 transition-colors"
+                          className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 hover:text-slate-900 transition-colors"
                           title="คลิกเพื่อสลับสถานะเปิด/ปิด"
                         >
                           <span
@@ -557,8 +550,8 @@ export const AmenitiesCatalogTab: React.FC<AmenitiesCatalogTabProps> = ({
                     }}
                     className="text-xs h-9"
                   >
-                    <option value="free">บริการฟรี (฿0)</option>
-                    <option value="chargeable">มีค่าบริการ (ลงบิล Folio)</option>
+                    <option value="free">บริการฟรี</option>
+                    <option value="chargeable">มีค่าบริการ</option>
                   </Select>
                 </div>
               </div>
@@ -566,7 +559,7 @@ export const AmenitiesCatalogTab: React.FC<AmenitiesCatalogTabProps> = ({
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    ราคาต่อหน่วย (บาท) {form.isChargeable && '*'}
+                    ราคาต่อหน่วย {form.isChargeable && '*'}
                   </label>
                   <Input
                     type="number"
@@ -673,4 +666,6 @@ export const AmenitiesCatalogTab: React.FC<AmenitiesCatalogTabProps> = ({
       )}
     </div>
   );
-};
+});
+
+AmenitiesCatalogTab.displayName = 'AmenitiesCatalogTab';

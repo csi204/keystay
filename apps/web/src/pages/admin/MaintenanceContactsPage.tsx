@@ -288,22 +288,22 @@ export const MaintenanceContactsPage: React.FC = () => {
   return (
     <AdminLayout activePath="/admin/technicians" isBackendOffline={isOffline}>
       {/* ── Context Header ── */}
-      <div className="bg-white border-b border-slate-200/80 px-4 py-3.5 mb-4 shadow-2xs">
+      <div className="bg-white px-4 py-3.5 mb-4 shadow-2xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
               <span>{t('nav.home')}</span>
               <span>/</span>
-              <span className="font-semibold text-slate-800">{locale === 'en' ? 'Technicians & Contacts' : 'ช่างซ่อมบำรุงและคู่ค้า'}</span>
+              <span className="font-semibold text-slate-800">{locale === 'en' ? 'Technicians & Contacts' : 'ข้อมูลติดต่อคู่ค้าภายนอก'}</span>
             </div>
             <h1 className="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
               <Wrench className="w-5 h-5 text-[#F97316]" />
-              <span>{locale === 'en' ? 'Emergency Maintenance & Outsource Directory' : 'สมุดเบอร์ช่างฉุกเฉินและคู่ค้าภายนอก'}</span>
+              <span>{locale === 'en' ? 'Emergency Maintenance & Outsource Directory' : 'ข้อมูลติดต่อคู่ค้าภายนอก'}</span>
             </h1>
             <p className="text-xs text-slate-500 mt-1">
               {locale === 'en'
-                ? 'Manage technician contacts, 24-hr emergency partners, and service fee rates for front desk and operations'
-                : 'จัดการรายชื่อช่างซ่อมบำรุง คู่ค้าภายนอก เบอร์โทรฉุกเฉิน 24 ชม. และอัตราค่าบริการ สำหรับทีมงานและ Front Desk'}
+                ? 'Manage outsource contacts, 24-hr emergency partners, and service fee rates for front desk and operations'
+                : 'จัดการข้อมูลติดต่อคู่ค้าภายนอก เบอร์โทรฉุกเฉิน 24 ชม. และอัตราค่าบริการ สำหรับแม่บ้านและ Front Desk'}
             </p>
           </div>
 
@@ -330,7 +330,7 @@ export const MaintenanceContactsPage: React.FC = () => {
                 className="text-xs font-semibold gap-1.5 h-9 bg-[#F97316] hover:bg-[#ea580c] text-white shadow-2xs"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>เพิ่มช่างซ่อมบำรุงใหม่</span>
+                <span>เพิ่มคู่ค้าใหม่</span>
               </Button>
             )}
           </div>
@@ -635,7 +635,7 @@ export const MaintenanceContactsPage: React.FC = () => {
               <div className="flex items-center gap-2">
                 <Wrench className="w-5 h-5 text-[#F97316]" />
                 <h3 className="text-base font-bold text-slate-900">
-                  {editingContact ? 'แก้ไขข้อมูลช่างซ่อมบำรุง' : 'เพิ่มช่างซ่อมบำรุง / คู่ค้าใหม่'}
+                  {editingContact ? 'แก้ไขข้อมูลคู่ค้า' : 'เพิ่มคู่ค้าใหม่'}
                 </h3>
               </div>
               <button
