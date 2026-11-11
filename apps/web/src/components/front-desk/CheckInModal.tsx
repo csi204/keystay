@@ -207,7 +207,7 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
           {/* National ID / Passport */}
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-              {t('checkin.idLabel')}
+              {t('checkin.idLabel')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
             </label>
             <div className="relative">
               <ShieldCheck className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" strokeWidth={1.75} aria-hidden="true" />

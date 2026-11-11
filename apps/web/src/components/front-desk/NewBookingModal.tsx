@@ -222,7 +222,7 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
           {/* Booking Channel Selector */}
           <div className="space-y-1.5">
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
-              {locale === 'th' ? 'ช่องทางการจอง (Booking Source)' : 'Booking Source'} *
+              {locale === 'th' ? 'ช่องทางการจอง (Booking Source)' : 'Booking Source'} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
             </label>
             <div className="grid grid-cols-3 gap-2">
               {[
@@ -276,7 +276,7 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
 
             <div>
               <label className="block text-sm font-semibold text-slate-800 mb-1">
-                {t('common.guestName')} *
+                {t('common.guestName')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
               </label>
               <div className="relative">
                 <User className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -294,7 +294,7 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-semibold text-slate-800 mb-1">
-                  {t('res.phoneNumber')} *
+                  {t('res.phoneNumber')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
                 </label>
                 <div className="relative">
                   <Phone className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -335,7 +335,7 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
 
             <div>
               <label className="block text-sm font-semibold text-slate-800 mb-1">
-                {t('res.selectRoom')} *
+                {t('res.selectRoom')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
               </label>
               <select
                 value={roomId}
@@ -357,7 +357,7 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-semibold text-slate-800 mb-1">
-                  {t('res.checkInDate')} *
+                  {t('res.checkInDate')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
                 </label>
                 <CustomDatePicker
                   required
@@ -375,7 +375,7 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
 
               <div>
                 <label className="block text-sm font-semibold text-slate-800 mb-1">
-                  {t('res.checkOutDate')} *
+                  {t('res.checkOutDate')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
                 </label>
                 <CustomDatePicker
                   required

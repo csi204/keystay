@@ -86,6 +86,8 @@ export function useReservations() {
     guestName: string;
     phone: string;
     email?: string;
+    idCardNumber?: string;
+    nationalIdOrPassport?: string;
     roomId: string;
     checkInDate: string;
     checkOutDate: string;

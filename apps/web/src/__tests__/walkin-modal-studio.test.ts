@@ -109,4 +109,40 @@ describe('Task 3: Overhaul WalkInModal to Split 2-Pane Studio Layout with Live C
     const rapidCode = fs.readFileSync(rapidModalPath, 'utf-8');
     assert.match(rapidCode, /RapidWalkInModal/);
   });
+
+  it('verifies idCardNumber state, input field, and submission in WalkInModal', () => {
+    const code = fs.readFileSync(modalPath, 'utf-8');
+
+    // State & validation
+    assert.match(code, /const\s+\[idCardNumber,\s*setIdCardNumber\]\s*=\s*useState\(''\)/);
+    assert.match(code, /!idCardNumber\.trim\(\)/);
+    assert.match(code, /idCardNumber:\s*idCardNumber\.trim\(\)/);
+    assert.match(code, /nationalIdOrPassport:\s*idCardNumber\.trim\(\)/);
+
+    // FastBookingFormData interface
+    assert.match(code, /export interface FastBookingFormData/);
+    assert.match(code, /idCardNumber\?: string/);
+    assert.match(code, /nationalIdOrPassport\?: string/);
+
+    // Input element attributes
+    assert.match(code, /ShieldCheck.*strokeWidth=\{1\.75\}/);
+    assert.match(code, /13-digit ID or Passport Number/);
+    assert.match(code, /value=\{idCardNumber\}/);
+    assert.match(code, /onChange=\{\(e\)\s*=>\s*setIdCardNumber\(e\.target\.value\)\}/);
+  });
+
+  it('verifies elevated asterisk styling across front-desk modals', () => {
+    const walkInCode = fs.readFileSync(modalPath, 'utf-8');
+    const roomDetailsCode = fs.readFileSync(path.resolve(process.cwd(), 'apps/web/src/components/front-desk/RoomDetailsModal.tsx'), 'utf-8');
+    const checkInCode = fs.readFileSync(path.resolve(process.cwd(), 'apps/web/src/components/front-desk/CheckInModal.tsx'), 'utf-8');
+    const extendCode = fs.readFileSync(path.resolve(process.cwd(), 'apps/web/src/components/front-desk/ExtendStayModal.tsx'), 'utf-8');
+    const newBookingCode = fs.readFileSync(path.resolve(process.cwd(), 'apps/web/src/components/front-desk/NewBookingModal.tsx'), 'utf-8');
+
+    const elevatedAsteriskPattern = /text-rose-500 font-bold ml-(?:1|0\.5) text-xs select-none/;
+    assert.match(walkInCode, elevatedAsteriskPattern);
+    assert.match(roomDetailsCode, elevatedAsteriskPattern);
+    assert.match(checkInCode, elevatedAsteriskPattern);
+    assert.match(extendCode, elevatedAsteriskPattern);
+    assert.match(newBookingCode, elevatedAsteriskPattern);
+  });
 });

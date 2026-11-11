@@ -56,6 +56,8 @@ export type RoomDrawerAction = RoomModalAction;
 export interface FastBookingFormData {
   guestName: string;
   phone: string;
+  idCardNumber?: string;
+  nationalIdOrPassport?: string;
   email?: string;
   roomId: string;
   checkInDate: string;
@@ -816,7 +818,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-slate-700 mb-1">
-                      {t('res.guestName')} <span className="text-rose-500">*</span>
+                      {t('res.guestName')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
                     </label>
                     <div className="relative">
                       <User className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -836,7 +838,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
 
                   <div>
                     <label className="block text-xs font-medium text-slate-700 mb-1">
-                      {t('res.phoneNumber')} <span className="text-rose-500">*</span>
+                      {t('res.phoneNumber')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
                     </label>
                     <div className="relative">
                       <Phone className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -859,7 +861,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-slate-700 mb-1">
-                      {t('res.checkInDate')} <span className="text-rose-500">*</span>
+                      {t('res.checkInDate')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
                     </label>
                     <CustomDatePicker
                       required
@@ -879,7 +881,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <label className="block text-xs font-medium text-slate-700">
-                        {t('res.checkOutDate')} <span className="text-rose-500">*</span>
+                        {t('res.checkOutDate')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
                       </label>
                       <span className="text-[10px] font-mono font-medium text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded">
                         {nightsCount} {locale === 'th' ? 'คืน' : 'night(s)'}

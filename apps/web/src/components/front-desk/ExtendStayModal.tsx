@@ -234,7 +234,7 @@ export const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
           {/* New Check-out Date Input */}
           <div>
             <label className="block text-sm font-medium text-slate-600 mb-1">
-              {t('extend.newCheckOut')}
+              {t('extend.newCheckOut')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
             </label>
             <CustomDatePicker
               required

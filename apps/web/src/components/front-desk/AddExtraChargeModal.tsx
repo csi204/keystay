@@ -155,7 +155,7 @@ export const AddExtraChargeModal: React.FC<AddExtraChargeModalProps> = ({
 
           <div>
             <label className="block text-sm font-semibold text-slate-800 mb-1">
-              {t('folio.chargeCategory')} *
+              {t('folio.chargeCategory')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
             </label>
             <select
               value={category}
@@ -217,7 +217,7 @@ export const AddExtraChargeModal: React.FC<AddExtraChargeModalProps> = ({
 
           <div>
             <label className="block text-sm font-semibold text-slate-800 mb-1">
-              {t('folio.chargeDescription')} *
+              {t('folio.chargeDescription')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
             </label>
             <input
               type="text"
@@ -232,7 +232,7 @@ export const AddExtraChargeModal: React.FC<AddExtraChargeModalProps> = ({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-semibold text-slate-800 mb-1">
-                {t('folio.chargeQuantity')} *
+                {t('folio.chargeQuantity')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
               </label>
               <input
                 type="number"
@@ -246,7 +246,7 @@ export const AddExtraChargeModal: React.FC<AddExtraChargeModalProps> = ({
 
             <div>
               <label className="block text-sm font-semibold text-slate-800 mb-1">
-                {t('folio.chargeUnitPrice')} *
+                {t('folio.chargeUnitPrice')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
               </label>
               <input
                 type="number"

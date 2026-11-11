@@ -22,6 +22,24 @@ import {
   Loader2,
 } from 'lucide-react';
 
+export interface FastBookingFormData {
+  guestName: string;
+  phone: string;
+  idCardNumber?: string;
+  nationalIdOrPassport?: string;
+  email?: string;
+  roomId: string;
+  checkInDate: string;
+  checkOutDate: string;
+  guestsCount?: number;
+  depositAmount: string;
+  paymentMethod?: 'cash' | 'transfer' | 'credit_card' | 'qr_promptpay' | string;
+  bookingSource?: 'walk_in' | 'phone' | 'facebook';
+  paymentStatus?: 'unpaid' | 'paid';
+  paymentSlipUrl?: string;
+  paymentSlipRef?: string;
+}
+
 export interface WalkInModalProps {
   isOpen: boolean;
   availableRooms: Room[];
@@ -33,6 +51,7 @@ export interface WalkInModalProps {
     guestName: string;
     phone: string;
     nationalIdOrPassport: string;
+    idCardNumber?: string;
     checkInDate: string;
     checkOutDate: string;
     depositAmount: string;
@@ -60,7 +79,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
   const [roomId, setRoomId] = useState(preselectedRoomId || '');
   const [guestName, setGuestName] = useState('');
   const [phone, setPhone] = useState('');
-  const [nationalIdOrPassport, setNationalIdOrPassport] = useState('');
+  const [idCardNumber, setIdCardNumber] = useState('');
   const [checkInDate, setCheckInDate] = useState(todayStr);
   const [checkOutDate, setCheckOutDate] = useState(tomorrowStr);
   const [depositAmount, setDepositAmount] = useState('500');
@@ -160,7 +179,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
       setError(t('res.errorPhone'));
       return;
     }
-    if (!nationalIdOrPassport.trim()) {
+    if (!idCardNumber.trim()) {
       setError(t('res.errorId'));
       return;
     }
@@ -171,7 +190,8 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
       roomId,
       guestName: guestName.trim(),
       phone: phone.trim(),
-      nationalIdOrPassport: nationalIdOrPassport.trim(),
+      nationalIdOrPassport: idCardNumber.trim(),
+      idCardNumber: idCardNumber.trim(),
       checkInDate: checkInDate || todayStr,
       checkOutDate,
       depositAmount: depositAmount.trim() || '0',
@@ -242,7 +262,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
                 {/* Room Selector if multiple available rooms */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-800 mb-1">
-                    {t('res.selectAvailableRoom')} *
+                    {t('res.selectAvailableRoom')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
                   </label>
                   <select
                     value={roomId}
@@ -353,7 +373,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
                 {/* Guest Name */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-800 mb-1">
-                    {t('common.guestName')} *
+                    {t('common.guestName')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
                   </label>
                   <div className="relative">
                     <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -368,40 +388,39 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
                   </div>
                 </div>
 
-                {/* Phone & National ID */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-800 mb-1">
-                      {t('res.phoneNumber')} *
-                    </label>
-                    <div className="relative">
-                      <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="tel"
-                        required
-                        placeholder="0891234567"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        className="w-full text-sm py-2 px-3 pl-9 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono tabular-nums shadow-2xs"
-                      />
-                    </div>
+                {/* Phone */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-800 mb-1">
+                    {t('res.phoneNumber')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
+                  </label>
+                  <div className="relative">
+                    <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="tel"
+                      required
+                      placeholder="0891234567"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="w-full text-sm py-2 px-3 pl-9 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono tabular-nums shadow-2xs"
+                    />
                   </div>
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-800 mb-1">
-                      {t('res.nationalIdOrPassport')} *
-                    </label>
-                    <div className="relative">
-                      <ShieldCheck className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="text"
-                        required
-                        placeholder={t('res.nationalIdOrPassport')}
-                        value={nationalIdOrPassport}
-                        onChange={(e) => setNationalIdOrPassport(e.target.value)}
-                        className="w-full text-sm py-2 px-3 pl-9 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono tabular-nums shadow-2xs"
-                      />
-                    </div>
+                {/* National ID / Passport */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    {locale === 'th' ? 'เลขบัตรประชาชน / พาสปอร์ต' : 'National ID / Passport'} <span className="text-rose-500 font-bold ml-0.5 text-xs select-none">*</span>
+                  </label>
+                  <div className="relative">
+                    <ShieldCheck className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" strokeWidth={1.75} />
+                    <input
+                      type="text"
+                      required
+                      value={idCardNumber}
+                      onChange={(e) => setIdCardNumber(e.target.value)}
+                      placeholder={locale === 'th' ? 'เลขบัตรประชาชน 13 หลัก หรือเลขพาสปอร์ต' : '13-digit ID or Passport Number'}
+                      className="w-full h-10 pl-9 pr-3 text-sm font-mono bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors"
+                    />
                   </div>
                 </div>
 
@@ -409,7 +428,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-sm font-semibold text-slate-800 mb-1">
-                      {t('res.checkInDate')} *
+                      {t('res.checkInDate')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
                     </label>
                     <CustomDatePicker
                       required
@@ -423,7 +442,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <label className="block text-sm font-semibold text-slate-800">
-                        {t('res.checkOutDate')} *
+                        {t('res.checkOutDate')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
                       </label>
                       <span className="text-xs font-mono font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full">
                         {nights} {locale === 'th' ? 'คืน' : (nights > 1 ? 'nights' : 'night')}
@@ -462,7 +481,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
                 {/* Payment Method Selector Grid */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-800 mb-1.5">
-                    {t('payment.method')} *
+                    {t('payment.method')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
                   </label>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {paymentOptions.map((opt) => {

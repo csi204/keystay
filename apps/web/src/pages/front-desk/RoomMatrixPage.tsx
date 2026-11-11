@@ -246,6 +246,8 @@ export const RoomMatrixPage: React.FC = () => {
     const res = await createReservation({
       guestName: data.guestName,
       phone: data.phone,
+      idCardNumber: data.idCardNumber,
+      nationalIdOrPassport: data.nationalIdOrPassport || data.idCardNumber,
       roomId: data.roomId,
       checkInDate: data.checkInDate,
       checkOutDate: data.checkOutDate,
