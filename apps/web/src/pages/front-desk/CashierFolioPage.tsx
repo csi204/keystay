@@ -4,6 +4,7 @@ import { FrontDeskLayout } from '@/components/front-desk/FrontDeskLayout';
 import { useBilling, DetailedBill } from '@/hooks/useBilling';
 import { FolioSplitScreen } from '@/components/front-desk/FolioSplitScreen';
 import { AddExtraChargeModal } from '@/components/front-desk/AddExtraChargeModal';
+import { RequestAmenitiesModal } from '@/components/front-desk/RequestAmenitiesModal';
 import { ReceiptTaxInvoiceModal } from '@/components/front-desk/ReceiptTaxInvoiceModal';
 import { useI18n } from '@/lib/i18n';
 import {
@@ -38,6 +39,7 @@ export const CashierFolioPage: React.FC = () => {
   } = useBilling();
 
   const [isAddChargeOpen, setIsAddChargeOpen] = useState(false);
+  const [isAmenitiesOpen, setIsAmenitiesOpen] = useState(false);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -170,6 +172,7 @@ export const CashierFolioPage: React.FC = () => {
           bill={selectedBill}
           depositAmount="500"
           onAddCharge={() => setIsAddChargeOpen(true)}
+          onRequestAmenities={() => setIsAmenitiesOpen(true)}
           onDeleteItem={(itemId) => {
             if (selectedBill) deleteChargeItem(selectedBill.id, itemId);
           }}
@@ -189,6 +192,20 @@ export const CashierFolioPage: React.FC = () => {
           isOpen={isAddChargeOpen}
           onClose={() => setIsAddChargeOpen(false)}
           onSubmit={addExtraCharge}
+        />
+      )}
+
+      {/* Request Extra Amenities Modal */}
+      {selectedBill && (
+        <RequestAmenitiesModal
+          isOpen={isAmenitiesOpen}
+          onClose={() => setIsAmenitiesOpen(false)}
+          roomNumber={selectedBill.roomNumber}
+          billId={selectedBill.id}
+          onSubmitAmenity={async (data) => {
+            return { success: true };
+          }}
+          onAddFolioCharge={addExtraCharge}
         />
       )}
 

@@ -14,6 +14,7 @@ import {
   CheckCircle,
   AlertCircle,
   Receipt,
+  Sparkles,
 } from 'lucide-react';
 
 export interface FolioItemLike {
@@ -121,6 +122,7 @@ export interface FolioSplitScreenProps {
   bill: DetailedBill | null;
   depositAmount?: string;
   onAddCharge: () => void;
+  onRequestAmenities?: () => void;
   onDeleteItem: (itemId: string) => void;
   onPay: (method: 'cash' | 'credit_card' | 'qr_promptpay' | 'transfer', amount: string) => Promise<boolean>;
   onViewInvoice: () => void;
@@ -130,6 +132,7 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
   bill,
   depositAmount = '500',
   onAddCharge,
+  onRequestAmenities,
   onDeleteItem,
   onPay,
   onViewInvoice,
@@ -200,13 +203,24 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
           </div>
 
           {!isPaid && (
-            <button
-              onClick={onAddCharge}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded-md shadow-sm transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>{t('folio.addCharge')}</span>
-            </button>
+            <div className="flex items-center gap-2">
+              {onRequestAmenities && (
+                <button
+                  onClick={onRequestAmenities}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-md shadow-xs transition-colors"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>{locale === 'th' ? 'ขอของใช้เสริม' : 'Amenities'}</span>
+                </button>
+              )}
+              <button
+                onClick={onAddCharge}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded-md shadow-sm transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>{t('folio.addCharge')}</span>
+              </button>
+            </div>
           )}
         </div>
 

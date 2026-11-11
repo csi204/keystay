@@ -11,6 +11,7 @@ import {
 import { ExtendedReservation } from '@/hooks/useReservations';
 import { ExtendStayModal } from './ExtendStayModal';
 import { SlipViewerModal } from './SlipViewerModal';
+import { RequestAmenitiesModal } from './RequestAmenitiesModal';
 import {
   X,
   BedDouble,
@@ -82,6 +83,23 @@ export interface RoomDetailsModalProps {
     reservationId: string,
     data: { paymentSlipRef?: string; paymentSlipUrl?: string }
   ) => Promise<{ success: boolean; error?: string }>;
+  onRequestAmenity?: (data: {
+    amenityId: string;
+    amenityName: string;
+    quantity: number;
+    unitPrice: number;
+    isChargeable: boolean;
+    notes?: string;
+  }) => Promise<{ success: boolean; error?: string }>;
+  onAddFolioCharge?: (
+    billId: string,
+    data: {
+      description: string;
+      category: 'room' | 'minibar' | 'laundry' | 'damage' | 'service' | 'other';
+      quantity: number;
+      unitPrice: string;
+    }
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
@@ -94,6 +112,8 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
   initialMode = 'details',
   onSubmitBooking,
   onVerifySlip,
+  onRequestAmenity,
+  onAddFolioCharge,
 }) => {
   const { t, formatCurrency, locale } = useI18n();
 
@@ -101,6 +121,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
   const [mode, setMode] = useState<'details' | 'booking'>(initialMode);
   const [isExtendOpen, setIsExtendOpen] = useState(false);
   const [isSlipViewerOpen, setIsSlipViewerOpen] = useState(false);
+  const [isAmenitiesModalOpen, setIsAmenitiesModalOpen] = useState(false);
 
   // Fast Booking Form State
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
@@ -505,34 +526,46 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
               )}
 
               {room.status === 'occupied' && (
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      (onAction as any)?.('extend', room);
-                      setIsExtendOpen(true);
-                    }}
-                    className="min-h-[44px] text-xs font-semibold py-2.5 px-2 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-xs"
-                  >
-                    <CalendarPlus className="w-4 h-4 text-slate-600 shrink-0" />
-                    <span>{t('extend.button')}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => (onAction as any)?.('charge', room)}
-                    className="min-h-[44px] text-xs font-semibold py-2.5 px-2 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-xs"
-                  >
-                    <PlusCircle className="w-4 h-4 text-slate-600 shrink-0" />
-                    <span>{t('folio.addCharge')}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => (onAction as any)?.('checkout', room)}
-                    className="min-h-[44px] text-xs font-semibold py-2.5 px-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5"
-                  >
-                    <LogOut className="w-4 h-4 shrink-0" />
-                    <span>{t('ops.checkOut')}</span>
-                  </button>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        (onAction as any)?.('extend', room);
+                        setIsExtendOpen(true);
+                      }}
+                      className="min-h-[44px] text-xs font-semibold py-2.5 px-2 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-xs"
+                    >
+                      <CalendarPlus className="w-4 h-4 text-slate-600 shrink-0" />
+                      <span>{t('extend.button')}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsAmenitiesModalOpen(true)}
+                      className="min-h-[44px] text-xs font-semibold py-2.5 px-2 bg-white border border-indigo-200 hover:bg-indigo-50/60 text-indigo-700 rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-xs"
+                    >
+                      <Sparkles className="w-4 h-4 text-indigo-600 shrink-0" />
+                      <span>{locale === 'th' ? 'ขอของใช้เสริม' : 'Amenities'}</span>
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => (onAction as any)?.('charge', room)}
+                      className="min-h-[44px] text-xs font-semibold py-2.5 px-2 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-xs"
+                    >
+                      <PlusCircle className="w-4 h-4 text-slate-600 shrink-0" />
+                      <span>{t('folio.addCharge')}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => (onAction as any)?.('checkout', room)}
+                      className="min-h-[44px] text-xs font-semibold py-2.5 px-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <LogOut className="w-4 h-4 shrink-0" />
+                      <span>{t('ops.checkOut')}</span>
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -1050,6 +1083,25 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
             }
             return { success: true };
           }}
+        />
+      )}
+
+      {/* Request Extra Amenities Modal */}
+      {currentReservation && (
+        <RequestAmenitiesModal
+          isOpen={isAmenitiesModalOpen}
+          onClose={() => setIsAmenitiesModalOpen(false)}
+          roomId={room?.id}
+          roomNumber={room?.roomNumber}
+          reservationId={currentReservation.id}
+          billId={(currentReservation as any).billId}
+          onSubmitAmenity={async (data) => {
+            if (onRequestAmenity) {
+              return onRequestAmenity(data);
+            }
+            return { success: true };
+          }}
+          onAddFolioCharge={onAddFolioCharge}
         />
       )}
     </div>
