@@ -19,7 +19,9 @@ export const CashierFolioPage: React.FC = () => {
   const navState = location.state as {
     reservationId?: string;
     roomId?: string;
+    roomNumber?: string;
     billId?: string;
+    action?: string;
   } | null;
 
   const {
@@ -50,10 +52,35 @@ export const CashierFolioPage: React.FC = () => {
       loadBillByReservation(navState.reservationId);
     } else if (navState?.billId) {
       loadBillDetails(navState.billId);
+    } else if (navState?.roomId || navState?.roomNumber) {
+      const matchingBill = bills.find(
+        (b) =>
+          (navState.roomId &&
+            (b.roomId === navState.roomId || (b as any).room_id === navState.roomId)) ||
+          (navState.roomNumber && b.roomNumber === navState.roomNumber)
+      );
+      if (matchingBill) {
+        loadBillDetails(matchingBill.id);
+      } else if (bills.length > 0 && !selectedBill) {
+        loadBillDetails(bills[0].id);
+      }
     } else if (bills.length > 0 && !selectedBill) {
       loadBillDetails(bills[0].id);
     }
   }, [navState, bills]);
+
+  // Handle direct actions triggered from navigation
+  useEffect(() => {
+    if (
+      navState?.action === 'add-charge' ||
+      navState?.action === 'charge' ||
+      navState?.action === 'minibar'
+    ) {
+      setIsAddChargeOpen(true);
+    } else if (navState?.action === 'amenities') {
+      setIsAmenitiesOpen(true);
+    }
+  }, [navState?.action]);
 
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
@@ -200,7 +227,9 @@ export const CashierFolioPage: React.FC = () => {
         <RequestAmenitiesModal
           isOpen={isAmenitiesOpen}
           onClose={() => setIsAmenitiesOpen(false)}
-          roomNumber={selectedBill.roomNumber}
+          roomId={selectedBill.roomId || navState?.roomId}
+          roomNumber={selectedBill.roomNumber || navState?.roomNumber}
+          reservationId={selectedBill.reservationId || navState?.reservationId}
           billId={selectedBill.id}
           onSubmitAmenity={async (data) => {
             return { success: true };

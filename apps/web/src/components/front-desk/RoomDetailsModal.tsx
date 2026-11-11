@@ -1087,14 +1087,14 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
       )}
 
       {/* Request Extra Amenities Modal */}
-      {currentReservation && (
+      {(currentReservation || room?.status === 'occupied') && (
         <RequestAmenitiesModal
           isOpen={isAmenitiesModalOpen}
           onClose={() => setIsAmenitiesModalOpen(false)}
-          roomId={room?.id}
-          roomNumber={room?.roomNumber}
-          reservationId={currentReservation.id}
-          billId={(currentReservation as any).billId}
+          roomId={room?.id || ''}
+          roomNumber={room?.roomNumber || ''}
+          reservationId={currentReservation?.id || 'res-in-house-' + room?.id}
+          billId={(currentReservation as any)?.billId}
           onSubmitAmenity={async (data) => {
             if (onRequestAmenity) {
               return onRequestAmenity(data);

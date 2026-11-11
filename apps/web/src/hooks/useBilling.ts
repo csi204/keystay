@@ -25,6 +25,7 @@ export interface BillPayment {
 export interface DetailedBill extends Bill {
   guestName?: string;
   roomNumber?: string;
+  roomId?: string;
   items?: BillItem[];
   payments?: BillPayment[];
 }

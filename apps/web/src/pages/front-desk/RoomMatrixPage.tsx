@@ -133,6 +133,20 @@ export const RoomMatrixPage: React.FC = () => {
     return { roomGuests: guests, roomCheckouts: checkouts };
   }, [reservations]);
 
+  // Active reservation for currently selected room
+  const activeReservation = useMemo(() => {
+    if (!selectedRoom) return null;
+    return (
+      reservations.find(
+        (r) =>
+          r.roomId === selectedRoom.id &&
+          (r.status === 'confirmed' ||
+            r.status === 'checked_in' ||
+            (r.status as string) === 'extended')
+      ) || null
+    );
+  }, [reservations, selectedRoom]);
+
   // Unique floors list for room matrix
   const floors = useMemo(() => {
     const set = new Set<string>();
@@ -184,14 +198,41 @@ export const RoomMatrixPage: React.FC = () => {
   };
 
   const handleModalAction = (
-    action: 'checkin' | 'checkout' | 'charge' | 'walkin' | 'clean' | 'extend',
+    action: 'checkin' | 'checkout' | 'charge' | 'walkin' | 'clean' | 'extend' | string,
     room: Room
   ) => {
-    setIsModalOpen(false);
+    if (action !== 'extend') {
+      setIsModalOpen(false);
+    }
     if (action === 'checkin' || action === 'walkin') {
       navigate('/front-desk/daily-operations', { state: { roomId: room.id, action } });
-    } else if (action === 'checkout' || action === 'charge') {
-      navigate('/front-desk/billing', { state: { roomId: room.id, action } });
+    } else if (
+      action === 'checkout' ||
+      action === 'charge' ||
+      action === 'minibar' ||
+      action === 'folio' ||
+      action === 'add-charge' ||
+      action === 'amenities'
+    ) {
+      const roomRes =
+        activeReservation && activeReservation.roomId === room.id
+          ? activeReservation
+          : reservations.find(
+              (r) =>
+                r.roomId === room.id &&
+                (r.status === 'confirmed' ||
+                  r.status === 'checked_in' ||
+                  (r.status as string) === 'extended')
+            );
+      navigate('/front-desk/billing', {
+        state: {
+          roomId: room.id,
+          roomNumber: room.roomNumber,
+          reservationId: roomRes?.id || activeReservation?.id,
+          billId: (roomRes as any)?.billId || (activeReservation as any)?.billId,
+          action,
+        },
+      });
     } else if (action === 'clean') {
       refreshRooms();
     }
@@ -710,6 +751,7 @@ export const RoomMatrixPage: React.FC = () => {
         roomType={selectedRoomType}
         isOpen={isModalOpen}
         initialMode={modalMode}
+        currentReservation={activeReservation || null}
         onClose={handleCloseModal}
         onAction={handleModalAction}
         onSubmitBooking={handleFastBookingSubmit}
