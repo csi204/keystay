@@ -22,6 +22,8 @@ import {
   Loader2,
   AlertTriangle,
   Check,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 type ExportFormat = 'pdf' | 'csv';
@@ -331,33 +333,50 @@ export const ReportsAnalyticsPage: React.FC = () => {
 
   const totalPages = pdfPagesData.length;
 
-  // Recent 5-Day Financial and Tax Statements
-  const recent5Days = useMemo(() => {
+  // Financial and Tax Daily Statement (15 rows per page with Pagination)
+  const ROWS_PER_PAGE = 15;
+  const [tablePage, setTablePage] = useState<number>(1);
+
+  const statementRows = useMemo(() => {
     if (dailyStatsList.length > 0) {
-      return dailyStatsList.slice(0, 5).map((r) => {
+      return dailyStatsList.map((r, i) => {
         const total = Number(r.totalRevenue || 0);
         const roomRev = Number(r.roomRevenue || (total > 3200 ? total - 3200 : total));
         const minibarRev = Number(r.minibarRevenue || (total > roomRev ? total - roomRev : 0));
+        const net = Math.round((total / 1.07) * 100) / 100;
+        const vat = Math.round((total - net) * 100) / 100;
+        const dateStr = getDailyDate(r);
+        const docNo = `TAX-${dateStr.replace(/-/g, '')}-01`;
         return {
-          date: getDailyDate(r),
+          no: i + 1,
+          date: dateStr,
+          docNo,
           occ: r.occupiedRooms,
-          total: r.totalRooms || 22,
-          rate: `${r.occupancyRate}%`,
+          totalRooms: r.totalRooms || 22,
+          rate: typeof r.occupancyRate === 'number' ? `${r.occupancyRate.toFixed(2)}%` : `${r.occupancyRate}%`,
           roomRev,
           minibarRev,
-          revNum: total,
+          net,
+          vat,
+          total,
         };
       });
     }
-    // High-fidelity fallback
+    // High-fidelity fallback matching actual D1 seed dates
     return [
-      { date: '2026-11-11', occ: 13, total: 22, rate: '59.1%', roomRev: 46200, minibarRev: 3200, revNum: 49400 },
-      { date: '2026-11-10', occ: 15, total: 22, rate: '68.2%', roomRev: 58200, minibarRev: 3900, revNum: 62100 },
-      { date: '2026-11-09', occ: 19, total: 22, rate: '86.4%', roomRev: 84900, minibarRev: 5000, revNum: 89900 },
-      { date: '2026-11-08', occ: 18, total: 22, rate: '81.8%', roomRev: 76000, minibarRev: 4200, revNum: 80200 },
-      { date: '2026-11-07', occ: 16, total: 22, rate: '72.7%', roomRev: 64500, minibarRev: 3500, revNum: 68000 },
+      { no: 1, date: '2026-10-04', docNo: 'TAX-20261004-01', occ: 13, totalRooms: 22, rate: '59.09%', roomRev: 46200, minibarRev: 3200, net: 46168.22, vat: 3231.78, total: 49400 },
+      { no: 2, date: '2026-10-03', docNo: 'TAX-20261003-01', occ: 16, totalRooms: 22, rate: '72.73%', roomRev: 57723, minibarRev: 3200, net: 56937.38, vat: 3985.62, total: 60923 },
+      { no: 3, date: '2026-10-02', docNo: 'TAX-20261002-01', occ: 19, totalRooms: 22, rate: '86.36%', roomRev: 69246, minibarRev: 3200, net: 67706.54, vat: 4739.46, total: 72446 },
+      { no: 4, date: '2026-10-01', docNo: 'TAX-20261001-01', occ: 14, totalRooms: 22, rate: '63.64%', roomRev: 50369, minibarRev: 3200, net: 50064.49, vat: 3504.51, total: 53569 },
+      { no: 5, date: '2026-09-30', docNo: 'TAX-20260930-01', occ: 17, totalRooms: 22, rate: '77.27%', roomRev: 61892, minibarRev: 3200, net: 60833.64, vat: 4258.36, total: 65092 },
     ];
   }, [dailyStatsList]);
+
+  const totalTablePages = Math.ceil(statementRows.length / ROWS_PER_PAGE) || 1;
+  const paginatedStatementRows = useMemo(() => {
+    const start = (tablePage - 1) * ROWS_PER_PAGE;
+    return statementRows.slice(start, start + ROWS_PER_PAGE);
+  }, [statementRows, tablePage]);
 
   return (
     <AdminLayout activePath="/admin/reports" isBackendOffline={isOffline}>
@@ -511,17 +530,20 @@ export const ReportsAnalyticsPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-mono">
-                  {recent5Days.map((r) => {
-                    const total = Number(r.revNum);
-                    const net = Math.round((total / 1.07) * 100) / 100;
-                    const vat = Math.round((total - net) * 100) / 100;
-                    return (
+                  {paginatedStatementRows.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="py-12 text-center text-slate-400 font-sans">
+                        ไม่พบข้อมูลสถิติผลการดำเนินงาน
+                      </td>
+                    </tr>
+                  ) : (
+                    paginatedStatementRows.map((r) => (
                       <tr key={r.date} className="hover:bg-slate-50/80 transition-colors">
                         <td className="py-3 px-5 font-sans text-slate-900 font-medium">
                           {r.date}
                         </td>
                         <td className="py-3 px-4 text-center text-slate-700">
-                          {r.occ} / {r.total} ห้อง
+                          {r.occ} / {r.totalRooms} ห้อง
                         </td>
                         <td className="py-3 px-4 text-center font-bold text-emerald-700">
                           {r.rate}
@@ -533,20 +555,79 @@ export const ReportsAnalyticsPage: React.FC = () => {
                           ฿{r.minibarRev.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                         </td>
                         <td className="py-3 px-4 text-right font-semibold text-slate-800">
-                          ฿{net.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                          ฿{r.net.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                         </td>
                         <td className="py-3 px-4 text-right font-semibold text-orange-600">
-                          ฿{vat.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                          ฿{r.vat.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                         </td>
                         <td className="py-3 px-5 text-right font-bold text-slate-900">
-                          ฿{total.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                          ฿{r.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                         </td>
                       </tr>
-                    );
-                  })}
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination Controls for Daily Statement Table (15 rows per page) */}
+            {statementRows.length > ROWS_PER_PAGE && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3 border-t border-slate-200 bg-white">
+                <div className="text-xs text-slate-500 font-mono">
+                  แสดง <span className="font-semibold text-slate-800">{(tablePage - 1) * ROWS_PER_PAGE + 1}</span> -{' '}
+                  <span className="font-semibold text-slate-800">
+                    {Math.min(tablePage * ROWS_PER_PAGE, statementRows.length)}
+                  </span>{' '}
+                  จากทั้งหมด <span className="font-semibold text-slate-800">{statementRows.length}</span> วัน (15 แถวต่อหน้า)
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={tablePage === 1}
+                    onClick={() => setTablePage((p) => Math.max(1, p - 1))}
+                    className="h-8 px-2.5 text-xs text-slate-600 border-slate-200 hover:bg-slate-50 disabled:opacity-40"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5 mr-1" />
+                    ก่อนหน้า
+                  </Button>
+
+                  {Array.from({ length: totalTablePages }, (_, i) => i + 1)
+                    .filter((p) => p === 1 || p === totalTablePages || Math.abs(p - tablePage) <= 2)
+                    .map((pageNum, idx, arr) => {
+                      const prev = arr[idx - 1];
+                      const showEllipsis = prev && pageNum - prev > 1;
+                      return (
+                        <React.Fragment key={pageNum}>
+                          {showEllipsis && <span className="px-1 text-slate-400 text-xs">...</span>}
+                          <button
+                            onClick={() => setTablePage(pageNum)}
+                            className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all ${
+                              tablePage === pageNum
+                                ? 'bg-slate-900 text-white shadow-2xs'
+                                : 'text-slate-600 hover:bg-slate-100 border border-transparent'
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        </React.Fragment>
+                      );
+                    })}
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={tablePage === totalTablePages}
+                    onClick={() => setTablePage((p) => Math.min(totalTablePages, p + 1))}
+                    className="h-8 px-2.5 text-xs text-slate-600 border-slate-200 hover:bg-slate-50 disabled:opacity-40"
+                  >
+                    ถัดไป
+                    <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
