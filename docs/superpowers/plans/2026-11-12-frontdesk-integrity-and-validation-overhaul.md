@@ -40,9 +40,9 @@
 - Modify: `apps/web/src/pages/front-desk/RoomMatrixPage.tsx:270-285`
 - Test: `services/reservation/test/reservation-name-parsing.test.ts`
 
-- [ ] **Step 1.1: Write unit test for guest name parsing in reservation service**
+- [x] **Step 1.1: Write unit test for guest name parsing in reservation service**
   - Ensure single name `"อัศวิน"` results in `firstName: 'อัศวิน'`, `lastName: ''`, `fullName: 'อัศวิน'`.
-- [ ] **Step 1.2: Update `services/reservation/src/routes/reservations.ts`**
+- [x] **Step 1.2: Update `services/reservation/src/routes/reservations.ts`**
   - In `POST /walk-in` and `POST /reservations`:
     ```ts
     const nameParts = (data.guestName || '').trim().split(/\s+/);
@@ -50,12 +50,12 @@
     const lastName = data.lastName || (nameParts.length > 1 ? nameParts.slice(1).join(' ') : '');
     const guestFullName = `${firstName} ${lastName}`.trim();
     ```
-- [ ] **Step 1.3: Update seed reservations in `scripts/seeds/03_reservation.sql`**
+- [x] **Step 1.3: Update seed reservations in `scripts/seeds/03_reservation.sql`**
   - Update old September 2026 check-in/out dates to current date `2026-11-12` and future dates (`2026-11-13` - `2026-11-18`), matching realistic live PMS testing.
   - Re-execute local D1 seed: `pnpm dlx wrangler d1 execute db_reservation --local --config=services/reservation/wrangler.jsonc --file=scripts/seeds/03_reservation.sql --yes`.
-- [ ] **Step 1.4: Forward `bookingSource` in `RoomMatrixPage.tsx`**
+- [x] **Step 1.4: Forward `bookingSource` in `RoomMatrixPage.tsx`**
   - Pass `bookingSource: data.bookingSource` in `handleFastBookingSubmit` to ensure selected channel is saved.
-- [ ] **Step 1.5: Run tests and commit**
+- [x] **Step 1.5: Run tests and commit**
   - Run `pnpm test` to verify all reservation tests pass.
   - Commit: `git commit -m "fix(reservation): eliminate Customer suffix, align mock dates to current timeline, and pass bookingSource"`.
 
@@ -69,10 +69,10 @@
 - Modify: `apps/web/src/pages/front-desk/DailyOperationsPage.tsx:73-78`
 - Modify: `apps/web/src/components/front-desk/NewBookingModal.tsx:82-90`
 
-- [ ] **Step 2.1: Write unit tests in `roomAvailabilityStrict.test.ts`**
+- [x] **Step 2.1: Write unit tests in `roomAvailabilityStrict.test.ts`**
   - Test that room with physical status `occupied`, `reserved`, `cleaning`, `maintenance`, `out_of_order` is rejected for today.
   - Test that room with active reservation `checked_in` or `extended` is strictly rejected for today even if checkOutDate is in the past.
-- [ ] **Step 2.2: Update `apps/web/src/lib/roomAvailability.ts`**
+- [x] **Step 2.2: Update `apps/web/src/lib/roomAvailability.ts`**
   - Enhance `isRoomAvailable`:
     ```ts
     // Strict Active Occupancy Guard
@@ -92,9 +92,9 @@
       }
     }
     ```
-- [ ] **Step 2.3: Verify in `DailyOperationsPage.tsx` and `NewBookingModal.tsx`**
+- [x] **Step 2.3: Verify in `DailyOperationsPage.tsx` and `NewBookingModal.tsx`**
   - Ensure `availableRoomsForDates` uses enhanced `isRoomAvailable` so occupied rooms (e.g. 102, 101) never appear for today's walk-in or new booking.
-- [ ] **Step 2.4: Run tests and commit**
+- [x] **Step 2.4: Run tests and commit**
   - Run `npm run test:web`.
   - Commit: `git commit -m "feat(front-desk): enforce strict active occupancy and same-day status in room availability filter"`.
 
