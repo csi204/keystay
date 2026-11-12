@@ -104,6 +104,7 @@ CREATE TABLE IF NOT EXISTS task_templates (
     default_priority TEXT NOT NULL DEFAULT 'normal' CHECK(default_priority IN ('urgent', 'high', 'normal', 'low')),
     estimated_minutes INTEGER NOT NULL DEFAULT 30,
     description TEXT,
+    checklist_items TEXT,
     is_active INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL

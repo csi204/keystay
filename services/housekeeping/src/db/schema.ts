@@ -157,6 +157,7 @@ export const taskTemplates = sqliteTable('task_templates', {
     .default('normal'),
   estimatedMinutes: integer('estimated_minutes').notNull().default(30),
   description: text('description'),
+  checklistItems: text('checklist_items'),
   isActive: integer('is_active').notNull().default(1),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
