@@ -718,6 +718,8 @@ export const HousekeepingPortalPage: React.FC = () => {
     );
 
     setIsAfterPhotoModalOpen(false);
+    setTargetPhotoTask(null);
+    setCapturedAfterPhoto(null);
     setIsTimerRunning(false);
     setIsFocusModeOpen(false);
     showToast(`✨ บันทึกภาพหลังทำห้อง ${task.roomNumber} เรียบร้อย! ปล่อยห้องพร้อมขายทันที`);
@@ -804,6 +806,8 @@ export const HousekeepingPortalPage: React.FC = () => {
     );
 
     setIsBeforePhotoModalOpen(false);
+    setTargetPhotoTask(null);
+    setCapturedBeforePhoto(null);
     setTimerSeconds(30 * 60);
     setIsTimerRunning(true);
     setIsFocusModeOpen(true);

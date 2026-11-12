@@ -24,10 +24,12 @@ if (fs.existsSync(HK_DB_PATH)) {
   const insertTask = hkDb.prepare(`
     INSERT INTO housekeeping_tasks (
       id, room_id, room_number, assigned_to, task_type, priority, status, notes,
-      scheduled_date, started_at, completed_at, event_source, created_at, updated_at
+      scheduled_date, started_at, completed_at, event_source, created_at, updated_at,
+      before_photo_url, after_photo_url
     ) VALUES (
       ?, ?, ?, ?, ?, ?, ?, ?,
-      ?, ?, ?, ?, ?, ?
+      ?, ?, ?, ?, ?, ?,
+      ?, ?
     )
   `);
 
@@ -233,7 +235,8 @@ if (fs.existsSync(HK_DB_PATH)) {
   for (const t of tasks) {
     insertTask.run(
       t.id, t.roomId, t.roomNumber, t.assignedTo, t.taskType, t.priority, t.status, t.notes,
-      t.scheduledDate, t.startedAt, t.completedAt, t.eventSource, nowIso, nowIso
+      t.scheduledDate, t.startedAt, t.completedAt, t.eventSource, nowIso, nowIso,
+      t.beforePhotoUrl || null, t.afterPhotoUrl || null
     );
   }
 

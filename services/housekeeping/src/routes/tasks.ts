@@ -62,6 +62,8 @@ tasksRoute.get('/', async (c) => {
       eventSource: housekeepingTasks.eventSource,
       createdAt: housekeepingTasks.createdAt,
       updatedAt: housekeepingTasks.updatedAt,
+      beforePhotoUrl: housekeepingTasks.beforePhotoUrl,
+      afterPhotoUrl: housekeepingTasks.afterPhotoUrl,
       staffFirstName: housekeepingStaff.firstName,
       staffLastName: housekeepingStaff.lastName,
       staffZone: housekeepingStaff.zone,
@@ -98,6 +100,8 @@ tasksRoute.get('/', async (c) => {
       eventSource: t.eventSource,
       createdAt: t.createdAt,
       updatedAt: t.updatedAt,
+      beforePhotoUrl: t.beforePhotoUrl,
+      afterPhotoUrl: t.afterPhotoUrl,
     })),
   });
 });
