@@ -88,6 +88,7 @@ export function mapReservation(row: any) {
     id: row.id,
     reservationCode: row.reservation_code,
     guestId: row.guest_id,
+    guestName: `${row.first_name || ''} ${row.last_name || ''}`.trim() || row.guest_name || 'Guest',
     roomId: row.room_id,
     roomNumber: row.room_number,
     roomTypeName: row.room_type_name,
@@ -119,8 +120,8 @@ export function mapReservation(row: any) {
       guest: {
         id: row.guest_id,
         firstName: row.first_name || (row.guest_name ? row.guest_name.split(' ')[0] : ''),
-        lastName: row.last_name || (row.guest_name ? row.guest_name.split(' ').slice(1).join(' ') : ''),
-        fullName: row.guest_name || `${row.first_name || ''} ${row.last_name || ''}`.trim(),
+        lastName: row.last_name || (row.guest_name ? (row.guest_name.split(' ').length > 1 ? row.guest_name.split(' ').slice(1).join(' ') : '') : ''),
+        fullName: `${row.first_name || ''} ${row.last_name || ''}`.trim() || row.guest_name || 'Guest',
         email: row.guest_email || row.email || null,
         phone: row.guest_phone || row.phone || null,
         idCardNumber: row.id_card_number || null,

@@ -355,9 +355,10 @@ reservations.post('/walk-in', async (c) => {
         guestId = guestRecord.id;
       } else {
         guestId = `gst-${crypto.randomUUID()}`;
-        const nameParts = data.guestName.trim().split(' ');
-        const firstName = nameParts[0] || 'Walk-in';
-        const lastName = nameParts.slice(1).join(' ') || 'Guest';
+        const nameParts = (data.guestName || '').trim().split(/\s+/);
+        const firstName = data.firstName || nameParts[0] || 'Guest';
+        const lastName = data.lastName || (nameParts.length > 1 ? nameParts.slice(1).join(' ') : '');
+        const guestFullName = `${firstName} ${lastName}`.trim();
 
         stmtInsertGuest = c.env.DB.prepare(
           `INSERT INTO guests (id, first_name, last_name, email, phone, id_card_number, nationality, total_stays, created_at, updated_at)
@@ -660,10 +661,11 @@ reservations.post('/', async (c) => {
       } else {
         // Prepare atomic guest insertion statement (will execute in batch, no orphans on error)
         guestId = `gst-${crypto.randomUUID()}`;
-        const nameParts = (data.guestName || '').trim().split(' ');
-        const firstName = (data.firstName || nameParts[0] || 'Guest').trim();
-        const lastName = (data.lastName || nameParts.slice(1).join(' ') || 'Customer').trim();
-        guestNameForOutbox = `${firstName} ${lastName}`.trim();
+        const nameParts = (data.guestName || '').trim().split(/\s+/);
+        const firstName = data.firstName || nameParts[0] || 'Guest';
+        const lastName = data.lastName || (nameParts.length > 1 ? nameParts.slice(1).join(' ') : '');
+        const guestFullName = `${firstName} ${lastName}`.trim();
+        guestNameForOutbox = guestFullName;
 
         stmtInsertGuest = c.env.DB.prepare(
           `INSERT INTO guests (id, first_name, last_name, email, phone, nationality, total_stays, created_at, updated_at)

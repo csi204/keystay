@@ -97,6 +97,10 @@ export function useReservations() {
     nightlyRate?: number;
     numGuests?: number;
     guestsCount?: number;
+    bookingSource?: 'walk_in' | 'phone' | 'facebook';
+    paymentStatus?: 'unpaid' | 'paid';
+    paymentSlipUrl?: string;
+    paymentSlipRef?: string;
   }) => {
     const res = await apiFetch<Reservation>('/api/reservations', {
       method: 'POST',

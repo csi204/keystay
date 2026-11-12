@@ -234,14 +234,14 @@ describe('Reservation Service (Dear - @allmusgus)', () => {
 
   describe('API #49: Extend Stay (POST /reservations/:id/extend-stay)', () => {
     it('SUCCESS: extends check-out date and recalculates subtotal and nights', async () => {
-      // res-001 check-out is '2026-09-28', nightly_rate is 3500.00
+      // res-001 check-out is '2026-11-14', nightly_rate is 3500.00
       const res = await app.request(
         '/reservations/res-001/extend-stay',
         {
           method: 'POST',
           headers: HEADERS,
           body: JSON.stringify({
-            newCheckOutDate: '2026-09-30',
+            newCheckOutDate: '2026-11-16',
             additionalDeposit: '500.00',
             reason: 'Guest loves the sea view',
           }),
@@ -253,7 +253,7 @@ describe('Reservation Service (Dear - @allmusgus)', () => {
       const json = await res.json();
       expect(json.success).to.be.true;
       expect(json.data.status).to.equal('extended');
-      expect(json.data.checkOutDate).to.equal('2026-09-30');
+      expect(json.data.checkOutDate).to.equal('2026-11-16');
       expect(Number(json.data.totalNights)).to.equal(6);
       expect(Number(json.data.subtotal)).to.equal(21000.00);
     });
@@ -265,7 +265,7 @@ describe('Reservation Service (Dear - @allmusgus)', () => {
           method: 'PUT',
           headers: HEADERS,
           body: JSON.stringify({
-            newCheckOutDate: '2026-10-02',
+            newCheckOutDate: '2026-11-18',
             additionalDeposit: 0,
           }),
         },
@@ -276,7 +276,7 @@ describe('Reservation Service (Dear - @allmusgus)', () => {
       const json = await res.json();
       expect(json.success).to.be.true;
       expect(json.data.status).to.equal('extended');
-      expect(json.data.checkOutDate).to.equal('2026-10-02');
+      expect(json.data.checkOutDate).to.equal('2026-11-18');
     });
 
     it('BAD: returns 400 when newCheckOutDate is earlier or same as current checkout', async () => {
@@ -286,7 +286,7 @@ describe('Reservation Service (Dear - @allmusgus)', () => {
           method: 'POST',
           headers: HEADERS,
           body: JSON.stringify({
-            newCheckOutDate: '2026-09-27',
+            newCheckOutDate: '2026-11-13',
           }),
         },
         env
@@ -431,15 +431,15 @@ describe('Reservation Service (Dear - @allmusgus)', () => {
 
   describe('API #39: Modify Dates (PUT /reservations/:id/modify-dates)', () => {
     it('SUCCESS: modifies booking dates for confirmed reservation', async () => {
-      // res-004 is 'confirmed' (2026-09-27 to 2026-09-29)
+      // res-004 is 'confirmed' (2026-11-12 to 2026-11-14)
       const res = await app.request(
         '/reservations/res-004/modify-dates',
         {
           method: 'PUT',
           headers: HEADERS,
           body: JSON.stringify({
-            checkInDate: '2026-09-28',
-            checkOutDate: '2026-10-01',
+            checkInDate: '2026-11-13',
+            checkOutDate: '2026-11-16',
             reason: 'Guest rescheduled trip by one day',
           }),
         },
@@ -449,8 +449,8 @@ describe('Reservation Service (Dear - @allmusgus)', () => {
       expect(res.status).to.equal(200);
       const json = await res.json();
       expect(json.success).to.be.true;
-      expect(json.data.checkInDate).to.equal('2026-09-28');
-      expect(json.data.checkOutDate).to.equal('2026-10-01');
+      expect(json.data.checkInDate).to.equal('2026-11-13');
+      expect(json.data.checkOutDate).to.equal('2026-11-16');
       expect(Number(json.data.totalNights)).to.equal(3);
     });
 
@@ -523,7 +523,7 @@ describe('Reservation Service (Dear - @allmusgus)', () => {
         {
           method: 'POST',
           headers: HEADERS,
-          body: JSON.stringify({ auditDate: '2026-09-28' }),
+          body: JSON.stringify({ auditDate: '2026-11-12' }),
         },
         env
       );
@@ -614,7 +614,7 @@ describe('Reservation Service (Dear - @allmusgus)', () => {
   describe('Operational Queries (Today Check-ins, Check-outs, Calendar)', () => {
     it('SUCCESS: lists today check-ins by date', async () => {
       const res = await app.request(
-        '/reservations/today-checkins?date=2026-09-27',
+        '/reservations/today-checkins?date=2026-11-12',
         { method: 'GET', headers: HEADERS },
         env
       );
@@ -627,7 +627,7 @@ describe('Reservation Service (Dear - @allmusgus)', () => {
 
     it('SUCCESS: lists today check-outs by date', async () => {
       const res = await app.request(
-        '/reservations/today-checkouts?date=2026-09-26',
+        '/reservations/today-checkouts?date=2026-11-12',
         { method: 'GET', headers: HEADERS },
         env
       );
@@ -640,7 +640,7 @@ describe('Reservation Service (Dear - @allmusgus)', () => {
 
     it('SUCCESS: fetches calendar matrix for date range', async () => {
       const res = await app.request(
-        '/reservations/calendar?startDate=2026-09-01&endDate=2026-09-30',
+        '/reservations/calendar?startDate=2026-11-01&endDate=2026-11-30',
         { method: 'GET', headers: HEADERS },
         env
       );

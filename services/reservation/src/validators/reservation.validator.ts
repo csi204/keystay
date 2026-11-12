@@ -117,6 +117,8 @@ export const walkInSchema = z
     roomTypeName: z.string().optional(),
     guestId: z.string().optional(),
     guestName: z.string().min(1, 'Guest name is required'),
+    firstName: z.string().optional(),
+    lastName: z.string().optional(),
     guestPhone: z.string().optional().nullable(),
     phone: z.string().optional().nullable(),
     guestEmail: z.string().email('Invalid email format').optional().nullable().or(z.literal('')),

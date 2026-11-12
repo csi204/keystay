@@ -112,8 +112,24 @@ app.route('/guests', guests);
 app.route('/reservations', reservations);
 
 // Direct root-level aliases for gateway forwarding compatibility (/api/walk-in -> /walk-in)
-app.post('/walk-in', (c) => reservations.fetch(c.req.raw, c.env, c.executionCtx));
-app.post('/night-audit', (c) => reservations.fetch(c.req.raw, c.env, c.executionCtx));
+app.post('/walk-in', (c) => {
+  let ctx: any;
+  try {
+    ctx = c.executionCtx;
+  } catch {
+    ctx = undefined;
+  }
+  return reservations.fetch(c.req.raw, c.env, ctx);
+});
+app.post('/night-audit', (c) => {
+  let ctx: any;
+  try {
+    ctx = c.executionCtx;
+  } catch {
+    ctx = undefined;
+  }
+  return reservations.fetch(c.req.raw, c.env, ctx);
+});
 
 // 404 handler
 app.notFound((c) => {

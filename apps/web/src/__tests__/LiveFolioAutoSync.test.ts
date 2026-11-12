@@ -121,13 +121,13 @@ describe('Task 3: Live Folio Auto-Sync & Dummy Bill Cleanup', () => {
     );
   });
 
-  it('Requirement 4: When Room 101 has an active in-house reservation for "อัศวิน Customer", folio synchronizes name and pending status', () => {
+  it('Requirement 4: When Room 101 has an active in-house reservation for "อัศวิน", folio synchronizes name and pending status', () => {
     const activeReservations: ExtendedReservation[] = [
       {
         id: 'res-101-active',
         bookingNumber: 'BK-101',
         guestId: 'guest-asawin',
-        guestName: 'อัศวิน Customer',
+        guestName: 'อัศวิน',
         roomNumber: '101',
         roomId: 'room-101',
         checkInDate: '2026-11-12T00:00:00Z',
@@ -164,10 +164,10 @@ describe('Task 3: Live Folio Auto-Sync & Dummy Bill Cleanup', () => {
 
     const synced = syncBillWithReservation(dummyBill, activeReservations);
 
-    // Verified: guestName becomes "อัศวิน Customer"
+    // Verified: guestName becomes "อัศวิน"
     assert.strictEqual(
       synced.guestName,
-      'อัศวิน Customer',
+      'อัศวิน',
       'synced bill guestName should reflect real guest name from in-house reservation'
     );
 
@@ -185,7 +185,7 @@ describe('Task 3: Live Folio Auto-Sync & Dummy Bill Cleanup', () => {
         id: 'res-101-active',
         bookingNumber: 'BK-101',
         guestId: 'guest-asawin',
-        guestName: 'อัศวิน Customer',
+        guestName: 'อัศวิน',
         roomNumber: '101',
         roomId: 'room-101',
         checkInDate: '2026-11-12T00:00:00Z',
@@ -220,7 +220,7 @@ describe('Task 3: Live Folio Auto-Sync & Dummy Bill Cleanup', () => {
         createdAt: '2026-10-01T00:00:00Z',
         updatedAt: '2026-10-01T00:00:00Z',
       },
-      // 2. Dummy bill for Room 101 with 0 amount and paid status -> should be healed to "อัศวิน Customer" and "pending"
+      // 2. Dummy bill for Room 101 with 0 amount and paid status -> should be healed to "อัศวิน" and "pending"
       {
         id: 'bill-101',
         billNumber: 'INV-202611-101',
@@ -281,7 +281,7 @@ describe('Task 3: Live Folio Auto-Sync & Dummy Bill Cleanup', () => {
     // Healed bill 101 must be present, with real guest name and pending status
     const bill101 = reconciled.find((b) => b.id === 'bill-101');
     assert.ok(bill101, 'Bill 101 must be present in reconciled list');
-    assert.strictEqual(bill101.guestName, 'อัศวิน Customer');
+    assert.strictEqual(bill101.guestName, 'อัศวิน');
     assert.strictEqual(bill101.status, 'pending');
 
     // Legitimate paid bill must remain paid

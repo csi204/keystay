@@ -279,6 +279,8 @@ export const RoomMatrixPage: React.FC = () => {
       depositAmount: data.depositAmount,
       nightlyRate: Number(selectedRoomType?.basePrice || 1000),
       numGuests: (data as any).guestsCount || 1,
+      bookingSource: data.bookingSource,
+      paymentStatus: data.paymentStatus,
     });
     if (res.success) {
       await Promise.all([refreshRooms(), refreshReservations()]);

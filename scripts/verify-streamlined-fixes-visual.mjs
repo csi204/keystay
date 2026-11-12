@@ -30,8 +30,8 @@ const MOCK_RESERVATIONS = [
     bookingNumber: 'RES-2026-1D46660D',
     roomId: 'rm-101',
     roomNumber: '101',
-    guestName: 'อัศวิน Customer',
-    guest: { fullName: 'อัศวิน Customer', phone: '081-234-5678' },
+    guestName: 'อัศวิน',
+    guest: { fullName: 'อัศวิน', phone: '081-234-5678' },
     checkInDate: '2026-11-11',
     checkOutDate: '2026-11-15',
     status: 'extended',
@@ -58,7 +58,7 @@ const MOCK_BILLS = [
     id: 'bill-101',
     billNumber: 'BILL-2026-101',
     reservationId: 'res-101',
-    guestName: 'อัศวิน Customer',
+    guestName: 'อัศวิน',
     roomNumber: '101',
     status: 'pending',
     subtotal: '8800.00',
@@ -183,7 +183,7 @@ async function run() {
   fs.copyFileSync(shot2, path.join(PARENT_BRAIN_DIR, '08-streamlined-navigation-and-departures.png'));
   console.log('[SAVED] 08-streamlined-navigation-and-departures.png');
 
-  // Test 3: Cashier Hub with Room 101 Live Sync ("อัศวิน Customer" / "รอชำระ")
+  // Test 3: Cashier Hub with Room 101 Live Sync ("อัศวิน" / "รอชำระ")
   console.log('\n[TEST 3] Verifying Cashier Hub Live Folio Synchronization...');
   await page.goto('http://127.0.0.1:3000/front-desk/cashier', { waitUntil: 'networkidle' });
   await page.waitForTimeout(800);
