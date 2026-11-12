@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS bills (
     deposit_deducted REAL NOT NULL DEFAULT 0,
     amount_paid REAL NOT NULL DEFAULT 0,
     amount_due REAL NOT NULL DEFAULT 0,
-    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'partially_paid', 'paid', 'refunded', 'void')),
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'partially_paid', 'paid', 'unpaid', 'refunded', 'void')),
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );

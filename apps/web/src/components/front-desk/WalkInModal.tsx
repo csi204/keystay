@@ -194,8 +194,6 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
-
   // Selected room details
   const selectedRoom = availableRoomsForDates.find((r) => r.id === roomId) || availableRoomsForDates[0];
   const selectedRoomType = (roomTypes || []).find((t) => t.id === selectedRoom?.roomTypeId);
@@ -205,6 +203,8 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
     const maxCap = selectedRoomType?.capacity || (selectedRoom as any)?.capacity || 2;
     setGuestsCount((prev) => Math.min(Math.max(1, prev || 1), maxCap));
   }, [selectedRoomType?.capacity, selectedRoom]);
+
+  if (!isOpen) return null;
 
   // Dynamic night calculation
   const calculateNights = (inDate: string, outDate: string): number => {
