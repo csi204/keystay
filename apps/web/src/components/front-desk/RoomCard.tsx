@@ -42,10 +42,10 @@ export const ROOM_STATUS_CONFIG: Record<
   },
   reserved: {
     label: 'ติดจอง',
-    bg: 'bg-amber-50',
-    text: 'text-amber-700',
-    border: 'border-amber-200',
-    dot: 'bg-amber-500',
+    bg: 'bg-amber-100 dark:bg-amber-950/40',
+    text: 'text-amber-950 dark:text-amber-200',
+    border: 'border-amber-400 dark:border-amber-800',
+    dot: 'bg-amber-500 ring-2 ring-amber-300 dark:ring-amber-900',
   },
   checked_out: {
     label: 'รอทำความสะอาด',
@@ -213,10 +213,10 @@ export const RoomCard: React.FC<RoomCardProps> = ({
           <div className="flex flex-wrap items-center gap-1.5">
             {displayGuest ? (
               <span
-                className="inline-flex items-center gap-1 text-xs text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/60 max-w-[140px] truncate"
+                className="inline-flex items-center gap-1 text-xs bg-amber-100/90 text-amber-950 font-bold border border-amber-300 dark:bg-amber-900/40 dark:text-amber-200 dark:border-amber-700 px-1.5 py-0.5 rounded max-w-[140px] truncate"
                 title={displayGuest}
               >
-                <User className="w-3 h-3 text-amber-500 shrink-0" strokeWidth={1.75} />
+                <User className="w-3 h-3 text-amber-700 dark:text-amber-400 shrink-0" strokeWidth={1.75} />
                 <span className="truncate">{displayGuest}</span>
               </span>
             ) : (

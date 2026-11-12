@@ -3,9 +3,17 @@ import assert from 'node:assert';
 import fs from 'node:fs';
 import path from 'node:path';
 
+const getFilePath = (subpath: string) => {
+  const p1 = path.resolve(process.cwd(), subpath);
+  if (fs.existsSync(p1)) return p1;
+  const p2 = path.resolve(process.cwd(), subpath.replace(/^apps\/web\//, ''));
+  if (fs.existsSync(p2)) return p2;
+  return p1;
+};
+
 describe('RoomCard & RoomMatrixGrid — 4-Column Grid, Tempered Glass Status, Spec Chips & Quick Walk-In', () => {
-  const roomCardPath = path.resolve(process.cwd(), 'apps/web/src/components/front-desk/RoomCard.tsx');
-  const matrixGridPath = path.resolve(process.cwd(), 'apps/web/src/components/front-desk/RoomMatrixGrid.tsx');
+  const roomCardPath = getFilePath('apps/web/src/components/front-desk/RoomCard.tsx');
+  const matrixGridPath = getFilePath('apps/web/src/components/front-desk/RoomMatrixGrid.tsx');
 
   const roomCardCode = fs.readFileSync(roomCardPath, 'utf-8');
   const matrixGridCode = fs.readFileSync(matrixGridPath, 'utf-8');
