@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
 import { I18nProvider } from './lib/i18n';
 import { ToastProvider } from './context/ToastContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { ToastContainer } from './components/common/ToastContainer';
 import { LoginPage } from './pages/auth/LoginPage';
 import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
@@ -173,10 +174,11 @@ export const App: React.FC = () => {
   return (
     <ToastProvider>
       <I18nProvider>
-        {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
-        <ToastContainer />
+        <ThemeProvider>
+          {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
+          <ToastContainer />
 
-        <BrowserRouter
+          <BrowserRouter
           future={{
             v7_startTransition: true,
             v7_relativeSplatPath: true,
@@ -351,6 +353,7 @@ export const App: React.FC = () => {
         </Routes>
           </React.Suspense>
         </BrowserRouter>
+        </ThemeProvider>
       </I18nProvider>
     </ToastProvider>
   );

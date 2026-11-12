@@ -349,17 +349,17 @@ export const RoomMatrixPage: React.FC = () => {
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
               {t('matrix.title')}
             </h1>
-            <p className="text-sm text-slate-600 mt-0.5">
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">
               {t('matrix.subtitle')}
             </p>
           </div>
         </div>
 
         {/* Sub-Tabs: ผังห้องพัก (Grid) & รายการจองทั้งหมด (Table) */}
-        <div className="flex items-center gap-1 border-b border-slate-200">
+        <div className="flex items-center gap-1 border-b border-slate-200 dark:border-slate-800">
           <button
             type="button"
             onClick={() => {
@@ -368,13 +368,13 @@ export const RoomMatrixPage: React.FC = () => {
             }}
             className={`inline-flex items-center gap-2 px-3.5 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
               activeSubTab === 'grid'
-                ? 'border-slate-900 text-slate-900 font-semibold'
-                : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
+                ? 'border-slate-900 text-slate-900 dark:border-orange-500 dark:text-orange-400 font-semibold'
+                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-700'
             }`}
           >
             <LayoutGrid className="w-4 h-4" aria-hidden="true" />
             <span>{t('matrix.tabGrid')}</span>
-            <span className="ml-1 px-1.5 py-0.2 rounded-full text-xs font-mono bg-slate-100 text-slate-600 border border-slate-200/60">
+            <span className="ml-1 px-1.5 py-0.2 rounded-full text-xs font-mono bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700">
               {rooms.length}
             </span>
           </button>
@@ -386,20 +386,20 @@ export const RoomMatrixPage: React.FC = () => {
             }}
             className={`inline-flex items-center gap-2 px-3.5 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
               activeSubTab === 'table'
-                ? 'border-slate-900 text-slate-900 font-semibold'
-                : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
+                ? 'border-slate-900 text-slate-900 dark:border-orange-500 dark:text-orange-400 font-semibold'
+                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-700'
             }`}
           >
             <CalendarDays className="w-4 h-4" aria-hidden="true" />
             <span>{t('matrix.tabReservations')}</span>
-            <span className="ml-1 px-1.5 py-0.2 rounded-full text-xs font-mono bg-slate-100 text-slate-600 border border-slate-200/60">
+            <span className="ml-1 px-1.5 py-0.2 rounded-full text-xs font-mono bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700">
               {reservations.length}
             </span>
           </button>
         </div>
 
         {/* Unified Action Bar: Search + Filter Popover + Live Indicator */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
           {/* Left: Search input + Filter button with popover */}
           <div className="flex flex-1 items-center gap-2">
             {/* Search Input */}
@@ -417,13 +417,13 @@ export const RoomMatrixPage: React.FC = () => {
                 }
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full sm:w-72 lg:w-80 h-9 text-xs pl-8 pr-8 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors font-sans"
+                className="w-full sm:w-72 lg:w-80 h-9 text-xs pl-8 pr-8 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-850 focus:outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-700 focus:border-slate-900 dark:focus:border-slate-600 transition-colors font-sans"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600 rounded-full"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-full"
                   title={t('common.close')}
                 >
                   <X className="w-3.5 h-3.5" aria-hidden="true" />
@@ -438,8 +438,8 @@ export const RoomMatrixPage: React.FC = () => {
                 onClick={() => setIsFilterOpen(!isFilterOpen)}
                 className={`inline-flex items-center gap-1.5 h-9 px-3 text-xs font-medium rounded-lg border transition-all ${
                   activeFilterCount > 0 || isFilterOpen
-                    ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
-                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                    ? 'bg-slate-900 dark:bg-orange-600 text-white border-slate-900 dark:border-orange-600 shadow-sm'
+                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750'
                 }`}
               >
                 <SlidersHorizontal className="w-3.5 h-3.5" aria-hidden="true" />
@@ -459,11 +459,11 @@ export const RoomMatrixPage: React.FC = () => {
 
               {/* Popover Dropdown */}
               {isFilterOpen && (
-                <div className="absolute left-0 mt-2 w-72 sm:w-80 bg-white rounded-xl shadow-xl border border-slate-200 p-3.5 z-30 space-y-3.5">
+                <div className="absolute left-0 mt-2 w-72 sm:w-80 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 p-3.5 z-30 space-y-3.5">
                   {/* Status Filter Section */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
+                      <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
                         {activeSubTab === 'grid'
                           ? t('matrix.filterByStatus')
                           : t('matrix.filterReservationStatus')}
@@ -472,7 +472,7 @@ export const RoomMatrixPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setFilterStatus('all')}
-                          className="text-[11px] text-blue-600 hover:text-blue-800 font-medium"
+                          className="text-[11px] text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
                         >
                           {t('matrix.clearFilter')}
                         </button>
@@ -508,8 +508,8 @@ export const RoomMatrixPage: React.FC = () => {
                             onClick={() => setFilterStatus(st)}
                             className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
                               isSelected
-                                ? 'bg-slate-900 text-white shadow-xs'
-                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200/70'
+                                ? 'bg-slate-900 dark:bg-orange-600 text-white shadow-xs'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-700'
                             }`}
                           >
                             {isSelected && <Check className="w-3 h-3" aria-hidden="true" />}
@@ -522,16 +522,16 @@ export const RoomMatrixPage: React.FC = () => {
 
                   {/* Floor Filter Section (Grid only) */}
                   {activeSubTab === 'grid' && floors.length > 1 && (
-                    <div className="pt-2 border-t border-slate-100">
+                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
+                        <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
                           {t('matrix.filterByFloor')}
                         </span>
                         {filterFloor !== 'all' && (
                           <button
                             type="button"
                             onClick={() => setFilterFloor('all')}
-                            className="text-[11px] text-blue-600 hover:text-blue-800 font-medium"
+                            className="text-[11px] text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
                           >
                             {t('matrix.allFloors')}
                           </button>
@@ -543,8 +543,8 @@ export const RoomMatrixPage: React.FC = () => {
                           onClick={() => setFilterFloor('all')}
                           className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
                             filterFloor === 'all'
-                              ? 'bg-slate-900 text-white shadow-xs'
-                              : 'bg-slate-100 text-slate-700 hover:bg-slate-200/70'
+                              ? 'bg-slate-900 dark:bg-orange-600 text-white shadow-xs'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-700'
                           }`}
                         >
                           {filterFloor === 'all' && (
@@ -561,8 +561,8 @@ export const RoomMatrixPage: React.FC = () => {
                               onClick={() => setFilterFloor(fl)}
                               className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium font-mono transition-all ${
                                 isSelected
-                                  ? 'bg-slate-900 text-white shadow-xs'
-                                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200/70'
+                                  ? 'bg-slate-900 dark:bg-orange-600 text-white shadow-xs'
+                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-700'
                               }`}
                             >
                               {isSelected && (
@@ -578,14 +578,14 @@ export const RoomMatrixPage: React.FC = () => {
 
                   {/* Reset all filters */}
                   {activeFilterCount > 0 && (
-                    <div className="pt-2 border-t border-slate-100 flex justify-end">
+                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex justify-end">
                       <button
                         type="button"
                         onClick={() => {
                           setFilterStatus('all');
                           setFilterFloor('all');
                         }}
-                        className="text-xs text-slate-500 hover:text-slate-800 font-medium"
+                        className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-medium"
                       >
                         {t('matrix.clearFilter')}
                       </button>
@@ -602,7 +602,7 @@ export const RoomMatrixPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsNewModalOpen(true)}
-                className="inline-flex items-center gap-1.5 h-9 px-3.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-sm transition-colors"
+                className="inline-flex items-center gap-1.5 h-9 px-3.5 text-xs font-semibold text-white bg-slate-900 dark:bg-orange-600 hover:bg-slate-800 dark:hover:bg-orange-700 rounded-lg shadow-sm transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" aria-hidden="true" />
                 <span>{t('res.newReservation')}</span>
@@ -610,12 +610,12 @@ export const RoomMatrixPage: React.FC = () => {
             )}
 
             {/* Live Auto-Refresh Indicator with Pulse Dot and Tabular Numbers */}
-            <div className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-50 rounded-lg border border-slate-200/60 shrink-0">
+            <div className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200/60 dark:border-slate-700 shrink-0">
               <span
                 className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"
                 aria-hidden="true"
               />
-              <span className="font-mono tabular-nums text-xs text-slate-500 font-medium">
+              <span className="font-mono tabular-nums text-xs text-slate-500 dark:text-slate-400 font-medium">
                 {locale === 'th' ? `อัปเดตอัตโนมัติ: ${refreshTimeStr}` : `Auto-refresh: ${refreshTimeStr}`}
               </span>
             </div>
@@ -645,15 +645,15 @@ export const RoomMatrixPage: React.FC = () => {
                 {Array.from({ length: 8 }).map((_, idx) => (
                   <div
                     key={idx}
-                    className="h-28 bg-white border border-slate-200 rounded-lg p-4 animate-pulse flex flex-col justify-between"
+                    className="h-28 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-4 animate-pulse flex flex-col justify-between"
                   >
                     <div className="flex justify-between items-center">
-                      <div className="h-5 w-12 bg-slate-200 rounded" />
-                      <div className="h-4 w-16 bg-slate-100 rounded-full" />
+                      <div className="h-5 w-12 bg-slate-200 dark:bg-slate-800 rounded" />
+                      <div className="h-4 w-16 bg-slate-100 dark:bg-slate-800/60 rounded-full" />
                     </div>
                     <div className="space-y-1.5">
-                      <div className="h-3 w-20 bg-slate-100 rounded" />
-                      <div className="h-3 w-14 bg-slate-100 rounded" />
+                      <div className="h-3 w-20 bg-slate-100 dark:bg-slate-800/60 rounded" />
+                      <div className="h-3 w-14 bg-slate-100 dark:bg-slate-800/60 rounded" />
                     </div>
                   </div>
                 ))}
@@ -678,11 +678,11 @@ export const RoomMatrixPage: React.FC = () => {
 
         {/* Sub-Tab 2: Embedded Reservations Table */}
         {activeSubTab === 'table' && (
-          <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-sm">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-700 uppercase tracking-wider py-3">
+                  <tr className="bg-slate-50 dark:bg-slate-800/70 border-b border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider py-3">
                     <th className="py-3 px-4 font-mono font-bold tracking-wider">
                       {t('res.bookingNumber')}
                     </th>
@@ -715,10 +715,10 @@ export const RoomMatrixPage: React.FC = () => {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {reservationsLoading && reservations.length === 0 ? (
                     <tr>
-                      <td colSpan={10} className="py-12 text-center text-slate-400 font-medium">
+                      <td colSpan={10} className="py-12 text-center text-slate-400 dark:text-slate-500 font-medium">
                         {t('res.loadingReservations')}
                       </td>
                     </tr>
@@ -726,14 +726,14 @@ export const RoomMatrixPage: React.FC = () => {
                     <tr>
                       <td colSpan={10} className="py-16 text-center">
                         <div className="flex flex-col items-center justify-center max-w-sm mx-auto text-center space-y-3">
-                          <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                          <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 dark:text-slate-500">
                             <CalendarDays className="w-6 h-6" aria-hidden="true" />
                           </div>
                           <div>
-                            <p className="text-sm font-semibold text-slate-800">
+                            <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                               {t('res.noReservationsFound')}
                             </p>
-                            <p className="text-xs text-slate-500 mt-1">
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                               {searchQuery ? t('common.noData') : t('res.subtitle')}
                             </p>
                           </div>
@@ -756,30 +756,30 @@ export const RoomMatrixPage: React.FC = () => {
                       return (
                         <tr
                           key={res.id}
-                          className="hover:bg-slate-50/70 transition-colors text-sm text-slate-800"
+                          className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors text-sm text-slate-800 dark:text-slate-200"
                         >
-                          <td className="py-3.5 px-4 text-sm font-mono font-medium text-slate-900 tabular-nums tracking-tight">
+                          <td className="py-3.5 px-4 text-sm font-mono font-medium text-slate-900 dark:text-slate-100 tabular-nums tracking-tight">
                             {res.bookingNumber || res.id.slice(0, 8)}
                           </td>
-                          <td className="py-3.5 px-4 font-medium text-sm text-slate-800">
+                          <td className="py-3.5 px-4 font-medium text-sm text-slate-800 dark:text-slate-200">
                             {guestDisplayName}
                           </td>
-                          <td className="py-3.5 px-4 text-sm font-mono font-medium text-slate-900 tabular-nums tracking-tight">
+                          <td className="py-3.5 px-4 text-sm font-mono font-medium text-slate-900 dark:text-slate-100 tabular-nums tracking-tight">
                             {roomNum}
                           </td>
-                          <td className="text-sm py-3.5 px-4 text-slate-800">
+                          <td className="text-sm py-3.5 px-4 text-slate-800 dark:text-slate-200">
                             {roomTypeName}
                           </td>
-                          <td className="py-3.5 px-4 text-sm font-mono font-medium text-slate-900 tabular-nums tracking-tight">
+                          <td className="py-3.5 px-4 text-sm font-mono font-medium text-slate-900 dark:text-slate-100 tabular-nums tracking-tight">
                             {formatDateRange(res.checkInDate, res.checkOutDate, res.totalNights)}
                           </td>
-                          <td className="py-3.5 px-4 text-center font-mono tabular-nums tracking-tight text-slate-800">
+                          <td className="py-3.5 px-4 text-center font-mono tabular-nums tracking-tight text-slate-800 dark:text-slate-200">
                             {res.totalNights || '1'}
                           </td>
-                          <td className="py-3.5 px-4 text-right text-sm font-mono font-medium text-slate-900 tabular-nums tracking-tight">
+                          <td className="py-3.5 px-4 text-right text-sm font-mono font-medium text-slate-900 dark:text-slate-100 tabular-nums tracking-tight">
                             {formatCurrency(res.totalAmount || '0')}
                           </td>
-                          <td className="py-3.5 px-4 text-right text-sm font-mono font-medium text-slate-900 tabular-nums tracking-tight">
+                          <td className="py-3.5 px-4 text-right text-sm font-mono font-medium text-slate-900 dark:text-slate-100 tabular-nums tracking-tight">
                             {formatCurrency(res.depositAmount || '0')}
                           </td>
                           <td className="text-sm py-3.5 px-4 text-center">
