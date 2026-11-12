@@ -266,18 +266,18 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
       />
 
       {/* Split-Pane Studio Container */}
-      <div className="relative bg-white rounded-2xl border border-slate-200/80 shadow-2xl max-w-4xl w-full overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[92vh]">
+      <div className="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xl max-w-4xl w-full overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[92vh]">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-200/80 flex items-center justify-between bg-slate-50/60 shrink-0">
+        <div className="px-6 py-4 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between bg-slate-50/60 dark:bg-slate-800/60 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-slate-100 rounded-xl border border-slate-200/70">
-              <UserCheck className="w-5 h-5 text-slate-900" strokeWidth={1.75} />
+            <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200/70 dark:border-slate-700">
+              <UserCheck className="w-5 h-5 text-slate-900 dark:text-slate-100" strokeWidth={1.75} />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
                 <span>เปิดห้องด่วน (Walk-In Check-In)</span>
               </h2>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 {t('res.rapidWalkIn')}
               </p>
             </div>
@@ -285,7 +285,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="min-h-[44px] min-w-[44px] p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors flex items-center justify-center"
+            className="min-h-[44px] min-w-[44px] p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors flex items-center justify-center"
             aria-label={t('common.cancel')}
           >
             <X className="w-5 h-5" />
@@ -329,13 +329,13 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
                       <select
                         value={roomId}
                         onChange={(e) => setRoomId(e.target.value)}
-                        className="w-full text-sm py-2 px-3 pr-9 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-sans shadow-2xs appearance-none"
+                        className="w-full text-sm py-2 px-3 pr-9 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-sans shadow-2xs appearance-none"
                       >
                         {availableRoomsForDates.map((r) => {
                           const type = roomTypes.find((t) => t.id === r.roomTypeId);
                           const typeName = localizeRoomType(type?.name, locale) || type?.name || 'Standard';
                           return (
-                            <option key={r.id} value={r.id}>
+                            <option key={r.id} value={r.id} className="text-slate-900 bg-white dark:text-slate-100 dark:bg-slate-800">
                               {t('common.room')} {r.roomNumber} ({typeName} · {formatCurrency(type?.basePrice || '1200')}{t('common.pricePerNight')})
                             </option>
                           );
@@ -437,7 +437,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
               <div className="md:col-span-7 space-y-4">
                 {/* Guest Name */}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-800 mb-1">
+                  <label className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1">
                     {t('common.guestName')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
                   </label>
                   <div className="relative">
@@ -448,7 +448,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
                       placeholder={t('res.guestName')}
                       value={guestName}
                       onChange={(e) => setGuestName(e.target.value)}
-                      className="w-full text-sm py-2 px-3 pl-9 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-sans shadow-2xs"
+                      className="w-full text-sm py-2 px-3 pl-9 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-sans shadow-2xs"
                     />
                   </div>
                 </div>
@@ -471,7 +471,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
 
                 {/* Optional Email */}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-800 mb-1">
+                  <label className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1">
                     {locale === 'th' ? 'อีเมล (ไม่บังคับ)' : 'Email (Optional)'}
                   </label>
                   <div className="relative">
@@ -481,14 +481,14 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
                       placeholder="guest@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full min-h-[44px] text-sm py-2 px-3 pl-9 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-sans shadow-2xs"
+                      className="w-full min-h-[44px] text-sm py-2 px-3 pl-9 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-sans shadow-2xs"
                     />
                   </div>
                 </div>
 
                 {/* Guest Capacity Selector */}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-800 mb-1">
+                  <label className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1">
                     {locale === 'th' ? 'จำนวนผู้เข้าพัก' : 'Number of Guests'}
                     <span className="text-xs text-slate-400 font-normal ml-1">
                       ({locale === 'th' ? `สูงสุด ${maxCapacity} ท่าน` : `Max ${maxCapacity} guests`})
@@ -499,10 +499,10 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
                     <select
                       value={guestsCount}
                       onChange={(e) => setGuestsCount(Math.min(parseInt(e.target.value) || 1, maxCapacity))}
-                      className="w-full min-h-[44px] text-sm py-2 px-3 pl-9 pr-9 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-sans shadow-2xs appearance-none"
+                      className="w-full min-h-[44px] text-sm py-2 px-3 pl-9 pr-9 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-sans shadow-2xs appearance-none"
                     >
                       {Array.from({ length: maxCapacity }, (_, i) => i + 1).map((num) => (
-                        <option key={num} value={num}>
+                        <option key={num} value={num} className="text-slate-900 bg-white dark:text-slate-100 dark:bg-slate-800">
                           {num} {locale === 'th' ? 'ท่าน' : (num > 1 ? 'guests' : 'guest')} {num === maxCapacity ? `(${locale === 'th' ? 'เต็มจำนวน' : 'Max'})` : ''}
                         </option>
                       ))}
@@ -556,7 +556,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
 
                 {/* Keycard Deposit */}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-800 mb-1">
+                  <label className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1">
                     {t('res.keycardDeposit')}
                   </label>
                   <div className="relative">
@@ -568,7 +568,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
                       placeholder="500"
                       value={depositAmount}
                       onChange={(e) => setDepositAmount(e.target.value)}
-                      className="w-full text-sm py-2 px-3 pl-9 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono tabular-nums shadow-2xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      className="w-full text-sm py-2 px-3 pl-9 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono tabular-nums shadow-2xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                   </div>
                 </div>

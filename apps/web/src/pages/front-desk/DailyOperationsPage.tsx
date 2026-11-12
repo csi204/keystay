@@ -173,12 +173,12 @@ export const DailyOperationsPage: React.FC = () => {
     <FrontDeskLayout activeTab="operations">
       <div className="space-y-4">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight font-sans">
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight font-sans">
               {locale === 'th' ? 'เคาน์เตอร์เช็คอิน & เช็คเอาต์' : 'Check-In & Check-Out Desk'}
             </h1>
-            <p className="text-sm text-slate-600 mt-0.5 font-sans">
+            <p className="text-sm text-slate-600 dark:text-slate-300 mt-0.5 font-sans">
               {locale === 'th'
                 ? 'การจัดการงานบริการหน้าเคาน์เตอร์ประจำวัน'
                 : 'Daily front desk arrivals & departures operations'}
@@ -186,12 +186,12 @@ export const DailyOperationsPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-50 rounded-lg border border-slate-200/60 shrink-0">
+            <div className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200/60 dark:border-slate-700 shrink-0">
               <span
                 className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"
                 aria-hidden="true"
               />
-              <span className="font-mono tabular-nums text-xs text-slate-500 font-medium">
+              <span className="font-mono tabular-nums text-xs text-slate-500 dark:text-slate-400 font-medium">
                 {locale === 'th' ? `อัปเดตอัตโนมัติ: ${refreshTimeStr}` : `Auto-refresh: ${refreshTimeStr}`}
               </span>
             </div>
@@ -526,7 +526,7 @@ export const DailyOperationsPage: React.FC = () => {
         {activeSubTab === 'billing' && (
           <div className="space-y-3">
             {/* Search & Ledger Header */}
-            <div className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div className="bg-white dark:bg-slate-900 p-3.5 rounded-lg border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
               <div className="relative flex-1 max-w-md">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
                 <input
@@ -534,11 +534,11 @@ export const DailyOperationsPage: React.FC = () => {
                   placeholder={t('ops.searchBillingPlaceholder') || t('folio.searchPlaceholder')}
                   value={billingSearchQuery}
                   onChange={(e) => setBillingSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-sans"
+                  className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-slate-100 font-sans"
                 />
               </div>
 
-              <div className="text-xs text-slate-500 font-medium font-sans">
+              <div className="text-xs text-slate-500 dark:text-slate-400 font-medium font-sans">
                 {t('ops.totalItems', { count: filteredBills.length })}
               </div>
             </div>

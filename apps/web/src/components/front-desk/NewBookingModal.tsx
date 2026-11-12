@@ -336,7 +336,7 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
             </h3>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-800 mb-1">
+              <label className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1">
                 {t('common.guestName')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
               </label>
               <div className="relative">
@@ -347,7 +347,7 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
                   placeholder={t('res.guestName')}
                   value={guestName}
                   onChange={(e) => setGuestName(e.target.value)}
-                  className="w-full text-sm py-2 px-3 pl-9 bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-sans"
+                  className="w-full text-sm py-2 px-3 pl-9 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-slate-100 font-sans"
                 />
               </div>
             </div>
@@ -370,7 +370,7 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-semibold text-slate-800 mb-1">
+                <label className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1">
                   {t('res.emailOptional')}
                 </label>
                 <div className="relative">
@@ -380,13 +380,13 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
                     placeholder="guest@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full min-h-[44px] text-sm py-2 px-3 pl-9 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-sans"
+                    className="w-full min-h-[44px] text-sm py-2 px-3 pl-9 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-slate-100 font-sans"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-slate-800 mb-1">
+                <label className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1">
                   {locale === 'th' ? 'จำนวนผู้เข้าพัก' : 'Number of Guests'}
                   <span className="text-xs text-slate-400 font-normal ml-1">
                     ({locale === 'th' ? `สูงสุด ${maxCapacity} ท่าน` : `Max ${maxCapacity}`})
@@ -397,10 +397,10 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
                   <select
                     value={guestsCount}
                     onChange={(e) => setGuestsCount(Math.min(parseInt(e.target.value) || 1, maxCapacity))}
-                    className="w-full min-h-[44px] text-sm py-2 px-3 pl-9 pr-9 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-sans appearance-none"
+                    className="w-full min-h-[44px] text-sm py-2 px-3 pl-9 pr-9 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-slate-100 font-sans appearance-none"
                   >
                     {Array.from({ length: maxCapacity }, (_, i) => i + 1).map((num) => (
-                      <option key={num} value={num}>
+                      <option key={num} value={num} className="text-slate-900 bg-white dark:text-slate-100 dark:bg-slate-800">
                         {num} {locale === 'th' ? 'ท่าน' : (num > 1 ? 'guests' : 'guest')} {num === maxCapacity ? `(${locale === 'th' ? 'เต็มจำนวน' : 'Max'})` : ''}
                       </option>
                     ))}
@@ -435,13 +435,13 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
                   <select
                     value={roomId}
                     onChange={(e) => setRoomId(e.target.value)}
-                    className="w-full text-sm py-2 px-3 pr-9 bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-sans appearance-none"
+                    className="w-full text-sm py-2 px-3 pr-9 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-slate-100 font-sans appearance-none"
                   >
                     {availableRoomsForDates.map((r) => {
                       const type = roomTypes.find((t) => t.id === r.roomTypeId);
                       const localizedTypeName = localizeRoomType(type?.name, locale) || type?.name || 'Standard';
                       return (
-                        <option key={r.id} value={r.id}>
+                        <option key={r.id} value={r.id} className="text-slate-900 bg-white dark:text-slate-100 dark:bg-slate-800">
                           {t('common.room')} {r.roomNumber} ({localizedTypeName} · {formatCurrency(type?.basePrice || '1200')}{t('common.pricePerNight')})
                         </option>
                       );
@@ -507,13 +507,13 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
                     step="50"
                     value={depositAmount}
                     onChange={(e) => setDepositAmount(e.target.value)}
-                    className="w-full text-sm py-2 px-3 pl-9 bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="w-full text-sm py-2 px-3 pl-9 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-slate-100 font-mono tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-slate-800 mb-1">
+                <label className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1">
                   {t('payment.method')}
                 </label>
                 <div className="relative">
@@ -521,12 +521,12 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
                   <select
                     value={paymentMethod}
                     onChange={(e) => setPaymentMethod(e.target.value)}
-                    className="w-full text-sm py-2 px-3 pl-9 pr-9 bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-sans appearance-none"
+                    className="w-full text-sm py-2 px-3 pl-9 pr-9 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-slate-100 font-sans appearance-none"
                   >
-                    <option value="cash">{t('payment.cash')}</option>
-                    <option value="credit_card">{t('payment.creditCard')}</option>
-                    <option value="qr_promptpay">{t('payment.qrPromptpay')}</option>
-                    <option value="transfer">{t('payment.transfer')}</option>
+                    <option value="cash" className="text-slate-900 bg-white dark:text-slate-100 dark:bg-slate-800">{t('payment.cash')}</option>
+                    <option value="credit_card" className="text-slate-900 bg-white dark:text-slate-100 dark:bg-slate-800">{t('payment.creditCard')}</option>
+                    <option value="qr_promptpay" className="text-slate-900 bg-white dark:text-slate-100 dark:bg-slate-800">{t('payment.qrPromptpay')}</option>
+                    <option value="transfer" className="text-slate-900 bg-white dark:text-slate-100 dark:bg-slate-800">{t('payment.transfer')}</option>
                   </select>
                   <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={1.75} />
                 </div>

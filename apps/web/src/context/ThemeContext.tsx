@@ -61,11 +61,44 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children, initialT
   }, [theme]);
 
   const setTheme = useCallback((newTheme: Theme) => {
+    if (typeof document !== 'undefined') {
+      const root = document.documentElement;
+      if (newTheme === 'dark') {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
+    }
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(THEME_STORAGE_KEY, newTheme);
+      }
+    } catch {
+      // Ignore storage access errors
+    }
     setThemeState(newTheme);
   }, []);
 
   const toggleTheme = useCallback(() => {
-    setThemeState((prev) => (prev === 'dark' ? 'light' : 'dark'));
+    setThemeState((prev) => {
+      const nextTheme = prev === 'dark' ? 'light' : 'dark';
+      if (typeof document !== 'undefined') {
+        const root = document.documentElement;
+        if (nextTheme === 'dark') {
+          root.classList.add('dark');
+        } else {
+          root.classList.remove('dark');
+        }
+      }
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+        }
+      } catch {
+        // Ignore storage access errors
+      }
+      return nextTheme;
+    });
   }, []);
 
   const value = useMemo<ThemeContextValue>(

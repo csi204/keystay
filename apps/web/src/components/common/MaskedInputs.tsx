@@ -175,8 +175,8 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
           disabled={disabled}
           autoFocus={autoFocus}
           maxLength={12}
-          className={`w-full min-h-[44px] py-2 px-3 ${showIcon ? 'pl-9' : ''} bg-slate-50 dark:bg-slate-800/80 border rounded-lg focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono tabular-nums shadow-2xs transition-colors ${
-            isInvalid ? 'border-rose-400 dark:border-rose-500 focus:border-rose-500 focus:ring-rose-500/20' : 'border-slate-200 dark:border-slate-700'
+          className={`w-full min-h-[44px] py-2 px-3 ${showIcon ? 'pl-9' : ''} bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 dark:focus:border-slate-400 font-mono tabular-nums shadow-2xs transition-colors ${
+            isInvalid ? 'border-rose-400 dark:border-rose-500 focus:border-rose-500 focus:ring-rose-500/20' : 'border-slate-300 dark:border-slate-600'
           } ${inputClassName}`}
         />
       </div>
@@ -347,8 +347,8 @@ export const NationalIdOrPassportInput: React.FC<NationalIdOrPassportInputProps>
           disabled={disabled}
           placeholder={currentMode === 'thai_id' ? '1-2345-67890-12-3' : 'AC1234567'}
           maxLength={currentMode === 'thai_id' ? 17 : 9}
-          className={`w-full min-h-[44px] py-2 px-3 pl-9 bg-slate-50 dark:bg-slate-800/80 border rounded-lg focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono tabular-nums shadow-2xs transition-colors ${
-            isInvalid ? 'border-rose-400 dark:border-rose-500 focus:border-rose-500 focus:ring-rose-500/20' : 'border-slate-200 dark:border-slate-700'
+          className={`w-full min-h-[44px] py-2 px-3 pl-9 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 dark:focus:border-slate-400 font-mono tabular-nums shadow-2xs transition-colors ${
+            isInvalid ? 'border-rose-400 dark:border-rose-500 focus:border-rose-500 focus:ring-rose-500/20' : 'border-slate-300 dark:border-slate-600'
           } ${inputClassName}`}
         />
       </div>
