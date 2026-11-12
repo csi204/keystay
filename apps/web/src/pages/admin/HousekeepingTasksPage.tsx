@@ -1599,7 +1599,6 @@ export const HousekeepingTasksPage: React.FC = () => {
                               onClick={() => openEditTemplate(tpl, 'checklist')}
                               className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 hover:bg-orange-50 text-slate-700 hover:text-orange-600 border border-slate-200 hover:border-orange-200 transition-colors cursor-pointer"
                             >
-                              <CheckSquare className="w-3 h-3 mr-1 text-slate-500" />
                               {tpl.checklistItems?.length || 0} {isEn ? 'items' : 'ข้อ'}
                             </button>
                           </td>

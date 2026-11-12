@@ -1029,7 +1029,7 @@ export const ReportsAnalyticsPage: React.FC = () => {
                                     </div>
                                     <div className="text-right">
                                       <div className="inline-flex items-center justify-center border border-slate-900 px-3.5 h-7 text-center font-bold text-xs text-slate-900 uppercase tracking-wider leading-none">
-                                        <span style={isExportingPdf ? { position: 'relative', top: '-5px' } : undefined}>
+                                        <span style={isExportingPdf ? { position: 'relative', top: '-8px' } : undefined}>
                                           {isEn ? 'Form ภ.พ.30' : 'แบบ ภ.พ.30'}
                                         </span>
                                       </div>
