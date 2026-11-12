@@ -364,6 +364,22 @@ app.all('/api/minibar-items', async (c) => {
   return forwardRequest(c.env.ROOM_INVENTORY_SERVICE, c, '/api');
 });
 
+// Dynamic Seasonal Pricing Rules & Calculate Rate
+app.all('/api/v1/pricing/*', async (c) => {
+  return forwardRequest(c.env.ROOM_INVENTORY_SERVICE, c, '/api');
+});
+app.all('/api/v1/pricing', async (c) => {
+  return forwardRequest(c.env.ROOM_INVENTORY_SERVICE, c, '/api');
+});
+
+// Amenities Catalog
+app.all('/api/v1/amenities/*', async (c) => {
+  return forwardRequest(c.env.ROOM_INVENTORY_SERVICE, c, '/api');
+});
+app.all('/api/v1/amenities', async (c) => {
+  return forwardRequest(c.env.ROOM_INVENTORY_SERVICE, c, '/api');
+});
+
 // Service #3: Reservation
 app.all('/api/reservations/*', async (c) => {
   return forwardRequest(c.env.RESERVATION_SERVICE, c, '/api');

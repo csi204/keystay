@@ -75,6 +75,39 @@ CREATE TABLE IF NOT EXISTS minibar_items (
     updated_at TEXT NOT NULL
 );
 
+-- 8. Seasonal Pricing Rules (กฎราคาตามฤดูกาลและเทศกาล)
+CREATE TABLE IF NOT EXISTS seasonal_pricing_rules (
+    id TEXT PRIMARY KEY,                                       -- เช่น 'rule-high-winter'
+    name TEXT NOT NULL,                                        -- เช่น 'High Season ภาคเหนือ (พ.ย.-ก.พ.)'
+    tier TEXT NOT NULL,                                        -- เช่น 'High Season', 'Regular', 'Low Season', 'Special Holiday'
+    room_type_id TEXT REFERENCES room_types(id) ON DELETE CASCADE, -- NULL = บังคับใช้กับทุกประเภทห้อง (Global)
+    start_date TEXT NOT NULL,                                  -- YYYY-MM-DD เช่น '2026-11-01'
+    end_date TEXT NOT NULL,                                    -- YYYY-MM-DD เช่น '2027-02-28'
+    days_of_week TEXT,                                         -- JSON Array เช่น '[5,6,0]' (ศุกร์-เสาร์-อาทิตย์) หรือ NULL (ทุกวัน)
+    adjustment_type TEXT NOT NULL CHECK(adjustment_type IN ('percent', 'fixed_amount')),
+    adjustment_value REAL NOT NULL DEFAULT 5.0,                -- เช่น 5.0 (+5%), -10.0 (-10%), 200.0 (+200 บาท)
+    priority INTEGER NOT NULL DEFAULT 10,                      -- ยิ่งตัวเลขมาก ยิ่งมี Priority สูง
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+-- 9. Amenities Catalog (แคตตาล็อกของใช้และบริการเสริม)
+CREATE TABLE IF NOT EXISTS amenities_catalog (
+    id TEXT PRIMARY KEY,                                       -- เช่น 'am-extra-bed'
+    name_th TEXT NOT NULL,                                     -- เช่น 'เตียงเสริม'
+    name_en TEXT NOT NULL,                                     -- เช่น 'Extra Bed'
+    category TEXT NOT NULL CHECK(category IN ('bedding', 'bath', 'appliance', 'food_drink', 'other')),
+    is_chargeable INTEGER NOT NULL DEFAULT 0,                  -- 0 = ฟรี, 1 = มีค่าใช้จ่าย (คิดเงินลงบิล)
+    unit_price REAL NOT NULL DEFAULT 0.0,                      -- 0.0 สำหรับของฟรี, > 0 สำหรับของเสียเงิน
+    unit_name_th TEXT NOT NULL DEFAULT 'ชิ้น',                  -- 'ชิ้น', 'หลัง', 'ชุด'
+    unit_name_en TEXT NOT NULL DEFAULT 'piece',                -- 'piece', 'unit', 'set'
+    stock_quantity INTEGER NOT NULL DEFAULT -1,                -- -1 = ไม่จำกัดจำนวนสต็อก, >= 0 = จำนวนที่มีอยู่
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_rooms_room_number ON rooms(room_number);
 CREATE INDEX IF NOT EXISTS idx_rooms_status ON rooms(status);
@@ -84,3 +117,8 @@ CREATE INDEX IF NOT EXISTS idx_room_history_room_id ON room_status_history(room_
 CREATE INDEX IF NOT EXISTS idx_room_amenities_room_id ON room_amenities(room_id);
 CREATE INDEX IF NOT EXISTS idx_minibar_items_category ON minibar_items(category);
 CREATE INDEX IF NOT EXISTS idx_minibar_items_is_active ON minibar_items(is_active);
+CREATE INDEX IF NOT EXISTS idx_seasonal_rules_dates ON seasonal_pricing_rules(start_date, end_date);
+CREATE INDEX IF NOT EXISTS idx_seasonal_rules_tier ON seasonal_pricing_rules(tier);
+CREATE INDEX IF NOT EXISTS idx_seasonal_rules_room_type ON seasonal_pricing_rules(room_type_id);
+CREATE INDEX IF NOT EXISTS idx_amenities_category ON amenities_catalog(category);
+CREATE INDEX IF NOT EXISTS idx_amenities_chargeable ON amenities_catalog(is_chargeable);
