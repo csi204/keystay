@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FrontDeskLayout } from '@/components/front-desk/FrontDeskLayout';
 import { RoomMatrixGrid, getRoomFloor } from '@/components/front-desk/RoomMatrixGrid';
 import { RoomDetailsModal, FastBookingFormData } from '@/components/front-desk/RoomDetailsModal';
@@ -42,6 +42,8 @@ const RESERVATION_STATUS_STYLES: Record<
 
 export const RoomMatrixPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlRoomId = searchParams.get('roomId');
   const { t, locale, formatDateRange, formatCurrency } = useI18n();
 
   const {
@@ -91,6 +93,19 @@ export const RoomMatrixPage: React.FC = () => {
   const isOffline = roomsOffline || reservationsOffline;
   const error = roomsError || reservationsError;
   const loading = roomsLoading && reservationsLoading;
+
+  // Deep navigation: Auto-open RoomDetailsModal when ?roomId=... is present in URL
+  useEffect(() => {
+    if (urlRoomId && rooms.length > 0) {
+      const matched = rooms.find((r) => r.id === urlRoomId || r.roomNumber === urlRoomId);
+      if (matched) {
+        setSelectedRoom(matched);
+        setModalMode('details');
+        setModalBookingMode('walkin');
+        setIsModalOpen(true);
+      }
+    }
+  }, [urlRoomId, rooms]);
 
   // Silent 1-minute background auto-refresh & immediate refetch on tab focus
   useEffect(() => {
@@ -202,6 +217,10 @@ export const RoomMatrixPage: React.FC = () => {
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
+    if (urlRoomId) {
+      searchParams.delete('roomId');
+      setSearchParams(searchParams, { replace: true });
+    }
   };
 
   const handleQuickBook = (room: Room) => {
