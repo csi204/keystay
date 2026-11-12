@@ -6,6 +6,13 @@ import { useI18n } from '@/lib/i18n';
 import { localizeRoomType } from '@/lib/localizeMetadata';
 import { CustomDatePicker } from '../common/CustomDatePicker';
 import {
+  PhoneInput,
+  NationalIdOrPassportInput,
+  isValidPhone,
+  isValidThaiId,
+  isValidPassport,
+} from '../common/MaskedInputs';
+import {
   X,
   Calendar,
   User,
@@ -21,6 +28,7 @@ import {
   FileCheck2,
   Trash2,
   ChevronDown,
+  Users,
 } from 'lucide-react';
 
 export interface NewBookingModalProps {
@@ -33,7 +41,10 @@ export interface NewBookingModalProps {
   onSubmit: (data: {
     guestName: string;
     phone: string;
+    nationalIdOrPassport: string;
+    idCardNumber?: string;
     email?: string;
+    guestsCount?: number;
     roomId: string;
     checkInDate: string;
     checkOutDate: string;
@@ -67,6 +78,7 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
   const [bookingSource, setBookingSource] = useState<'walk_in' | 'phone' | 'facebook'>('walk_in');
   const [guestName, setGuestName] = useState('');
   const [phone, setPhone] = useState('');
+  const [idCardNumber, setIdCardNumber] = useState('');
   const [email, setEmail] = useState('');
   const [roomId, setRoomId] = useState(preselectedRoomId || '');
   const [checkInDate, setCheckInDate] = useState(todayStr);
@@ -102,24 +114,6 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
     }
   }, [preselectedRoomId, availableRoomsForDates, roomId]);
 
-  useEffect(() => {
-    if (isOpen) {
-      setBookingSource('walk_in');
-      setPaymentSlipRef('');
-      setPaymentSlipUrl('');
-      setSlipPreview(null);
-      setError(null);
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
-
   const selectedRoom = useMemo(
     () => availableRoomsForDates.find((r) => r.id === roomId) || rooms.find((r) => r.id === roomId),
     [availableRoomsForDates, rooms, roomId]
@@ -128,6 +122,37 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
     if (!selectedRoom) return undefined;
     return roomTypes.find((t) => t.id === selectedRoom.roomTypeId);
   }, [roomTypes, selectedRoom]);
+
+  const maxCapacity = selectedRoomType?.capacity || 2;
+  const [guestsCount, setGuestsCount] = useState<number>(2);
+
+  useEffect(() => {
+    const maxCap = selectedRoomType?.capacity || 2;
+    setGuestsCount((prev) => Math.min(Math.max(1, prev || 1), maxCap));
+  }, [selectedRoomType]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setBookingSource('walk_in');
+      setGuestName('');
+      setPhone('');
+      setIdCardNumber('');
+      setEmail('');
+      setGuestsCount(selectedRoomType?.capacity || 2);
+      setPaymentSlipRef('');
+      setPaymentSlipUrl('');
+      setSlipPreview(null);
+      setError(null);
+    }
+  }, [isOpen, selectedRoomType]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   // Total nights calculation
   const totalNights = useMemo(() => {
@@ -173,8 +198,12 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
       setError(t('res.errorGuestName'));
       return;
     }
-    if (!phone.trim()) {
+    if (!phone.trim() || !isValidPhone(phone)) {
       setError(t('res.errorPhone'));
+      return;
+    }
+    if (!idCardNumber.trim() || (!isValidThaiId(idCardNumber) && !isValidPassport(idCardNumber))) {
+      setError(t('res.errorId'));
       return;
     }
     if (!roomId) {
@@ -191,7 +220,10 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
     const result = await onSubmit({
       guestName: guestName.trim(),
       phone: phone.trim(),
+      nationalIdOrPassport: idCardNumber.trim(),
+      idCardNumber: idCardNumber.trim(),
       email: email.trim() || undefined,
+      guestsCount: Math.min(guestsCount, maxCapacity),
       roomId,
       checkInDate,
       checkOutDate,
@@ -314,24 +346,23 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-semibold text-slate-800 mb-1">
-                  {t('res.phoneNumber')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
-                </label>
-                <div className="relative">
-                  <Phone className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="tel"
-                    required
-                    placeholder="0812345678"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="w-full text-sm py-2 px-3 pl-9 bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono tabular-nums"
-                  />
-                </div>
-              </div>
+            {/* Phone */}
+            <PhoneInput
+              value={phone}
+              onChange={setPhone}
+              required
+              label={t('res.phoneNumber')}
+              placeholder="081-234-5678"
+            />
 
+            {/* National ID / Passport */}
+            <NationalIdOrPassportInput
+              value={idCardNumber}
+              onChange={setIdCardNumber}
+              required
+            />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-semibold text-slate-800 mb-1">
                   {t('res.emailOptional')}
@@ -343,8 +374,32 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
                     placeholder="guest@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full text-sm py-2 px-3 pl-9 bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-sans"
+                    className="w-full min-h-[44px] text-sm py-2 px-3 pl-9 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-sans"
                   />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-800 mb-1">
+                  {locale === 'th' ? 'จำนวนผู้เข้าพัก' : 'Number of Guests'}
+                  <span className="text-xs text-slate-400 font-normal ml-1">
+                    ({locale === 'th' ? `สูงสุด ${maxCapacity} ท่าน` : `Max ${maxCapacity}`})
+                  </span>
+                </label>
+                <div className="relative">
+                  <Users className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <select
+                    value={guestsCount}
+                    onChange={(e) => setGuestsCount(Math.min(parseInt(e.target.value) || 1, maxCapacity))}
+                    className="w-full min-h-[44px] text-sm py-2 px-3 pl-9 pr-9 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-sans appearance-none"
+                  >
+                    {Array.from({ length: maxCapacity }, (_, i) => i + 1).map((num) => (
+                      <option key={num} value={num}>
+                        {num} {locale === 'th' ? 'ท่าน' : (num > 1 ? 'guests' : 'guest')} {num === maxCapacity ? `(${locale === 'th' ? 'เต็มจำนวน' : 'Max'})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={1.75} />
                 </div>
               </div>
             </div>

@@ -13,6 +13,13 @@ import { ExtendStayModal } from './ExtendStayModal';
 import { SlipViewerModal } from './SlipViewerModal';
 import { RequestAmenitiesModal } from './RequestAmenitiesModal';
 import { CustomDatePicker } from '../common/CustomDatePicker';
+import {
+  PhoneInput,
+  NationalIdOrPassportInput,
+  isValidPhone,
+  isValidThaiId,
+  isValidPassport,
+} from '../common/MaskedInputs';
 import { apiFetch, apiUrl, getAuthToken } from '@/lib/api';
 import { useToast } from '@/context/ToastContext';
 import {
@@ -37,6 +44,8 @@ import {
   Zap,
   Phone,
   User,
+  Mail,
+  ChevronDown,
   Check,
   UserCheck,
   MessageSquare,
@@ -297,8 +306,11 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
 
   const [guestName, setGuestName] = useState('');
   const [phone, setPhone] = useState('');
+  const [idCardNumber, setIdCardNumber] = useState('');
+  const [email, setEmail] = useState('');
   const [checkInDate, setCheckInDate] = useState(todayStr);
   const [checkOutDate, setCheckOutDate] = useState(tomorrowStr);
+  const maxCapacity = roomType?.capacity || (room as any)?.capacity || 2;
   const [guestsCount, setGuestsCount] = useState<number>(roomType?.capacity || 2);
   const [depositAmount, setDepositAmount] = useState('500');
   const [paymentMethod, setPaymentMethod] = useState<
@@ -320,12 +332,19 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
     return diff > 0 ? diff : 0;
   }, [checkInDate, checkOutDate]);
 
+  useEffect(() => {
+    const maxCap = roomType?.capacity || (room as any)?.capacity || 2;
+    setGuestsCount((prev) => Math.min(Math.max(1, prev || 1), maxCap));
+  }, [roomType?.capacity, room]);
+
   // Sync mode and form fields when opened or initialMode changes
   useEffect(() => {
     if (isOpen) {
       setMode(initialMode);
       setGuestName('');
       setPhone('');
+      setIdCardNumber('');
+      setEmail('');
       setCheckInDate(todayStr);
       setCheckOutDate(tomorrowStr);
       setGuestsCount(roomType?.capacity || 2);
@@ -384,12 +403,19 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
       errors.push(locale === 'th' ? 'กรุณาระบุชื่อ-นามสกุล ผู้เข้าพัก' : 'Guest name is required');
     }
 
-    const cleanPhone = phone.replace(/\D/g, '');
-    if (!phone.trim() || cleanPhone.length < 9) {
+    if (!phone.trim() || !isValidPhone(phone)) {
       errors.push(
         locale === 'th'
-          ? 'กรุณาระบุเบอร์โทรศัพท์ที่ถูกต้อง (อย่างน้อย 9-10 หลัก)'
-          : 'Valid phone number is required (9-10 digits)'
+          ? 'กรุณาระบุเบอร์โทรศัพท์ 10 หลักให้ถูกต้อง (xxx-xxx-xxxx)'
+          : 'Valid 10-digit phone number is required (xxx-xxx-xxxx)'
+      );
+    }
+
+    if (!idCardNumber.trim() || (!isValidThaiId(idCardNumber) && !isValidPassport(idCardNumber))) {
+      errors.push(
+        locale === 'th'
+          ? 'กรุณาระบุเลขบัตรประชาชน 13 หลัก หรือเลขพาสปอร์ตให้ถูกต้อง'
+          : 'Valid 13-digit Thai ID or Passport is required'
       );
     }
 
@@ -398,6 +424,14 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
         locale === 'th'
           ? 'วันเช็คเอาท์ต้องมาหลังวันเช็คอินอย่างน้อย 1 คืน'
           : 'Check-out date must be after check-in date (at least 1 night)'
+      );
+    }
+
+    if (guestsCount > maxCapacity) {
+      errors.push(
+        locale === 'th'
+          ? `ห้องพักนี้รองรับได้สูงสุด ${maxCapacity} ท่าน`
+          : `This room accommodates up to ${maxCapacity} guests`
       );
     }
 
@@ -453,10 +487,13 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
         const result = await onSubmitBooking({
           guestName: guestName.trim(),
           phone: phone.trim(),
+          idCardNumber: idCardNumber.trim(),
+          nationalIdOrPassport: idCardNumber.trim(),
+          email: email.trim() || undefined,
           roomId: room.id,
           checkInDate,
           checkOutDate,
-          guestsCount,
+          guestsCount: Math.min(guestsCount, maxCapacity),
           depositAmount,
           paymentMethod,
           bookingSource,
@@ -1252,48 +1289,68 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                   </div>
                 )}
 
-                {/* Form Fields: Guest Name & Phone */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">
-                      {t('res.guestName')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
-                    </label>
-                    <div className="relative">
-                      <User className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                      <input
-                        type="text"
-                        required
-                        value={guestName}
-                        onChange={(e) => {
-                          setGuestName(e.target.value);
-                          if (validationErrors.length > 0) setValidationErrors([]);
-                        }}
-                        placeholder={locale === 'th' ? 'ชื่อ-นามสกุล แขกผู้เข้าพัก' : 'Guest Full Name'}
-                        className="w-full h-9 pl-8 pr-3 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors"
-                      />
-                    </div>
+                {/* Form Fields: Guest Name */}
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                    {t('res.guestName')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
+                  </label>
+                  <div className="relative">
+                    <User className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      required
+                      value={guestName}
+                      onChange={(e) => {
+                        setGuestName(e.target.value);
+                        if (validationErrors.length > 0) setValidationErrors([]);
+                      }}
+                      placeholder={locale === 'th' ? 'ชื่อ-นามสกุล แขกผู้เข้าพัก' : 'Guest Full Name'}
+                      className="w-full min-h-[38px] pl-8 pr-3 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors"
+                    />
                   </div>
+                </div>
+
+                {/* Phone & Email */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <PhoneInput
+                    value={phone}
+                    onChange={(val) => {
+                      setPhone(val);
+                      if (validationErrors.length > 0) setValidationErrors([]);
+                    }}
+                    required
+                    label={t('res.phoneNumber')}
+                    placeholder="081-234-5678"
+                    inputClassName="min-h-[38px] text-xs pl-8"
+                  />
 
                   <div>
                     <label className="block text-xs font-medium text-slate-700 mb-1">
-                      {t('res.phoneNumber')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
+                      {locale === 'th' ? 'อีเมล (ไม่บังคับ)' : 'Email (Optional)'}
                     </label>
                     <div className="relative">
-                      <Phone className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <Mail className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
                       <input
-                        type="tel"
-                        required
-                        value={phone}
-                        onChange={(e) => {
-                          setPhone(e.target.value);
-                          if (validationErrors.length > 0) setValidationErrors([]);
-                        }}
-                        placeholder="081-234-5678"
-                        className="w-full h-9 pl-8 pr-3 text-xs font-mono bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="guest@example.com"
+                        className="w-full min-h-[38px] pl-8 pr-3 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors"
                       />
                     </div>
                   </div>
                 </div>
+
+                {/* National ID / Passport */}
+                <NationalIdOrPassportInput
+                  value={idCardNumber}
+                  onChange={(val) => {
+                    setIdCardNumber(val);
+                    if (validationErrors.length > 0) setValidationErrors([]);
+                  }}
+                  required
+                  inputClassName="min-h-[38px] text-xs pl-8"
+                />
 
                 {/* Dates: Check-In & Check-Out */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1344,15 +1401,27 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                   <div>
                     <label className="block text-xs font-medium text-slate-700 mb-1">
                       {locale === 'th' ? 'จำนวนผู้เข้าพัก (ท่าน)' : 'Number of Guests'}
+                      <span className="text-[10px] text-slate-400 font-normal ml-1">
+                        ({locale === 'th' ? `สูงสุด ${maxCapacity} ท่าน` : `Max ${maxCapacity}`})
+                      </span>
                     </label>
-                    <input
-                      type="number"
-                      min={1}
-                      max={10}
-                      value={guestsCount}
-                      onChange={(e) => setGuestsCount(parseInt(e.target.value) || 1)}
-                      className="w-full h-9 px-3 text-xs font-mono bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors"
-                    />
+                    <div className="relative">
+                      <select
+                        value={guestsCount}
+                        onChange={(e) => {
+                          setGuestsCount(Math.min(parseInt(e.target.value) || 1, maxCapacity));
+                          if (validationErrors.length > 0) setValidationErrors([]);
+                        }}
+                        className="w-full h-9 pl-3 pr-8 text-xs font-mono bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors appearance-none"
+                      >
+                        {Array.from({ length: maxCapacity }, (_, i) => i + 1).map((num) => (
+                          <option key={num} value={num}>
+                            {num} {locale === 'th' ? 'ท่าน' : (num > 1 ? 'guests' : 'guest')} {num === maxCapacity ? `(${locale === 'th' ? 'เต็มจำนวน' : 'Max'})` : ''}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
                   </div>
 
                   <div>

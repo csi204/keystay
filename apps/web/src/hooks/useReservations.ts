@@ -134,9 +134,13 @@ export function useReservations() {
     guestName: string;
     phone: string;
     nationalIdOrPassport: string;
+    idCardNumber?: string;
+    email?: string;
+    guestsCount?: number;
     checkInDate: string;
     checkOutDate: string;
     depositAmount: string;
+    paymentMethod?: string;
   }) => {
     const res = await apiFetch('/api/reservations/walk-in', {
       method: 'POST',

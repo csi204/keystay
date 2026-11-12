@@ -63,10 +63,10 @@ describe('Task 3: Overhaul WalkInModal to Split 2-Pane Studio Layout with Live C
   it('verifies Right Pane collects guest information with proper icons and check-out date constraints', () => {
     const code = fs.readFileSync(modalPath, 'utf-8');
 
-    // Guest input fields & icons
+    // Guest input fields & components
     assert.match(code, /User.*w-4 h-4 text-slate-400/);
-    assert.match(code, /Phone.*w-4 h-4 text-slate-400/);
-    assert.match(code, /ShieldCheck.*w-4 h-4 text-slate-400/);
+    assert.match(code, /PhoneInput/);
+    assert.match(code, /NationalIdOrPassportInput/);
     assert.match(code, /Banknote.*w-4 h-4 text-slate-400/);
 
     // Min check-out date set to checkInDate / tomorrow and dynamic nights counter chip
@@ -124,11 +124,10 @@ describe('Task 3: Overhaul WalkInModal to Split 2-Pane Studio Layout with Live C
     assert.match(code, /idCardNumber\?: string/);
     assert.match(code, /nationalIdOrPassport\?: string/);
 
-    // Input element attributes
-    assert.match(code, /ShieldCheck.*strokeWidth=\{1\.75\}/);
-    assert.match(code, /13-digit ID or Passport Number/);
+    // Masked component attributes
+    assert.match(code, /NationalIdOrPassportInput/);
     assert.match(code, /value=\{idCardNumber\}/);
-    assert.match(code, /onChange=\{\(e\)\s*=>\s*setIdCardNumber\(e\.target\.value\)\}/);
+    assert.match(code, /onChange=\{setIdCardNumber\}/);
   });
 
   it('verifies elevated asterisk styling across front-desk modals', () => {

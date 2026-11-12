@@ -7,10 +7,18 @@ import { localizeRoomType, localizeAmenity } from '@/lib/localizeMetadata';
 import { CustomDatePicker, formatDisplayDate } from '../common/CustomDatePicker';
 import { ROOM_STATUS_CONFIG } from './RoomCard';
 import {
+  PhoneInput,
+  NationalIdOrPassportInput,
+  isValidPhone,
+  isValidThaiId,
+  isValidPassport,
+} from '../common/MaskedInputs';
+import {
   X,
   UserCheck,
   User,
   Phone,
+  Mail,
   CreditCard,
   BedDouble,
   Users,
@@ -58,6 +66,8 @@ export interface WalkInModalProps {
     phone: string;
     nationalIdOrPassport: string;
     idCardNumber?: string;
+    email?: string;
+    guestsCount?: number;
     checkInDate: string;
     checkOutDate: string;
     depositAmount: string;
@@ -89,6 +99,8 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
   const [guestName, setGuestName] = useState('');
   const [phone, setPhone] = useState('');
   const [idCardNumber, setIdCardNumber] = useState('');
+  const [email, setEmail] = useState('');
+  const [guestsCount, setGuestsCount] = useState<number>(2);
   const [checkInDate, setCheckInDate] = useState(todayStr);
   const [checkOutDate, setCheckOutDate] = useState(tomorrowStr);
   const [depositAmount, setDepositAmount] = useState('500');
@@ -141,6 +153,12 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
   // Selected room details
   const selectedRoom = availableRoomsForDates.find((r) => r.id === roomId) || availableRoomsForDates[0];
   const selectedRoomType = roomTypes.find((t) => t.id === selectedRoom?.roomTypeId);
+  const maxCapacity = selectedRoomType?.capacity || (selectedRoom as any)?.capacity || 2;
+
+  useEffect(() => {
+    const maxCap = selectedRoomType?.capacity || (selectedRoom as any)?.capacity || 2;
+    setGuestsCount((prev) => Math.min(Math.max(1, prev || 1), maxCap));
+  }, [selectedRoomType?.capacity, selectedRoom]);
 
   // Dynamic night calculation
   const calculateNights = (inDate: string, outDate: string): number => {
@@ -201,11 +219,11 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
       setError(t('res.errorGuestName'));
       return;
     }
-    if (!phone.trim()) {
+    if (!phone.trim() || !isValidPhone(phone)) {
       setError(t('res.errorPhone'));
       return;
     }
-    if (!idCardNumber.trim()) {
+    if (!idCardNumber.trim() || (!isValidThaiId(idCardNumber) && !isValidPassport(idCardNumber))) {
       setError(t('res.errorId'));
       return;
     }
@@ -218,6 +236,8 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
       phone: phone.trim(),
       nationalIdOrPassport: idCardNumber.trim(),
       idCardNumber: idCardNumber.trim(),
+      email: email.trim() || undefined,
+      guestsCount: Math.min(guestsCount, maxCapacity),
       checkInDate: checkInDate || todayStr,
       checkOutDate,
       depositAmount: depositAmount.trim() || '0',
@@ -429,38 +449,60 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
                 </div>
 
                 {/* Phone */}
+                <PhoneInput
+                  value={phone}
+                  onChange={setPhone}
+                  required
+                  label={t('res.phoneNumber')}
+                  placeholder="081-234-5678"
+                />
+
+                {/* National ID / Passport */}
+                <NationalIdOrPassportInput
+                  value={idCardNumber}
+                  onChange={setIdCardNumber}
+                  required
+                />
+
+                {/* Optional Email */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-800 mb-1">
-                    {t('res.phoneNumber')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
+                    {locale === 'th' ? 'อีเมล (ไม่บังคับ)' : 'Email (Optional)'}
                   </label>
                   <div className="relative">
-                    <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
-                      type="tel"
-                      required
-                      placeholder="0891234567"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="w-full text-sm py-2 px-3 pl-9 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono tabular-nums shadow-2xs"
+                      type="email"
+                      placeholder="guest@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full min-h-[44px] text-sm py-2 px-3 pl-9 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-sans shadow-2xs"
                     />
                   </div>
                 </div>
 
-                {/* National ID / Passport */}
+                {/* Guest Capacity Selector */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    {locale === 'th' ? 'เลขบัตรประชาชน / พาสปอร์ต' : 'National ID / Passport'} <span className="text-rose-500 font-bold ml-0.5 text-xs select-none">*</span>
+                  <label className="block text-sm font-semibold text-slate-800 mb-1">
+                    {locale === 'th' ? 'จำนวนผู้เข้าพัก' : 'Number of Guests'}
+                    <span className="text-xs text-slate-400 font-normal ml-1">
+                      ({locale === 'th' ? `สูงสุด ${maxCapacity} ท่าน` : `Max ${maxCapacity} guests`})
+                    </span>
                   </label>
                   <div className="relative">
-                    <ShieldCheck className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" strokeWidth={1.75} />
-                    <input
-                      type="text"
-                      required
-                      value={idCardNumber}
-                      onChange={(e) => setIdCardNumber(e.target.value)}
-                      placeholder={locale === 'th' ? 'เลขบัตรประชาชน 13 หลัก หรือเลขพาสปอร์ต' : '13-digit ID or Passport Number'}
-                      className="w-full h-10 pl-9 pr-3 text-sm font-mono bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors"
-                    />
+                    <Users className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <select
+                      value={guestsCount}
+                      onChange={(e) => setGuestsCount(Math.min(parseInt(e.target.value) || 1, maxCapacity))}
+                      className="w-full min-h-[44px] text-sm py-2 px-3 pl-9 pr-9 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-sans shadow-2xs appearance-none"
+                    >
+                      {Array.from({ length: maxCapacity }, (_, i) => i + 1).map((num) => (
+                        <option key={num} value={num}>
+                          {num} {locale === 'th' ? 'ท่าน' : (num > 1 ? 'guests' : 'guest')} {num === maxCapacity ? `(${locale === 'th' ? 'เต็มจำนวน' : 'Max'})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={1.75} />
                   </div>
                 </div>
 
