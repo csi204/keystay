@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
+import { apiFetch } from '@/lib/api';
 import { useTranslation } from '@/lib/i18n';
 import {
   ShoppingCart,
@@ -70,12 +71,44 @@ export const MinibarCatalogPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState('ทั้งหมด');
   const [currentPage, setCurrentPage] = useState(1);
+  const [isOffline, setIsOffline] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const [showModal, setShowModal] = useState(false);
   const [editItem, setEditItem] = useState<MinibarItem | null>(null);
   const [form, setForm] = useState<Omit<MinibarItem, 'id'>>(EMPTY_FORM);
   const [deleteTarget, setDeleteTarget] = useState<MinibarItem | null>(null);
   const [refreshSuccess, setRefreshSuccess] = useState(false);
+
+  const loadMinibarItems = async () => {
+    setLoading(true);
+    try {
+      const res = await apiFetch<MinibarItem[]>('/api/minibar-items');
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        setIsOffline(false);
+        setItems(res.data);
+      } else {
+        setIsOffline(res.isOffline);
+        setItems(SEED_ITEMS);
+      }
+    } catch {
+      setIsOffline(true);
+      setItems(SEED_ITEMS);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadMinibarItems();
+  }, []);
+
+  const handleRefresh = async () => {
+    setRefreshSuccess(false);
+    await loadMinibarItems();
+    setRefreshSuccess(true);
+    setTimeout(() => setRefreshSuccess(false), 2500);
+  };
 
   const filtered = useMemo(() => {
     return items.filter((it) => {
@@ -120,28 +153,69 @@ export const MinibarCatalogPage: React.FC = () => {
     setShowModal(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name.trim() || form.pricePerUnit <= 0) return;
-    if (editItem) {
-      setItems((prev) => prev.map((it) => (it.id === editItem.id ? { ...editItem, ...form } : it)));
-    } else {
-      setItems((prev) => [{ id: `mb-${Date.now()}`, ...form }, ...prev]);
+    const payload = {
+      name: form.name.trim(),
+      category: form.category,
+      pricePerUnit: Number(form.pricePerUnit),
+      unit: form.unit.trim() || 'ชิ้น',
+      isActive: form.isActive,
+    };
+
+    try {
+      if (editItem) {
+        await apiFetch(`/api/minibar-items/${editItem.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(payload),
+        });
+      } else {
+        await apiFetch('/api/minibar-items', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+      }
+      await loadMinibarItems();
+    } catch {
+      if (editItem) {
+        setItems((prev) => prev.map((it) => (it.id === editItem.id ? { ...editItem, ...payload } : it)));
+      } else {
+        setItems((prev) => [{ id: `mb-${Date.now()}`, ...payload }, ...prev]);
+      }
     }
     setShowModal(false);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteTarget) return;
-    setItems((prev) => prev.filter((it) => it.id !== deleteTarget.id));
+    try {
+      await apiFetch(`/api/minibar-items/${deleteTarget.id}`, {
+        method: 'DELETE',
+      });
+      await loadMinibarItems();
+    } catch {
+      setItems((prev) => prev.filter((it) => it.id !== deleteTarget.id));
+    }
     setDeleteTarget(null);
   };
 
-  const toggleActive = (id: string) => {
-    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, isActive: !it.isActive } : it)));
+  const toggleActive = async (id: string) => {
+    const target = items.find((it) => it.id === id);
+    if (!target) return;
+    const newActive = !target.isActive;
+    try {
+      await apiFetch(`/api/minibar-items/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ isActive: newActive }),
+      });
+      setItems((prev) => prev.map((it) => (it.id === id ? { ...it, isActive: newActive } : it)));
+    } catch {
+      setItems((prev) => prev.map((it) => (it.id === id ? { ...it, isActive: newActive } : it)));
+    }
   };
 
   return (
-    <AdminLayout activePath="/admin/minibar" isBackendOffline={false}>
+    <AdminLayout activePath="/admin/minibar" isBackendOffline={isOffline}>
       {/* ── Page Header ── */}
       <div className="bg-white px-4 py-3.5 mb-4 shadow-2xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -162,13 +236,10 @@ export const MinibarCatalogPage: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                setRefreshSuccess(true);
-                setTimeout(() => setRefreshSuccess(false), 2500);
-              }}
+              onClick={handleRefresh}
               className="text-xs font-semibold gap-1.5 h-9 px-3 bg-white hover:bg-slate-50 border-slate-300 text-slate-700 shadow-2xs"
             >
-              <RefreshCw className="w-3.5 h-3.5 text-slate-600" />
+              <RefreshCw className={`w-3.5 h-3.5 text-slate-600 ${loading ? 'animate-spin' : ''}`} />
               <span>{refreshSuccess ? t('action.refreshSuccess') : t('action.refresh')}</span>
             </Button>
             <Button
@@ -184,14 +255,6 @@ export const MinibarCatalogPage: React.FC = () => {
       </div>
 
       <div className="px-4 pb-6 space-y-4">
-        {/* API notice */}
-        <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 flex items-start gap-2 text-xs text-amber-800">
-          <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-          <span>
-            <strong>หมายเหตุ:</strong> ข้อมูลนี้ยังเป็น mock data ในเครื่อง — รอ <code>/api/room-inventory/minibar-items</code> จากบุญ (@Legxcy77) ก่อน deploy จริง
-          </span>
-        </div>
-
         {/* ── 3 Neutral Stats Cards (Zero Rainbow Slop) ── */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {[

@@ -207,13 +207,26 @@ export const AmenitiesCatalogTab = React.forwardRef<AmenitiesCatalogTabRef, Amen
     setIsModalOpen(true);
   };
 
-  const handleToggleActive = (id: string) => {
-    setItems((prev) =>
-      prev.map((it) => (it.id === id ? { ...it, isActive: !it.isActive } : it))
-    );
+  const handleToggleActive = async (id: string) => {
+    const target = items.find((it) => it.id === id);
+    if (!target) return;
+    const newActive = !target.isActive;
+    try {
+      await apiFetch(`/api/v1/amenities/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ isActive: newActive }),
+      });
+      setItems((prev) =>
+        prev.map((it) => (it.id === id ? { ...it, isActive: newActive } : it))
+      );
+    } catch {
+      setItems((prev) =>
+        prev.map((it) => (it.id === id ? { ...it, isActive: newActive } : it))
+      );
+    }
   };
 
-  const handleSaveSubmit = (e: React.FormEvent) => {
+  const handleSaveSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.nameTh.trim()) {
       setValidationError('กรุณาระบุชื่อของใช้ (ภาษาไทย)');
@@ -226,7 +239,7 @@ export const AmenitiesCatalogTab = React.forwardRef<AmenitiesCatalogTabRef, Amen
     }
 
     const itemData: AmenityItem = {
-      id: editingItem ? editingItem.id : `am-${Date.now()}`,
+      id: editingItem ? editingItem.id : `am-${Date.now().toString().slice(-6)}`,
       nameTh: form.nameTh.trim(),
       nameEn: form.nameEn.trim() || form.nameTh.trim(),
       category: form.category,
@@ -238,18 +251,54 @@ export const AmenitiesCatalogTab = React.forwardRef<AmenitiesCatalogTabRef, Amen
       isActive: editingItem ? editingItem.isActive : true,
     };
 
-    if (editingItem) {
-      setItems((prev) => prev.map((it) => (it.id === editingItem.id ? itemData : it)));
-    } else {
-      setItems((prev) => [itemData, ...prev]);
+    try {
+      if (editingItem) {
+        await apiFetch(`/api/v1/amenities/${editingItem.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(itemData),
+        });
+      } else {
+        await apiFetch('/api/v1/amenities', {
+          method: 'POST',
+          body: JSON.stringify(itemData),
+        });
+      }
+      const res = await apiFetch<AmenityItem[]>('/api/v1/amenities');
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        setItems(res.data);
+      } else {
+        if (editingItem) {
+          setItems((prev) => prev.map((it) => (it.id === editingItem.id ? itemData : it)));
+        } else {
+          setItems((prev) => [itemData, ...prev]);
+        }
+      }
+    } catch {
+      if (editingItem) {
+        setItems((prev) => prev.map((it) => (it.id === editingItem.id ? itemData : it)));
+      } else {
+        setItems((prev) => [itemData, ...prev]);
+      }
     }
 
     setIsModalOpen(false);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!deletingItem) return;
-    setItems((prev) => prev.filter((it) => it.id !== deletingItem.id));
+    try {
+      await apiFetch(`/api/v1/amenities/${deletingItem.id}`, {
+        method: 'DELETE',
+      });
+      const res = await apiFetch<AmenityItem[]>('/api/v1/amenities');
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        setItems(res.data);
+      } else {
+        setItems((prev) => prev.filter((it) => it.id !== deletingItem.id));
+      }
+    } catch {
+      setItems((prev) => prev.filter((it) => it.id !== deletingItem.id));
+    }
     setDeletingItem(null);
   };
 

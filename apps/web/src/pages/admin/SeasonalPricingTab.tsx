@@ -213,13 +213,36 @@ export const SeasonalPricingTab = React.forwardRef<SeasonalPricingTabRef, Season
     setIsModalOpen(true);
   };
 
-  const handleToggleActive = (id: string) => {
-    setRules((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, isActive: !r.isActive } : r))
-    );
+  const getTierLabel = (tier: string) => {
+    switch (tier) {
+      case 'High Season': return t('tier.highSeason');
+      case 'Regular': return t('tier.regular');
+      case 'Low Season': return t('tier.lowSeason');
+      case 'Special Holiday': return t('tier.specialHoliday');
+      default: return tier;
+    }
   };
 
-  const handleSaveSubmit = (e: React.FormEvent) => {
+  const handleToggleActive = async (id: string) => {
+    const target = rules.find((r) => r.id === id);
+    if (!target) return;
+    const newActive = !target.isActive;
+    try {
+      await apiFetch(`/api/v1/pricing/rules/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ isActive: newActive }),
+      });
+      setRules((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, isActive: newActive } : r))
+      );
+    } catch {
+      setRules((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, isActive: newActive } : r))
+      );
+    }
+  };
+
+  const handleSaveSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim()) {
       setValidationError('กรุณาระบุชื่อกฎราคา');
@@ -253,7 +276,7 @@ export const SeasonalPricingTab = React.forwardRef<SeasonalPricingTabRef, Season
     if (form.daysSelection === 'weekday') daysOfWeek = [1, 2, 3, 4];
 
     const ruleData: SeasonalPricingRule = {
-      id: editingRule ? editingRule.id : `rule-${Date.now()}`,
+      id: editingRule ? editingRule.id : `rule-${Date.now().toString().slice(-6)}`,
       name: form.name.trim(),
       tier: finalTier,
       roomTypeId: form.roomTypeId === 'all' ? null : form.roomTypeId,
@@ -265,18 +288,54 @@ export const SeasonalPricingTab = React.forwardRef<SeasonalPricingTabRef, Season
       isActive: editingRule ? editingRule.isActive : true,
     };
 
-    if (editingRule) {
-      setRules((prev) => prev.map((r) => (r.id === editingRule.id ? ruleData : r)));
-    } else {
-      setRules((prev) => [ruleData, ...prev]);
+    try {
+      if (editingRule) {
+        await apiFetch(`/api/v1/pricing/rules/${editingRule.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(ruleData),
+        });
+      } else {
+        await apiFetch('/api/v1/pricing/rules', {
+          method: 'POST',
+          body: JSON.stringify(ruleData),
+        });
+      }
+      const res = await apiFetch<SeasonalPricingRule[]>('/api/v1/pricing/rules');
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        setRules(res.data);
+      } else {
+        if (editingRule) {
+          setRules((prev) => prev.map((r) => (r.id === editingRule.id ? ruleData : r)));
+        } else {
+          setRules((prev) => [ruleData, ...prev]);
+        }
+      }
+    } catch {
+      if (editingRule) {
+        setRules((prev) => prev.map((r) => (r.id === editingRule.id ? ruleData : r)));
+      } else {
+        setRules((prev) => [ruleData, ...prev]);
+      }
     }
 
     setIsModalOpen(false);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!deletingRule) return;
-    setRules((prev) => prev.filter((r) => r.id !== deletingRule.id));
+    try {
+      await apiFetch(`/api/v1/pricing/rules/${deletingRule.id}?hard=true`, {
+        method: 'DELETE',
+      });
+      const res = await apiFetch<SeasonalPricingRule[]>('/api/v1/pricing/rules');
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        setRules(res.data);
+      } else {
+        setRules((prev) => prev.filter((r) => r.id !== deletingRule.id));
+      }
+    } catch {
+      setRules((prev) => prev.filter((r) => r.id !== deletingRule.id));
+    }
     setDeletingRule(null);
   };
 
@@ -313,7 +372,7 @@ export const SeasonalPricingTab = React.forwardRef<SeasonalPricingTabRef, Season
               <option value="all">ทุก Tier ฤดูกาล</option>
               {availableTiers.map((tier) => (
                 <option key={tier} value={tier}>
-                  {tier}
+                  {getTierLabel(tier)}
                 </option>
               ))}
             </Select>
@@ -398,7 +457,7 @@ export const SeasonalPricingTab = React.forwardRef<SeasonalPricingTabRef, Season
                         </td>
                         <td className="py-3 px-3 text-center">
                           <span className="text-xs text-slate-700">
-                            {rule.tier}
+                            {getTierLabel(rule.tier)}
                           </span>
                         </td>
                         <td className="py-3 px-3 text-slate-700">
@@ -541,7 +600,7 @@ export const SeasonalPricingTab = React.forwardRef<SeasonalPricingTabRef, Season
                   >
                     {availableTiers.map((t) => (
                       <option key={t} value={t}>
-                        {t}
+                        {getTierLabel(t)}
                       </option>
                     ))}
                     <option value="__custom__">+ กำหนดชื่อ Tier ใหม่...</option>

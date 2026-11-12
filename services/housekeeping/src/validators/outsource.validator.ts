@@ -16,9 +16,13 @@ export const OutsourceCategoryEnum = z.enum([
 ]);
 export type OutsourceCategory = z.infer<typeof OutsourceCategoryEnum>;
 
+const TimeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Time must be HH:MM');
+
 export const CreateOutsourceContactSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  category: OutsourceCategoryEnum,
+  category: OutsourceCategoryEnum.optional(),
+  // หลายหมวดหมู่ต่อ 1 คู่ค้า (หมวดแรกจะถูกใช้เป็น category หลักหากไม่ได้ระบุ category แยก)
+  categories: z.array(OutsourceCategoryEnum).min(1).optional(),
   serviceType: z.string().min(1, 'Service type is required'),
   phonePrimary: z.string().min(1, 'Primary phone is required'),
   phoneSecondary: z.string().optional().nullable(),
@@ -33,7 +37,9 @@ export const CreateOutsourceContactSchema = z.object({
     .default(0),
   availableHours: z.string().default('24 ชั่วโมง'),
   priceRateNote: z.string().optional().nullable(),
-  rating: z.coerce.number().min(0).max(5).default(5.0),
+  openTime: TimeSchema.optional().nullable(),
+  closeTime: TimeSchema.optional().nullable(),
+  rating: z.coerce.number().min(0).max(5).optional().nullable(),
   address: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
   isActive: z

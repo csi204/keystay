@@ -13,12 +13,15 @@ export interface OutsourceContactDTO {
   id: string;
   name: string;
   category: 'air_conditioning' | 'plumbing' | 'electrical' | 'locksmith' | 'gardening' | 'general_maintenance' | 'pest_control';
+  categories?: string[];
   serviceType: string;
   phonePrimary: string;
   phoneSecondary?: string | null;
   lineId?: string | null;
   isEmergency: boolean;
   availableHours: string;
+  openTime?: string | null;
+  closeTime?: string | null;
   priceRateNote?: string | null;
   rating?: number;
   address?: string | null;
@@ -30,10 +33,22 @@ export interface OutsourceContactDTO {
  * Maps raw database row (snake_case from D1 or camelCase from Drizzle) to OutsourceContactDTO
  */
 export function mapOutsourceContact(row: any): OutsourceContactDTO {
+  let categories: string[] = [];
+  if (row.categories) {
+    try {
+      categories = typeof row.categories === 'string' ? JSON.parse(row.categories) : row.categories;
+    } catch {
+      categories = [row.category];
+    }
+  } else if (row.category) {
+    categories = [row.category];
+  }
+
   return {
     id: String(row.id),
     name: String(row.name),
     category: row.category,
+    categories,
     serviceType: String(row.serviceType ?? row.service_type ?? ''),
     phonePrimary: String(row.phonePrimary ?? row.phone_primary ?? ''),
     phoneSecondary: row.phoneSecondary ?? row.phone_secondary ?? null,
@@ -45,6 +60,8 @@ export function mapOutsourceContact(row: any): OutsourceContactDTO {
           ? Boolean(row.isEmergency)
           : false,
     availableHours: String(row.availableHours ?? row.available_hours ?? '24 ชั่วโมง'),
+    openTime: row.openTime ?? row.open_time ?? null,
+    closeTime: row.closeTime ?? row.close_time ?? null,
     priceRateNote: row.priceRateNote ?? row.price_rate_note ?? null,
     rating: row.rating !== undefined && row.rating !== null ? Number(row.rating) : undefined,
     address: row.address ?? null,
