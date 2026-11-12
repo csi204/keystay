@@ -341,7 +341,7 @@ export const AmenitiesCatalogTab = React.forwardRef<AmenitiesCatalogTabRef, Amen
       <Card className="border-slate-200 shadow-2xs bg-white overflow-hidden rounded-xl">
         <CardHeader className="py-3 px-4 border-b border-slate-100 flex flex-row items-center justify-between bg-white">
           <div className="flex items-center gap-2">
-            <Package className="w-4 h-4 text-slate-400" />
+            <Package className="w-4 h-4 text-[#F97316]" />
             <CardTitle className="text-sm font-bold text-slate-900">
               แคตตาล็อกของใช้และบริการเสริม · {filteredItems.length} รายการ
             </CardTitle>

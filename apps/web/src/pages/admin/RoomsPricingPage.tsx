@@ -901,7 +901,7 @@ export const RoomsPricingPage: React.FC = () => {
             roomsByFloor.map(({ floor, rooms: floorRooms }) => (
               <Card key={floor.id} className="border-slate-200 shadow-sm bg-white overflow-hidden">
                 <CardHeader className="py-2.5 px-5 border-b border-slate-100 flex flex-row items-center gap-2 bg-white">
-                  <Building2 className="w-4 h-4 text-slate-400" />
+                  <Building2 className="w-4 h-4 text-[#F97316]" />
                   <CardTitle className="text-sm font-bold text-slate-900">
                     {floor.name}
                   </CardTitle>
@@ -916,7 +916,7 @@ export const RoomsPricingPage: React.FC = () => {
                         <tr>
                           <th className="py-2.5 px-4 w-28">{t('field.roomNumber')}</th>
                           <th className="py-2.5 px-3 w-64">{t('field.roomType')}</th>
-                          <th className="py-2.5 px-3 text-right w-36">{t('field.basePrice')}</th>
+                          <th className="py-2.5 px-3  w-36">{t('field.basePrice')}</th>
                           <th className="py-2.5 px-3 text-center w-40">{t('field.status')}</th>
                           <th className="py-2.5 px-3 text-center w-28">{t('field.isActive')}</th>
                           {isOwner && <th className="py-2.5 px-4 text-center w-56">{t('field.actions')}</th>}
@@ -927,11 +927,11 @@ export const RoomsPricingPage: React.FC = () => {
                           const isOccupiedOrReserved = room.status === 'occupied' || room.status === 'reserved';
                           return (
                             <tr key={room.id} className={`hover:bg-slate-50/80 transition-colors ${room.isActive === 0 ? 'opacity-50' : ''}`}>
-                              <td className="py-3 px-4 font-mono font-bold text-slate-900 text-xs">
+                              <td className="py-3 px-4 font-mono text-slate-700 font-medium text-xs">
                                 {room.roomNumber}
                               </td>
                               <td className="py-3 px-3 text-slate-700">{localizeRoomType(room.roomType?.name, locale) ?? '—'}</td>
-                              <td className="py-3 px-3 text-right font-mono text-slate-700 font-medium text-xs">
+                              <td className="py-3 px-10  font-mono text-slate-700 font-medium text-xs">
                                 {room.roomType ? `฿${room.roomType.basePrice.toLocaleString()}` : '—'}
                               </td>
                               {/* Minimal Enterprise Status Dot (Zero AI Slop) */}

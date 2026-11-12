@@ -56,7 +56,7 @@ interface RoomStatusCounts {
   total: number;
 }
 
-const ROWS_TO_SHOW = 10;
+const ROWS_TO_SHOW = 6;
 
 export const ManagerDashboardPage: React.FC = () => {
   const { t, locale } = useTranslation();
@@ -512,7 +512,7 @@ export const ManagerDashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 4. Financial & Daily Tax Statement Table (Clean 10 Rows with "View All" Link) */}
+        {/* 4. Financial & Daily Tax Statement Table (Clean 6 Rows with "View All" Link) */}
         <Card className="border-slate-200/90 shadow-2xs bg-white overflow-hidden rounded-xl">
           <CardHeader className="py-3.5 px-5 border-b border-slate-100 flex flex-row items-center justify-between bg-white">
             <div className="flex items-center gap-2">
@@ -521,7 +521,7 @@ export const ManagerDashboardPage: React.FC = () => {
                 {isEn ? 'Financial & Tax Daily Statement' : 'สรุปผลประกอบการและฐานภาษีรายวัน'}
               </CardTitle>
               <span className="text-xs text-slate-400 font-normal ml-1">
-                ({isEn ? '10 Recent Days' : '10 วันล่าสุด'})
+                ({isEn ? '6 Recent Days' : '6 วันล่าสุด'})
               </span>
             </div>
             <div className="flex items-center gap-2">

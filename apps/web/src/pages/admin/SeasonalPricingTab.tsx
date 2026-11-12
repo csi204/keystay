@@ -357,7 +357,7 @@ export const SeasonalPricingTab = React.forwardRef<SeasonalPricingTabRef, Season
       <Card className="border-slate-200 shadow-2xs bg-white overflow-hidden rounded-xl">
         <CardHeader className="py-3 px-4 border-b border-slate-100 flex flex-row items-center justify-between bg-white">
           <div className="flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-slate-400" />
+            <TrendingUp className="w-4 h-4 text-[#F97316]" />
             <CardTitle className="text-sm font-bold text-slate-900">
               รายการกฎการปรับราคาตามฤดูกาลและเทศกาล · {filteredRules.length} กฎ
             </CardTitle>
@@ -376,7 +376,7 @@ export const SeasonalPricingTab = React.forwardRef<SeasonalPricingTabRef, Season
                   <th className="py-2.5 px-3">ประเภทห้องที่ใช้</th>
                   <th className="py-2.5 px-3">ช่วงวันที่บังคับใช้</th>
                   <th className="py-2.5 px-3">เงื่อนไขวัน</th>
-                  <th className="py-2.5 px-3 text-right">การปรับราคา</th>
+                  <th className="py-2.5 px-3 text-center">การปรับราคา</th>
                   <th className="py-2.5 px-3 text-center">สถานะ</th>
                   {isOwner && <th className="py-2.5 px-4 text-center">การจัดการ</th>}
                 </tr>
@@ -393,7 +393,7 @@ export const SeasonalPricingTab = React.forwardRef<SeasonalPricingTabRef, Season
                     const targetRoom = roomTypes.find((rt) => rt.id === rule.roomTypeId);
                     return (
                       <tr key={rule.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="py-3 px-4 font-semibold text-slate-900">
+                        <td className="py-3 px-4 text-xs text-slate-700">
                           {rule.name}
                         </td>
                         <td className="py-3 px-3 text-center">
@@ -405,12 +405,12 @@ export const SeasonalPricingTab = React.forwardRef<SeasonalPricingTabRef, Season
                           {targetRoom ? (
                             <span className="text-xs text-slate-700">{targetRoom.name}</span>
                           ) : (
-                            <span className="text-xs text-slate-500">
+                            <span className="text-xs text-slate-700">
                               ทุกประเภทห้อง
                             </span>
                           )}
                         </td>
-                        <td className="py-3 px-3 font-mono text-[11px] text-slate-600">
+                        <td className="py-3 px-3 font-mono text-[11px] text-slate-700">
                           {rule.startDate} ถึง {rule.endDate}
                         </td>
                         <td className="py-3 px-3 text-[11px]">
@@ -425,11 +425,11 @@ export const SeasonalPricingTab = React.forwardRef<SeasonalPricingTabRef, Season
                               </span>
                             )
                           ) : (
-                            <span className="text-xs text-slate-400">ทุกวัน</span>
+                            <span className="text-xs text-slate-700">ทุกวัน</span>
                           )}
                         </td>
                         {/* Neutral monochrome price adjustment (Zero AI Slop) */}
-                        <td className="py-3 px-3 text-right font-mono font-semibold text-slate-900">
+                        <td className="py-3 px-3 text-center font-mono text-xs text-slate-700">
                           {rule.adjustmentValue > 0 ? '+' : ''}
                           {rule.adjustmentType === 'percent'
                             ? `${rule.adjustmentValue}%`
