@@ -440,7 +440,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
     if (checkOutDate <= checkInDate) {
       errors.push(
         locale === 'th'
-          ? 'วันเช็คเอาท์ต้องมาหลังวันเช็คอินอย่างน้อย 1 คืน'
+          ? 'วันเช็คเอาต์ต้องมาหลังวันเช็คอินอย่างน้อย 1 คืน'
           : 'Check-out date must be after check-in date (at least 1 night)'
       );
     }
@@ -1004,7 +1004,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
 
                   {currentReservation.checkOutDate && (
                     <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 text-[11px]">
-                      <span className="text-slate-500">{locale === 'th' ? 'กำหนดเช็คเอาท์:' : 'Check-out:'}</span>
+                      <span className="text-slate-500">{locale === 'th' ? 'กำหนดเช็คเอาต์:' : 'Check-out:'}</span>
                       <span className="font-mono font-medium text-slate-800">
                         {currentReservation.checkOutDate}
                       </span>

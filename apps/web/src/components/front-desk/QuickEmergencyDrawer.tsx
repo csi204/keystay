@@ -20,6 +20,7 @@ import {
   Clock,
   WifiOff,
   ExternalLink,
+  Star,
 } from 'lucide-react';
 
 export interface QuickEmergencyDrawerProps {
@@ -276,8 +277,9 @@ export const QuickEmergencyDrawer: React.FC<QuickEmergencyDrawerProps> = ({
                       </div>
 
                       {contact.rating && (
-                        <span className="shrink-0 text-xs font-mono font-semibold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
-                          ★ {contact.rating.toFixed(1)}
+                        <span className="shrink-0 text-xs font-mono font-semibold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 inline-flex items-center gap-1">
+                          <Star className="w-3 h-3 fill-amber-500 text-amber-500" strokeWidth={1.5} />
+                          <span>{contact.rating.toFixed(1)}</span>
                         </span>
                       )}
                     </div>

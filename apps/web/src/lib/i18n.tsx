@@ -108,7 +108,7 @@ const translations: Record<Language, Translations> = {
     'status.available': 'ว่างพร้อมใช้',
     'status.reserved': 'ติดจอง',
     'status.occupied': 'มีแขกพัก',
-    'status.checked_out': 'เช็คเอาท์แล้ว',
+    'status.checked_out': 'เช็คเอาต์แล้ว',
     'status.cleaning': 'กำลังทำความสะอาด',
     'status.maintenance': 'ปิดปรับปรุง',
     'status.out_of_order': 'ปิดใช้งาน',
@@ -133,7 +133,7 @@ const translations: Record<Language, Translations> = {
     'modal.changeStatus.changeTo': 'เปลี่ยนเป็น:',
     'modal.deleteRoom.title': 'ปิดใช้งานห้องพัก',
     'modal.deleteRoom.confirm': 'ห้อง #{roomNumber} จะถูกปิดใช้งาน (Soft Delete) และไม่สามารถจองได้จนกว่าจะเปิดใหม่ ยืนยันดำเนินการต่อหรือไม่?',
-    'modal.occupiedWarning': 'ไม่สามารถเปลี่ยนสถานะหรือปิดห้องที่มีผู้เข้าพักอยู่ได้ (ต้องรอเช็คเอาท์ก่อน)',
+    'modal.occupiedWarning': 'ไม่สามารถเปลี่ยนสถานะหรือปิดห้องที่มีผู้เข้าพักอยู่ได้ (ต้องรอเช็คเอาต์ก่อน)',
     'modal.reservedWarning': 'ไม่สามารถเปลี่ยนสถานะหรือปิดห้องที่มีผู้จองล่วงหน้าได้',
 
     // Form Validation Errors

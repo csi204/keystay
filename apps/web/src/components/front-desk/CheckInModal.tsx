@@ -4,6 +4,7 @@ import { RoomType } from '@keystay/types';
 import { useI18n } from '@/lib/i18n';
 import { localizeRoomType, localizeAmenity } from '@/lib/localizeMetadata';
 import { ROOM_STATUS_CONFIG } from './RoomCard';
+import { ActionConfirmModal } from '../common/ActionConfirmModal';
 import {
   X,
   LogIn,
@@ -32,32 +33,40 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
   const { t, locale, formatCurrency, formatDateRange } = useI18n();
   const [nationalIdOrPassport, setNationalIdOrPassport] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       setNationalIdOrPassport('');
       setError(null);
+      setIsConfirmOpen(false);
     }
   }, [isOpen]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) onClose();
+      if (e.key === 'Escape' && isOpen && !isConfirmOpen && !isSubmitting) onClose();
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, isConfirmOpen, isSubmitting, onClose]);
 
   if (!isOpen || !reservation) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!nationalIdOrPassport.trim()) {
       setError(t('checkin.errorRequired'));
       return;
     }
 
+    setError(null);
+    setIsConfirmOpen(true);
+  };
+
+  const handleExecuteCheckIn = async () => {
+    setIsConfirmOpen(false);
     setError(null);
     setIsSubmitting(true);
     const result = await onConfirm(reservation.id, nationalIdOrPassport.trim());
@@ -275,6 +284,50 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
           </div>
         </form>
       </div>
+
+      {/* Confirmation Modal before finalizing Check-In */}
+      <ActionConfirmModal
+        isOpen={isConfirmOpen}
+        title={locale === 'th' ? 'ยืนยันดำเนินการเช็คอิน' : 'Confirm Check-In'}
+        description={
+          locale === 'th'
+            ? 'กรุณาตรวจสอบข้อมูลแขก ห้องพัก และยอดมัดจำก่อนดำเนินการเข้าสู่ระบบ'
+            : 'Please verify guest details, assigned room, and deposit before confirming check-in.'
+        }
+        confirmText={locale === 'th' ? 'ยืนยันเช็คอินทันที' : 'Confirm Check-In'}
+        cancelText={t('common.cancel')}
+        variant="primary"
+        icon="check"
+        isSubmitting={isSubmitting}
+        onConfirm={handleExecuteCheckIn}
+        onClose={() => setIsConfirmOpen(false)}
+        summaryDetails={[
+          {
+            label: locale === 'th' ? 'ห้องพัก' : 'Room',
+            value: reservation.roomNumber ? t('checkin.roomLabel', { room: reservation.roomNumber }) : '—',
+          },
+          {
+            label: locale === 'th' ? 'ชื่อผู้เข้าพัก' : 'Guest Name',
+            value: guestDisplayName,
+          },
+          {
+            label: locale === 'th' ? 'วันที่เข้าพัก' : 'Stay Dates',
+            value: `${formatDateRange(reservation.checkInDate, reservation.checkOutDate, reservation.totalNights)} (${reservation.totalNights || 1} ${locale === 'th' ? 'คืน' : 'Nights'})`,
+          },
+          {
+            label: locale === 'th' ? 'บัตรประชาชน/พาสปอร์ต' : 'ID / Passport',
+            value: nationalIdOrPassport.trim(),
+          },
+          {
+            label: locale === 'th' ? 'เงินมัดจำคีย์การ์ด' : 'Key Card Deposit',
+            value: (
+              <span className="font-mono font-bold text-emerald-700">
+                {formatCurrency(reservation.depositAmount || 0)}
+              </span>
+            ),
+          },
+        ]}
+      />
     </div>
   );
 };

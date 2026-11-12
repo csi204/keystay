@@ -544,7 +544,7 @@ export const ReportsAnalyticsPage: React.FC = () => {
                     <th className="py-3 px-5">วันที่ (Date)</th>
                     <th className="py-3 px-4 text-center">เข้าพัก / ทั้งหมด</th>
                     <th className="py-3 px-4 text-center">อัตราการเข้าพัก (%)</th>
-                    <th className="py-3 px-4 text-center">เช็คอิน / เช็คเอาท์</th>
+                    <th className="py-3 px-4 text-center">เช็คอิน / เช็คเอาต์</th>
                     <th className="py-3 px-5 text-right">รายได้รวม (THB)</th>
                   </tr>
                 </thead>

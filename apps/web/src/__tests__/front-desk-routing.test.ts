@@ -6,7 +6,7 @@ test('frontDeskNavItems contains all 4 core portals', () => {
   const items = [
     { title: 'ผังห้องพัก (Room Matrix)', path: '/front-desk/room-matrix', key: 'matrix' },
     { title: 'รายการจอง (Reservations)', path: '/front-desk/reservations', key: 'reservations' },
-    { title: 'เช็คอิน/เช็คเอาท์ (Arrivals & Departures)', path: '/front-desk/daily-operations', key: 'operations' },
+    { title: 'เช็คอิน/เช็คเอาต์ (Arrivals & Departures)', path: '/front-desk/daily-operations', key: 'operations' },
     { title: 'แคชเชียร์และบิล (Bills & Cashier)', path: '/front-desk/billing', key: 'billing' },
   ];
   assert.strictEqual(items.length, 4);

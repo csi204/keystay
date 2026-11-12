@@ -200,13 +200,13 @@
 - Modify: `apps/web/src/components/front-desk/RoomDetailsModal.tsx`
 - Modify: `apps/web/src/components/front-desk/ExtendStayModal.tsx`
 
-- [ ] **Step 6.1: Global search and replace "เช็คเอาท์" / "เช็คเอาท?"**
+- [x] **Step 6.1: Global search and replace "เช็คเอาท์" / "เช็คเอาท?"**
   - Replace all occurrences with "เช็คเอาต์" (ต.เต่า การันต์) across all UI strings, labels, and translations.
-- [ ] **Step 6.2: Zero-Emoji Audit**
+- [x] **Step 6.2: Zero-Emoji Audit**
   - Check all components for raw emojis (`🔒`, `⚡`, `🗓️`, `✏️`, `⚠️`, `✅`) and replace with standard Lucide React icons.
-- [ ] **Step 6.3: Add Confirmation to Check-In Modal**
+- [x] **Step 6.3: Add Confirmation to Check-In Modal**
   - Add confirmation before executing check-in in `CheckInModal.tsx`.
-- [ ] **Step 6.4: Run tests and commit**
+- [x] **Step 6.4: Run tests and commit**
   - Run `npm run test:web`.
   - Commit: `git commit -m "fix(i18n): standardize checkout spelling to เช็คเอาต์ and ensure zero raw emojis in UI"`.
 

@@ -35,7 +35,7 @@ const FOLIO_ITEMS_TH: Record<string, string> = {
   'Extra Bed with Breakfast': 'เตียงเสริมพร้อมอาหารเช้า',
   'Extra Bed': 'เตียงเสริม',
   'Airport Shuttle Transfer': 'รถรับส่งสนามบิน',
-  'Late Check-out Hourly Fee': 'ค่าธรรมเนียมเช็คเอาท์เกินเวลา (รายชั่วโมง)',
+  'Late Check-out Hourly Fee': 'ค่าธรรมเนียมเช็คเอาต์เกินเวลา (รายชั่วโมง)',
   'Room Service: American Breakfast': 'รูมเซอร์วิส: อาหารเช้าอเมริกัน',
   'Miscellaneous Charge': 'ค่าบริการเบ็ดเตล็ด',
 };

@@ -9,6 +9,7 @@ import { calculateFolioSummary, FolioItemLike } from '@/components/front-desk/Fo
 import { AddExtraChargeModal } from '@/components/front-desk/AddExtraChargeModal';
 import { ReceiptTaxInvoiceModal } from '@/components/front-desk/ReceiptTaxInvoiceModal';
 import { FolioCategoryBadge } from '@/lib/folioCategory';
+import { ActionConfirmModal } from '../common/ActionConfirmModal';
 import { apiFetch } from '@/lib/api';
 import {
   X,
@@ -68,6 +69,7 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
   const [isReceiptOpen, setIsReceiptOpen] = useState<boolean>(false);
   const [settledBill, setSettledBill] = useState<DetailedBill | null>(null);
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
+  const [isConfirmCheckoutOpen, setIsConfirmCheckoutOpen] = useState<boolean>(false);
 
   const guestDisplayName = reservation
     ? resolveGuestName(reservation) ||
@@ -218,9 +220,16 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
     setFolioItems((prev) => prev.filter((it) => it.id !== itemId));
   };
 
-  // Submit checkout and cashier settlement
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Open confirmation modal before finalizing checkout
+  const handleOpenConfirm = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setError(null);
+    setIsConfirmCheckoutOpen(true);
+  };
+
+  // Submit checkout and cashier settlement after confirmation
+  const handleExecuteCheckOut = async () => {
+    setIsConfirmCheckoutOpen(false);
     setError(null);
     setIsSubmitting(true);
 
@@ -327,10 +336,10 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
 
       // Trigger success toast notification
       toast.showSuccess(
-        t('checkout.settleSuccess') || (locale === 'th' ? 'บันทึกการชำระเงินและเช็คเอาท์สำเร็จ' : 'Payment settled and checked out successfully'),
+        t('checkout.settleSuccess') || (locale === 'th' ? 'บันทึกการชำระเงินและเช็คเอาต์สำเร็จ' : 'Payment settled and checked out successfully'),
         t('checkout.settleSuccessDesc', { room: reservation.roomNumber || '—', guest: guestDisplayName }) ||
           (locale === 'th'
-            ? `ห้อง ${reservation.roomNumber || '—'} (${guestDisplayName}) บันทึกการชำระเงินและเช็คเอาท์เรียบร้อยแล้ว`
+            ? `ห้อง ${reservation.roomNumber || '—'} (${guestDisplayName}) บันทึกการชำระเงินและเช็คเอาต์เรียบร้อยแล้ว`
             : `Room ${reservation.roomNumber || '—'} (${guestDisplayName}) payment settled and checked out successfully`)
       );
 
@@ -345,7 +354,7 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
     }
   };
 
-  const handleSettleAndCheckOut = handleSubmit;
+  const handleSettleAndCheckOut = handleOpenConfirm;
 
   const handleFinish = () => {
     onClose();
@@ -449,7 +458,7 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
               </div>
             ) : (
               /* Check-out & Folio Settlement Flow */
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleOpenConfirm} className="space-y-5">
                 {/* Stay Info Card */}
                 <div className="bg-slate-50 rounded-lg border border-slate-200 p-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
                   <div>
@@ -725,6 +734,59 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Confirmation Modal before finalizing Check-out */}
+      <ActionConfirmModal
+        isOpen={isConfirmCheckoutOpen}
+        title={locale === 'th' ? 'ยืนยันดำเนินการเช็คเอาต์' : 'Confirm Check-Out'}
+        description={
+          locale === 'th'
+            ? 'กรุณาตรวจสอบยอดชำระสุทธิ การคืนคีย์การ์ด และข้อมูลแขกก่อนยืนยันการเช็คเอาต์'
+            : 'Please verify net payment due, keycard return status, and guest details before confirming check-out.'
+        }
+        confirmText={locale === 'th' ? 'ยืนยันเช็คเอาต์และปิดยอด' : 'Confirm Check-Out'}
+        cancelText={t('common.cancel')}
+        variant="primary"
+        icon="check"
+        isSubmitting={isSubmitting}
+        onConfirm={handleExecuteCheckOut}
+        onClose={() => setIsConfirmCheckoutOpen(false)}
+        summaryDetails={[
+          {
+            label: locale === 'th' ? 'ห้องพัก' : 'Room',
+            value: reservation.roomNumber ? `ห้อง ${reservation.roomNumber}` : '—',
+          },
+          {
+            label: locale === 'th' ? 'ชื่อผู้เข้าพัก' : 'Guest Name',
+            value: guestDisplayName,
+          },
+          {
+            label: locale === 'th' ? 'การคืนคีย์การ์ด' : 'Keycard Return',
+            value: keyCardReturned
+              ? (locale === 'th' ? 'คืนเรียบร้อย' : 'Returned')
+              : (locale === 'th' ? 'ยังไม่ได้รับคืน (หักมัดจำ)' : 'Not Returned'),
+          },
+          {
+            label: locale === 'th' ? 'วิธีชำระเงิน' : 'Payment Method',
+            value:
+              paymentMethod === 'cash'
+                ? (locale === 'th' ? 'เงินสด' : 'Cash')
+                : paymentMethod === 'qr_promptpay'
+                  ? (locale === 'th' ? 'ไทยคิวอาร์ (PromptPay)' : 'Thai QR')
+                  : paymentMethod === 'credit_card'
+                    ? (locale === 'th' ? 'บัตรเครดิต/เดบิต' : 'Credit/Debit Card')
+                    : (locale === 'th' ? 'โอนเงินธนาคาร' : 'Bank Transfer'),
+          },
+          {
+            label: locale === 'th' ? 'ยอดชำระสุทธิ' : 'Net Payment Due',
+            value: (
+              <span className="font-mono font-bold text-emerald-700">
+                {formatCurrency(summary.netDue)}
+              </span>
+            ),
+          },
+        ]}
+      />
 
       {/* Add Extra Charge Modal */}
       <AddExtraChargeModal

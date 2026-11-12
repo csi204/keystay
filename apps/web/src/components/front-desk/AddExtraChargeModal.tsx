@@ -23,7 +23,7 @@ export const EXTRA_CHARGE_PRESETS: ExtraChargePreset[] = [
   // Service
   { id: 'sv-bed', category: 'service', en: 'Extra Bed with Breakfast', th: 'เตียงเสริมพร้อมอาหารเช้า', price: '500' },
   { id: 'sv-airport', category: 'service', en: 'Airport Shuttle Transfer', th: 'รถรับส่งสนามบิน', price: '300' },
-  { id: 'sv-lateco', category: 'service', en: 'Late Check-out Hourly Fee', th: 'ค่าธรรมเนียมเช็คเอาท์เกินเวลา (รายชั่วโมง)', price: '200' },
+  { id: 'sv-lateco', category: 'service', en: 'Late Check-out Hourly Fee', th: 'ค่าธรรมเนียมเช็คเอาต์เกินเวลา (รายชั่วโมง)', price: '200' },
   // Damage
   { id: 'dm-key', category: 'damage', en: 'Lost Key Card Replacement', th: 'ค่าปรับคีย์การ์ดสูญหาย', price: '200' },
   { id: 'dm-linen', category: 'damage', en: 'Stained Bed Linen', th: 'ค่าซักทำความสะอาดผ้าปูที่นอนเปื้อน', price: '300' },

@@ -328,7 +328,7 @@ export const ManagerDashboardPage: React.FC = () => {
                   <LogOut className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="text-xs text-slate-500">เช็คเอาท์วันนี้</div>
+                  <div className="text-xs text-slate-500">เช็คเอาต์วันนี้</div>
                   <div className="text-base font-bold text-slate-900 font-mono">
                     {data.kpi.checkouts_today} รายการ
                   </div>
