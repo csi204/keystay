@@ -26,13 +26,13 @@ export type TaskStatus = z.infer<typeof TaskStatusEnum>;
 export const StaffShiftEnum = z.enum(['day', 'night']);
 export type StaffShift = z.infer<typeof StaffShiftEnum>;
 
-export const IssueTypeEnum = z.enum(['damage', 'missing_item', 'malfunction', 'hygiene']);
+export const IssueTypeEnum = z.enum(['damage', 'missing_item', 'malfunction', 'hygiene', 'lost_and_found']);
 export type IssueType = z.infer<typeof IssueTypeEnum>;
 
 export const IssueSeverityEnum = z.enum(['low', 'medium', 'high', 'critical']);
 export type IssueSeverity = z.infer<typeof IssueSeverityEnum>;
 
-export const IssueStatusEnum = z.enum(['open', 'acknowledged', 'resolved']);
+export const IssueStatusEnum = z.enum(['open', 'acknowledged', 'resolved', 'expired_claimed']);
 export type IssueStatus = z.infer<typeof IssueStatusEnum>;
 
 // ==========================================
@@ -59,6 +59,8 @@ export const UpdateTaskSchema = z.object({
   scheduledDate: z.string().optional(),
   startedAt: z.string().optional(),
   completedAt: z.string().optional(),
+  beforePhotoUrl: z.string().optional().nullable(),
+  afterPhotoUrl: z.string().optional().nullable(),
 });
 
 export const AssignTaskSchema = z.object({
@@ -71,6 +73,7 @@ export const CompleteTaskSchema = z.object({
   inspectionStatus: z.enum(['passed', 'pending_inspection']).default('passed'),
   notes: z.string().optional(),
   completedBy: z.string().optional(),
+  afterPhotoUrl: z.string().optional().nullable(),
 });
 
 // ==========================================
@@ -113,6 +116,9 @@ export const ReportIssueSchema = z.object({
   severity: IssueSeverityEnum.default('medium'),
   photoR2Key: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
+  storageLocation: z.string().optional().default('Front Desk Counter'),
+  retentionDays: z.coerce.number().int().positive().optional().default(7),
+  receivedByName: z.string().optional().nullable(),
 });
 
 // ==========================================

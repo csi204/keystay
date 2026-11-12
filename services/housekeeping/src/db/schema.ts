@@ -42,12 +42,14 @@ export const housekeepingTasks = sqliteTable('housekeeping_tasks', {
   scheduledDate: text('scheduled_date').notNull(),
   startedAt: text('started_at'),
   completedAt: text('completed_at'),
+  beforePhotoUrl: text('before_photo_url'),
+  afterPhotoUrl: text('after_photo_url'),
   eventSource: text('event_source').notNull().default('manual'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 });
 
-// 3. Room Issues Table (รายการแจ้งสิ่งของชำรุด/ปัญหาในห้องพัก)
+// 3. Room Issues Table (รายการแจ้งสิ่งของชำรุด/ปัญหาในห้องพัก & Lost & Found)
 export const roomIssues = sqliteTable('room_issues', {
   id: text('id').primaryKey(),
   taskId: text('task_id').references(() => housekeepingTasks.id),
@@ -56,7 +58,7 @@ export const roomIssues = sqliteTable('room_issues', {
     .notNull()
     .references(() => housekeepingStaff.id),
   issueType: text('issue_type', {
-    enum: ['damage', 'missing_item', 'malfunction', 'hygiene'],
+    enum: ['damage', 'missing_item', 'malfunction', 'hygiene', 'lost_and_found'],
   }).notNull(),
   description: text('description').notNull(),
   photoR2Key: text('photo_r2_key'),
@@ -66,10 +68,13 @@ export const roomIssues = sqliteTable('room_issues', {
     .notNull()
     .default('medium'),
   status: text('status', {
-    enum: ['open', 'acknowledged', 'resolved'],
+    enum: ['open', 'acknowledged', 'resolved', 'expired_claimed'],
   })
     .notNull()
     .default('open'),
+  storageLocation: text('storage_location').default('Front Desk Counter'),
+  retentionDays: integer('retention_days').default(7),
+  receivedByName: text('received_by_name'),
   resolvedAt: text('resolved_at'),
   createdAt: text('created_at').notNull(),
 });
@@ -135,6 +140,25 @@ export const outsourceContacts = sqliteTable('outsource_contacts', {
   updatedAt: text('updated_at').notNull(),
 });
 
+// 7. Task Templates Table (แม่แบบงานมาตรฐาน SOP สำหรับแม่บ้าน - กำหนดโดย Front Desk & Owner)
+export const taskTemplates = sqliteTable('task_templates', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  taskType: text('task_type', {
+    enum: ['checkout_clean', 'stayover_clean', 'deep_clean', 'inspection'],
+  }).notNull(),
+  defaultPriority: text('default_priority', {
+    enum: ['urgent', 'high', 'normal', 'low'],
+  })
+    .notNull()
+    .default('normal'),
+  estimatedMinutes: integer('estimated_minutes').notNull().default(30),
+  description: text('description'),
+  isActive: integer('is_active').notNull().default(1),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
+
 export type HousekeepingStaff = typeof housekeepingStaff.$inferSelect;
 export type NewHousekeepingStaff = typeof housekeepingStaff.$inferInsert;
 
@@ -152,3 +176,6 @@ export type NewOutboxEvent = typeof outboxEvents.$inferInsert;
 
 export type OutsourceContact = typeof outsourceContacts.$inferSelect;
 export type NewOutsourceContact = typeof outsourceContacts.$inferInsert;
+
+export type TaskTemplate = typeof taskTemplates.$inferSelect;
+export type NewTaskTemplate = typeof taskTemplates.$inferInsert;

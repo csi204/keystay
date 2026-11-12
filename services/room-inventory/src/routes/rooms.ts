@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, or } from 'drizzle-orm';
 import { getDb } from '../db/client';
 import {
   rooms,
@@ -272,14 +272,14 @@ const ALLOWED_TRANSITIONS: Record<string, string[]> = {
   available: ['reserved', 'occupied', 'cleaning', 'maintenance', 'out_of_order'],
   reserved: ['occupied', 'available'],
   occupied: ['checked_out', 'occupied'],
-  checked_out: ['cleaning'],
+  checked_out: ['cleaning', 'available'],
   cleaning: ['available', 'maintenance'],
   maintenance: ['cleaning', 'available', 'out_of_order'],
   out_of_order: ['maintenance', 'available'],
 };
 
-// API #19: PUT /rooms/:id/status - ปรับปรุงสถานะห้องพักตาม State Machine พร้อมบันทึกประวัติ (Atomic db.batch)
-roomsRoute.put('/:id/status', async (c) => {
+// API #19: PUT & PATCH /rooms/:id/status - ปรับปรุงสถานะห้องพักตาม State Machine พร้อมบันทึกประวัติ (Atomic db.batch)
+const updateRoomStatusHandler = async (c: any) => {
   const id = c.req.param('id');
   const body = await c.req.json();
   const parsed = UpdateRoomStatusSchema.safeParse(body);
@@ -291,11 +291,16 @@ roomsRoute.put('/:id/status', async (c) => {
   }
 
   const db = getDb(c.env.DB);
-  const room = await db.select().from(rooms).where(eq(rooms.id, id)).get();
+  const room = await db
+    .select()
+    .from(rooms)
+    .where(or(eq(rooms.id, id), eq(rooms.roomNumber, id), eq(rooms.roomNumber, id.replace(/^rm-/, ''))))
+    .get();
   if (!room) {
     return c.json({ success: false, error: 'NOT_FOUND', message: 'Room not found' }, 404);
   }
 
+  const canonicalRoomId = room.id;
   const previousStatus = room.status;
   const newStatus = parsed.data.status;
 
@@ -319,7 +324,7 @@ roomsRoute.put('/:id/status', async (c) => {
   const outboxId = crypto.randomUUID();
 
   const outboxPayload = JSON.stringify({
-    roomId: id,
+    roomId: canonicalRoomId,
     roomNumber: room.roomNumber,
     previousStatus,
     newStatus,
@@ -329,10 +334,10 @@ roomsRoute.put('/:id/status', async (c) => {
 
   // Atomic db.batch() according to Rule 2 in skill.md
   await db.batch([
-    db.update(rooms).set({ status: newStatus, updatedAt: now }).where(eq(rooms.id, id)),
+    db.update(rooms).set({ status: newStatus, updatedAt: now }).where(eq(rooms.id, canonicalRoomId)),
     db.insert(roomStatusHistory).values({
       id: historyId,
-      roomId: id,
+      roomId: canonicalRoomId,
       previousStatus,
       newStatus,
       changedBy: parsed.data.changedBy ?? null,
@@ -361,7 +366,11 @@ roomsRoute.put('/:id/status', async (c) => {
       updatedAt: now,
     },
   });
-});
+};
+
+roomsRoute.put('/:id/status', updateRoomStatusHandler);
+roomsRoute.patch('/:id/status', updateRoomStatusHandler);
+
 
 // API #27: PUT /rooms/:id/maintenance - ปรับห้องเข้าโหมดซ่อมบำรุง หรือปลดจากการซ่อมบำรุงกลับมาใช้งาน
 roomsRoute.put('/:id/maintenance', async (c) => {

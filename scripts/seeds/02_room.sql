@@ -60,3 +60,14 @@ INSERT OR REPLACE INTO room_status_history (id, room_id, previous_status, new_st
 ('rsh-001', 'rm-202', 'reserved', 'occupied', 'usr-fd-003', 'Guest check-in', 'api', '2026-09-24T14:15:00Z'),
 ('rsh-002', 'rm-203', 'occupied', 'checked_out', 'usr-fd-003', 'Guest check-out completed', 'api', '2026-09-26T11:30:00Z'),
 ('rsh-003', 'rm-205', 'available', 'maintenance', 'usr-mgr-002', 'Air conditioning inspection', 'manual', '2026-09-25T09:00:00Z');
+
+-- 6. Minibar Items (สินค้ามินิบาร์มาตรฐานประจำห้องพัก)
+INSERT OR REPLACE INTO minibar_items (id, name, category, price_per_unit, unit, is_active, created_at, updated_at) VALUES
+('mb-001', 'น้ำดื่ม 600ml', 'เครื่องดื่ม', 20.00, 'ขวด', 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z'),
+('mb-002', 'โค้ก 330ml', 'เครื่องดื่ม', 35.00, 'กระป๋อง', 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z'),
+('mb-003', 'เบียร์ Chang 330ml', 'แอลกอฮอล์', 80.00, 'กระป๋อง', 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z'),
+('mb-004', 'มันฝรั่งทอด', 'ขนม', 45.00, 'ถุง', 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z'),
+('mb-005', 'ช็อกโกแลต KitKat', 'ขนม', 35.00, 'แท่ง', 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z'),
+('mb-006', 'กาแฟสำเร็จรูป', 'เครื่องดื่ม', 25.00, 'ซอง', 0, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z');
+
+
