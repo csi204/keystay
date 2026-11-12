@@ -169,6 +169,8 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
     return (base * totalNights).toFixed(2);
   }, [selectedRoomType, totalNights]);
 
+  const isDateRangeInvalid = Boolean(checkInDate && checkOutDate && checkOutDate <= checkInDate);
+
   const handleSlipFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -204,6 +206,10 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
     }
     if (!idCardNumber.trim() || (!isValidThaiId(idCardNumber) && !isValidPassport(idCardNumber))) {
       setError(t('res.errorId'));
+      return;
+    }
+    if (checkOutDate <= checkInDate) {
+      setError(locale === 'th' ? 'วันเช็คเอาต์ต้องหลังจากวันเช็คอินอย่างน้อย 1 คืน' : 'Check-out date must be after check-in date');
       return;
     }
     if (!roomId) {
@@ -475,8 +481,16 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
                   placement="top"
                   value={checkOutDate}
                   onChange={setCheckOutDate}
-                  className="w-full text-sm py-2 px-3 bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono tabular-nums"
+                  className={`w-full text-sm py-2 px-3 bg-slate-50 border rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono tabular-nums ${
+                    isDateRangeInvalid ? 'border-rose-400 dark:border-rose-500 ring-1 ring-rose-500/20' : 'border-slate-200'
+                  }`}
                 />
+                {isDateRangeInvalid && (
+                  <p className="text-xs text-rose-600 dark:text-rose-400 flex items-center gap-1 mt-1 font-medium">
+                    <AlertCircle className="w-3 h-3 text-rose-500 shrink-0" />
+                    <span>วันเช็คเอาต์ต้องหลังจากวันเช็คอินอย่างน้อย 1 คืน</span>
+                  </p>
+                )}
               </div>
             </div>
 
