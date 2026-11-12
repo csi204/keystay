@@ -389,14 +389,26 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
           setLightboxPhoto(null);
           return;
         }
-        if (isOpen && !isExtendOpen) {
+        if (isEditingNotes) {
+          setIsEditingNotes(false);
+          return;
+        }
+        if (isOpen && !isExtendOpen && !isSlipViewerOpen && !isAmenitiesModalOpen) {
           onClose();
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isExtendOpen, lightboxPhoto, onClose]);
+  }, [
+    isOpen,
+    isExtendOpen,
+    isSlipViewerOpen,
+    isAmenitiesModalOpen,
+    lightboxPhoto,
+    isEditingNotes,
+    onClose,
+  ]);
 
   if (!isOpen || !room) return null;
 
@@ -1211,6 +1223,15 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                         <textarea
                           value={editedNotes}
                           onChange={(e) => setEditedNotes(e.target.value)}
+                          onKeyDown={(e) => {
+                            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                              e.preventDefault();
+                              handleSaveNotes();
+                            } else if (e.key === 'Escape') {
+                              e.preventDefault();
+                              handleCancelEditNotes();
+                            }
+                          }}
                           maxLength={500}
                           rows={3}
                           placeholder={t('notes.placeholder') || 'พิมพ์บันทึกหรือหมายเหตุสำหรับห้องพักนี้...'}
@@ -1234,6 +1255,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                               type="button"
                               onClick={handleSaveNotes}
                               disabled={isSavingNotes}
+                              title={t('common.save') ? `${t('common.save')} (Ctrl+Enter)` : 'บันทึก (Ctrl+Enter)'}
                               className="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-lg transition-colors flex items-center gap-1 shadow-xs"
                             >
                               {isSavingNotes ? (
@@ -1429,7 +1451,16 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
 
             {/* Right Pane (7 Columns): 1-Page Fast Booking Form */}
             <div className="md:col-span-7 bg-white p-5 sm:p-6 flex flex-col justify-between overflow-y-auto">
-              <form onSubmit={handleBookingSubmit} className="space-y-4">
+              <form
+                onSubmit={handleBookingSubmit}
+                onKeyDown={(e) => {
+                  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    handleBookingSubmit(e);
+                  }
+                }}
+                className="space-y-4"
+              >
                 {/* Right Pane Header */}
                 <div className="flex items-start justify-between pb-3 border-b border-slate-100">
                   <div>

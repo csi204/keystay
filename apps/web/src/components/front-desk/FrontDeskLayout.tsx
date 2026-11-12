@@ -16,11 +16,13 @@ import {
   X,
   ReceiptText,
   Search,
+  Keyboard,
 } from 'lucide-react';
 import { getAuthUser, clearAuthSession } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { QuickEmergencyDrawer } from './QuickEmergencyDrawer';
 import { GlobalCommandPalette } from './GlobalCommandPalette';
+import { KeyboardShortcutsModal } from '@/components/common/KeyboardShortcutsModal';
 
 // Backward compatibility references for existing layout tests:
 // t('nav.roomMatrix')
@@ -45,8 +47,9 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
   const [isEmergencyOpen, setIsEmergencyOpen] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState<boolean>(false);
 
-  // Global Command Palette Shortcut (Ctrl+K, Cmd+K, or / when not focused in input)
+  // Global Shortcuts Engine (Ctrl+K, Cmd+K, /, ?, Esc)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
@@ -67,11 +70,44 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
         setIsCommandPaletteOpen(true);
         return;
       }
+
+      if (e.key === '?' && !isInput) {
+        e.preventDefault();
+        setIsShortcutsOpen((prev) => !prev);
+        return;
+      }
+
+      if (e.key === 'Escape') {
+        if (isShortcutsOpen) {
+          setIsShortcutsOpen(false);
+          return;
+        }
+        if (isCommandPaletteOpen) {
+          setIsCommandPaletteOpen(false);
+          return;
+        }
+        if (isMobileMenuOpen) {
+          setIsMobileMenuOpen(false);
+          return;
+        }
+        if (isEmergencyOpen) {
+          setIsEmergencyOpen(false);
+          return;
+        }
+      }
+    };
+
+    const handleOpenShortcuts = () => {
+      setIsShortcutsOpen(true);
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+    window.addEventListener('open-keyboard-shortcuts', handleOpenShortcuts);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('open-keyboard-shortcuts', handleOpenShortcuts);
+    };
+  }, [isShortcutsOpen, isCommandPaletteOpen, isMobileMenuOpen, isEmergencyOpen]);
 
   // Sidebar Collapsible state (remember in localStorage)
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
@@ -318,6 +354,25 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
                 </div>
               )}
 
+              {/* Keyboard Shortcuts trigger */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  setIsShortcutsOpen(true);
+                }}
+                className="w-full py-2 px-3 text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 rounded-lg border border-slate-200 transition-colors flex items-center justify-between min-h-[40px]"
+                title={locale === 'th' ? 'ดูคีย์ลัดทั้งหมด (?)' : 'Keyboard shortcuts (?)'}
+              >
+                <div className="flex items-center gap-2">
+                  <Keyboard className="w-4 h-4 text-slate-500" strokeWidth={1.75} aria-hidden="true" />
+                  <span>{locale === 'th' ? 'คีย์ลัดระบบ' : 'Keyboard Shortcuts'}</span>
+                </div>
+                <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-slate-100 text-slate-500 rounded border border-slate-200">
+                  ?
+                </kbd>
+              </button>
+
               {/* User profile & logout */}
               <div className="flex items-center justify-between pt-2 border-t border-slate-200/80">
                 <div className="flex items-center gap-2.5 min-w-0">
@@ -546,6 +601,34 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
             </div>
           )}
 
+          {/* Keyboard Shortcuts Trigger Button */}
+          {isCollapsed ? (
+            <button
+              type="button"
+              onClick={() => setIsShortcutsOpen(true)}
+              title={locale === 'th' ? 'ดูคีย์ลัดทั้งหมด (?)' : 'Keyboard shortcuts (?)'}
+              aria-label="Keyboard shortcuts"
+              className="w-full flex items-center justify-center p-1.5 text-xs font-bold text-slate-700 bg-white hover:bg-slate-100 rounded-md border border-slate-200 shadow-2xs transition-colors"
+            >
+              <Keyboard className="w-3.5 h-3.5 text-slate-500" strokeWidth={1.75} aria-hidden="true" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsShortcutsOpen(true)}
+              className="w-full flex items-center justify-between px-2.5 py-1.5 text-xs font-medium text-slate-600 bg-white hover:bg-slate-50 hover:text-slate-900 rounded-md border border-slate-200 shadow-2xs transition-colors"
+              title={locale === 'th' ? 'ดูคีย์ลัดทั้งหมด (?)' : 'Keyboard shortcuts (?)'}
+            >
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Keyboard className="w-3.5 h-3.5 text-slate-400 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+                <span className="truncate">{locale === 'th' ? 'คีย์ลัดระบบ' : 'Shortcuts'}</span>
+              </div>
+              <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-slate-100 text-slate-500 rounded border border-slate-200">
+                ?
+              </kbd>
+            </button>
+          )}
+
           {/* User Profile Info & Logout */}
           <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
             {isCollapsed ? (
@@ -629,6 +712,14 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
       <GlobalCommandPalette
         isOpen={isCommandPaletteOpen}
         onClose={() => setIsCommandPaletteOpen(false)}
+      />
+
+      {/* ========================================================================= */}
+      {/* 7. KEYBOARD SHORTCUTS CHEATSHEET MODAL (?)                                */}
+      {/* ========================================================================= */}
+      <KeyboardShortcutsModal
+        isOpen={isShortcutsOpen}
+        onClose={() => setIsShortcutsOpen(false)}
       />
     </div>
   );
