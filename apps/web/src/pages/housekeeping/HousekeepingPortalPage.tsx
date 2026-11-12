@@ -4957,7 +4957,8 @@ export const HousekeepingPortalPage: React.FC = () => {
                     <span className="text-[10px] text-slate-400 font-mono">ก่อนเริ่มงาน</span>
                   </div>
                   <div
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       if (selectedEvidenceRoom.beforePhotoUrl) {
                         setFullscreenPhotoUrl({
                           url: selectedEvidenceRoom.beforePhotoUrl,
@@ -4966,7 +4967,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                       }
                     }}
                     className={`rounded-2xl overflow-hidden border-2 border-amber-200 bg-slate-900 aspect-4/3 flex items-center justify-center relative group ${
-                      selectedEvidenceRoom.beforePhotoUrl ? 'cursor-pointer hover:border-amber-400' : ''
+                      selectedEvidenceRoom.beforePhotoUrl ? 'cursor-pointer hover:border-amber-400 active:scale-98' : ''
                     }`}
                   >
                     {selectedEvidenceRoom.beforePhotoUrl ? (
@@ -5005,7 +5006,8 @@ export const HousekeepingPortalPage: React.FC = () => {
                     <span className="text-[10px] text-emerald-600 font-mono font-bold">ตรวจรับผ่าน</span>
                   </div>
                   <div
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       if (selectedEvidenceRoom.afterPhotoUrl) {
                         setFullscreenPhotoUrl({
                           url: selectedEvidenceRoom.afterPhotoUrl,
@@ -5014,7 +5016,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                       }
                     }}
                     className={`rounded-2xl overflow-hidden border-2 border-emerald-300 bg-slate-900 aspect-4/3 flex items-center justify-center relative group ${
-                      selectedEvidenceRoom.afterPhotoUrl ? 'cursor-pointer hover:border-emerald-500' : ''
+                      selectedEvidenceRoom.afterPhotoUrl ? 'cursor-pointer hover:border-emerald-500 active:scale-98' : ''
                     }`}
                   >
                     {selectedEvidenceRoom.afterPhotoUrl ? (
@@ -5074,8 +5076,9 @@ export const HousekeepingPortalPage: React.FC = () => {
           ==================================================== */}
       {fullscreenPhotoUrl && (
         <div
+          style={{ zIndex: 99999 }}
           onClick={() => setFullscreenPhotoUrl(null)}
-          className="fixed inset-0 z-60 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 flex flex-col items-center justify-center bg-black/95 backdrop-blur-md p-4 animate-in fade-in duration-200"
         >
           {/* Top Bar */}
           <div
@@ -5091,7 +5094,7 @@ export const HousekeepingPortalPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setFullscreenPhotoUrl(null)}
-              className="p-2 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white transition-all cursor-pointer flex items-center gap-1.5 text-xs font-semibold"
+              className="p-2 rounded-xl bg-white/20 hover:bg-white/30 active:scale-95 text-white transition-all cursor-pointer flex items-center gap-1.5 text-xs font-semibold"
             >
               <X className="w-5 h-5" />
               <span className="hidden sm:inline">ปิด (Esc)</span>
@@ -5101,7 +5104,7 @@ export const HousekeepingPortalPage: React.FC = () => {
           {/* Fullscreen Image Container */}
           <div
             onClick={(e) => e.stopPropagation()}
-            className="relative max-w-4xl w-full max-h-[82vh] rounded-2xl overflow-hidden bg-black/50 border border-white/10 shadow-2xl flex items-center justify-center"
+            className="relative max-w-4xl w-full max-h-[82vh] rounded-2xl overflow-hidden bg-black/50 border border-white/20 shadow-2xl flex items-center justify-center"
           >
             <img
               src={fullscreenPhotoUrl.url}
@@ -5110,7 +5113,7 @@ export const HousekeepingPortalPage: React.FC = () => {
             />
           </div>
 
-          <p className="text-white/60 text-xs mt-3 select-none">
+          <p className="text-white/70 text-xs mt-3 select-none">
             แตะบริเวณพื้นหลังสีดำหรือปุ่มปิดเพื่อกลับสู่หน้ารายการ
           </p>
         </div>
