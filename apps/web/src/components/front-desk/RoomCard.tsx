@@ -1,8 +1,25 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Room, RoomType, RoomStatus } from '@keystay/types';
 import { useI18n } from '@/lib/i18n';
 import { localizeRoomType, localizeRoomNote, localizeAmenity } from '@/lib/localizeMetadata';
-import { User, BedDouble, Bath, Users, Zap, Wrench, Calendar } from 'lucide-react';
+import {
+  LucideIcon,
+  User,
+  BedDouble,
+  Bath,
+  Users,
+  Zap,
+  Wrench,
+  Calendar,
+  MoreVertical,
+  CalendarPlus,
+  CreditCard,
+  Clock,
+  PlusCircle,
+  LogOut,
+  KeyRound,
+  FileText,
+} from 'lucide-react';
 import { formatDisplayDate } from '@/components/common/CustomDatePicker';
 
 export type RoomWithDetails = Room & {
@@ -10,6 +27,77 @@ export type RoomWithDetails = Room & {
   guestName?: string;
   checkoutDate?: string;
 };
+
+export interface QuickActionItem {
+  id: string;
+  label: string;
+  icon: LucideIcon;
+  variant?: 'default' | 'danger';
+}
+
+export function getRoomQuickActions(room: Room, locale: string = 'th'): QuickActionItem[] {
+  const isTh = locale === 'th';
+  switch (room.status) {
+    case 'available':
+      return [
+        {
+          id: 'walkin',
+          label: isTh ? 'เปิดห้องด่วน (Walk-In)' : 'Quick Walk-In',
+          icon: Zap,
+        },
+        {
+          id: 'booking',
+          label: isTh ? 'สร้างการจองใหม่' : 'New Booking',
+          icon: CalendarPlus,
+        },
+      ];
+    case 'occupied':
+      return [
+        {
+          id: 'cashier',
+          label: isTh ? 'ดูบิลแคชเชียร์' : 'Cashier Folio',
+          icon: CreditCard,
+        },
+        {
+          id: 'extend',
+          label: isTh ? 'ขยายเวลาเข้าพัก' : 'Extend Stay',
+          icon: Clock,
+        },
+        {
+          id: 'extra_charge',
+          label: isTh ? 'เพิ่มค่าใช้จ่าย / มินิบาร์' : 'Add Charge / Minibar',
+          icon: PlusCircle,
+        },
+        {
+          id: 'checkout',
+          label: isTh ? 'เช็คเอาต์' : 'Check-out',
+          icon: LogOut,
+          variant: 'danger',
+        },
+      ];
+    case 'reserved':
+      return [
+        {
+          id: 'checkin',
+          label: isTh ? 'เช็คอินทันที' : 'Check-in Now',
+          icon: KeyRound,
+        },
+        {
+          id: 'view',
+          label: isTh ? 'ดูรายละเอียดห้อง' : 'Room Details',
+          icon: FileText,
+        },
+      ];
+    default:
+      return [
+        {
+          id: 'view',
+          label: isTh ? 'ดูรายละเอียดห้อง' : 'Room Details',
+          icon: FileText,
+        },
+      ];
+  }
+}
 
 export interface RoomCardProps {
   room: Room;
@@ -19,6 +107,7 @@ export interface RoomCardProps {
   isSelected?: boolean;
   onClick: (room: Room) => void;
   onQuickBook?: (room: Room) => void;
+  onQuickAction?: (action: string, room: Room) => void;
   density?: 'compact' | 'comfortable';
 }
 
@@ -85,9 +174,27 @@ export const RoomCard: React.FC<RoomCardProps> = ({
   isSelected = false,
   onClick,
   onQuickBook,
+  onQuickAction,
   density = 'compact',
 }) => {
   const { t, formatCurrency, locale } = useI18n();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+    if (typeof document !== 'undefined') {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isMenuOpen]);
+
+  const quickActions = getRoomQuickActions(room, locale);
 
   const statusCfg = ROOM_STATUS_CONFIG[room.status] || {
     label: room.status,
@@ -142,15 +249,70 @@ export const RoomCard: React.FC<RoomCardProps> = ({
           : 'border-slate-200'
       }`}
     >
-      {/* Top Header: Room Number & Tempered Glass Status Badge */}
+      {/* Top Header: Room Number, Tempered Glass Status Badge & Quick Actions Menu */}
       <div className={`flex items-center justify-between gap-2 ${isCompact ? 'mb-1.5' : 'mb-2'}`}>
         <span className="text-lg font-bold font-mono tracking-tight text-slate-900 group-hover:text-slate-800">
           {room.roomNumber}
         </span>
-        <span className="inline-flex items-center gap-1.5 rounded-full text-xs px-2.5 py-0.5 font-semibold text-slate-900 bg-slate-100/70 backdrop-blur-xs border border-slate-200/70 shadow-2xs">
-          <span className={`w-2 h-2 rounded-full shrink-0 ${statusCfg.dot}`} />
-          <span>{localizedStatus}</span>
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="inline-flex items-center gap-1.5 rounded-full text-xs px-2.5 py-0.5 font-semibold text-slate-900 bg-slate-100/70 backdrop-blur-xs border border-slate-200/70 shadow-2xs">
+            <span className={`w-2 h-2 rounded-full shrink-0 ${statusCfg.dot}`} />
+            <span>{localizedStatus}</span>
+          </span>
+          <div className="relative" ref={menuRef}>
+            <button
+              type="button"
+              aria-label="Quick Actions"
+              aria-haspopup="true"
+              aria-expanded={isMenuOpen}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsMenuOpen((prev) => !prev);
+              }}
+              className="p-1 rounded-md text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none cursor-pointer"
+            >
+              <MoreVertical className="w-3.5 h-3.5 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200" strokeWidth={1.75} aria-hidden="true" />
+            </button>
+
+            {/* Quick Actions Dropdown Menu */}
+            {isMenuOpen && quickActions.length > 0 && (
+              <div
+                role="menu"
+                aria-orientation="vertical"
+                className="absolute right-0 top-full mt-1.5 w-48 bg-white dark:bg-slate-900 rounded-lg shadow-xl border border-slate-200 dark:border-slate-800 py-1.5 z-30 overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="px-3 py-1 text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 mb-1">
+                  {locale === 'th' ? `ห้อง ${room.roomNumber}` : `Room ${room.roomNumber}`}
+                </div>
+                {quickActions.map((action) => {
+                  const Icon = action.icon;
+                  const isDanger = action.variant === 'danger' || action.id === 'checkout';
+                  return (
+                    <button
+                      key={action.id}
+                      type="button"
+                      role="menuitem"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsMenuOpen(false);
+                        onQuickAction?.(action.id, room);
+                      }}
+                      className={`w-full px-3 py-2 text-left text-xs font-medium flex items-center gap-2.5 transition-colors cursor-pointer ${
+                        isDanger
+                          ? 'text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40'
+                          : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+                      <span className="truncate">{action.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Room Type & Floor / Price */}

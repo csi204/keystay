@@ -206,6 +206,49 @@ export const RoomMatrixPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  const handleQuickAction = (action: string, room: Room) => {
+    if (action === 'walkin') {
+      setSelectedRoom(room);
+      setModalMode('booking');
+      setModalBookingMode('walkin');
+      setIsModalOpen(true);
+    } else if (action === 'booking') {
+      setSelectedRoom(room);
+      setModalMode('booking');
+      setModalBookingMode('booking');
+      setIsModalOpen(true);
+    } else if (action === 'cashier') {
+      navigate(`/front-desk/cashier?roomId=${room.id}`, {
+        state: { roomId: room.id, roomNumber: room.roomNumber },
+      });
+    } else if (action === 'checkout') {
+      navigate('/front-desk/daily-operations', {
+        state: { roomId: room.id, action: 'checkout' },
+      });
+    } else if (action === 'extend') {
+      setSelectedRoom(room);
+      setModalMode('details');
+      setIsModalOpen(true);
+    } else if (action === 'extra_charge') {
+      handleRoomAction('charge', room);
+    } else if (action === 'checkin') {
+      const res = reservations.find(
+        (r) =>
+          (r.roomId === room.id || (room.roomNumber && r.roomNumber === room.roomNumber)) &&
+          (r.status === 'confirmed' || r.status === 'pending')
+      );
+      if (res) {
+        setCheckInReservationTarget(res);
+      } else {
+        navigate('/front-desk/daily-operations', {
+          state: { roomId: room.id, action: 'checkin' },
+        });
+      }
+    } else if (action === 'view') {
+      handleSelectRoom(room);
+    }
+  };
+
   const handleRoomAction = (
     action: 'checkin' | 'checkout' | 'charge' | 'walkin' | 'clean' | 'extend' | 'refresh' | string,
     room: Room
@@ -622,6 +665,7 @@ export const RoomMatrixPage: React.FC = () => {
                 selectedRoom={selectedRoom}
                 onSelectRoom={handleSelectRoom}
                 onQuickBook={handleQuickBook}
+                onQuickAction={handleQuickAction}
                 roomGuests={roomGuests}
                 roomCheckouts={roomCheckouts}
                 filterStatus={filterStatus}

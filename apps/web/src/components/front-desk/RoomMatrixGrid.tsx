@@ -10,6 +10,7 @@ export interface RoomMatrixGridProps {
   selectedRoom: Room | null;
   onSelectRoom: (room: Room) => void;
   onQuickBook?: (room: Room) => void;
+  onQuickAction?: (action: string, room: Room) => void;
   roomGuests?: Record<string, string>;
   roomCheckouts?: Record<string, string>;
   density?: 'compact' | 'comfortable';
@@ -32,6 +33,7 @@ export const RoomMatrixGrid: React.FC<RoomMatrixGridProps> = ({
   selectedRoom,
   onSelectRoom,
   onQuickBook,
+  onQuickAction,
   roomGuests,
   roomCheckouts,
   density = 'compact',
@@ -147,6 +149,7 @@ export const RoomMatrixGrid: React.FC<RoomMatrixGridProps> = ({
                     isSelected={selectedRoom?.id === room.id}
                     onClick={onSelectRoom}
                     onQuickBook={onQuickBook}
+                    onQuickAction={onQuickAction}
                     density={density}
                   />
                 ))}
@@ -166,6 +169,7 @@ export const RoomMatrixGrid: React.FC<RoomMatrixGridProps> = ({
               isSelected={selectedRoom?.id === room.id}
               onClick={onSelectRoom}
               onQuickBook={onQuickBook}
+              onQuickAction={onQuickAction}
               density={density}
             />
           ))}
