@@ -3,9 +3,17 @@ import assert from 'node:assert';
 import fs from 'node:fs';
 import path from 'node:path';
 
+const getFilePath = (subpath: string) => {
+  const p1 = path.resolve(process.cwd(), subpath);
+  if (fs.existsSync(p1)) return p1;
+  const p2 = path.resolve(process.cwd(), subpath.replace(/^apps\/web\//, ''));
+  if (fs.existsSync(p2)) return p2;
+  return p1;
+};
+
 describe('RoomDetailsModal — Centered Dialog & Split-Pane Fast Booking Modal', () => {
-  const modalPath = path.resolve(process.cwd(), 'apps/web/src/components/front-desk/RoomDetailsModal.tsx');
-  const pagePath = path.resolve(process.cwd(), 'apps/web/src/pages/front-desk/RoomMatrixPage.tsx');
+  const modalPath = getFilePath('apps/web/src/components/front-desk/RoomDetailsModal.tsx');
+  const pagePath = getFilePath('apps/web/src/pages/front-desk/RoomMatrixPage.tsx');
 
   it('modal component exists and uses centered dialog with backdrop blur', () => {
     assert.ok(fs.existsSync(modalPath), 'RoomDetailsModal.tsx should exist');

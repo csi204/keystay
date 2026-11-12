@@ -236,6 +236,9 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
   // Mode: 'details' (single pane max-w-lg) or 'booking' (split pane max-w-4xl)
   const [mode, setMode] = useState<'details' | 'booking'>(initialMode);
   const [bookingMode, setBookingMode] = useState<'walkin' | 'booking'>(initialBookingMode);
+  const [activeTab, setActiveTab] = useState<'stay' | 'room'>(
+    room?.status === 'occupied' ? 'stay' : 'room'
+  );
   const [isExtendOpen, setIsExtendOpen] = useState(false);
   const [isSlipViewerOpen, setIsSlipViewerOpen] = useState(false);
   const [isAmenitiesModalOpen, setIsAmenitiesModalOpen] = useState(false);
@@ -359,6 +362,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
     if (isOpen) {
       setMode(initialMode);
       setBookingMode(initialBookingMode);
+      setActiveTab(room?.status === 'occupied' ? 'stay' : 'room');
       setGuestName('');
       setPhone('');
       setIdCardNumber('');
@@ -375,7 +379,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
       setValidationErrors([]);
       setSubmitError(null);
     }
-  }, [isOpen, initialMode, initialBookingMode, todayStr, tomorrowStr, roomType]);
+  }, [isOpen, initialMode, initialBookingMode, todayStr, tomorrowStr, roomType, room?.status]);
 
   // Close on Escape key press
   useEffect(() => {
@@ -412,6 +416,27 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
   const roomCharges = nightsCount * nightlyRate;
   const depositNum = Number(depositAmount) || 0;
   const estimatedTotal = roomCharges + depositNum;
+
+  // Active Reservation Guest Details
+  const guestFullName =
+    currentReservation?.guest?.fullName ||
+    (currentReservation as any)?.guestName ||
+    t('drawer.guestInfo');
+  const guestPhone =
+    currentReservation?.guest?.phone ||
+    (currentReservation as any)?.phone ||
+    (currentReservation as any)?.guestPhone ||
+    '—';
+  const guestIdCard =
+    currentReservation?.guest?.nationalId ||
+    (currentReservation as any)?.idCardNumber ||
+    (currentReservation as any)?.nationalIdOrPassport ||
+    (currentReservation as any)?.guest?.idCardNumber ||
+    '—';
+  const reservationCode =
+    currentReservation?.reservationCode ||
+    currentReservation?.bookingNumber ||
+    '—';
 
   // Real-time client validation logic
   const validateForm = (): string[] => {
@@ -610,518 +635,677 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
               </button>
             </div>
 
-            {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-5">
-              {/* Room Specifications Card */}
-              <div className="bg-slate-50/80 rounded-xl border border-slate-200/80 p-4 space-y-3">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t('drawer.roomDetails')}
-                </h3>
-
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div>
-                    <span className="text-xs text-slate-500 block mb-0.5">
-                      {t('common.roomType')}
-                    </span>
-                    <span className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-                      <BedDouble className="w-4 h-4 text-slate-500 shrink-0" />
-                      <span>{localizeRoomType(roomType?.name, locale)}</span>
-                    </span>
-                  </div>
-
-                  <div>
-                    <span className="text-xs text-slate-500 block mb-0.5">
-                      {t('common.floor', { floor: '' }).replace('{floor}', '').trim() ||
-                        (locale === 'th' ? 'ชั้น' : 'Floor')}
-                    </span>
-                    <span className="font-mono text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-                      <Layers className="w-4 h-4 text-slate-500 shrink-0" />
-                      <span>{t('common.floor', { floor: room.floor || '1' })}</span>
-                    </span>
-                  </div>
-
-                  <div>
-                    <span className="text-xs text-slate-500 block mb-0.5">
-                      {t('drawer.price')}
-                    </span>
-                    <span className="font-mono tabular-nums text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-                      <DollarSign className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span>{formattedPrice ? `${formattedPrice}${t('common.pricePerNight')}` : '—'}</span>
-                    </span>
-                  </div>
-
-                  <div>
-                    <span className="text-xs text-slate-500 block mb-0.5">
-                      {t('drawer.capacity')}
-                    </span>
-                    <span className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-                      <Users className="w-4 h-4 text-slate-500 shrink-0" />
-                      <span>{t('drawer.capacityCount', { count: roomType?.capacity || 2 })}</span>
-                    </span>
-                  </div>
-                </div>
-
-                {roomType?.description && (
-                  <div className="pt-2 border-t border-slate-200/70 text-xs leading-relaxed text-slate-600">
-                    {localizeRoomDescription(roomType.description, locale)}
-                  </div>
-                )}
-              </div>
-
-              {/* Amenities */}
-              {roomType?.amenities && roomType.amenities.length > 0 && (
-                <div className="space-y-2">
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    {t('drawer.amenities')}
-                  </h3>
-                  <div className="flex flex-wrap gap-1.5">
-                    {roomType.amenities.map((amenity, idx) => (
-                      <span
-                        key={idx}
-                        className="text-xs px-2.5 py-1 font-medium bg-slate-100 text-slate-700 rounded-md border border-slate-200"
-                      >
-                        {localizeAmenity(amenity, locale)}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Housekeeping Proof of Cleanliness Card */}
-              <div className="bg-slate-50/80 rounded-xl border border-slate-200/80 p-4 space-y-3">
-                {/* Header */}
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-slate-400" />
-                      <span>
-                        {locale === 'th'
-                          ? 'หลักฐานการตรวจรับห้องพัก'
-                          : 'Housekeeping Inspection Evidence'}
-                      </span>
-                    </h3>
-                    {(housekeepingTask?.assignedStaff?.name || formattedHousekeepingCompletedAt) && (
-                      <p className="text-[11px] text-slate-500 mt-0.5">
-                        {housekeepingTask?.assignedStaff?.name
-                          ? (locale === 'th' ? 'ผู้ตรวจรับ: ' : 'Inspected by: ') +
-                            housekeepingTask.assignedStaff.name
-                          : ''}
-                        {housekeepingTask?.assignedStaff?.name && formattedHousekeepingCompletedAt
-                          ? ' • '
-                          : ''}
-                        {formattedHousekeepingCompletedAt ? (
-                          <span className="font-mono tabular-nums">
-                            {formattedHousekeepingCompletedAt}
-                          </span>
-                        ) : null}
-                      </p>
-                    )}
-                  </div>
-                  {loadingHousekeeping && (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-400 shrink-0 mt-0.5" />
-                  )}
-                </div>
-
-                {/* Side-by-side Photo Comparison */}
-                <div className="grid grid-cols-2 gap-3">
-                  {/* Before Photo Card */}
-                  <div className="flex flex-col space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-medium text-slate-600 flex items-center gap-1.5">
-                        <Camera className="w-3.5 h-3.5 text-slate-400" />
-                        <span>{locale === 'th' ? 'ก่อนทำความสะอาด' : 'Before Cleaning'}</span>
-                      </span>
-                      {housekeepingTask?.beforePhotoUrl && (
-                        <span className="text-[10px] text-slate-400 flex items-center gap-1 font-mono">
-                          <Eye className="w-3 h-3 text-slate-400" />
-                          <span className="hidden sm:inline">
-                            {locale === 'th' ? 'ดูภาพขยาย' : 'Zoom'}
-                          </span>
-                        </span>
-                      )}
-                    </div>
-
-                    {housekeepingTask?.beforePhotoUrl ? (
-                      <div
-                        role="button"
-                        tabIndex={0}
-                        onClick={() =>
-                          setLightboxPhoto({
-                            url: housekeepingTask.beforePhotoUrl!,
-                            title:
-                              (locale === 'th'
-                                ? 'ภาพก่อนทำความสะอาด — ห้อง '
-                                : 'Before Cleaning — Room ') + room.roomNumber,
-                          })
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            setLightboxPhoto({
-                              url: housekeepingTask.beforePhotoUrl!,
-                              title:
-                                (locale === 'th'
-                                  ? 'ภาพก่อนทำความสะอาด — ห้อง '
-                                  : 'Before Cleaning — Room ') + room.roomNumber,
-                            });
-                          }
-                        }}
-                        className="group relative aspect-4/3 w-full rounded-lg overflow-hidden border border-slate-200/90 bg-slate-900 cursor-pointer shadow-2xs hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-all"
-                      >
-                        <img
-                          src={housekeepingTask.beforePhotoUrl}
-                          alt={locale === 'th' ? 'ภาพก่อนทำความสะอาด' : 'Before cleaning photo'}
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        />
-                        <div className="absolute inset-0 bg-slate-950/0 group-hover:bg-slate-950/40 transition-colors flex items-center justify-center">
-                          <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/95 backdrop-blur-xs p-2 rounded-full text-slate-800 shadow-sm flex items-center justify-center">
-                            <Maximize2 className="w-4 h-4" />
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="aspect-4/3 w-full rounded-lg border border-dashed border-slate-300/80 bg-white/60 flex flex-col items-center justify-center p-3 text-center">
-                        <ImageIcon className="w-5 h-5 text-slate-300 mb-1" />
-                        <span className="text-[11px] text-slate-400 font-medium">
-                          {locale === 'th' ? 'ไม่มีภาพก่อนทำ' : 'No before photo'}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* After Photo Card */}
-                  <div className="flex flex-col space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-medium text-slate-600 flex items-center gap-1.5 truncate">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                        <span className="truncate">
-                          {locale === 'th'
-                            ? 'หลังตรวจรับเสร็จสมบูรณ์'
-                            : 'After Cleaning (Verified)'}
-                        </span>
-                      </span>
-                      {housekeepingTask?.afterPhotoUrl && (
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
-                          <CheckCircle2 className="w-3 h-3 mr-0.5 text-emerald-600" />
-                          {locale === 'th' ? 'ผ่าน' : 'Done'}
-                        </span>
-                      )}
-                    </div>
-
-                    {housekeepingTask?.afterPhotoUrl ? (
-                      <div
-                        role="button"
-                        tabIndex={0}
-                        onClick={() =>
-                          setLightboxPhoto({
-                            url: housekeepingTask.afterPhotoUrl!,
-                            title:
-                              (locale === 'th'
-                                ? 'ภาพหลังตรวจรับเสร็จสมบูรณ์ — ห้อง '
-                                : 'After Cleaning (Verified) — Room ') + room.roomNumber,
-                          })
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            setLightboxPhoto({
-                              url: housekeepingTask.afterPhotoUrl!,
-                              title:
-                                (locale === 'th'
-                                  ? 'ภาพหลังตรวจรับเสร็จสมบูรณ์ — ห้อง '
-                                  : 'After Cleaning (Verified) — Room ') + room.roomNumber,
-                            });
-                          }
-                        }}
-                        className="group relative aspect-4/3 w-full rounded-lg overflow-hidden border border-emerald-200/90 bg-slate-900 cursor-pointer shadow-2xs hover:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all"
-                      >
-                        <img
-                          src={housekeepingTask.afterPhotoUrl}
-                          alt={
-                            locale === 'th'
-                              ? 'หลังตรวจรับเสร็จสมบูรณ์'
-                              : 'After Cleaning (Verified)'
-                          }
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        />
-                        <div className="absolute inset-0 bg-slate-950/0 group-hover:bg-slate-950/40 transition-colors flex items-center justify-center">
-                          <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/95 backdrop-blur-xs p-2 rounded-full text-slate-800 shadow-sm flex items-center justify-center">
-                            <Maximize2 className="w-4 h-4" />
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="aspect-4/3 w-full rounded-lg border border-dashed border-slate-300/80 bg-white/60 flex flex-col items-center justify-center p-3 text-center">
-                        <ImageIcon className="w-5 h-5 text-slate-300 mb-1" />
-                        <span className="text-[11px] text-slate-400 font-medium">
-                          {locale === 'th' ? 'ไม่มีภาพหลังทำ' : 'No after photo'}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Clean status indicator if neither photo exists */}
-                {!housekeepingTask?.beforePhotoUrl && !housekeepingTask?.afterPhotoUrl && (
-                  <div className="p-2.5 rounded-lg bg-white/80 border border-slate-200/80 flex items-center gap-2 text-xs text-slate-500">
-                    <Camera className="w-4 h-4 text-slate-400 shrink-0" />
-                    <span>
-                      {room.status === 'cleaning'
-                        ? locale === 'th'
-                          ? 'อยู่ระหว่างทำความสะอาด รอแม่บ้านบันทึกภาพถ่าย'
-                          : 'Cleaning in progress — awaiting photo inspection'
-                        : locale === 'th'
-                        ? 'ยังไม่มีภาพถ่ายบันทึกการตรวจรับ'
-                        : 'No photo evidence recorded yet'}
-                    </span>
-                  </div>
-                )}
-
-                {/* Task notes if present */}
-                {housekeepingTask?.notes && (
-                  <div className="pt-2 border-t border-slate-200/60 text-[11px] text-slate-600 flex items-start gap-1.5">
-                    <span className="font-semibold text-slate-500 shrink-0">
-                      {locale === 'th' ? 'หมายเหตุ:' : 'Notes:'}
-                    </span>
-                    <span className="italic">{housekeepingTask.notes}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Notes Section */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5 text-slate-400" strokeWidth={1.75} />
-                    <span>{t('drawer.notes')}</span>
-                  </h3>
-                  {!isEditingNotes && (
-                    <button
-                      type="button"
-                      onClick={handleStartEditNotes}
-                      className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-                      title={t('common.edit') || 'แก้ไขบันทึก'}
-                      aria-label="Edit room notes"
-                    >
-                      <Pencil className="w-3.5 h-3.5" strokeWidth={1.75} />
-                    </button>
-                  )}
-                </div>
-
-                {!isEditingNotes ? (
-                  currentNotes ? (
-                    <div className="p-3 bg-amber-50/70 rounded-xl border border-amber-200 text-xs leading-relaxed text-amber-950 whitespace-pre-wrap">
-                      {localizeRoomNote(currentNotes, locale)}
-                    </div>
-                  ) : (
-                    <p className="text-xs italic text-slate-400 py-1">
-                      {t('notes.noNotes') || 'ไม่มีบันทึกเพิ่มเติม / No additional notes'}
-                    </p>
-                  )
-                ) : (
-                  <div className="space-y-2">
-                    <textarea
-                      value={editedNotes}
-                      onChange={(e) => setEditedNotes(e.target.value)}
-                      maxLength={500}
-                      rows={3}
-                      placeholder={t('notes.placeholder') || 'พิมพ์บันทึกหรือหมายเหตุสำหรับห้องพักนี้...'}
-                      className="w-full px-3 py-2 text-xs rounded-xl border border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-800 placeholder-slate-400 bg-white resize-none transition-colors"
-                    />
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] text-slate-400 font-mono">
-                        {editedNotes.length}/500
-                      </span>
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={handleCancelEditNotes}
-                          disabled={isSavingNotes}
-                          className="px-2.5 py-1 text-xs font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors flex items-center gap-1"
-                        >
-                          <X className="w-3.5 h-3.5" strokeWidth={1.75} />
-                          <span>{t('common.cancel') || 'ยกเลิก'}</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleSaveNotes}
-                          disabled={isSavingNotes}
-                          className="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-lg transition-colors flex items-center gap-1 shadow-xs"
-                        >
-                          {isSavingNotes ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={1.75} />
-                          ) : (
-                            <Check className="w-3.5 h-3.5" strokeWidth={1.75} />
-                          )}
-                          <span>{t('common.save') || 'บันทึก'}</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Active Reservation & Payment Slip Card */}
-              {currentReservation && (
-                <div className="bg-slate-50 rounded-xl border border-slate-200/80 p-3.5 space-y-2.5 text-xs shadow-2xs">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-slate-700 flex items-center gap-1.5">
-                      <User className="w-3.5 h-3.5 text-slate-500" />
-                      <span>{currentReservation.guest?.fullName || (currentReservation as any).guestName || t('drawer.guestInfo')}</span>
-                    </span>
-                    <span className="font-mono text-[11px] text-slate-500">
-                      {currentReservation.reservationCode || currentReservation.bookingNumber}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 text-[11px]">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-slate-500">{locale === 'th' ? 'ช่องทาง:' : 'Source:'}</span>
-                      <span className="font-medium text-slate-800">
-                        {(currentReservation as any).bookingSource === 'phone'
-                          ? (locale === 'th' ? 'โทรศัพท์' : 'Phone')
-                          : (currentReservation as any).bookingSource === 'facebook'
-                          ? 'Facebook Page'
-                          : 'Walk-in'}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-slate-500">{locale === 'th' ? 'สถานะ:' : 'Status:'}</span>
-                      <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-semibold ${
-                          (currentReservation as any).paymentStatus === 'paid'
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                            : 'bg-amber-50 text-amber-700 border border-amber-200'
-                        }`}
-                      >
-                        {(currentReservation as any).paymentStatus === 'paid'
-                          ? (locale === 'th' ? 'ชำระแล้ว' : 'Paid')
-                          : (locale === 'th' ? 'รอชำระ' : 'Unpaid')}
-                      </span>
-                    </div>
-                  </div>
-
-                  {currentReservation.checkOutDate && (
-                    <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 text-[11px]">
-                      <span className="text-slate-500">{locale === 'th' ? 'กำหนดเช็คเอาต์:' : 'Check-out:'}</span>
-                      <span className="font-mono font-medium text-slate-800">
-                        {currentReservation.checkOutDate}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Slip Action Button */}
-                  <div className="pt-1">
-                    <button
-                      type="button"
-                      onClick={() => setIsSlipViewerOpen(true)}
-                      className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 rounded-lg text-xs font-medium transition-colors shadow-2xs"
-                    >
-                      <FileCheck2 className="w-3.5 h-3.5 text-slate-600" />
-                      <span>{locale === 'th' ? 'ดูหลักฐานสลิป / ยืนยันสลิป' : 'View / Verify Payment Slip'}</span>
-                    </button>
-                  </div>
-                </div>
-              )}
+            {/* Tab Switcher Bar */}
+            <div className="flex border-b border-slate-200 bg-slate-50/60 px-6 gap-2" role="tablist">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'stay'}
+                onClick={() => setActiveTab('stay')}
+                className={`min-h-[44px] px-3 sm:px-4 py-2.5 text-xs sm:text-sm transition-all flex items-center gap-2 border-b-2 -mb-px ${
+                  activeTab === 'stay'
+                    ? 'border-[#F97316] text-[#F97316] font-bold'
+                    : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300 font-medium'
+                }`}
+              >
+                <UserCheck className="w-4 h-4 shrink-0" />
+                <span>{locale === 'th' ? 'ข้อมูลการเข้าพัก & ค่าใช้จ่าย' : 'Stay & Folio'}</span>
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'room'}
+                onClick={() => setActiveTab('room')}
+                className={`min-h-[44px] px-3 sm:px-4 py-2.5 text-xs sm:text-sm transition-all flex items-center gap-2 border-b-2 -mb-px ${
+                  activeTab === 'room'
+                    ? 'border-[#F97316] text-[#F97316] font-bold'
+                    : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300 font-medium'
+                }`}
+              >
+                <Sparkles className="w-4 h-4 shrink-0" />
+                <span>{locale === 'th' ? 'สภาพห้องพัก & งานแม่บ้าน' : 'Room & Housekeeping'}</span>
+              </button>
             </div>
 
-            {/* Actions Footer */}
-            <div className="p-4 border-t border-slate-200/80 bg-slate-50 flex flex-col gap-2">
-              {room.status === 'available' && (
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setBookingMode('walkin');
-                      setBookingSource('walk_in');
-                      setCheckInDate(todayStr);
-                      setMode('booking');
-                    }}
-                    className="w-full min-h-[44px] text-xs font-semibold py-2.5 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Zap className="w-4 h-4 text-amber-400 shrink-0" />
-                    <span>{locale === 'th' ? 'เปิดห้องด่วน (Walk-In)' : 'Quick Walk-In'}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setBookingMode('booking');
-                      setBookingSource('phone');
-                      setMode('booking');
-                    }}
-                    className="w-full min-h-[44px] text-xs font-semibold py-2.5 px-3 bg-white border border-slate-300 hover:bg-slate-100 text-slate-800 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-xs"
-                  >
-                    <Calendar className="w-4 h-4 text-slate-600 shrink-0" />
-                    <span>{t('drawer.newBooking')}</span>
-                  </button>
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-5">
+              {/* ========================================================================= */}
+              {/* TAB 1: ข้อมูลการเข้าพัก & ค่าใช้จ่าย (STAY & FOLIO)                          */}
+              {/* ========================================================================= */}
+              {activeTab === 'stay' && (
+                <div className="space-y-4">
+                  {/* Guest Information Card */}
+                  {currentReservation ? (
+                    <div className="bg-slate-50/90 rounded-xl border border-slate-200/80 p-4 space-y-3 shadow-2xs">
+                      {/* Guest Name & Reservation Code */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 block mb-0.5">
+                            {locale === 'th' ? 'ผู้เข้าพัก' : 'Guest Name'}
+                          </span>
+                          <span className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                            <User className="w-4 h-4 text-slate-500 shrink-0" />
+                            <span>{guestFullName}</span>
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 block mb-0.5">
+                            {locale === 'th' ? 'รหัสการจอง' : 'Booking Code'}
+                          </span>
+                          <span className="font-mono text-xs font-bold text-slate-700 bg-white px-2 py-0.5 rounded border border-slate-200">
+                            {reservationCode}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Phone & National ID Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2.5 border-t border-slate-200/70 text-xs">
+                        <div>
+                          <span className="text-slate-500 block mb-0.5">
+                            {t('res.phoneNumber') || (locale === 'th' ? 'เบอร์โทรศัพท์' : 'Phone')}
+                          </span>
+                          <span className="font-mono font-medium text-slate-800 flex items-center gap-1.5">
+                            <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span>{guestPhone}</span>
+                          </span>
+                        </div>
+
+                        <div>
+                          <span className="text-slate-500 block mb-0.5">
+                            {locale === 'th' ? 'เลขบัตรประชาชน / พาสปอร์ต' : 'ID / Passport'}
+                          </span>
+                          <span className="font-mono font-medium text-slate-800 flex items-center gap-1.5">
+                            <CreditCard className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span>{guestIdCard}</span>
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Booking Source & Payment Status */}
+                      <div className="flex items-center justify-between pt-2.5 border-t border-slate-200/70 text-xs">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-slate-500">{locale === 'th' ? 'ช่องทาง:' : 'Source:'}</span>
+                          <span className="font-medium text-slate-800">
+                            {(currentReservation as any).bookingSource === 'phone'
+                              ? (locale === 'th' ? 'โทรศัพท์' : 'Phone')
+                              : (currentReservation as any).bookingSource === 'facebook'
+                              ? 'Facebook Page'
+                              : 'Walk-in'}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-slate-500">{locale === 'th' ? 'สถานะ:' : 'Status:'}</span>
+                          <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                              (currentReservation as any).paymentStatus === 'paid'
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                : 'bg-amber-50 text-amber-700 border border-amber-200'
+                            }`}
+                          >
+                            {(currentReservation as any).paymentStatus === 'paid'
+                              ? (locale === 'th' ? 'ชำระแล้ว' : 'Paid')
+                              : (locale === 'th' ? 'รอชำระ' : 'Unpaid')}
+                          </span>
+                        </div>
+                      </div>
+
+                      {currentReservation.checkOutDate && (
+                        <div className="flex items-center justify-between pt-2.5 border-t border-slate-200/70 text-xs">
+                          <span className="text-slate-500 flex items-center gap-1.5">
+                            <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                            <span>{locale === 'th' ? 'กำหนดเช็คเอาต์:' : 'Check-out:'}</span>
+                          </span>
+                          <span className="font-mono font-semibold text-slate-800">
+                            {currentReservation.checkOutDate}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Slip Action Button */}
+                      <div className="pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setIsSlipViewerOpen(true)}
+                          className="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 rounded-lg text-xs font-medium transition-colors shadow-2xs min-h-[38px]"
+                        >
+                          <FileCheck2 className="w-3.5 h-3.5 text-slate-600" />
+                          <span>{locale === 'th' ? 'ดูหลักฐานสลิป / ยืนยันสลิป' : 'View / Verify Payment Slip'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  ) : room.status === 'occupied' ? (
+                    <div className="bg-slate-50/90 rounded-xl border border-slate-200/80 p-4 space-y-2 text-xs">
+                      <div className="flex items-center gap-2 text-slate-700 font-semibold">
+                        <User className="w-4 h-4 text-slate-500" />
+                        <span>{locale === 'th' ? 'ข้อมูลการเข้าพัก (In-House Guest)' : 'In-House Guest'}</span>
+                      </div>
+                      <p className="text-slate-500">
+                        {locale === 'th'
+                          ? 'ห้องพักนี้มีผู้เข้าพักอยู่ สามารถจัดการรายการค่าใช้จ่ายหรือเช็คเอาต์ได้ทันที'
+                          : 'This room is currently occupied. Manage stay details and folio below.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="bg-slate-50/80 rounded-xl border border-slate-200/80 p-6 text-center space-y-2">
+                      <UserCheck className="w-8 h-8 text-slate-300 mx-auto" />
+                      <p className="text-xs font-semibold text-slate-700">
+                        {locale === 'th'
+                          ? 'ไม่มีข้อมูลการเข้าพักในขณะนี้'
+                          : 'No active stay recorded for this room'}
+                      </p>
+                      <p className="text-[11px] text-slate-400">
+                        {locale === 'th'
+                          ? `ห้องพักอยู่ในสถานะ "${localizedStatus}"`
+                          : `Room status is currently "${localizedStatus}"`}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Folio & Stay Operations */}
+                  {room.status === 'occupied' && (
+                    <div className="space-y-2 pt-1">
+                      <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        {locale === 'th' ? 'การจัดการการเข้าพัก & คิดเงิน' : 'Stay & Folio Operations'}
+                      </h3>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            (onAction as any)?.('extend', room);
+                            setIsExtendOpen(true);
+                          }}
+                          className="min-h-[44px] text-xs font-semibold py-2.5 px-2 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-xs"
+                        >
+                          <CalendarPlus className="w-4 h-4 text-slate-600 shrink-0" />
+                          <span>{t('extend.button') || (locale === 'th' ? 'ขยายเวลาเข้าพัก' : 'Extend Stay')}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsAmenitiesModalOpen(true)}
+                          className="min-h-[44px] text-xs font-semibold py-2.5 px-2 bg-white border border-indigo-200 hover:bg-indigo-50/60 text-indigo-700 rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-xs"
+                        >
+                          <Sparkles className="w-4 h-4 text-indigo-600 shrink-0" />
+                          <span>{locale === 'th' ? 'ขอของใช้เสริม' : 'Amenities'}</span>
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => (onAction as any)?.('charge', room)}
+                          className="min-h-[44px] text-xs font-semibold py-2.5 px-2 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-xs"
+                        >
+                          <PlusCircle className="w-4 h-4 text-slate-600 shrink-0" />
+                          <span>{t('folio.addCharge') || (locale === 'th' ? 'เพิ่มค่าใช้จ่าย/มินิบาร์' : 'Add Charge')}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => (onAction as any)?.('checkout', room)}
+                          className="min-h-[44px] text-xs font-semibold py-2.5 px-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5"
+                        >
+                          <LogOut className="w-4 h-4 shrink-0" />
+                          <span>{t('ops.checkOut') || 'เช็คเอาต์'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {room.status === 'reserved' && (
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={() => (onAction as any)?.('checkin', room)}
+                        className="w-full min-h-[44px] text-xs font-semibold py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
+                      >
+                        <LogIn className="w-4 h-4" />
+                        <span>{t('ops.checkIn') || (locale === 'th' ? 'เช็คอิน' : 'Check-In')}</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {room.status === 'available' && (
+                    <div className="grid grid-cols-2 gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBookingMode('walkin');
+                          setBookingSource('walk_in');
+                          setCheckInDate(todayStr);
+                          setMode('booking');
+                        }}
+                        className="w-full min-h-[44px] text-xs font-semibold py-2.5 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span>{locale === 'th' ? 'เปิดห้องด่วน (Walk-In)' : 'Quick Walk-In'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBookingMode('booking');
+                          setBookingSource('phone');
+                          setMode('booking');
+                        }}
+                        className="w-full min-h-[44px] text-xs font-semibold py-2.5 px-3 bg-white border border-slate-300 hover:bg-slate-100 text-slate-800 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-xs"
+                      >
+                        <Calendar className="w-4 h-4 text-slate-600 shrink-0" />
+                        <span>{t('drawer.newBooking')}</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {room.status === 'occupied' && (
-                <div className="space-y-2">
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        (onAction as any)?.('extend', room);
-                        setIsExtendOpen(true);
-                      }}
-                      className="min-h-[44px] text-xs font-semibold py-2.5 px-2 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-xs"
-                    >
-                      <CalendarPlus className="w-4 h-4 text-slate-600 shrink-0" />
-                      <span>{t('extend.button')}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsAmenitiesModalOpen(true)}
-                      className="min-h-[44px] text-xs font-semibold py-2.5 px-2 bg-white border border-indigo-200 hover:bg-indigo-50/60 text-indigo-700 rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-xs"
-                    >
-                      <Sparkles className="w-4 h-4 text-indigo-600 shrink-0" />
-                      <span>{locale === 'th' ? 'ขอของใช้เสริม' : 'Amenities'}</span>
-                    </button>
+              {/* ========================================================================= */}
+              {/* TAB 2: สภาพห้องพัก & งานแม่บ้าน (ROOM & HOUSEKEEPING)                        */}
+              {/* ========================================================================= */}
+              {activeTab === 'room' && (
+                <div className="space-y-5">
+                  {/* Room Specifications Card */}
+                  <div className="bg-slate-50/80 rounded-xl border border-slate-200/80 p-4 space-y-3">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                      {t('drawer.roomDetails')}
+                    </h3>
+
+                    <div className="grid grid-cols-2 gap-3 text-xs">
+                      <div>
+                        <span className="text-xs text-slate-500 block mb-0.5">
+                          {t('common.roomType')}
+                        </span>
+                        <span className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                          <BedDouble className="w-4 h-4 text-slate-500 shrink-0" />
+                          <span>{localizeRoomType(roomType?.name, locale)}</span>
+                        </span>
+                      </div>
+
+                      <div>
+                        <span className="text-xs text-slate-500 block mb-0.5">
+                          {t('common.floor', { floor: '' }).replace('{floor}', '').trim() ||
+                            (locale === 'th' ? 'ชั้น' : 'Floor')}
+                        </span>
+                        <span className="font-mono text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                          <Layers className="w-4 h-4 text-slate-500 shrink-0" />
+                          <span>{t('common.floor', { floor: room.floor || '1' })}</span>
+                        </span>
+                      </div>
+
+                      <div>
+                        <span className="text-xs text-slate-500 block mb-0.5">
+                          {t('drawer.price')}
+                        </span>
+                        <span className="font-mono tabular-nums text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                          <DollarSign className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span>{formattedPrice ? `${formattedPrice}${t('common.pricePerNight')}` : '—'}</span>
+                        </span>
+                      </div>
+
+                      <div>
+                        <span className="text-xs text-slate-500 block mb-0.5">
+                          {t('drawer.capacity')}
+                        </span>
+                        <span className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                          <Users className="w-4 h-4 text-slate-500 shrink-0" />
+                          <span>{t('drawer.capacityCount', { count: roomType?.capacity || 2 })}</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    {roomType?.description && (
+                      <div className="pt-2 border-t border-slate-200/70 text-xs leading-relaxed text-slate-600">
+                        {localizeRoomDescription(roomType.description, locale)}
+                      </div>
+                    )}
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => (onAction as any)?.('charge', room)}
-                      className="min-h-[44px] text-xs font-semibold py-2.5 px-2 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-xs"
-                    >
-                      <PlusCircle className="w-4 h-4 text-slate-600 shrink-0" />
-                      <span>{t('folio.addCharge')}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => (onAction as any)?.('checkout', room)}
-                      className="min-h-[44px] text-xs font-semibold py-2.5 px-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5"
-                    >
-                      <LogOut className="w-4 h-4 shrink-0" />
-                      <span>{t('ops.checkOut')}</span>
-                    </button>
+
+                  {/* Amenities */}
+                  {roomType?.amenities && roomType.amenities.length > 0 && (
+                    <div className="space-y-2">
+                      <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        {t('drawer.amenities')}
+                      </h3>
+                      <div className="flex flex-wrap gap-1.5">
+                        {roomType.amenities.map((amenity, idx) => (
+                          <span
+                            key={idx}
+                            className="text-xs px-2.5 py-1 font-medium bg-slate-100 text-slate-700 rounded-md border border-slate-200"
+                          >
+                            {localizeAmenity(amenity, locale)}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Housekeeping Proof of Cleanliness Card */}
+                  <div className="bg-slate-50/80 rounded-xl border border-slate-200/80 p-4 space-y-3">
+                    {/* Header */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-slate-400" />
+                          <span>
+                            {locale === 'th'
+                              ? 'หลักฐานการตรวจรับห้องพัก'
+                              : 'Housekeeping Inspection Evidence'}
+                          </span>
+                        </h3>
+                        {(housekeepingTask?.assignedStaff?.name || formattedHousekeepingCompletedAt) && (
+                          <p className="text-[11px] text-slate-500 mt-0.5">
+                            {housekeepingTask?.assignedStaff?.name
+                              ? (locale === 'th' ? 'ผู้ตรวจรับ: ' : 'Inspected by: ') +
+                                housekeepingTask.assignedStaff.name
+                              : ''}
+                            {housekeepingTask?.assignedStaff?.name && formattedHousekeepingCompletedAt
+                              ? ' • '
+                              : ''}
+                            {formattedHousekeepingCompletedAt ? (
+                              <span className="font-mono tabular-nums">
+                                {formattedHousekeepingCompletedAt}
+                              </span>
+                            ) : null}
+                          </p>
+                        )}
+                      </div>
+                      {loadingHousekeeping && (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-400 shrink-0 mt-0.5" />
+                      )}
+                    </div>
+
+                    {/* Side-by-side Photo Comparison */}
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* Before Photo Card */}
+                      <div className="flex flex-col space-y-1.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-medium text-slate-600 flex items-center gap-1.5">
+                            <Camera className="w-3.5 h-3.5 text-slate-400" />
+                            <span>{locale === 'th' ? 'ก่อนทำความสะอาด' : 'Before Cleaning'}</span>
+                          </span>
+                          {housekeepingTask?.beforePhotoUrl && (
+                            <span className="text-[10px] text-slate-400 flex items-center gap-1 font-mono">
+                              <Eye className="w-3 h-3 text-slate-400" />
+                              <span className="hidden sm:inline">
+                                {locale === 'th' ? 'ดูภาพขยาย' : 'Zoom'}
+                              </span>
+                            </span>
+                          )}
+                        </div>
+
+                        {housekeepingTask?.beforePhotoUrl ? (
+                          <div
+                            role="button"
+                            tabIndex={0}
+                            onClick={() =>
+                              setLightboxPhoto({
+                                url: housekeepingTask.beforePhotoUrl!,
+                                title:
+                                  (locale === 'th'
+                                    ? 'ภาพก่อนทำความสะอาด — ห้อง '
+                                    : 'Before Cleaning — Room ') + room.roomNumber,
+                              })
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                setLightboxPhoto({
+                                  url: housekeepingTask.beforePhotoUrl!,
+                                  title:
+                                    (locale === 'th'
+                                      ? 'ภาพก่อนทำความสะอาด — ห้อง '
+                                      : 'Before Cleaning — Room ') + room.roomNumber,
+                                });
+                              }
+                            }}
+                            className="group relative aspect-4/3 w-full rounded-lg overflow-hidden border border-slate-200/90 bg-slate-900 cursor-pointer shadow-2xs hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-all"
+                          >
+                            <img
+                              src={housekeepingTask.beforePhotoUrl}
+                              alt={locale === 'th' ? 'ภาพก่อนทำความสะอาด' : 'Before cleaning photo'}
+                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-slate-950/0 group-hover:bg-slate-950/40 transition-colors flex items-center justify-center">
+                              <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/95 backdrop-blur-xs p-2 rounded-full text-slate-800 shadow-sm flex items-center justify-center">
+                                <Maximize2 className="w-4 h-4" />
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="aspect-4/3 w-full rounded-lg border border-dashed border-slate-300/80 bg-white/60 flex flex-col items-center justify-center p-3 text-center">
+                            <ImageIcon className="w-5 h-5 text-slate-300 mb-1" />
+                            <span className="text-[11px] text-slate-400 font-medium">
+                              {locale === 'th' ? 'ไม่มีภาพก่อนทำ' : 'No before photo'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* After Photo Card */}
+                      <div className="flex flex-col space-y-1.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-medium text-slate-600 flex items-center gap-1.5 truncate">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            <span className="truncate">
+                              {locale === 'th'
+                                ? 'หลังตรวจรับเสร็จสมบูรณ์'
+                                : 'After Cleaning (Verified)'}
+                            </span>
+                          </span>
+                          {housekeepingTask?.afterPhotoUrl && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                              <CheckCircle2 className="w-3.5 h-3.5 mr-0.5 text-emerald-600" />
+                              {locale === 'th' ? 'ผ่าน' : 'Done'}
+                            </span>
+                          )}
+                        </div>
+
+                        {housekeepingTask?.afterPhotoUrl ? (
+                          <div
+                            role="button"
+                            tabIndex={0}
+                            onClick={() =>
+                              setLightboxPhoto({
+                                url: housekeepingTask.afterPhotoUrl!,
+                                title:
+                                  (locale === 'th'
+                                    ? 'ภาพหลังตรวจรับเสร็จสมบูรณ์ — ห้อง '
+                                    : 'After Cleaning (Verified) — Room ') + room.roomNumber,
+                              })
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                setLightboxPhoto({
+                                  url: housekeepingTask.afterPhotoUrl!,
+                                  title:
+                                    (locale === 'th'
+                                      ? 'ภาพหลังตรวจรับเสร็จสมบูรณ์ — ห้อง '
+                                      : 'After Cleaning (Verified) — Room ') + room.roomNumber,
+                                });
+                              }
+                            }}
+                            className="group relative aspect-4/3 w-full rounded-lg overflow-hidden border border-emerald-200/90 bg-slate-900 cursor-pointer shadow-2xs hover:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all"
+                          >
+                            <img
+                              src={housekeepingTask.afterPhotoUrl}
+                              alt={
+                                locale === 'th'
+                                  ? 'หลังตรวจรับเสร็จสมบูรณ์'
+                                  : 'After Cleaning (Verified)'
+                              }
+                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-slate-950/0 group-hover:bg-slate-950/40 transition-colors flex items-center justify-center">
+                              <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/95 backdrop-blur-xs p-2 rounded-full text-slate-800 shadow-sm flex items-center justify-center">
+                                <Maximize2 className="w-4 h-4" />
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="aspect-4/3 w-full rounded-lg border border-dashed border-slate-300/80 bg-white/60 flex flex-col items-center justify-center p-3 text-center">
+                            <ImageIcon className="w-5 h-5 text-slate-300 mb-1" />
+                            <span className="text-[11px] text-slate-400 font-medium">
+                              {locale === 'th' ? 'ไม่มีภาพหลังทำ' : 'No after photo'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Clean status indicator if neither photo exists */}
+                    {!housekeepingTask?.beforePhotoUrl && !housekeepingTask?.afterPhotoUrl && (
+                      <div className="p-2.5 rounded-lg bg-white/80 border border-slate-200/80 flex items-center gap-2 text-xs text-slate-500">
+                        <Camera className="w-4 h-4 text-slate-400 shrink-0" />
+                        <span>
+                          {room.status === 'cleaning'
+                            ? locale === 'th'
+                              ? 'อยู่ระหว่างทำความสะอาด รอแม่บ้านบันทึกภาพถ่าย'
+                              : 'Cleaning in progress — awaiting photo inspection'
+                            : locale === 'th'
+                            ? 'ยังไม่มีภาพถ่ายบันทึกการตรวจรับ'
+                            : 'No photo evidence recorded yet'}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Task notes if present */}
+                    {housekeepingTask?.notes && (
+                      <div className="pt-2 border-t border-slate-200/60 text-[11px] text-slate-600 flex items-start gap-1.5">
+                        <span className="font-semibold text-slate-500 shrink-0">
+                          {locale === 'th' ? 'หมายเหตุ:' : 'Notes:'}
+                        </span>
+                        <span className="italic">{housekeepingTask.notes}</span>
+                      </div>
+                    )}
                   </div>
+
+                  {/* Notes Section */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                        <FileText className="w-3.5 h-3.5 text-slate-400" strokeWidth={1.75} />
+                        <span>{t('drawer.notes')}</span>
+                      </h3>
+                      {!isEditingNotes && (
+                        <button
+                          type="button"
+                          onClick={handleStartEditNotes}
+                          className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                          title={t('common.edit') || 'แก้ไขบันทึก'}
+                          aria-label="Edit room notes"
+                        >
+                          <Pencil className="w-3.5 h-3.5" strokeWidth={1.75} />
+                        </button>
+                      )}
+                    </div>
+
+                    {!isEditingNotes ? (
+                      currentNotes ? (
+                        <div className="p-3 bg-amber-50/70 rounded-xl border border-amber-200 text-xs leading-relaxed text-amber-950 whitespace-pre-wrap">
+                          {localizeRoomNote(currentNotes, locale)}
+                        </div>
+                      ) : (
+                        <p className="text-xs italic text-slate-400 py-1">
+                          {t('notes.noNotes') || 'ไม่มีบันทึกเพิ่มเติม / No additional notes'}
+                        </p>
+                      )
+                    ) : (
+                      <div className="space-y-2">
+                        <textarea
+                          value={editedNotes}
+                          onChange={(e) => setEditedNotes(e.target.value)}
+                          maxLength={500}
+                          rows={3}
+                          placeholder={t('notes.placeholder') || 'พิมพ์บันทึกหรือหมายเหตุสำหรับห้องพักนี้...'}
+                          className="w-full px-3 py-2 text-xs rounded-xl border border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-800 placeholder-slate-400 bg-white resize-none transition-colors"
+                        />
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] text-slate-400 font-mono">
+                            {editedNotes.length}/500
+                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={handleCancelEditNotes}
+                              disabled={isSavingNotes}
+                              className="px-2.5 py-1 text-xs font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors flex items-center gap-1"
+                            >
+                              <X className="w-3.5 h-3.5" strokeWidth={1.75} />
+                              <span>{t('common.cancel') || 'ยกเลิก'}</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleSaveNotes}
+                              disabled={isSavingNotes}
+                              className="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-lg transition-colors flex items-center gap-1 shadow-xs"
+                            >
+                              {isSavingNotes ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={1.75} />
+                              ) : (
+                                <Check className="w-3.5 h-3.5" strokeWidth={1.75} />
+                              )}
+                              <span>{t('common.save') || 'บันทึก'}</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Available Room Quick Actions */}
+                  {room.status === 'available' && (
+                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200/80">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBookingMode('walkin');
+                          setBookingSource('walk_in');
+                          setCheckInDate(todayStr);
+                          setMode('booking');
+                        }}
+                        className="w-full min-h-[44px] text-xs font-semibold py-2.5 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span>{locale === 'th' ? 'เปิดห้องด่วน (Walk-In)' : 'Quick Walk-In'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBookingMode('booking');
+                          setBookingSource('phone');
+                          setMode('booking');
+                        }}
+                        className="w-full min-h-[44px] text-xs font-semibold py-2.5 px-3 bg-white border border-slate-300 hover:bg-slate-100 text-slate-800 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-xs"
+                      >
+                        <Calendar className="w-4 h-4 text-slate-600 shrink-0" />
+                        <span>{t('drawer.newBooking')}</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {room.status === 'checked_out' && (
+                    <div className="pt-2 border-t border-slate-200/80">
+                      <button
+                        type="button"
+                        onClick={() => (onAction as any)?.('clean', room)}
+                        className="w-full min-h-[44px] text-xs font-semibold py-2.5 px-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        <span>{t('drawer.requestCleaning')}</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {room.status === 'occupied' && (
+                    <div className="pt-2 border-t border-slate-200/80">
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('stay')}
+                        className="w-full min-h-[40px] text-xs font-semibold py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl transition-colors flex items-center justify-center gap-2"
+                      >
+                        <UserCheck className="w-4 h-4 text-[#F97316]" />
+                        <span>{locale === 'th' ? 'ไปยังข้อมูลการเข้าพัก & ค่าใช้จ่าย' : 'View Stay & Folio Details'}</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
-
-              {room.status === 'reserved' && (
-                <button
-                  type="button"
-                  onClick={() => (onAction as any)?.('checkin', room)}
-                  className="w-full min-h-[44px] text-xs font-semibold py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
-                >
-                  <LogIn className="w-4 h-4" />
-                  <span>{t('ops.checkIn')}</span>
-                </button>
-              )}
-
-              {room.status === 'checked_out' && (
-                <button
-                  type="button"
-                  onClick={() => (onAction as any)?.('clean', room)}
-                  className="w-full min-h-[44px] text-xs font-semibold py-2.5 px-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  <span>{t('drawer.requestCleaning')}</span>
-                </button>
               )}
             </div>
           </div>
