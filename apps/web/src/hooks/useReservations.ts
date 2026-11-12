@@ -193,6 +193,18 @@ export function useReservations() {
     return { success: false, error: res.error };
   };
 
+  const cancelReservation = async (id: string, reason?: string, note?: string) => {
+    const res = await apiFetch(`/api/reservations/${id}/cancel`, {
+      method: 'POST',
+      body: JSON.stringify({ reason, note, notes: note }),
+    });
+    if (!res.error) {
+      await fetchReservations();
+      return { success: true };
+    }
+    return { success: false, error: res.error };
+  };
+
   return {
     reservations,
     loading,
@@ -203,6 +215,7 @@ export function useReservations() {
     createReservation,
     checkInReservation,
     walkInCheckIn,
+    cancelReservation,
   };
 }
 

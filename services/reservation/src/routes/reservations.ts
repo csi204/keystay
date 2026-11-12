@@ -1553,7 +1553,7 @@ reservations.post('/:id/check-out', async (c) => {
 // ==========================================
 // 38. POST /reservations/:id/cancel — ขอยกเลิกการจอง
 // ==========================================
-reservations.post('/:id/cancel', async (c) => {
+const handleCancelReservation = async (c: any) => {
   try {
     const id = c.req.param('id');
     const body = await c.req.json().catch(() => ({}));
@@ -1612,6 +1612,8 @@ reservations.post('/:id/cancel', async (c) => {
 
     const now = new Date().toISOString();
     const callerId = c.req.header('x-user-id') || 'system';
+    const cancelReason = parsed.data.reason || null;
+    const cancelNote = parsed.data.note || parsed.data.notes || null;
 
     const stmtCancel = c.env.DB.prepare(
       `UPDATE reservations SET status = 'cancelled', updated_at = ? WHERE id = ?`
@@ -1628,7 +1630,12 @@ reservations.post('/:id/cancel', async (c) => {
       `rh-${crypto.randomUUID()}`,
       existing.id,
       JSON.stringify({ status: existing.status }),
-      JSON.stringify({ status: 'cancelled', reason: parsed.data.reason || null }),
+      JSON.stringify({
+        status: 'cancelled',
+        reason: cancelReason,
+        note: cancelNote,
+        notes: cancelNote,
+      }),
       callerId,
       now
     );
@@ -1640,9 +1647,12 @@ reservations.post('/:id/cancel', async (c) => {
       reservationId: existing.id,
       reservationCode: existing.reservation_code,
       roomId: existing.room_id,
+      roomNumber: existing.room_number,
       timestamp: now,
       performedBy: callerId,
-      reason: parsed.data.reason || null,
+      reason: cancelReason,
+      note: cancelNote,
+      notes: cancelNote,
     };
 
     const stmtOutbox = c.env.DB.prepare(
@@ -1652,7 +1662,21 @@ reservations.post('/:id/cancel', async (c) => {
 
     await c.env.DB.batch([stmtCancel, stmtFreeBookedDates, stmtHistory, stmtOutbox]);
 
-    await publishToQStash(c.env, 'hotel.reservation.checkin', cancelPayload, outboxId);
+    // Immediately free room if rooms table exists in this DB
+    await c.env.DB.prepare("UPDATE rooms SET status = 'available' WHERE id = ? OR room_number = ?")
+      .bind(existing.room_id, existing.room_number)
+      .run()
+      .catch(() => {});
+
+    // Publish event to QStash / webhook
+    await publishToQStash(c.env, 'hotel.reservation.cancel', cancelPayload, outboxId);
+    if (!c.env.QSTASH_URL) {
+      fetch('http://127.0.0.1:8789/webhooks/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cancelPayload),
+      }).catch((err) => console.warn('[Local Cancel Webhook] Failed to notify room-inventory:', err.message));
+    }
 
     return c.json({
       success: true,
@@ -1662,7 +1686,10 @@ reservations.post('/:id/cancel', async (c) => {
   } catch (error: any) {
     return c.json({ success: false, error: { message: error.message || 'Failed to cancel reservation' } }, 500);
   }
-});
+};
+
+reservations.post('/:id/cancel', handleCancelReservation);
+reservations.post('/api/reservations/:id/cancel', handleCancelReservation);
 
 // ==========================================
 // 39. PUT /reservations/:id/modify-dates — เปลี่ยนแปลงวันเข้าพัก/ออก

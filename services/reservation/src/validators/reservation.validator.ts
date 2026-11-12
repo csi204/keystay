@@ -79,6 +79,8 @@ export const checkOutReservationSchema = z.object({
 // Phase 2: Cancel Validator (#38)
 export const cancelReservationSchema = z.object({
   reason: z.string().optional().nullable(),
+  note: z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
 });
 
 // Phase 2: Modify Dates Validator (#39)

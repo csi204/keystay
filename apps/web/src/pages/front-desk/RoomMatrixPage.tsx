@@ -5,6 +5,7 @@ import { RoomMatrixGrid, getRoomFloor } from '@/components/front-desk/RoomMatrix
 import { RoomDetailsModal, FastBookingFormData } from '@/components/front-desk/RoomDetailsModal';
 import { NewBookingModal } from '@/components/front-desk/NewBookingModal';
 import { CheckInModal } from '@/components/front-desk/CheckInModal';
+import { CancelReservationModal } from '@/components/front-desk/CancelReservationModal';
 import { useRooms } from '@/hooks/useRooms';
 import { useReservations, ExtendedReservation, resolveGuestName } from '@/hooks/useReservations';
 import { reconcileLiveRooms, getRoomGuestMapping } from '@/lib/roomStatusReconciliation';
@@ -23,6 +24,7 @@ import {
   X,
   ChevronDown,
   Check,
+  Ban,
 } from 'lucide-react';
 
 const RESERVATION_STATUS_STYLES: Record<
@@ -61,6 +63,7 @@ export const RoomMatrixPage: React.FC = () => {
     createReservation,
     checkInReservation,
     walkInCheckIn,
+    cancelReservation,
   } = useReservations();
 
   // Sub-tab: 'grid' = Matrix Grid, 'table' = Reservations Table
@@ -73,6 +76,8 @@ export const RoomMatrixPage: React.FC = () => {
   const [modalBookingMode, setModalBookingMode] = useState<'walkin' | 'booking'>('walkin');
   const [isNewModalOpen, setIsNewModalOpen] = useState<boolean>(false);
   const [checkInReservationTarget, setCheckInReservationTarget] =
+    useState<ExtendedReservation | null>(null);
+  const [cancelReservationTarget, setCancelReservationTarget] =
     useState<ExtendedReservation | null>(null);
 
   // Search & Filter state
@@ -256,6 +261,17 @@ export const RoomMatrixPage: React.FC = () => {
     if (action === 'refresh') {
       refreshReservations();
       refreshRooms();
+      return;
+    }
+    if (action === 'cancel') {
+      const res = reservations.find(
+        (r) =>
+          (r.roomId === room.id || (room.roomNumber && r.roomNumber === room.roomNumber)) &&
+          (r.status === 'confirmed' || r.status === 'pending')
+      );
+      if (res) {
+        setCancelReservationTarget(res);
+      }
       return;
     }
     if (action !== 'extend') {
@@ -791,13 +807,24 @@ export const RoomMatrixPage: React.FC = () => {
                           </td>
                           <td className="text-sm py-3.5 px-4 text-right">
                             {res.status === 'confirmed' ? (
-                              <button
-                                onClick={() => setCheckInReservationTarget(res)}
-                                className="inline-flex items-center gap-1.5 text-xs font-semibold py-1.5 px-3 text-white bg-emerald-600 hover:bg-emerald-700 rounded shadow-sm transition-colors"
-                              >
-                                <LogIn className="w-3.5 h-3.5" aria-hidden="true" />
-                                <span>{t('ops.checkIn')}</span>
-                              </button>
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  onClick={() => setCheckInReservationTarget(res)}
+                                  className="inline-flex items-center gap-1.5 text-xs font-semibold py-1.5 px-2.5 text-white bg-emerald-600 hover:bg-emerald-700 rounded shadow-sm transition-colors"
+                                  title={t('ops.checkIn')}
+                                >
+                                  <LogIn className="w-3.5 h-3.5" aria-hidden="true" />
+                                  <span>{t('ops.checkIn')}</span>
+                                </button>
+                                <button
+                                  onClick={() => setCancelReservationTarget(res)}
+                                  className="inline-flex items-center gap-1 text-xs font-medium py-1.5 px-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded transition-colors"
+                                  title={locale === 'th' ? 'ยกเลิกการจอง' : 'Cancel'}
+                                >
+                                  <Ban className="w-3.5 h-3.5" aria-hidden="true" />
+                                  <span>{locale === 'th' ? 'ยกเลิก' : 'Cancel'}</span>
+                                </button>
+                              </div>
                             ) : (
                               <span className="text-slate-400 text-sm">—</span>
                             )}
@@ -824,6 +851,13 @@ export const RoomMatrixPage: React.FC = () => {
         onClose={handleCloseModal}
         onAction={handleModalAction}
         onSubmitBooking={handleFastBookingSubmit}
+        onCancelReservation={async (id, reason, note) => {
+          const res = await cancelReservation(id, reason, note);
+          if (res.success) {
+            await Promise.all([refreshRooms(), refreshReservations()]);
+          }
+          return res;
+        }}
         onWalkInCheckIn={async (data) => {
           const res = await walkInCheckIn(data);
           if (res.success) {
@@ -849,6 +883,21 @@ export const RoomMatrixPage: React.FC = () => {
         isOpen={!!checkInReservationTarget}
         onClose={() => setCheckInReservationTarget(null)}
         onConfirm={checkInReservation}
+      />
+
+      {/* Cancel Reservation Modal */}
+      <CancelReservationModal
+        reservation={cancelReservationTarget}
+        isOpen={!!cancelReservationTarget}
+        onClose={() => setCancelReservationTarget(null)}
+        onConfirm={async (id, reason, note) => {
+          const res = await cancelReservation(id, reason, note);
+          if (res.success) {
+            await Promise.all([refreshRooms(), refreshReservations()]);
+            setCancelReservationTarget(null);
+          }
+          return res;
+        }}
       />
     </FrontDeskLayout>
   );

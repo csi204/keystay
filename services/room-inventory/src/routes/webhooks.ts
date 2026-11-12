@@ -388,3 +388,71 @@ webhooksRoute.post('/checkin', async (c) => {
     },
   });
 });
+
+// ==========================================
+// 4. POST /webhooks/cancel
+// Event: ReservationCancelled
+// Updates room status back to 'available' if room was reserved
+// ==========================================
+webhooksRoute.post('/cancel', async (c) => {
+  const isValidSignature = await verifyQStashSignature(c);
+  if (!isValidSignature) {
+    return c.json({ success: false, error: 'UNAUTHORIZED', message: 'Invalid QStash signature' }, 401);
+  }
+
+  const event = await c.req.json().catch(() => ({}));
+  const db = getDb(c.env.DB);
+
+  let room = event.roomId ? await db.select().from(rooms).where(eq(rooms.id, event.roomId)).get() : null;
+  if (!room && event.roomNumber) {
+    room = await db.select().from(rooms).where(eq(rooms.roomNumber, event.roomNumber)).get();
+  }
+
+  if (!room) {
+    return c.json({ success: true, message: 'Room not found or no room assigned; cancellation logged' });
+  }
+
+  if (room.status === 'reserved') {
+    const previousStatus = room.status;
+    const newStatus = 'available';
+    const now = new Date().toISOString();
+    const historyId = crypto.randomUUID();
+    const outboxId = crypto.randomUUID();
+
+    const outboxPayload = JSON.stringify({
+      roomId: room.id,
+      roomNumber: room.roomNumber,
+      previousStatus,
+      newStatus,
+      reason: `Reservation cancelled: ${event.reason || 'Guest Request'}`,
+      eventSource: 'hotel.reservation.cancel',
+      timestamp: now,
+    });
+
+    await db.batch([
+      db.update(rooms).set({ status: newStatus, updatedAt: now }).where(eq(rooms.id, room.id)),
+      db.insert(roomStatusHistory).values({
+        id: historyId,
+        roomId: room.id,
+        previousStatus,
+        newStatus,
+        changedBy: event.performedBy || 'reservation_service',
+        changeReason: `Reservation cancelled: ${event.reason || 'Guest Request'}`,
+        eventSource: 'event_bus',
+        createdAt: now,
+      }),
+      db.insert(outboxEvents).values({
+        id: outboxId,
+        eventType: 'RoomStatusChanged',
+        aggregateId: room.id,
+        aggregateType: 'Room',
+        payload: outboxPayload,
+        status: 'pending',
+        createdAt: now,
+      }),
+    ]);
+  }
+
+  return c.json({ success: true, message: `Room '${room.roomNumber}' freed to available` });
+});
+

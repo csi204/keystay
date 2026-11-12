@@ -11,6 +11,7 @@ import {
 import { ExtendedReservation } from '@/hooks/useReservations';
 import { ExtendStayModal } from './ExtendStayModal';
 import { SlipViewerModal } from './SlipViewerModal';
+import { CancelReservationModal } from './CancelReservationModal';
 import { compressImageToBase64 } from '@/lib/imageCompression';
 import { RequestAmenitiesModal } from './RequestAmenitiesModal';
 import { CustomDatePicker } from '../common/CustomDatePicker';
@@ -60,6 +61,7 @@ import {
   Image as ImageIcon,
   Maximize2,
   Eye,
+  Ban,
 } from 'lucide-react';
 
 export type RoomModalAction =
@@ -69,6 +71,7 @@ export type RoomModalAction =
   | 'walkin'
   | 'clean'
   | 'extend'
+  | 'cancel'
   | 'refresh';
 
 export type RoomDrawerAction = RoomModalAction;
@@ -150,6 +153,11 @@ export interface RoomDetailsModalProps {
       unitPrice: string;
     }
   ) => Promise<{ success: boolean; error?: string }>;
+  onCancelReservation?: (
+    reservationId: string,
+    reason: string,
+    note?: string
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
@@ -166,6 +174,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
   onVerifySlip,
   onRequestAmenity,
   onAddFolioCharge,
+  onCancelReservation,
 }) => {
   const { t, formatCurrency, locale } = useI18n();
   const toast = useToast();
@@ -244,6 +253,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
   const [isExtendOpen, setIsExtendOpen] = useState(false);
   const [isSlipViewerOpen, setIsSlipViewerOpen] = useState(false);
   const [isAmenitiesModalOpen, setIsAmenitiesModalOpen] = useState(false);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
   // Housekeeping Evidence State
   const [housekeepingTask, setHousekeepingTask] = useState<HousekeepingEvidenceTask | null>(null);
@@ -783,16 +793,26 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                         </div>
                       )}
 
-                      {/* Slip Action Button */}
-                      <div className="pt-1">
+                      {/* Slip & Cancel Action Buttons */}
+                      <div className="pt-1 flex flex-col sm:flex-row gap-2">
                         <button
                           type="button"
                           onClick={() => setIsSlipViewerOpen(true)}
-                          className="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 rounded-lg text-xs font-medium transition-colors shadow-2xs min-h-[38px]"
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 rounded-lg text-xs font-medium transition-colors shadow-2xs min-h-[44px]"
                         >
                           <FileCheck2 className="w-3.5 h-3.5 text-slate-600" />
                           <span>{locale === 'th' ? 'ดูหลักฐานสลิป / ยืนยันสลิป' : 'View / Verify Payment Slip'}</span>
                         </button>
+                        {((currentReservation as any)?.status === 'confirmed' || room?.status === 'reserved') && (
+                          <button
+                            type="button"
+                            onClick={() => setIsCancelModalOpen(true)}
+                            className="flex items-center justify-center gap-1.5 py-2 px-3 bg-white hover:bg-rose-50 border border-rose-200 text-rose-600 rounded-lg text-xs font-semibold transition-colors shadow-2xs min-h-[44px]"
+                          >
+                            <Ban className="w-3.5 h-3.5 text-rose-500" />
+                            <span>{locale === 'th' ? 'ยกเลิกการจอง' : 'Cancel Reservation'}</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   ) : room.status === 'occupied' ? (
@@ -872,14 +892,22 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                   )}
 
                   {room.status === 'reserved' && (
-                    <div className="pt-2">
+                    <div className="pt-2 flex flex-col sm:flex-row gap-2">
                       <button
                         type="button"
                         onClick={() => (onAction as any)?.('checkin', room)}
-                        className="w-full min-h-[44px] text-xs font-semibold py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
+                        className="flex-1 min-h-[44px] text-xs font-semibold py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
                       >
                         <LogIn className="w-4 h-4" />
                         <span>{t('ops.checkIn') || (locale === 'th' ? 'เช็คอิน' : 'Check-In')}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsCancelModalOpen(true)}
+                        className="min-h-[44px] text-xs font-semibold py-2.5 px-3 bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
+                      >
+                        <Ban className="w-4 h-4" />
+                        <span>{locale === 'th' ? 'ยกเลิกการจอง' : 'Cancel Reservation'}</span>
                       </button>
                     </div>
                   )}
@@ -1989,6 +2017,29 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
             return { success: true };
           }}
           onAddFolioCharge={onAddFolioCharge}
+        />
+      )}
+
+      {/* Cancel Reservation Modal */}
+      {currentReservation && (
+        <CancelReservationModal
+          isOpen={isCancelModalOpen}
+          reservation={currentReservation}
+          onClose={() => setIsCancelModalOpen(false)}
+          onConfirm={async (resId, reason, note) => {
+            if (onCancelReservation) {
+              const res = await onCancelReservation(resId, reason, note);
+              if (res.success) {
+                setIsCancelModalOpen(false);
+                setCurrentReservation(null);
+                (onAction as any)?.('refresh', room);
+              }
+              return res;
+            }
+            (onAction as any)?.('cancel', room);
+            setIsCancelModalOpen(false);
+            return { success: true };
+          }}
         />
       )}
       </div>
