@@ -57,7 +57,7 @@ export interface WalkInModalProps {
   rooms?: Room[];
   allRooms?: Room[];
   reservations?: (Reservation | ExtendedReservation)[];
-  roomTypes: RoomType[];
+  roomTypes?: RoomType[];
   preselectedRoomId?: string;
   onClose: () => void;
   onSubmit: (data: {
@@ -72,6 +72,7 @@ export interface WalkInModalProps {
     checkOutDate: string;
     depositAmount: string;
     paymentMethod?: string;
+    bookingSource?: 'walk_in' | 'phone' | 'facebook';
   }) => Promise<{ success: boolean; error?: string }>;
 }
 
@@ -83,7 +84,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
   rooms,
   allRooms,
   reservations = [],
-  roomTypes,
+  roomTypes = [],
   preselectedRoomId,
   onClose,
   onSubmit,
@@ -152,7 +153,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
 
   // Selected room details
   const selectedRoom = availableRoomsForDates.find((r) => r.id === roomId) || availableRoomsForDates[0];
-  const selectedRoomType = roomTypes.find((t) => t.id === selectedRoom?.roomTypeId);
+  const selectedRoomType = (roomTypes || []).find((t) => t.id === selectedRoom?.roomTypeId);
   const maxCapacity = selectedRoomType?.capacity || (selectedRoom as any)?.capacity || 2;
 
   useEffect(() => {
@@ -247,6 +248,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
       checkOutDate,
       depositAmount: depositAmount.trim() || '0',
       paymentMethod,
+      bookingSource: 'walk_in',
     });
     setIsSubmitting(false);
 
@@ -332,7 +334,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
                         className="w-full text-sm py-2 px-3 pr-9 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-sans shadow-2xs appearance-none"
                       >
                         {availableRoomsForDates.map((r) => {
-                          const type = roomTypes.find((t) => t.id === r.roomTypeId);
+                          const type = (roomTypes || []).find((t) => t.id === r.roomTypeId);
                           const typeName = localizeRoomType(type?.name, locale) || type?.name || 'Standard';
                           return (
                             <option key={r.id} value={r.id} className="text-slate-900 bg-white dark:text-slate-100 dark:bg-slate-800">

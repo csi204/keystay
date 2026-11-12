@@ -126,6 +126,7 @@ export interface RoomDetailsModalProps {
     checkOutDate: string;
     depositAmount: string;
     paymentMethod?: string;
+    bookingSource?: 'walk_in' | 'phone' | 'facebook';
   }) => Promise<{ success: boolean; error?: string }>;
   onVerifySlip?: (
     reservationId: string,
@@ -554,6 +555,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
           checkOutDate,
           depositAmount,
           paymentMethod,
+          bookingSource: 'walk_in',
         });
 
         if (!result.success) {
@@ -1580,37 +1582,39 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                   </div>
                 )}
 
-                {/* Booking Channel Selector */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    {locale === 'th' ? 'ช่องทางการจอง (Booking Source)' : 'Booking Source'}
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { id: 'walk_in', label: locale === 'th' ? 'Walk-in เคาน์เตอร์' : 'Walk-in', icon: UserCheck },
-                      { id: 'phone', label: locale === 'th' ? 'โทรศัพท์เข้ามาจอง' : 'Phone Call', icon: Phone },
-                      { id: 'facebook', label: locale === 'th' ? 'เพจ Facebook' : 'Facebook Page', icon: MessageSquare },
-                    ].map((c) => {
-                      const Icon = c.icon;
-                      const isSelected = bookingSource === c.id;
-                      return (
-                        <button
-                          key={c.id}
-                          type="button"
-                          onClick={() => setBookingSource(c.id as any)}
-                          className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg border text-xs font-medium transition-all min-h-[36px] ${
-                            isSelected
-                              ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
-                              : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                          }`}
-                        >
-                          <Icon className="w-3.5 h-3.5 shrink-0" />
-                          <span className="truncate">{c.label}</span>
-                        </button>
-                      );
-                    })}
+                {/* Booking Channel Selector (only for advance booking mode) */}
+                {bookingMode === 'booking' && (
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500">
+                      {locale === 'th' ? 'ช่องทางการจอง (Booking Source)' : 'Booking Source'}
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { id: 'walk_in', label: locale === 'th' ? 'Walk-in เคาน์เตอร์' : 'Walk-in', icon: UserCheck },
+                        { id: 'phone', label: locale === 'th' ? 'โทรศัพท์เข้ามาจอง' : 'Phone Call', icon: Phone },
+                        { id: 'facebook', label: locale === 'th' ? 'เพจ Facebook' : 'Facebook Page', icon: MessageSquare },
+                      ].map((c) => {
+                        const Icon = c.icon;
+                        const isSelected = bookingSource === c.id;
+                        return (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => setBookingSource(c.id as any)}
+                            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg border text-xs font-medium transition-all min-h-[36px] ${
+                              isSelected
+                                ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                            }`}
+                          >
+                            <Icon className="w-3.5 h-3.5 shrink-0" />
+                            <span className="truncate">{c.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Single Verification Point Rule Notice */}
                 {(bookingSource === 'phone' || bookingSource === 'facebook') && (

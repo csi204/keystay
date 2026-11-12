@@ -316,7 +316,7 @@ export const DailyOperationsPage: React.FC = () => {
                   ) : (
                     arrivals.map((res) => {
                       const room = rooms.find((r) => r.id === res.roomId || (res.roomNumber && r.roomNumber === res.roomNumber));
-                      const roomType = roomTypes.find((rt) => rt.id === room?.roomTypeId);
+                      const roomType = (roomTypes || []).find((rt) => rt.id === room?.roomTypeId);
                       const roomNum = res.roomNumber || room?.roomNumber || '—';
                       const roomTypeName = localizeRoomType(roomType?.name, locale) || '—';
                       const guestDisplayName = resolveGuestName(res) || res.guestName || res.guest?.fullName || '—';
@@ -453,7 +453,7 @@ export const DailyOperationsPage: React.FC = () => {
                   ) : (
                     (departureSubTab === 'due_today' ? dueTodayDepartures : earlyOrExtendedDepartures).map((res) => {
                       const room = rooms.find((r) => r.id === res.roomId || (res.roomNumber && r.roomNumber === res.roomNumber));
-                      const roomType = roomTypes.find((rt) => rt.id === room?.roomTypeId);
+                      const roomType = (roomTypes || []).find((rt) => rt.id === room?.roomTypeId);
                       const roomNum = res.roomNumber || room?.roomNumber || '—';
                       const roomTypeName = localizeRoomType(roomType?.name, locale) || '—';
                       const guestDisplayName = resolveGuestName(res) || res.guestName || res.guest?.fullName || '—';
@@ -640,7 +640,7 @@ export const DailyOperationsPage: React.FC = () => {
       <CheckInModal
         reservation={checkInTarget}
         roomType={
-          roomTypes.find(
+          (roomTypes || []).find(
             (rt) => rt.id === rooms.find((r) => r.id === checkInTarget?.roomId)?.roomTypeId
           ) || null
         }
@@ -653,7 +653,7 @@ export const DailyOperationsPage: React.FC = () => {
       <CheckOutModal
         reservation={checkOutTarget}
         roomType={
-          roomTypes.find(
+          (roomTypes || []).find(
             (rt) => rt.id === rooms.find((r) => r.id === checkOutTarget?.roomId)?.roomTypeId
           ) || null
         }
@@ -667,7 +667,7 @@ export const DailyOperationsPage: React.FC = () => {
         reservation={extendTarget}
         room={rooms.find((r) => r.id === extendTarget?.roomId) || null}
         roomType={
-          roomTypes.find(
+          (roomTypes || []).find(
             (rt) => rt.id === rooms.find((r) => r.id === extendTarget?.roomId)?.roomTypeId
           ) || null
         }
@@ -682,7 +682,7 @@ export const DailyOperationsPage: React.FC = () => {
         availableRooms={availableRooms}
         rooms={rooms}
         reservations={reservations}
-        roomTypes={roomTypes}
+        roomTypes={roomTypes || []}
         onClose={() => setIsWalkInOpen(false)}
         onSubmit={walkInCheckIn}
       />
