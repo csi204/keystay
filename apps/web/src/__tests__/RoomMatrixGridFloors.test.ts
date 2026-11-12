@@ -120,8 +120,8 @@ describe('Task 2: Floor Dividers, Grouping & RoomCard Floor/Checkout Date Resolu
     assert.match(roomCardCode, /room\.status\s*===\s*['"]reserved['"]/);
 
     // Amber badge for reserved guest
-    assert.match(roomCardCode, /text-amber-700\s+bg-amber-50/);
-    assert.match(roomCardCode, /text-amber-500/);
+    assert.match(roomCardCode, /text-amber-950/);
+    assert.match(roomCardCode, /text-amber-700/);
 
     // Renders displayGuest in reserved section
     assert.match(roomCardCode, /\{displayGuest\}/);

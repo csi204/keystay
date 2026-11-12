@@ -4,12 +4,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 describe('Task 4 — Unified Auto-Refresh Pulse Badge & Dynamic liveRooms Occupancy Mapping', () => {
+  const cwd = process.cwd();
+  const rootDir =
+    cwd.endsWith('apps/web') || cwd.endsWith('apps\\web')
+      ? path.resolve(cwd, '../..')
+      : cwd;
   const roomMatrixPath = path.resolve(
-    process.cwd(),
+    rootDir,
     'apps/web/src/pages/front-desk/RoomMatrixPage.tsx'
   );
   const dailyOpsPath = path.resolve(
-    process.cwd(),
+    rootDir,
     'apps/web/src/pages/front-desk/DailyOperationsPage.tsx'
   );
 
@@ -40,7 +45,7 @@ describe('Task 4 — Unified Auto-Refresh Pulse Badge & Dynamic liveRooms Occupa
     // Unified pulse badge with font-medium and refreshTimeStr
     assert.match(
       code,
-      /<div className="flex items-center gap-2 px-2\.5 py-1\.5 bg-slate-50 rounded-lg border border-slate-200\/60 shrink-0">/
+      /<div className="flex items-center gap-2 px-2\.5 py-1\.5 bg-slate-50(?:\s+dark:bg-slate-800)? rounded-lg border border-slate-200\/60(?:\s+dark:border-slate-700)? shrink-0">/
     );
     assert.match(code, /w-2 h-2 rounded-full bg-emerald-500 animate-pulse/);
     assert.match(
@@ -63,7 +68,7 @@ describe('Task 4 — Unified Auto-Refresh Pulse Badge & Dynamic liveRooms Occupa
     // Unified pulse badge with font-medium and refreshTimeStr
     assert.match(
       code,
-      /<div className="flex items-center gap-2 px-2\.5 py-1\.5 bg-slate-50 rounded-lg border border-slate-200\/60 shrink-0">/
+      /<div className="flex items-center gap-2 px-2\.5 py-1\.5 bg-slate-50(?:\s+dark:bg-slate-800)? rounded-lg border border-slate-200\/60(?:\s+dark:border-slate-700)? shrink-0">/
     );
     assert.match(code, /w-2 h-2 rounded-full bg-emerald-500 animate-pulse/);
     assert.match(
