@@ -73,6 +73,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
             ? '/admin/dashboard'
             : r === 'front_desk'
             ? '/front-desk/room-matrix'
+            : r === 'housekeeping'
+            ? '/housekeeping'
             : '/'
         );
         return;
@@ -132,6 +134,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
         body: JSON.stringify({ email: demoEmail, password: 'Keystay@2026' }),
       });
       const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        console.warn('[Login Debug] Gateway responded with error:', response.status, data);
+      }
 
       const accessToken =
         data?.data?.tokens?.accessToken ||
@@ -147,6 +152,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
             ? '/admin/dashboard'
             : targetRole === 'front_desk'
             ? '/front-desk/room-matrix'
+            : targetRole === 'housekeeping'
+            ? '/housekeeping'
             : '/';
         navigate(dest);
         return;
@@ -168,6 +175,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialFailed = false }) =
         ? '/admin/dashboard'
         : targetRole === 'front_desk'
         ? '/front-desk/room-matrix'
+        : targetRole === 'housekeeping'
+        ? '/housekeeping'
         : '/';
     navigate(dest);
   };

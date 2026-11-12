@@ -17,6 +17,7 @@ import {
   PanelLeft,
   ArrowLeftRight,
   ShoppingCart,
+  ClipboardList,
   Globe,
   Wrench,
   KeyRound,
@@ -123,6 +124,11 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       title: t('nav.technicians'),
       path: '/admin/technicians',
       icon: Wrench,
+    },
+    {
+      title: 'งานแม่บ้าน (Task Templates)',
+      path: '/admin/tasks',
+      icon: ClipboardList,
     },
     {
       title: t('nav.reports'),

@@ -5,7 +5,8 @@ import { staffRoute, staffAssignmentsRoute } from './routes/staff';
 import { issuesRoute } from './routes/issues';
 import { scheduleRoute } from './routes/schedule';
 import { webhooksRoute } from './routes/webhooks';
-import { outsourceContactsRoute, mapOutsourceContact, type OutsourceContactDTO } from './routes/outsource-contacts';
+import { outsourceRoute } from './routes/outsource';
+import { taskTemplatesRoute } from './routes/task-templates';
 
 export interface Env {
   DB: D1Database;
@@ -15,6 +16,7 @@ export interface Env {
   QSTASH_NEXT_SIGNING_KEY?: string;
   QSTASH_URL?: string;
   QSTASH_TOKEN?: string;
+  JWT_SECRET?: string;
 }
 
 const app = new Hono<{ Bindings: Env }>();
@@ -51,6 +53,10 @@ app.get('/', (c) => {
       '69. POST /housekeeping/tasks/:id/report-issue',
       '70. GET /housekeeping/schedule',
       '101. GET /housekeeping/outsource-contacts',
+      '102. GET /housekeeping/outsource-contacts/:id',
+      '103. POST /housekeeping/outsource-contacts',
+      '104. PUT /housekeeping/outsource-contacts/:id',
+      '105. DELETE /housekeeping/outsource-contacts/:id',
     ],
   });
 });
@@ -83,9 +89,13 @@ app.route('/schedule', scheduleRoute);
 app.route('/housekeeping/webhooks', webhooksRoute);
 app.route('/webhooks', webhooksRoute);
 
-// 8. Mount Outsource Contacts Routes (API #101)
-app.route('/housekeeping/outsource-contacts', outsourceContactsRoute);
-app.route('/outsource-contacts', outsourceContactsRoute);
+// 8. Mount Outsource Contacts Routes (APIs #101-#105)
+app.route('/housekeeping/outsource-contacts', outsourceRoute);
+app.route('/outsource-contacts', outsourceRoute);
+
+// 9. Mount Task Templates Routes (CRUD for Front Desk & Owner)
+app.route('/housekeeping/task-templates', taskTemplatesRoute);
+app.route('/task-templates', taskTemplatesRoute);
 
 // Global Error Handler
 app.onError((err, c) => {

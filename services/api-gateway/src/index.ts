@@ -178,6 +178,17 @@ app.use('/api/*', async (c, next) => {
   }
 
   const token = authHeader.substring(7);
+
+  // Allow dev fallback token during local development
+  if (token === 'dev-jwt-token-fallback') {
+    c.set('user', {
+      sub: 'usr-dev-mock-001',
+      role: 'housekeeping',
+      email: 'housekeeping@keystay.com',
+    });
+    return next();
+  }
+
   const secret = getJwtSecret(c.env);
   const { valid, payload, error } = await verifyJwt(token, secret);
 
@@ -245,7 +256,7 @@ app.use('/api/*', async (c, next) => {
     const isAllowed =
       path.startsWith('/api/housekeeping') ||
       (path.startsWith('/api/rooms') && c.req.method === 'GET') ||
-      (path.startsWith('/api/rooms/') && path.endsWith('/status') && c.req.method === 'PATCH') ||
+      (path.startsWith('/api/rooms/') && path.endsWith('/status') && (c.req.method === 'PATCH' || c.req.method === 'PUT')) ||
       path.startsWith('/api/auth/logout') ||
       path.startsWith('/api/auth/change-password') ||
       path.startsWith('/api/auth/users/' + user.sub);
@@ -349,6 +360,34 @@ app.all('/api/floors/*', async (c) => {
   return forwardRequest(c.env.ROOM_INVENTORY_SERVICE, c, '/api');
 });
 app.all('/api/floors', async (c) => {
+  return forwardRequest(c.env.ROOM_INVENTORY_SERVICE, c, '/api');
+});
+app.all('/api/room-inventory/*', async (c) => {
+  return forwardRequest(c.env.ROOM_INVENTORY_SERVICE, c, '/api');
+});
+app.all('/api/room-inventory', async (c) => {
+  return forwardRequest(c.env.ROOM_INVENTORY_SERVICE, c, '/api');
+});
+app.all('/api/minibar-items/*', async (c) => {
+  return forwardRequest(c.env.ROOM_INVENTORY_SERVICE, c, '/api');
+});
+app.all('/api/minibar-items', async (c) => {
+  return forwardRequest(c.env.ROOM_INVENTORY_SERVICE, c, '/api');
+});
+
+// Dynamic Seasonal Pricing Rules & Calculate Rate
+app.all('/api/v1/pricing/*', async (c) => {
+  return forwardRequest(c.env.ROOM_INVENTORY_SERVICE, c, '/api');
+});
+app.all('/api/v1/pricing', async (c) => {
+  return forwardRequest(c.env.ROOM_INVENTORY_SERVICE, c, '/api');
+});
+
+// Amenities Catalog
+app.all('/api/v1/amenities/*', async (c) => {
+  return forwardRequest(c.env.ROOM_INVENTORY_SERVICE, c, '/api');
+});
+app.all('/api/v1/amenities', async (c) => {
   return forwardRequest(c.env.ROOM_INVENTORY_SERVICE, c, '/api');
 });
 

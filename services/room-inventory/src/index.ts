@@ -5,6 +5,9 @@ import { roomsRoute } from './routes/rooms';
 import { amenitiesRoute } from './routes/amenities';
 import { availabilityRoute } from './routes/availability';
 import { webhooksRoute } from './routes/webhooks';
+import { minibarRoute } from './routes/minibar';
+import { seasonalPricingRoute } from './routes/seasonal-pricing';
+import { amenitiesCatalogRoute } from './routes/amenities-catalog';
 
 export interface Env {
   DB: D1Database;
@@ -62,6 +65,18 @@ app.route('/floors', floorsRoute);
 app.route('/rooms', availabilityRoute);
 app.route('/rooms', amenitiesRoute);
 app.route('/rooms', roomsRoute);
+
+// Mount Minibar Routes (CRUD for Owner & Front Desk, Read-only for Housekeeping)
+app.route('/room-inventory/minibar-items', minibarRoute);
+app.route('/minibar-items', minibarRoute);
+
+// Mount Seasonal Pricing Rules & Calculation Routes
+app.route('/room-inventory/v1/pricing', seasonalPricingRoute);
+app.route('/v1/pricing', seasonalPricingRoute);
+
+// Mount Amenities Catalog Routes
+app.route('/room-inventory/v1/amenities', amenitiesCatalogRoute);
+app.route('/v1/amenities', amenitiesCatalogRoute);
 
 // Mount QStash Webhook Consumers (Issue #8)
 app.route('/webhooks', webhooksRoute);
