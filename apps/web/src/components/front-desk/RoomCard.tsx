@@ -349,6 +349,12 @@ export const RoomCard: React.FC<RoomCardProps> = ({
               <Bath className="w-3.5 h-3.5 text-slate-500 shrink-0" strokeWidth={1.75} aria-hidden="true" />
               <span className="leading-none">{bathLabel}</span>
             </span>
+            {room.notes && (
+              <div className="inline-flex items-center gap-1 text-[11px] bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-800 max-w-full truncate">
+                <FileText className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
+                <span className="truncate">{localizeRoomNote(room.notes, locale)}</span>
+              </div>
+            )}
           </div>
         )}
 
@@ -367,13 +373,19 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                 <span className="leading-none">{locale === 'th' ? `ออก: ${formatDisplayDate(displayCheckout, locale)}` : `Out: ${formatDisplayDate(displayCheckout, locale)}`}</span>
               </div>
             )}
+            {room.notes && (
+              <div className="inline-flex items-center gap-1 text-[11px] bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-800 max-w-full truncate">
+                <FileText className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
+                <span className="truncate">{localizeRoomNote(room.notes, locale)}</span>
+              </div>
+            )}
           </div>
         )}
 
         {/* Reserved Rooms: Display Guest Name */}
         {room.status === 'reserved' && (
           <div className="flex flex-wrap items-center gap-1.5">
-            {displayGuest ? (
+            {displayGuest && (
               <span
                 className="inline-flex items-center gap-1 text-xs bg-amber-100/90 text-amber-950 font-bold border border-amber-300 dark:bg-amber-900/40 dark:text-amber-200 dark:border-amber-700 px-1.5 py-0.5 rounded max-w-[140px] truncate"
                 title={displayGuest}
@@ -381,13 +393,15 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                 <User className="w-3 h-3 text-amber-700 dark:text-amber-400 shrink-0" strokeWidth={1.75} />
                 <span className="truncate">{displayGuest}</span>
               </span>
-            ) : (
-              <div className="text-xs text-slate-600 leading-snug truncate">
-                {room.notes ? localizeRoomNote(room.notes, locale) : (
-                  <span className="text-slate-400 font-mono text-[11px]">—</span>
-                )}
-              </div>
             )}
+            {room.notes ? (
+              <div className="inline-flex items-center gap-1 text-[11px] bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-800 max-w-full truncate">
+                <FileText className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
+                <span className="truncate">{localizeRoomNote(room.notes, locale)}</span>
+              </div>
+            ) : !displayGuest ? (
+              <span className="text-slate-400 font-mono text-[11px]">—</span>
+            ) : null}
           </div>
         )}
 
@@ -405,8 +419,13 @@ export const RoomCard: React.FC<RoomCardProps> = ({
           room.status !== 'reserved' &&
           room.status !== 'maintenance' &&
           room.status !== 'out_of_order' && (
-            <div className="text-xs text-slate-600 leading-snug truncate">
-              {room.notes ? localizeRoomNote(room.notes, locale) : (
+            <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-600 leading-snug">
+              {room.notes ? (
+                <div className="inline-flex items-center gap-1 text-[11px] bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-800 max-w-full truncate">
+                  <FileText className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <span className="truncate">{localizeRoomNote(room.notes, locale)}</span>
+                </div>
+              ) : (
                 <span className="text-slate-400 font-mono text-[11px]">—</span>
               )}
             </div>

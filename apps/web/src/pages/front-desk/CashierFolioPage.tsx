@@ -400,12 +400,12 @@ export const CashierFolioPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
           <div>
             <h1 className="text-2xl font-bold text-slate-900 tracking-tight font-sans">
-              {locale === 'th' ? 'แคชเชียร์และบิล (Cashier Hub)' : 'Cashier Hub & Folios'}
+              {locale === 'th' ? 'แคชเชียร์และบิล' : 'Cashier Hub & Folios'}
             </h1>
             <p className="text-sm text-slate-600 mt-0.5 font-sans">
               {locale === 'th'
-                ? 'ศูนย์กลางจัดการโฟลิโอค่าใช้จ่าย บันทึกการชำระเงิน และออกใบเสร็จ/ใบกำกับภาษี'
-                : 'Centralized Folio Billing & Payment Settlement Hub'}
+                ? 'ศูนย์กลางจัดการโฟลิโอค่าใช้จ่าย และออกใบเสร็จ/ใบกำกับภาษี'
+                : 'Centralized Folio Billing & Invoicing'}
             </p>
           </div>
 
@@ -433,10 +433,10 @@ export const CashierFolioPage: React.FC = () => {
           </div>
         )}
 
-        {/* Swiss Master-Detail Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-          {/* Left Column (Master Panel): Search, Filter Tabs & Bill Cards */}
-          <div className="lg:col-span-4 bg-white rounded-xl border border-slate-200 shadow-xs flex flex-col overflow-hidden">
+        {/* Expansive 2-Column Master-Detail Layout (35% Bill Selector, 65% Folio Details) */}
+        <div className="flex flex-col lg:flex-row gap-5 items-start">
+          {/* Left Column (35% Master Panel): Search, Filter Tabs & Bill Cards */}
+          <div className="w-full lg:w-[35%] shrink-0 bg-white rounded-xl border border-slate-200 shadow-xs flex flex-col overflow-hidden">
             {/* Search Input */}
             <div className="p-3 border-b border-slate-200 bg-slate-50/50">
               <div className="relative">
@@ -597,8 +597,8 @@ export const CashierFolioPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Right Column (Detail Panel): Folio Details or Empty State */}
-          <div className="lg:col-span-8">
+          {/* Right Column (65% Detail Panel): Folio Details or Empty State */}
+          <div className="w-full lg:w-[65%] min-w-0">
             {selectedBill ? (
               <FolioSplitScreen
                 bill={selectedBill}
@@ -607,11 +607,6 @@ export const CashierFolioPage: React.FC = () => {
                 onRequestAmenities={() => setIsAmenitiesOpen(true)}
                 onDeleteItem={(itemId) => {
                   if (selectedBill) deleteChargeItem(selectedBill.id, itemId);
-                }}
-                onPay={async (method, amount) => {
-                  if (!selectedBill) return false;
-                  const res = await settleBillPayment(selectedBill.id, method, amount);
-                  return !!res.success;
                 }}
                 onViewInvoice={() => setIsReceiptOpen(true)}
               />

@@ -105,26 +105,26 @@ describe('Task 4: Streamline Front Desk Navigation & Information Architecture', 
       'DailyOperationsPage subtitle must describe daily arrivals & departures in English'
     );
 
-    // CashierFolioPage header: Cashier Hub & Folios
+    // CashierFolioPage header: Cashier & Folios
     assert.match(
       cashierCode,
-      /แคชเชียร์และบิล \(Cashier Hub\)/,
-      'CashierFolioPage title must be Cashier Hub in Thai'
+      /แคชเชียร์และบิล/,
+      'CashierFolioPage title must be Cashier & Folios in Thai'
     );
     assert.match(
       cashierCode,
       /Cashier Hub & Folios/,
-      'CashierFolioPage title must be Cashier Hub in English'
+      'CashierFolioPage title must be Cashier Hub & Folios in English'
     );
     assert.match(
       cashierCode,
-      /ศูนย์กลางจัดการโฟลิโอค่าใช้จ่าย บันทึกการชำระเงิน และออกใบเสร็จ\/ใบกำกับภาษี/,
-      'CashierFolioPage subtitle must describe centralized folio billing and settlement in Thai'
+      /ศูนย์กลางจัดการโฟลิโอค่าใช้จ่าย.*ออกใบเสร็จ\/ใบกำกับภาษี/,
+      'CashierFolioPage subtitle must describe centralized folio billing and invoicing in Thai'
     );
     assert.match(
       cashierCode,
-      /Centralized Folio Billing & Payment Settlement Hub/,
-      'CashierFolioPage subtitle must describe centralized folio billing and settlement in English'
+      /Centralized Folio Billing & Invoicing/,
+      'CashierFolioPage subtitle must describe centralized folio billing and invoicing in English'
     );
   });
 });

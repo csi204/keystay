@@ -127,8 +127,9 @@ export interface FolioSplitScreenProps {
   onAddCharge: () => void;
   onRequestAmenities?: () => void;
   onDeleteItem: (itemId: string) => void;
-  onPay: (method: 'cash' | 'credit_card' | 'qr_promptpay' | 'transfer', amount: string) => Promise<boolean>;
+  onPay?: (method: 'cash' | 'credit_card' | 'qr_promptpay' | 'transfer', amount: string) => Promise<boolean>;
   onViewInvoice: () => void;
+  showSettlement?: boolean;
 }
 
 export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
@@ -139,6 +140,7 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
   onDeleteItem,
   onPay,
   onViewInvoice,
+  showSettlement = false,
 }) => {
   const { t, locale, formatCurrency } = useI18n();
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'credit_card' | 'qr_promptpay' | 'transfer'>('cash');
@@ -163,6 +165,7 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
   const isPaid = bill.status === 'paid' || paymentSuccess;
 
   const handleSettlePayment = async () => {
+    if (!onPay) return;
     setPayError(null);
     setIsProcessing(true);
     const success = await onPay(paymentMethod, summary.netDue.toFixed(2));
@@ -179,17 +182,29 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
   const handleSettle = handleSettlePayment;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-      {/* Left Pane: Itemized Folio Items (7 Cols) */}
-      <div className="lg:col-span-7 p-6 border-b lg:border-b-0 lg:border-r border-slate-200 space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+    <div className={`bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden ${showSettlement ? 'grid grid-cols-1 lg:grid-cols-12 gap-6' : 'flex flex-col'}`}>
+      {/* Folio Items Container (Full Width when pure manager, 7 cols when split) */}
+      <div className={`${showSettlement ? 'lg:col-span-7 border-b lg:border-b-0 lg:border-r border-slate-200' : 'w-full'} flex flex-col justify-between`}>
+        {/* Top Header: Room/Guest Info & Actions */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-5 sm:p-6 border-b border-slate-100">
           <div>
-            <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <Receipt className="w-4 h-4 text-slate-700" />
-              <span>{t('folio.itemizedTitle')}</span>
-            </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              {t('common.room')} <span className="font-mono font-medium tracking-tight tabular-nums">{bill.roomNumber || '—'}</span> · {t('common.guest')}: {bill.guestName || t('common.guest')}
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2 font-sans">
+                <Receipt className="w-4 h-4 sm:w-5 sm:h-5 text-slate-700" />
+                <span>{t('folio.itemizedTitle')}</span>
+              </h2>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-medium tabular-nums border ${
+                  isPaid
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : 'bg-amber-50 text-amber-700 border-amber-200'
+                }`}
+              >
+                {isPaid ? (locale === 'th' ? 'ชำระแล้ว' : 'Paid') : (locale === 'th' ? 'รอชำระ' : 'Pending')}
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 mt-1 font-sans">
+              {t('common.room')} <span className="font-mono font-medium tracking-tight tabular-nums text-slate-800">{bill.roomNumber || '—'}</span> · {t('common.guest')}: <span className="font-medium text-slate-800">{bill.guestName || t('common.guest')}</span>
             </p>
           </div>
 
@@ -197,26 +212,28 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
             <div className="flex items-center gap-2">
               {onRequestAmenities && (
                 <button
+                  type="button"
                   onClick={onRequestAmenities}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-md shadow-xs transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[38px] text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-md shadow-xs transition-colors cursor-pointer"
                 >
                   <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
                   <span>{locale === 'th' ? 'ขอของใช้เสริม' : 'Amenities'}</span>
                 </button>
               )}
               <button
+                type="button"
                 onClick={onAddCharge}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded-md shadow-sm transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[38px] text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded-md shadow-sm transition-colors cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>{t('folio.addCharge')}</span>
+                <span>{locale === 'th' ? 'เพิ่มค่าใช้จ่าย / มินิบาร์' : t('folio.addCharge')}</span>
               </button>
             </div>
           )}
         </div>
 
-        {/* Items Table */}
-        <div className="overflow-x-auto">
+        {/* Line Items Table: Expands to Full Width */}
+        <div className="overflow-x-auto w-full flex-1">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-200 text-xs font-bold text-slate-700 uppercase tracking-wider py-3">
@@ -231,7 +248,7 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
             <tbody className="divide-y divide-slate-100">
               {items.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-sm text-slate-400">
+                  <td colSpan={isPaid ? 5 : 6} className="py-12 text-center text-sm text-slate-400 font-sans">
                     {t('folio.empty')}
                   </td>
                 </tr>
@@ -270,7 +287,7 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
                           <button
                             type="button"
                             onClick={() => setItemToDelete(it)}
-                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors min-h-[44px] min-w-[44px] inline-flex items-center justify-center"
+                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors min-h-[44px] min-w-[44px] inline-flex items-center justify-center cursor-pointer"
                             title={t('common.delete')}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -284,124 +301,180 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
             </tbody>
           </table>
         </div>
-      </div>
 
-      {/* Right Pane: Settlement & Payment Cashier (5 Cols) */}
-      <div className="lg:col-span-5 p-6 bg-slate-50/50 flex flex-col justify-between space-y-6">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-            <h3 className="text-sm font-bold text-slate-900">{t('folio.settlementTitle')}</h3>
-            <span
-              className={`px-2 py-0.5 rounded text-[11px] font-medium border ${
-                isPaid
-                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                  : 'bg-amber-50 text-amber-800 border-amber-200'
-              }`}
-            >
-              {isPaid ? t('folio.paid') : t('folio.pending')}
-            </span>
-          </div>
-
-          {payError && (
-            <div className="p-2.5 bg-red-50 border border-red-200 rounded text-xs text-red-700 flex items-center gap-1.5">
-              <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
-              <span>{payError}</span>
-            </div>
-          )}
-
-          {/* Money Breakdown */}
-          <div className="space-y-2.5 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-            <div className="flex justify-between text-sm font-medium text-slate-700 font-mono tracking-tight tabular-nums">
-              <span>{t('folio.subtotal')}:</span>
-              <span>{formatCurrency(summary.subtotal)}</span>
-            </div>
-            <div className="flex justify-between text-sm font-medium text-slate-700 font-mono tracking-tight tabular-nums">
-              <span>{t('folio.vat')}:</span>
-              <span>{formatCurrency(summary.vat)}</span>
-            </div>
-            <div className="flex justify-between text-sm font-medium text-slate-700 font-mono tracking-tight tabular-nums">
-              <span>{t('folio.totalAmount')}:</span>
-              <span className="font-semibold text-slate-900">{formatCurrency(summary.totalWithVat)}</span>
-            </div>
-            <div className="flex justify-between text-sm font-medium text-slate-700 font-mono tracking-tight tabular-nums pt-1.5 border-t border-slate-100">
-              <span>{t('folio.depositDeducted')}:</span>
-              <span className="text-emerald-700">-{formatCurrency(summary.depositDeduction)}</span>
-            </div>
-            <div className="flex justify-between items-baseline pt-3 border-t border-slate-200">
-              <span className="text-base font-bold text-slate-900">{t('folio.netDue')}:</span>
-              <span className="text-2xl sm:text-3xl font-mono font-bold text-slate-950 tracking-tight tabular-nums">{formatCurrency(summary.netDue)}</span>
-            </div>
-          </div>
-
-          {/* Payment Method Selector */}
-          {!isPaid && (
-            <div className="space-y-2">
-              <label className="block text-xs font-medium text-slate-700">
-                {t('payment.method')}:
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { key: 'cash', label: t('payment.cash'), icon: Banknote },
-                  { key: 'credit_card', label: t('payment.creditCard'), icon: CreditCard },
-                  { key: 'qr_promptpay', label: t('payment.qrPromptpay'), icon: QrCode },
-                  { key: 'transfer', label: t('payment.transfer'), icon: Receipt },
-                ].map((m) => {
-                  const Icon = m.icon;
-                  const isSelected = paymentMethod === m.key;
-                  return (
-                    <button
-                      key={m.key}
-                      type="button"
-                      onClick={() => setPaymentMethod(m.key as any)}
-                      className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg border text-sm font-semibold transition-colors ${
-                        isSelected
-                          ? 'border-slate-900 bg-slate-900 text-white shadow-sm'
-                          : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-100'
-                      }`}
-                    >
-                      <Icon className="w-4 h-4" />
-                      <span>{m.label}</span>
-                    </button>
-                  );
-                })}
+        {/* Pure Manager Bottom Bar (When settlement form is hidden) */}
+        {!showSettlement && (
+          <div className="p-4 sm:p-5 bg-slate-50 border-t border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            {/* Money Breakdown Row */}
+            <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1.5 text-xs text-slate-600">
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-500">{t('folio.subtotal')}:</span>
+                <span className="font-mono font-semibold text-slate-800 tabular-nums">
+                  {formatCurrency(summary.subtotal)}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-500">{t('folio.vat')}:</span>
+                <span className="font-mono font-semibold text-slate-800 tabular-nums">
+                  {formatCurrency(summary.vat)}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-500">{t('folio.totalAmount')}:</span>
+                <span className="font-mono font-semibold text-slate-900 tabular-nums">
+                  {formatCurrency(summary.totalWithVat)}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-500">{t('folio.depositDeducted')}:</span>
+                <span className="font-mono font-semibold text-emerald-700 tabular-nums">
+                  -{formatCurrency(summary.depositDeduction)}
+                </span>
               </div>
             </div>
-          )}
-        </div>
 
-        {/* Action Buttons */}
-        <div className="space-y-2 pt-4 border-t border-slate-200">
-          {!isPaid ? (
+            {/* Net Total Due & Print Invoice Button */}
+            <div className="flex items-center justify-between md:justify-end gap-5 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-200/60">
+              <div className="text-left md:text-right">
+                <div className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">
+                  {locale === 'th' ? 'ยอดสุทธิ' : t('folio.netDue')}
+                </div>
+                <div className="text-2xl sm:text-3xl font-mono font-bold text-slate-950 tracking-tight tabular-nums">
+                  {formatCurrency(summary.netDue)}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={onViewInvoice}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 text-sm font-semibold rounded-lg shadow-2xs transition-colors cursor-pointer shrink-0"
+              >
+                <Printer className="w-4 h-4 text-slate-600" />
+                <span>{locale === 'th' ? 'พิมพ์ใบเสร็จ/ใบกำกับภาษี' : t('folio.printInvoice')}</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Right Pane: Settlement & Payment Cashier (5 Cols) - Hidden on Cashier Page */}
+      {showSettlement && (
+        <div className="lg:col-span-5 p-6 bg-slate-50/50 flex flex-col justify-between space-y-6">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+              <h3 className="text-sm font-bold text-slate-900">{t('folio.settlementTitle')}</h3>
+              <span
+                className={`px-2 py-0.5 rounded text-[11px] font-medium border ${
+                  isPaid
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                    : 'bg-amber-50 text-amber-800 border-amber-200'
+                }`}
+              >
+                {isPaid ? t('folio.paid') : t('folio.pending')}
+              </span>
+            </div>
+
+            {payError && (
+              <div className="p-2.5 bg-red-50 border border-red-200 rounded text-xs text-red-700 flex items-center gap-1.5">
+                <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                <span>{payError}</span>
+              </div>
+            )}
+
+            {/* Money Breakdown */}
+            <div className="space-y-2.5 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+              <div className="flex justify-between text-sm font-medium text-slate-700 font-mono tracking-tight tabular-nums">
+                <span>{t('folio.subtotal')}:</span>
+                <span>{formatCurrency(summary.subtotal)}</span>
+              </div>
+              <div className="flex justify-between text-sm font-medium text-slate-700 font-mono tracking-tight tabular-nums">
+                <span>{t('folio.vat')}:</span>
+                <span>{formatCurrency(summary.vat)}</span>
+              </div>
+              <div className="flex justify-between text-sm font-medium text-slate-700 font-mono tracking-tight tabular-nums">
+                <span>{t('folio.totalAmount')}:</span>
+                <span className="font-semibold text-slate-900">{formatCurrency(summary.totalWithVat)}</span>
+              </div>
+              <div className="flex justify-between text-sm font-medium text-slate-700 font-mono tracking-tight tabular-nums pt-1.5 border-t border-slate-100">
+                <span>{t('folio.depositDeducted')}:</span>
+                <span className="text-emerald-700">-{formatCurrency(summary.depositDeduction)}</span>
+              </div>
+              <div className="flex justify-between items-baseline pt-3 border-t border-slate-200">
+                <span className="text-base font-bold text-slate-900">{t('folio.netDue')}:</span>
+                <span className="text-2xl sm:text-3xl font-mono font-bold text-slate-950 tracking-tight tabular-nums">{formatCurrency(summary.netDue)}</span>
+              </div>
+            </div>
+
+            {/* Payment Method Selector */}
+            {!isPaid && (
+              <div className="space-y-2">
+                <label className="block text-xs font-medium text-slate-700">
+                  {t('payment.method')}:
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { key: 'cash', label: t('payment.cash'), icon: Banknote },
+                    { key: 'credit_card', label: t('payment.creditCard'), icon: CreditCard },
+                    { key: 'qr_promptpay', label: t('payment.qrPromptpay'), icon: QrCode },
+                    { key: 'transfer', label: t('payment.transfer'), icon: Receipt },
+                  ].map((m) => {
+                    const Icon = m.icon;
+                    const isSelected = paymentMethod === m.key;
+                    return (
+                      <button
+                        key={m.key}
+                        type="button"
+                        onClick={() => setPaymentMethod(m.key as any)}
+                        className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg border text-sm font-semibold transition-colors ${
+                          isSelected
+                            ? 'border-slate-900 bg-slate-900 text-white shadow-sm'
+                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-100'
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                        <span>{m.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="space-y-2 pt-4 border-t border-slate-200">
+            {!isPaid ? (
+              <button
+                type="button"
+                onClick={() => setIsConfirmPaymentOpen(true)}
+                disabled={isProcessing}
+                className="w-full py-3 px-4 min-h-[44px] bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-md shadow-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                <CheckCircle className="w-4 h-4" />
+                <span>
+                  {isProcessing
+                    ? t('payment.processing')
+                    : `${t('payment.settle')} ${formatCurrency(summary.netDue)} ${t('folio.closeBill')}`.trim()}
+                </span>
+              </button>
+            ) : (
+              <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200 text-center text-sm text-emerald-800 font-semibold flex items-center justify-center gap-2">
+                <CheckCircle className="w-4 h-4 text-emerald-600" />
+                <span>{t('payment.success')}</span>
+              </div>
+            )}
+
             <button
               type="button"
-              onClick={() => setIsConfirmPaymentOpen(true)}
-              disabled={isProcessing}
-              className="w-full py-3 px-4 min-h-[44px] bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-md shadow-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              onClick={onViewInvoice}
+              className="w-full py-3 px-4 min-h-[44px] bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 text-sm font-semibold rounded-md transition-colors flex items-center justify-center gap-2"
             >
-              <CheckCircle className="w-4 h-4" />
-              <span>
-                {isProcessing
-                  ? t('payment.processing')
-                  : `${t('payment.settle')} ${formatCurrency(summary.netDue)} ${t('folio.closeBill')}`.trim()}
-              </span>
+              <Printer className="w-3.5 h-3.5 text-slate-600" />
+              <span>{t('folio.printInvoice')}</span>
             </button>
-          ) : (
-            <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200 text-center text-sm text-emerald-800 font-semibold flex items-center justify-center gap-2">
-              <CheckCircle className="w-4 h-4 text-emerald-600" />
-              <span>{t('payment.success')}</span>
-            </div>
-          )}
-
-          <button
-            type="button"
-            onClick={onViewInvoice}
-            className="w-full py-3 px-4 min-h-[44px] bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 text-sm font-semibold rounded-md transition-colors flex items-center justify-center gap-2"
-          >
-            <Printer className="w-3.5 h-3.5 text-slate-600" />
-            <span>{t('folio.printInvoice')}</span>
-          </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Delete Item Confirmation Modal */}
       {itemToDelete && (
@@ -427,58 +500,60 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
       )}
 
       {/* Settle Payment Confirmation Modal */}
-      <ActionConfirmModal
-        isOpen={isConfirmPaymentOpen}
-        variant="primary"
-        title={locale === 'th' ? 'ยืนยันการรับชำระเงิน' : 'Confirm Payment Settlement'}
-        description={
-          locale === 'th'
-            ? `ยืนยันการบันทึกรับเงินจำนวน ${formatCurrency(summary.netDue)} และปิดยอดโฟลิโอห้อง ${bill.roomNumber || '—'} ใช่หรือไม่?`
-            : `Confirm recording payment of ${formatCurrency(summary.netDue)} and settling folio for Room ${bill.roomNumber || '—'}?`
-        }
-        confirmText={
-          locale === 'th'
-            ? `บันทึกรับเงิน ${formatCurrency(summary.netDue)} และปิดยอด`
-            : `Confirm ${formatCurrency(summary.netDue)} & Settle`
-        }
-        cancelText={locale === 'th' ? 'ยกเลิก' : 'Cancel'}
-        isSubmitting={isProcessing}
-        onConfirm={handleSettlePayment}
-        onClose={() => setIsConfirmPaymentOpen(false)}
-        summaryDetails={[
-          {
-            label: locale === 'th' ? 'ห้อง' : 'Room',
-            value: bill.roomNumber || '—',
-          },
-          {
-            label: locale === 'th' ? 'ชื่อผู้เข้าพัก' : 'Guest',
-            value: bill.guestName || t('common.guest'),
-          },
-          {
-            label: locale === 'th' ? 'วิธีชำระเงิน' : 'Payment Method',
-            value:
-              paymentMethod === 'cash'
-                ? locale === 'th'
-                  ? 'เงินสด'
-                  : 'Cash'
-                : paymentMethod === 'credit_card'
-                ? locale === 'th'
-                  ? 'บัตรเครดิต'
-                  : 'Credit Card'
-                : paymentMethod === 'qr_promptpay'
-                ? locale === 'th'
-                  ? 'QR พร้อมเพย์'
-                  : 'QR PromptPay'
-                : locale === 'th'
-                ? 'โอนเงินธนาคาร'
-                : 'Bank Transfer',
-          },
-          {
-            label: locale === 'th' ? 'ยอดรับชำระสุทธิ' : 'Net Amount Due',
-            value: formatCurrency(summary.netDue),
-          },
-        ]}
-      />
+      {showSettlement && (
+        <ActionConfirmModal
+          isOpen={isConfirmPaymentOpen}
+          variant="primary"
+          title={locale === 'th' ? 'ยืนยันการรับชำระเงิน' : 'Confirm Payment Settlement'}
+          description={
+            locale === 'th'
+              ? `ยืนยันการบันทึกรับเงินจำนวน ${formatCurrency(summary.netDue)} และปิดยอดโฟลิโอห้อง ${bill.roomNumber || '—'} ใช่หรือไม่?`
+              : `Confirm recording payment of ${formatCurrency(summary.netDue)} and settling folio for Room ${bill.roomNumber || '—'}?`
+          }
+          confirmText={
+            locale === 'th'
+              ? `บันทึกรับเงิน ${formatCurrency(summary.netDue)} และปิดยอด`
+              : `Confirm ${formatCurrency(summary.netDue)} & Settle`
+          }
+          cancelText={locale === 'th' ? 'ยกเลิก' : 'Cancel'}
+          isSubmitting={isProcessing}
+          onConfirm={handleSettlePayment}
+          onClose={() => setIsConfirmPaymentOpen(false)}
+          summaryDetails={[
+            {
+              label: locale === 'th' ? 'ห้อง' : 'Room',
+              value: bill.roomNumber || '—',
+            },
+            {
+              label: locale === 'th' ? 'ชื่อผู้เข้าพัก' : 'Guest',
+              value: bill.guestName || t('common.guest'),
+            },
+            {
+              label: locale === 'th' ? 'วิธีชำระเงิน' : 'Payment Method',
+              value:
+                paymentMethod === 'cash'
+                  ? locale === 'th'
+                    ? 'เงินสด'
+                    : 'Cash'
+                  : paymentMethod === 'credit_card'
+                  ? locale === 'th'
+                    ? 'บัตรเครดิต'
+                    : 'Credit Card'
+                  : paymentMethod === 'qr_promptpay'
+                  ? locale === 'th'
+                    ? 'QR พร้อมเพย์'
+                    : 'QR PromptPay'
+                  : locale === 'th'
+                  ? 'โอนเงินธนาคาร'
+                  : 'Bank Transfer',
+            },
+            {
+              label: locale === 'th' ? 'ยอดรับชำระสุทธิ' : 'Net Amount Due',
+              value: formatCurrency(summary.netDue),
+            },
+          ]}
+        />
+      )}
     </div>
   );
 };
