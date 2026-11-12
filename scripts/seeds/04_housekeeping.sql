@@ -10,30 +10,35 @@ INSERT OR REPLACE INTO housekeeping_staff (id, user_id, first_name, last_name, p
 -- 2. Housekeeping Tasks
 INSERT OR REPLACE INTO housekeeping_tasks (
   id, room_id, room_number, assigned_to, task_type, priority, status, notes,
-  scheduled_date, started_at, completed_at, event_source, created_at, updated_at
+  scheduled_date, started_at, completed_at, event_source, before_photo_url, after_photo_url, created_at, updated_at
 ) VALUES
 -- Room 203: Checkout clean triggered by checkout event
-('hkt-001', 'rm-203', '203', 'hk-staff-001', 'checkout_clean', 'urgent', 'in_progress', 'Priority clean: guest arriving at 2 PM',
- '2026-09-26', '2026-09-26T11:30:00Z', NULL, 'event_bus', '2026-09-26T11:15:00Z', '2026-09-26T11:30:00Z'),
+('hkt-001', 'rm-203', '203', 'hk-staff-001', 'checkout_clean', 'urgent', 'in_progress', 'แขกขอเข้าพักด่วนเวลา 14:00 น. เปลี่ยนผ้าปูและทำความสะอาดห้องน้ำ',
+ '2026-09-26', '2026-09-26T11:30:00Z', NULL, 'event_bus', 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800&auto=format&fit=crop&q=80', NULL, '2026-09-26T11:15:00Z', '2026-09-26T11:30:00Z'),
 
 -- Room 104: Routine checkout clean
-('hkt-002', 'rm-104', '104', 'hk-staff-001', 'checkout_clean', 'high', 'assigned', 'Replace bed linens and restock minibar',
- '2026-09-26', NULL, NULL, 'manual', '2026-09-26T10:00:00Z', '2026-09-26T10:15:00Z'),
+('hkt-002', 'rm-104', '104', 'hk-staff-001', 'checkout_clean', 'high', 'assigned', 'เปลี่ยนผ้าปูที่นอนและเติมมินิบาร์ให้ครบถ้วน',
+ '2026-09-26', NULL, NULL, 'manual', NULL, NULL, '2026-09-26T10:00:00Z', '2026-09-26T10:15:00Z'),
 
 -- Room 305: Deep cleaning
-('hkt-003', 'rm-305', '305', 'hk-staff-002', 'deep_clean', 'normal', 'in_progress', 'Carpet shampoo and balcony glass polish',
- '2026-09-26', '2026-09-26T09:30:00Z', NULL, 'manual', '2026-09-26T08:30:00Z', '2026-09-26T09:30:00Z'),
+('hkt-003', 'rm-305', '305', 'hk-staff-002', 'deep_clean', 'normal', 'in_progress', 'ซักพรม ขัดระเบียง และเช็ดผ้าม่าน',
+ '2026-09-26', '2026-09-26T09:30:00Z', NULL, 'manual', 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&auto=format&fit=crop&q=80', NULL, '2026-09-26T08:30:00Z', '2026-09-26T09:30:00Z'),
 
--- Room 101: Daily stay-over clean completed earlier today
-('hkt-004', 'rm-101', '101', 'hk-staff-001', 'daily_clean', 'normal', 'completed', 'Standard daily refresh passed inspection',
- '2026-09-26', '2026-09-26T08:45:00Z', '2026-09-26T09:15:00Z', 'manual', '2026-09-26T08:00:00Z', '2026-09-26T09:15:00Z');
+-- Room 101: Daily stay-over clean completed with Before/After photos
+('hkt-004', 'rm-101', '101', 'hk-staff-001', 'daily_clean', 'normal', 'completed', 'จัดเตียง เช็ดทำความสะอาดห้องน้ำ และเติมของใช้ครบถ้วน ตรวจรับเรียบร้อย',
+ '2026-09-26', '2026-09-26T08:45:00Z', '2026-09-26T09:15:00Z', 'manual', 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800&auto=format&fit=crop&q=80', 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=800&auto=format&fit=crop&q=80', '2026-09-26T08:00:00Z', '2026-09-26T09:15:00Z'),
 
--- 3. Room Issues (Maintenance & Damages)
+-- Room 402: Checkout clean completed with Before/After photos
+('hkt-005', 'rm-402', '402', 'hk-staff-002', 'checkout_clean', 'high', 'completed', 'ทำความสะอาดครบวงจร ฉีดพ่นฆ่าเชื้อและจัดเตียงใหม่พร้อมต้อนรับแขก',
+ '2026-09-26', '2026-09-26T10:00:00Z', '2026-09-26T10:42:00Z', 'event_bus', 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=800&auto=format&fit=crop&q=80', 'https://images.unsplash.com/photo-1591088398332-8a7791972843?w=800&auto=format&fit=crop&q=80', '2026-09-26T09:45:00Z', '2026-09-26T10:42:00Z');
+
+-- 3. Room Issues (Maintenance & Damages & Lost/Found)
 INSERT OR REPLACE INTO room_issues (
   id, task_id, room_id, reported_by, issue_type, description, photo_r2_key, severity, status, resolved_at, created_at
 ) VALUES
-('iss-001', NULL, 'rm-205', 'hk-staff-001', 'malfunction', 'Air conditioning unit making whistling noise and cooling slowly', 'photos/issues/rm205-ac.jpg', 'high', 'acknowledged', NULL, '2026-09-25T14:00:00Z'),
-('iss-002', NULL, 'rm-404', 'hk-staff-002', 'damage', 'Bathtub drain pipe leaking onto bathroom floor', 'photos/issues/rm404-pipe.jpg', 'critical', 'open', NULL, '2026-09-26T09:00:00Z');
+('iss-001', 'hkt-001', 'rm-205', 'hk-staff-001', 'malfunction', 'เครื่องปรับอากาศมีเสียงหวีดและทำความเย็นช้า', 'https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=800&auto=format&fit=crop&q=80', 'high', 'acknowledged', NULL, '2026-09-25T14:00:00Z'),
+('iss-002', NULL, 'rm-404', 'hk-staff-002', 'damage', 'ท่อน้ำใต้อ่างอาบน้ำรั่วซึมลงพื้นห้องน้ำ', 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800&auto=format&fit=crop&q=80', 'critical', 'open', NULL, '2026-09-26T09:00:00Z'),
+('iss-003', 'hkt-004', 'rm-101', 'hk-staff-001', 'missing_item', 'พบแว่นกันแดดสีดำตกอยู่ใต้โต๊ะทำงาน (เก็บรักษาไว้ที่เคาน์เตอร์)', 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=800&auto=format&fit=crop&q=80', 'low', 'open', NULL, '2026-09-26T09:10:00Z');
 
 -- 4. Housekeeping Schedule
 INSERT OR REPLACE INTO housekeeping_schedule (id, staff_id, schedule_date, shift, zone_assigned, is_day_off, created_at) VALUES
