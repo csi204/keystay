@@ -60,6 +60,7 @@ export const RoomMatrixPage: React.FC = () => {
     refresh: refreshReservations,
     createReservation,
     checkInReservation,
+    walkInCheckIn,
   } = useReservations();
 
   // Sub-tab: 'grid' = Matrix Grid, 'table' = Reservations Table
@@ -69,6 +70,7 @@ export const RoomMatrixPage: React.FC = () => {
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [modalMode, setModalMode] = useState<'details' | 'booking'>('details');
+  const [modalBookingMode, setModalBookingMode] = useState<'walkin' | 'booking'>('walkin');
   const [isNewModalOpen, setIsNewModalOpen] = useState<boolean>(false);
   const [checkInReservationTarget, setCheckInReservationTarget] =
     useState<ExtendedReservation | null>(null);
@@ -189,6 +191,7 @@ export const RoomMatrixPage: React.FC = () => {
   const handleSelectRoom = (room: Room) => {
     setSelectedRoom(room);
     setModalMode('details');
+    setModalBookingMode('walkin');
     setIsModalOpen(true);
   };
 
@@ -199,6 +202,7 @@ export const RoomMatrixPage: React.FC = () => {
   const handleQuickBook = (room: Room) => {
     setSelectedRoom(room);
     setModalMode('booking');
+    setModalBookingMode('walkin');
     setIsModalOpen(true);
   };
 
@@ -214,10 +218,9 @@ export const RoomMatrixPage: React.FC = () => {
     if (action !== 'extend') {
       setIsModalOpen(false);
     }
-    if (action === 'checkin' || action === 'walkin') {
+    if (action === 'checkin' || action === 'walkin' || action === 'checkout') {
       navigate('/front-desk/daily-operations', { state: { roomId: room.id, action } });
     } else if (
-      action === 'checkout' ||
       action === 'charge' ||
       action === 'minibar' ||
       action === 'folio' ||
@@ -772,10 +775,18 @@ export const RoomMatrixPage: React.FC = () => {
         roomType={selectedRoomType}
         isOpen={isModalOpen}
         initialMode={modalMode}
+        bookingMode={modalBookingMode}
         currentReservation={activeReservation || null}
         onClose={handleCloseModal}
         onAction={handleModalAction}
         onSubmitBooking={handleFastBookingSubmit}
+        onWalkInCheckIn={async (data) => {
+          const res = await walkInCheckIn(data);
+          if (res.success) {
+            await Promise.all([refreshRooms(), refreshReservations()]);
+          }
+          return res;
+        }}
       />
 
       {/* New Booking Modal for embedded reservations */}

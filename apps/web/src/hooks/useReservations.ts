@@ -137,14 +137,23 @@ export function useReservations() {
     idCardNumber?: string;
     email?: string;
     guestsCount?: number;
+    numGuests?: number;
     checkInDate: string;
     checkOutDate: string;
     depositAmount: string;
     paymentMethod?: string;
+    bookingSource?: 'walk_in' | 'phone' | 'facebook';
+    paymentStatus?: 'unpaid' | 'paid';
   }) => {
+    const payload = {
+      ...data,
+      numGuests: data.numGuests || data.guestsCount || 1,
+      bookingSource: data.bookingSource || 'walk_in',
+      paymentStatus: data.paymentStatus || 'paid',
+    };
     const res = await apiFetch('/api/reservations/walk-in', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
     if (!res.error) {
       await fetchReservations();

@@ -109,11 +109,11 @@
 - Modify: `apps/web/src/components/front-desk/NewBookingModal.tsx`
 - Modify: `apps/web/src/components/front-desk/RoomDetailsModal.tsx`
 
-- [ ] **Step 3.1: Write tests for formatting utilities in `MaskedInputs.test.ts`**
+- [x] **Step 3.1: Write tests for formatting utilities in `MaskedInputs.test.ts`**
   - Test phone number formatting: `0812345678` -> `081-234-5678`, capped at 10 digits.
   - Test Thai ID formatting: `1234567890123` -> `1-2345-67890-12-3`, capped at 13 digits.
   - Test Passport formatting: `ac1234567` -> `AC1234567`, uppercase 2 letters + 7 digits.
-- [ ] **Step 3.2: Create `apps/web/src/components/common/MaskedInputs.tsx`**
+- [x] **Step 3.2: Create `apps/web/src/components/common/MaskedInputs.tsx`**
   - Implement `PhoneInput`:
     - Auto-formats on type (`xxx-xxx-xxxx`).
     - Strips non-digits, maxLength 10 digits (12 chars with dashes).
@@ -123,11 +123,11 @@
     - Thai ID: `x-xxxx-xxxxx-xx-x` (13 digits max).
     - Passport: 2 letters + 7 numbers (9 chars max, auto uppercase).
     - Required field with clear visual indicator.
-- [ ] **Step 3.3: Integrate into `WalkInModal.tsx`, `NewBookingModal.tsx`, `RoomDetailsModal.tsx`**
+- [x] **Step 3.3: Integrate into `WalkInModal.tsx`, `NewBookingModal.tsx`, `RoomDetailsModal.tsx`**
   - Replace raw inputs with `PhoneInput` and `NationalIdOrPassportInput`.
   - Add optional Email input `(ไม่บังคับ)` to all modals for consistency.
   - Limit guest count selector `guestsCount` dynamically: `max = roomType?.capacity || 2`.
-- [ ] **Step 3.4: Run tests and commit**
+- [x] **Step 3.4: Run tests and commit**
   - Run `npm run test:web`.
   - Commit: `git commit -m "feat(ui): add reusable masked phone, thai id, and passport inputs with capacity validation"`.
 
@@ -140,21 +140,21 @@
 - Modify: `apps/web/src/pages/front-desk/RoomMatrixPage.tsx`
 - Modify: `apps/web/src/pages/front-desk/DailyOperationsPage.tsx`
 
-- [ ] **Step 4.1: Separate Walk-In and New Booking in `RoomDetailsModal.tsx`**
+- [x] **Step 4.1: Separate Walk-In and New Booking in `RoomDetailsModal.tsx`**
   - "เปิดห้องด่วน (Walk-In)":
     - If check-in date is TODAY: calls `walkInCheckIn` directly (`POST /api/reservations/walk-in`), immediately checks in guest, status becomes `checked_in`, room becomes `occupied`.
     - Requires National ID / Passport.
   - "สร้างการจองใหม่ห้องนี้":
     - Opens advance reservation mode (`createReservation`), status `confirmed`.
   - Replace raw emojis with Lucide React icons (`Zap`, `Calendar`, etc.).
-- [ ] **Step 4.2: Update Checkout Action in `RoomDetailsModal.tsx` and `RoomMatrixPage.tsx`**
+- [x] **Step 4.2: Update Checkout Action in `RoomDetailsModal.tsx` and `RoomMatrixPage.tsx`**
   - When clicking "เช็คเอาต์": navigate to `/front-desk/daily-operations` with `state: { roomId: room.id, action: 'checkout' }`.
-- [ ] **Step 4.3: Split Departures into 2 Sub-Tabs in `DailyOperationsPage.tsx`**
+- [x] **Step 4.3: Split Departures into 2 Sub-Tabs in `DailyOperationsPage.tsx`**
   - In `tab === 'departures'`:
     - Sub-tab 1: **"รอเช็คเอาต์วันนี้"** (`departuresDueToday`: `status === 'checked_in' && checkOutDate <= todayStr`).
     - Sub-tab 2: **"เช็คเอาต์ก่อนกำหนด / ขยายเวลา"** (`allActiveInHouse`: all remaining `checked_in` and `extended` rooms).
   - Handle incoming `location.state.roomId`: auto-select room and trigger `CheckOutModal` smoothly.
-- [ ] **Step 4.4: Run tests and commit**
+- [x] **Step 4.4: Run tests and commit**
   - Run `npm run test:web`.
   - Commit: `git commit -m "feat(front-desk): split walk-in instant check-in, route checkout to daily operations, and add early-checkout subtab"`.
 

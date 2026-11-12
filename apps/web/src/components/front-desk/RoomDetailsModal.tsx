@@ -112,7 +112,21 @@ export interface RoomDetailsModalProps {
     | ((action: 'checkin' | 'checkout' | 'charge' | 'walkin' | 'clean' | 'extend' | 'refresh', room: Room) => void);
   currentReservation?: ExtendedReservation | null;
   initialMode?: 'details' | 'booking';
+  bookingMode?: 'walkin' | 'booking';
   onSubmitBooking?: (data: FastBookingFormData) => Promise<{ success: boolean; error?: string }>;
+  onWalkInCheckIn?: (data: {
+    roomId: string;
+    guestName: string;
+    phone: string;
+    nationalIdOrPassport: string;
+    idCardNumber?: string;
+    email?: string;
+    guestsCount?: number;
+    checkInDate: string;
+    checkOutDate: string;
+    depositAmount: string;
+    paymentMethod?: string;
+  }) => Promise<{ success: boolean; error?: string }>;
   onVerifySlip?: (
     reservationId: string,
     data: { paymentSlipRef?: string; paymentSlipUrl?: string }
@@ -144,7 +158,9 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
   onAction,
   currentReservation: initialReservation,
   initialMode = 'details',
+  bookingMode: initialBookingMode = 'walkin',
   onSubmitBooking,
+  onWalkInCheckIn,
   onVerifySlip,
   onRequestAmenity,
   onAddFolioCharge,
@@ -219,6 +235,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
 
   // Mode: 'details' (single pane max-w-lg) or 'booking' (split pane max-w-4xl)
   const [mode, setMode] = useState<'details' | 'booking'>(initialMode);
+  const [bookingMode, setBookingMode] = useState<'walkin' | 'booking'>(initialBookingMode);
   const [isExtendOpen, setIsExtendOpen] = useState(false);
   const [isSlipViewerOpen, setIsSlipViewerOpen] = useState(false);
   const [isAmenitiesModalOpen, setIsAmenitiesModalOpen] = useState(false);
@@ -341,6 +358,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setMode(initialMode);
+      setBookingMode(initialBookingMode);
       setGuestName('');
       setPhone('');
       setIdCardNumber('');
@@ -350,14 +368,14 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
       setGuestsCount(roomType?.capacity || 2);
       setDepositAmount('500');
       setPaymentMethod('cash');
-      setBookingSource('walk_in');
+      setBookingSource(initialBookingMode === 'booking' ? 'phone' : 'walk_in');
       setPaymentSlipRef('');
       setPaymentSlipUrl('');
       setSlipPreview(null);
       setValidationErrors([]);
       setSubmitError(null);
     }
-  }, [isOpen, initialMode, todayStr, tomorrowStr, roomType]);
+  }, [isOpen, initialMode, initialBookingMode, todayStr, tomorrowStr, roomType]);
 
   // Close on Escape key press
   useEffect(() => {
@@ -483,7 +501,32 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
       const isPaid = bookingSource === 'walk_in' || Boolean(slipPreview || paymentSlipRef.trim());
       const paymentStatus: 'unpaid' | 'paid' = isPaid ? 'paid' : 'unpaid';
 
-      if (onSubmitBooking) {
+      // Check if walk-in immediate check-in applies (walk-in flow and check-in date is today)
+      const isImmediateWalkIn = bookingMode === 'walkin' && checkInDate === todayStr;
+
+      if (isImmediateWalkIn && onWalkInCheckIn) {
+        const result = await onWalkInCheckIn({
+          roomId: room.id,
+          guestName: guestName.trim(),
+          phone: phone.trim(),
+          nationalIdOrPassport: idCardNumber.trim(),
+          idCardNumber: idCardNumber.trim(),
+          email: email.trim() || undefined,
+          guestsCount: Math.min(guestsCount, maxCapacity),
+          checkInDate,
+          checkOutDate,
+          depositAmount,
+          paymentMethod,
+        });
+
+        if (!result.success) {
+          setSubmitError(
+            result.error ||
+              (locale === 'th' ? 'เกิดข้อผิดพลาดในการเปิดห้องพัก' : 'Failed to check-in walk-in guest')
+          );
+          return;
+        }
+      } else if (onSubmitBooking) {
         const result = await onSubmitBooking({
           guestName: guestName.trim(),
           phone: phone.trim(),
@@ -503,7 +546,10 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
         });
 
         if (!result.success) {
-          setSubmitError(result.error || (locale === 'th' ? 'เกิดข้อผิดพลาดในการบันทึกการจอง' : 'Failed to create booking'));
+          setSubmitError(
+            result.error ||
+              (locale === 'th' ? 'เกิดข้อผิดพลาดในการบันทึกการจอง' : 'Failed to create booking')
+          );
           return;
         }
       } else if (onAction) {
@@ -986,7 +1032,12 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    onClick={() => setMode('booking')}
+                    onClick={() => {
+                      setBookingMode('walkin');
+                      setBookingSource('walk_in');
+                      setCheckInDate(todayStr);
+                      setMode('booking');
+                    }}
                     className="w-full min-h-[44px] text-xs font-semibold py-2.5 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
                   >
                     <Zap className="w-4 h-4 text-amber-400 shrink-0" />
@@ -994,7 +1045,11 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setMode('booking')}
+                    onClick={() => {
+                      setBookingMode('booking');
+                      setBookingSource('phone');
+                      setMode('booking');
+                    }}
                     className="w-full min-h-[44px] text-xs font-semibold py-2.5 px-3 bg-white border border-slate-300 hover:bg-slate-100 text-slate-800 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-xs"
                   >
                     <Calendar className="w-4 h-4 text-slate-600 shrink-0" />
@@ -1195,25 +1250,95 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                 <div className="flex items-start justify-between pb-3 border-b border-slate-100">
                   <div>
                     <h2 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                      <Zap className="w-4 h-4 text-amber-500" />
-                      <span>{locale === 'th' ? 'เปิดห้องด่วน (Walk-In) & จองห้องพัก' : 'Fast Walk-In & Booking'}</span>
+                      {bookingMode === 'walkin' ? (
+                        <>
+                          <Zap className="w-4 h-4 text-amber-500" />
+                          <span>
+                            {locale === 'th'
+                              ? 'เปิดห้องด่วน (Walk-In Check-In)'
+                              : 'Quick Walk-In Check-In'}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <Calendar className="w-4 h-4 text-indigo-600" />
+                          <span>
+                            {locale === 'th'
+                              ? 'สร้างการจองใหม่สำหรับห้องนี้'
+                              : 'New Reservation for Room'}
+                          </span>
+                        </>
+                      )}
                     </h2>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      {locale === 'th'
-                        ? 'กรอกข้อมูล 1 หน้า รวดเร็ว กระชับ พร้อมระบบตรวจสอบก่อนยืนยัน'
-                        : 'Single-page fast check-in with instant client validation'}
+                      {bookingMode === 'walkin'
+                        ? locale === 'th'
+                          ? 'เช็คอินทันทีสำหรับผู้เข้าพักวันนี้ สถานะห้องจะเปลี่ยนเป็นไม่ว่าง'
+                          : "Immediate check-in for today's guest, room status will change to occupied"
+                        : locale === 'th'
+                          ? 'สร้างการจองล่วงหน้า สถานะจะถูกบันทึกเป็นยืนยันการจอง'
+                          : 'Create advance booking with confirmed reservation status'}
                     </p>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-                    title={t('common.close')}
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {/* Toggle between Walk-In and New Booking */}
+                    <div className="inline-flex p-0.5 bg-slate-100 rounded-lg text-xs font-medium">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBookingMode('walkin');
+                          setBookingSource('walk_in');
+                          setCheckInDate(todayStr);
+                        }}
+                        className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-colors ${
+                          bookingMode === 'walkin'
+                            ? 'bg-white text-slate-900 font-semibold shadow-2xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        <Zap className="w-3.5 h-3.5 text-amber-500" />
+                        <span>Walk-In</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBookingMode('booking');
+                          if (bookingSource === 'walk_in') setBookingSource('phone');
+                        }}
+                        className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-colors ${
+                          bookingMode === 'booking'
+                            ? 'bg-white text-slate-900 font-semibold shadow-2xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        <Calendar className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>{locale === 'th' ? 'จองล่วงหน้า' : 'Booking'}</span>
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                      title={t('common.close')}
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
+
+                {/* Advance Notice if Walk-In mode has future check-in date */}
+                {bookingMode === 'walkin' && checkInDate > todayStr && (
+                  <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-2 text-xs text-blue-800">
+                    <Calendar className="w-4 h-4 text-blue-600 shrink-0" />
+                    <span>
+                      {locale === 'th'
+                        ? 'วันเช็คอินเป็นวันล่วงหน้า ระบบจะสร้างการจองล่วงหน้า (Confirmed) อัตโนมัติ'
+                        : 'Check-in date is in the future. System will create an advance booking (Confirmed).'}
+                    </span>
+                  </div>
+                )}
 
                 {/* Inline Validation Alert Banner */}
                 {validationErrors.length > 0 && (
@@ -1551,11 +1676,22 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                         <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                         <span>{t('res.submitting')}</span>
                       </>
-                    ) : (
+                    ) : bookingMode === 'walkin' && checkInDate === todayStr ? (
                       <>
                         <Zap className="w-3.5 h-3.5 text-amber-400" />
                         <span>
-                          {locale === 'th' ? 'ยืนยันเปิดห้อง / ยืนยันการจอง' : 'Confirm Walk-In / Booking'}
+                          {locale === 'th'
+                            ? 'ยืนยันเปิดห้องทันที (Walk-In)'
+                            : 'Confirm Walk-In Check-In'}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <Calendar className="w-3.5 h-3.5 text-indigo-300" />
+                        <span>
+                          {locale === 'th'
+                            ? 'ยืนยันสร้างการจอง'
+                            : 'Confirm Reservation'}
                         </span>
                       </>
                     )}

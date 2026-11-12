@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { FrontDeskLayout } from '@/components/front-desk/FrontDeskLayout';
 import { useReservations, ExtendedReservation, resolveGuestName } from '@/hooks/useReservations';
 import { useRooms } from '@/hooks/useRooms';
@@ -25,6 +25,8 @@ import {
 
 export const DailyOperationsPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const navState = location.state as { roomId?: string; action?: string } | null;
   const { t, locale, formatDate, formatDateRange, formatCurrency } = useI18n();
   const todayStr = new Date().toISOString().split('T')[0];
   const tomorrow = new Date();
@@ -51,6 +53,7 @@ export const DailyOperationsPage: React.FC = () => {
   } = useBilling();
 
   const [activeSubTab, setActiveSubTab] = useState<'arrivals' | 'departures' | 'billing'>('arrivals');
+  const [departureSubTab, setDepartureSubTab] = useState<'due_today' | 'early_or_extended'>('due_today');
   const [checkInTarget, setCheckInTarget] = useState<ExtendedReservation | null>(null);
   const [checkOutTarget, setCheckOutTarget] = useState<ExtendedReservation | null>(null);
   const [extendTarget, setExtendTarget] = useState<ExtendedReservation | null>(null);
@@ -86,14 +89,67 @@ export const DailyOperationsPage: React.FC = () => {
     );
   }, [reservations, todayStr]);
 
-  // Today's Departures: currently checked_in and checkOutDate <= todayStr
-  const departures = useMemo(() => {
+  // 1) Today's Departures (Due Today): currently checked_in and checkOutDate <= todayStr
+  const dueTodayDepartures = useMemo(() => {
     return reservations.filter(
       (r) =>
         r.status === 'checked_in' &&
         (r.checkOutDate <= todayStr || r.checkOutDate === todayStr)
     );
   }, [reservations, todayStr]);
+
+  // 2) Early Checkout & Extended Stays: in-house reservations where (r.status === 'extended') || (r.status === 'checked_in' && r.checkOutDate > todayStr)
+  const earlyOrExtendedDepartures = useMemo(() => {
+    return reservations.filter(
+      (r) =>
+        r.status === 'extended' ||
+        (r.status === 'checked_in' && r.checkOutDate > todayStr)
+    );
+  }, [reservations, todayStr]);
+
+  const departures = dueTodayDepartures;
+
+  // Auto-open modals based on router location state navigation (e.g. from Room Matrix or Room Details)
+  useEffect(() => {
+    if (!navState?.action || !navState?.roomId) return;
+
+    if (navState.action === 'checkout') {
+      const matchingRes = reservations.find(
+        (r) =>
+          (r.roomId === navState.roomId || (r as any).room?.id === navState.roomId) &&
+          (r.status === 'checked_in' || (r.status as string) === 'extended')
+      );
+
+      if (matchingRes) {
+        setActiveSubTab('departures');
+        if (matchingRes.status === 'extended' || matchingRes.checkOutDate > todayStr) {
+          setDepartureSubTab('early_or_extended');
+        } else {
+          setDepartureSubTab('due_today');
+        }
+        setCheckOutTarget(matchingRes);
+        navigate(location.pathname, { replace: true, state: {} });
+      } else if (!reservationsLoading && reservations.length > 0) {
+        navigate(location.pathname, { replace: true, state: {} });
+      }
+    } else if (navState.action === 'checkin') {
+      const targetRes = reservations.find(
+        (r) =>
+          (r.roomId === navState.roomId || (r as any).room?.id === navState.roomId) &&
+          (r.status === 'confirmed' || r.status === 'pending')
+      );
+      if (targetRes) {
+        setActiveSubTab('arrivals');
+        setCheckInTarget(targetRes);
+        navigate(location.pathname, { replace: true, state: {} });
+      } else if (!reservationsLoading && reservations.length > 0) {
+        navigate(location.pathname, { replace: true, state: {} });
+      }
+    } else if (navState.action === 'walkin') {
+      setIsWalkInOpen(true);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [navState, reservations, reservationsLoading, todayStr, navigate, location.pathname]);
 
   // Filtered bills for billing history ledger
   const filteredBills = useMemo(() => {
@@ -309,11 +365,65 @@ export const DailyOperationsPage: React.FC = () => {
         {/* Departures & Cashier Sub-tab */}
         {activeSubTab === 'departures' && (
           <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-3 bg-blue-50/50 border-b border-blue-100 flex items-center justify-between text-sm text-blue-900 font-medium font-sans">
-              <span>{t('ops.departuresDescription')}</span>
-              <span className="font-sans text-xs text-blue-700 font-medium">
-                {t('ops.totalItems', { count: departures.length })}
-              </span>
+            {/* Split Sub-Tabs: Due Today vs Early Checkout / Extended */}
+            <div className="p-3 bg-blue-50/50 border-b border-blue-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDepartureSubTab('due_today')}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all min-h-[36px] font-sans ${
+                    departureSubTab === 'due_today'
+                      ? 'bg-white text-blue-900 border border-blue-200 shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-blue-100/60'
+                  }`}
+                >
+                  <LogOut className="w-3.5 h-3.5 text-blue-600" aria-hidden="true" />
+                  <span>{locale === 'th' ? 'รอเช็คเอาต์วันนี้' : 'Due Today'}</span>
+                  <span
+                    className={`text-[11px] font-mono font-bold px-1.5 py-0.5 rounded-full ${
+                      departureSubTab === 'due_today'
+                        ? 'bg-blue-100 text-blue-900'
+                        : 'bg-slate-200/70 text-slate-600'
+                    }`}
+                  >
+                    ({dueTodayDepartures.length})
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDepartureSubTab('early_or_extended')}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all min-h-[36px] font-sans ${
+                    departureSubTab === 'early_or_extended'
+                      ? 'bg-white text-blue-900 border border-blue-200 shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-blue-100/60'
+                  }`}
+                >
+                  <CalendarPlus className="w-3.5 h-3.5 text-indigo-600" aria-hidden="true" />
+                  <span>{locale === 'th' ? 'เช็คเอาต์ก่อนกำหนด / ขยายเวลา' : 'Early Checkout / Extended'}</span>
+                  <span
+                    className={`text-[11px] font-mono font-bold px-1.5 py-0.5 rounded-full ${
+                      departureSubTab === 'early_or_extended'
+                        ? 'bg-indigo-100 text-indigo-900'
+                        : 'bg-slate-200/70 text-slate-600'
+                    }`}
+                  >
+                    ({earlyOrExtendedDepartures.length})
+                  </span>
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2 text-sm text-blue-900 font-medium font-sans">
+                <span className="hidden sm:inline">{t('ops.departuresDescription')}</span>
+                <span className="font-sans text-xs text-blue-700 font-medium">
+                  {t('ops.totalItems', {
+                    count:
+                      departureSubTab === 'due_today'
+                        ? dueTodayDepartures.length
+                        : earlyOrExtendedDepartures.length,
+                  })}
+                </span>
+              </div>
             </div>
 
             <div className="overflow-x-auto">
@@ -330,14 +440,18 @@ export const DailyOperationsPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {departures.length === 0 ? (
+                  {(departureSubTab === 'due_today' ? dueTodayDepartures : earlyOrExtendedDepartures).length === 0 ? (
                     <tr>
                       <td colSpan={7} className="py-12 text-center text-slate-400 text-sm font-sans">
-                        {t('ops.noDepartures')}
+                        {departureSubTab === 'due_today'
+                          ? t('ops.noDepartures')
+                          : (locale === 'th'
+                              ? 'ไม่มีห้องพักที่เช็คเอาต์ก่อนกำหนดหรือขยายเวลา'
+                              : 'No early departures or extended stays')}
                       </td>
                     </tr>
                   ) : (
-                    departures.map((res) => {
+                    (departureSubTab === 'due_today' ? dueTodayDepartures : earlyOrExtendedDepartures).map((res) => {
                       const room = rooms.find((r) => r.id === res.roomId || (res.roomNumber && r.roomNumber === res.roomNumber));
                       const roomType = roomTypes.find((rt) => rt.id === room?.roomTypeId);
                       const roomNum = res.roomNumber || room?.roomNumber || '—';
@@ -347,7 +461,19 @@ export const DailyOperationsPage: React.FC = () => {
                       return (
                         <tr key={res.id} className="hover:bg-slate-50 transition-colors">
                           <td className="py-3.5 px-4 font-mono font-medium tabular-nums text-slate-900 text-sm">
-                            {res.bookingNumber || res.id.slice(0, 8)}
+                            <div className="flex items-center gap-1.5">
+                              <span>{res.bookingNumber || res.id.slice(0, 8)}</span>
+                              {res.status === 'extended' && (
+                                <span className="text-[10px] font-sans font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">
+                                  {locale === 'th' ? 'ขยายเวลา' : 'Extended'}
+                                </span>
+                              )}
+                              {res.status === 'checked_in' && res.checkOutDate > todayStr && (
+                                <span className="text-[10px] font-sans font-semibold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-200">
+                                  {locale === 'th' ? 'พักอยู่' : 'In-House'}
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="py-3.5 px-4 font-sans text-sm font-medium text-slate-800">
                             {guestDisplayName}
