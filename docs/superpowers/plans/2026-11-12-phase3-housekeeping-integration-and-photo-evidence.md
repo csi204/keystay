@@ -95,13 +95,13 @@ This plan integrates Boon's ([@Legxcy77](https://github.com/Legxcy77)) complete 
   - [x] Render Before & After photo cards with timestamps and status badges
   - [x] Add modal lightbox view when clicking on photo thumbnails
 
-- [ ] **Task 4: Automated Test Suite for Front Desk Housekeeping Evidence**
-  - [ ] Create `apps/web/src/__tests__/HousekeepingEvidenceInFrontDesk.test.ts`
-  - [ ] Verify `RoomDetailsModal` correctly renders Before/After photo container, handles null photos gracefully, and opens lightbox
-  - [ ] Run `pnpm test:web` and confirm 100% pass
+- [x] **Task 4: Automated Test Suite for Front Desk Housekeeping Evidence**
+  - [x] Create `apps/web/src/__tests__/HousekeepingEvidenceInFrontDesk.test.ts`
+  - [x] Verify `RoomDetailsModal` correctly renders Before/After photo container, handles null photos gracefully, and opens lightbox
+  - [x] Run `pnpm test:web` and confirm 100% pass
 
-- [ ] **Task 5: End-to-End Verification & Presentation Readiness**
-  - [ ] Run full mocha test suite (`pnpm test` -> 208 passing)
-  - [ ] Run monorepo typecheck (`pnpm dlx turbo run typecheck` -> 0 errors)
-  - [ ] Capture visual verification screenshot of `RoomDetailsModal` with photo evidence
+- [x] **Task 5: End-to-End Verification & Presentation Readiness**
+  - [x] Run full mocha test suite (`pnpm test` -> 208 passing)
+  - [x] Run monorepo typecheck (`pnpm dlx turbo run typecheck` -> 0 errors)
+  - [x] Capture visual verification screenshot of `RoomDetailsModal` with photo evidence
 
