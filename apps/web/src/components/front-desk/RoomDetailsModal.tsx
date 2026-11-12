@@ -2033,11 +2033,13 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                 setIsCancelModalOpen(false);
                 setCurrentReservation(null);
                 (onAction as any)?.('refresh', room);
+                onClose();
               }
               return res;
             }
             (onAction as any)?.('cancel', room);
             setIsCancelModalOpen(false);
+            onClose();
             return { success: true };
           }}
         />

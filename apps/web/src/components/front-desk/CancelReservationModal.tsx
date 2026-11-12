@@ -118,7 +118,7 @@ export const CancelReservationModal: React.FC<CancelReservationModalProps> = ({
         <div className="flex items-center justify-between px-6 py-4 border-b border-rose-100 dark:border-rose-950/40 bg-rose-50/70 dark:bg-rose-950/20">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
-              <AlertTriangle className="w-5 h-5" strokeWidth={2} aria-hidden="true" />
+              <AlertTriangle className="w-5 h-5" strokeWidth={1.75} aria-hidden="true" />
             </div>
             <div>
               <h3 id="cancel-modal-title" className="text-base font-bold text-slate-900 dark:text-slate-100">
@@ -298,7 +298,7 @@ export const CancelReservationModal: React.FC<CancelReservationModalProps> = ({
               disabled={isSubmitting}
               className="px-5 py-2.5 min-h-[44px] text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 active:bg-rose-800 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              <AlertTriangle className="w-4 h-4" />
+              <AlertTriangle className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
               <span>
                 {isSubmitting
                   ? (locale === 'th' ? 'กำลังยกเลิกการจอง...' : 'Cancelling...')

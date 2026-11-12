@@ -102,6 +102,12 @@ describe('Task 5: Reservation Cancellation with Reason & Audit Log Modal', () =>
     const emojiRegex = /[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u;
     assert.strictEqual(emojiRegex.test(html), false, 'CancelReservationModal must not contain raw Unicode emojis');
 
+    // Lucide strokeWidth standard: strictly 1.75 on AlertTriangle
+    assert.ok(
+      html.includes('stroke-width="1.75"'),
+      'AlertTriangle icons in CancelReservationModal must use strokeWidth={1.75}'
+    );
+
     // Thai orthography check: no "เช็คเอาท์"
     assert.strictEqual(html.includes('เช็คเอาท์'), false, 'Strictly zero instances of "เช็คเอาท์"');
   });
@@ -194,6 +200,11 @@ describe('Task 5: Reservation Cancellation with Reason & Audit Log Modal', () =>
       modalCode,
       /ยกเลิกการจอง|cancelReservation/i,
       'RoomDetailsModal.tsx must provide a cancel reservation action button'
+    );
+    assert.match(
+      modalCode,
+      /onCancelReservation[\s\S]*?onClose\(\)/,
+      'RoomDetailsModal.tsx must invoke onClose() upon successful cancellation to prevent zombie modal state'
     );
 
     assert.ok(fs.existsSync(roomMatrixPagePath), 'RoomMatrixPage.tsx should exist');
