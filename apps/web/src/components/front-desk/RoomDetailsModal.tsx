@@ -13,7 +13,7 @@ import { ExtendStayModal } from './ExtendStayModal';
 import { SlipViewerModal } from './SlipViewerModal';
 import { RequestAmenitiesModal } from './RequestAmenitiesModal';
 import { CustomDatePicker } from '../common/CustomDatePicker';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, apiUrl, getAuthToken } from '@/lib/api';
 import { useToast } from '@/context/ToastContext';
 import {
   X,
@@ -45,6 +45,11 @@ import {
   Trash2,
   Pencil,
   Loader2,
+  Camera,
+  CheckCircle2,
+  Image as ImageIcon,
+  Maximize2,
+  Eye,
 } from 'lucide-react';
 
 export type RoomModalAction =
@@ -57,6 +62,18 @@ export type RoomModalAction =
   | 'refresh';
 
 export type RoomDrawerAction = RoomModalAction;
+
+export interface HousekeepingEvidenceTask {
+  id: string;
+  roomNumber: string;
+  taskType: string;
+  status: string;
+  beforePhotoUrl?: string | null;
+  afterPhotoUrl?: string | null;
+  completedAt?: string | null;
+  assignedStaff?: { name: string } | null;
+  notes?: string | null;
+}
 
 export interface FastBookingFormData {
   guestName: string;
@@ -189,6 +206,79 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
   const [isSlipViewerOpen, setIsSlipViewerOpen] = useState(false);
   const [isAmenitiesModalOpen, setIsAmenitiesModalOpen] = useState(false);
 
+  // Housekeeping Evidence State
+  const [housekeepingTask, setHousekeepingTask] = useState<HousekeepingEvidenceTask | null>(null);
+  const [loadingHousekeeping, setLoadingHousekeeping] = useState<boolean>(false);
+  const [lightboxPhoto, setLightboxPhoto] = useState<{ url: string; title: string } | null>(null);
+
+  // Fetch Housekeeping Inspection Task
+  useEffect(() => {
+    if (!isOpen || !room?.roomNumber) {
+      setHousekeepingTask(null);
+      setLoadingHousekeeping(false);
+      return;
+    }
+
+    let isMounted = true;
+    setLoadingHousekeeping(true);
+
+    const fetchHousekeeping = async () => {
+      try {
+        const token = getAuthToken();
+        const res = await fetch(
+          apiUrl(`/api/housekeeping/tasks?roomNumber=${room.roomNumber}`),
+          {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          }
+        );
+        if (!isMounted) return;
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+            setHousekeepingTask(json.data[0]);
+          } else {
+            setHousekeepingTask(null);
+          }
+        } else {
+          setHousekeepingTask(null);
+        }
+      } catch {
+        if (isMounted) {
+          setHousekeepingTask(null);
+        }
+      } finally {
+        if (isMounted) {
+          setLoadingHousekeeping(false);
+        }
+      }
+    };
+
+    fetchHousekeeping();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen, room?.id, room?.roomNumber]);
+
+  const formattedHousekeepingCompletedAt = useMemo(() => {
+    if (!housekeepingTask?.completedAt) return null;
+    try {
+      const d = new Date(housekeepingTask.completedAt);
+      if (isNaN(d.getTime())) return null;
+      return (
+        d.toLocaleString(locale === 'th' ? 'th-TH' : 'en-US', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        }) + (locale === 'th' ? ' น.' : '')
+      );
+    } catch {
+      return null;
+    }
+  }, [housekeepingTask?.completedAt, locale]);
+
   // Fast Booking Form State
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
   const tomorrowStr = useMemo(() => {
@@ -245,13 +335,19 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
   // Close on Escape key press
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen && !isExtendOpen) {
-        onClose();
+      if (e.key === 'Escape') {
+        if (lightboxPhoto) {
+          setLightboxPhoto(null);
+          return;
+        }
+        if (isOpen && !isExtendOpen) {
+          onClose();
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isExtendOpen, onClose]);
+  }, [isOpen, isExtendOpen, lightboxPhoto, onClose]);
 
   if (!isOpen || !room) return null;
 
@@ -377,7 +473,8 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 overflow-y-auto">
+    <>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 overflow-y-auto">
       {/* Backdrop with frosted blur */}
       <div
         className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity duration-200"
@@ -498,6 +595,207 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                   </div>
                 </div>
               )}
+
+              {/* Housekeeping Proof of Cleanliness Card */}
+              <div className="bg-slate-50/80 rounded-xl border border-slate-200/80 p-4 space-y-3">
+                {/* Header */}
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-slate-400" />
+                      <span>
+                        {locale === 'th'
+                          ? 'หลักฐานการตรวจรับห้องพัก'
+                          : 'Housekeeping Inspection Evidence'}
+                      </span>
+                    </h3>
+                    {(housekeepingTask?.assignedStaff?.name || formattedHousekeepingCompletedAt) && (
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        {housekeepingTask?.assignedStaff?.name
+                          ? (locale === 'th' ? 'ผู้ตรวจรับ: ' : 'Inspected by: ') +
+                            housekeepingTask.assignedStaff.name
+                          : ''}
+                        {housekeepingTask?.assignedStaff?.name && formattedHousekeepingCompletedAt
+                          ? ' • '
+                          : ''}
+                        {formattedHousekeepingCompletedAt ? (
+                          <span className="font-mono tabular-nums">
+                            {formattedHousekeepingCompletedAt}
+                          </span>
+                        ) : null}
+                      </p>
+                    )}
+                  </div>
+                  {loadingHousekeeping && (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-400 shrink-0 mt-0.5" />
+                  )}
+                </div>
+
+                {/* Side-by-side Photo Comparison */}
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Before Photo Card */}
+                  <div className="flex flex-col space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-medium text-slate-600 flex items-center gap-1.5">
+                        <Camera className="w-3.5 h-3.5 text-slate-400" />
+                        <span>{locale === 'th' ? 'ก่อนทำความสะอาด' : 'Before Cleaning'}</span>
+                      </span>
+                      {housekeepingTask?.beforePhotoUrl && (
+                        <span className="text-[10px] text-slate-400 flex items-center gap-1 font-mono">
+                          <Eye className="w-3 h-3 text-slate-400" />
+                          <span className="hidden sm:inline">
+                            {locale === 'th' ? 'ดูภาพขยาย' : 'Zoom'}
+                          </span>
+                        </span>
+                      )}
+                    </div>
+
+                    {housekeepingTask?.beforePhotoUrl ? (
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() =>
+                          setLightboxPhoto({
+                            url: housekeepingTask.beforePhotoUrl!,
+                            title:
+                              (locale === 'th'
+                                ? 'ภาพก่อนทำความสะอาด — ห้อง '
+                                : 'Before Cleaning — Room ') + room.roomNumber,
+                          })
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setLightboxPhoto({
+                              url: housekeepingTask.beforePhotoUrl!,
+                              title:
+                                (locale === 'th'
+                                  ? 'ภาพก่อนทำความสะอาด — ห้อง '
+                                  : 'Before Cleaning — Room ') + room.roomNumber,
+                            });
+                          }
+                        }}
+                        className="group relative aspect-4/3 w-full rounded-lg overflow-hidden border border-slate-200/90 bg-slate-900 cursor-pointer shadow-2xs hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-all"
+                      >
+                        <img
+                          src={housekeepingTask.beforePhotoUrl}
+                          alt={locale === 'th' ? 'ภาพก่อนทำความสะอาด' : 'Before cleaning photo'}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-slate-950/0 group-hover:bg-slate-950/40 transition-colors flex items-center justify-center">
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/95 backdrop-blur-xs p-2 rounded-full text-slate-800 shadow-sm flex items-center justify-center">
+                            <Maximize2 className="w-4 h-4" />
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="aspect-4/3 w-full rounded-lg border border-dashed border-slate-300/80 bg-white/60 flex flex-col items-center justify-center p-3 text-center">
+                        <ImageIcon className="w-5 h-5 text-slate-300 mb-1" />
+                        <span className="text-[11px] text-slate-400 font-medium">
+                          {locale === 'th' ? 'ไม่มีภาพก่อนทำ' : 'No before photo'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* After Photo Card */}
+                  <div className="flex flex-col space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-medium text-slate-600 flex items-center gap-1.5 truncate">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span className="truncate">
+                          {locale === 'th'
+                            ? 'หลังตรวจรับเสร็จสมบูรณ์'
+                            : 'After Cleaning (Verified)'}
+                        </span>
+                      </span>
+                      {housekeepingTask?.afterPhotoUrl && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                          <CheckCircle2 className="w-3 h-3 mr-0.5 text-emerald-600" />
+                          {locale === 'th' ? 'ผ่าน' : 'Done'}
+                        </span>
+                      )}
+                    </div>
+
+                    {housekeepingTask?.afterPhotoUrl ? (
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() =>
+                          setLightboxPhoto({
+                            url: housekeepingTask.afterPhotoUrl!,
+                            title:
+                              (locale === 'th'
+                                ? 'ภาพหลังตรวจรับเสร็จสมบูรณ์ — ห้อง '
+                                : 'After Cleaning (Verified) — Room ') + room.roomNumber,
+                          })
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setLightboxPhoto({
+                              url: housekeepingTask.afterPhotoUrl!,
+                              title:
+                                (locale === 'th'
+                                  ? 'ภาพหลังตรวจรับเสร็จสมบูรณ์ — ห้อง '
+                                  : 'After Cleaning (Verified) — Room ') + room.roomNumber,
+                            });
+                          }
+                        }}
+                        className="group relative aspect-4/3 w-full rounded-lg overflow-hidden border border-emerald-200/90 bg-slate-900 cursor-pointer shadow-2xs hover:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all"
+                      >
+                        <img
+                          src={housekeepingTask.afterPhotoUrl}
+                          alt={
+                            locale === 'th'
+                              ? 'หลังตรวจรับเสร็จสมบูรณ์'
+                              : 'After Cleaning (Verified)'
+                          }
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-slate-950/0 group-hover:bg-slate-950/40 transition-colors flex items-center justify-center">
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/95 backdrop-blur-xs p-2 rounded-full text-slate-800 shadow-sm flex items-center justify-center">
+                            <Maximize2 className="w-4 h-4" />
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="aspect-4/3 w-full rounded-lg border border-dashed border-slate-300/80 bg-white/60 flex flex-col items-center justify-center p-3 text-center">
+                        <ImageIcon className="w-5 h-5 text-slate-300 mb-1" />
+                        <span className="text-[11px] text-slate-400 font-medium">
+                          {locale === 'th' ? 'ไม่มีภาพหลังทำ' : 'No after photo'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Clean status indicator if neither photo exists */}
+                {!housekeepingTask?.beforePhotoUrl && !housekeepingTask?.afterPhotoUrl && (
+                  <div className="p-2.5 rounded-lg bg-white/80 border border-slate-200/80 flex items-center gap-2 text-xs text-slate-500">
+                    <Camera className="w-4 h-4 text-slate-400 shrink-0" />
+                    <span>
+                      {room.status === 'cleaning'
+                        ? locale === 'th'
+                          ? 'อยู่ระหว่างทำความสะอาด รอแม่บ้านบันทึกภาพถ่าย'
+                          : 'Cleaning in progress — awaiting photo inspection'
+                        : locale === 'th'
+                        ? 'ยังไม่มีภาพถ่ายบันทึกการตรวจรับ'
+                        : 'No photo evidence recorded yet'}
+                    </span>
+                  </div>
+                )}
+
+                {/* Task notes if present */}
+                {housekeepingTask?.notes && (
+                  <div className="pt-2 border-t border-slate-200/60 text-[11px] text-slate-600 flex items-start gap-1.5">
+                    <span className="font-semibold text-slate-500 shrink-0">
+                      {locale === 'th' ? 'หมายเหตุ:' : 'Notes:'}
+                    </span>
+                    <span className="italic">{housekeepingTask.notes}</span>
+                  </div>
+                )}
+              </div>
 
               {/* Notes Section */}
               <div className="space-y-2">
@@ -1252,6 +1550,69 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
           onAddFolioCharge={onAddFolioCharge}
         />
       )}
-    </div>
+      </div>
+
+      {/* Fullscreen Lightbox Modal */}
+      {lightboxPhoto && (
+        <div
+          className="fixed inset-0 flex flex-col justify-between p-4 sm:p-6 bg-black/95 backdrop-blur-md transition-opacity duration-200"
+          style={{ zIndex: 99999 }}
+          role="dialog"
+          aria-modal="true"
+          aria-label={lightboxPhoto.title}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setLightboxPhoto(null);
+            }
+          }}
+        >
+          {/* Title bar with title, pulsating dot, and Close button */}
+          <div className="flex items-center justify-between w-full max-w-5xl mx-auto pb-3 border-b border-white/10">
+            <div className="flex items-center gap-2.5">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+              </span>
+              <h4 className="text-sm sm:text-base font-semibold text-white tracking-tight font-mono tabular-nums">
+                {lightboxPhoto.title}
+              </h4>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setLightboxPhoto(null)}
+              className="min-h-[44px] min-w-[44px] p-2 text-slate-300 hover:text-white bg-white/10 hover:bg-white/20 rounded-xl transition-colors flex items-center justify-center gap-1.5 text-xs font-medium cursor-pointer"
+              title={t('common.close') || 'ปิด'}
+              aria-label="Close photo preview"
+            >
+              <X className="w-5 h-5" />
+              <span className="hidden sm:inline font-mono text-[11px] text-slate-400">ESC</span>
+            </button>
+          </div>
+
+          {/* Centered image */}
+          <div
+            className="flex-1 flex items-center justify-center p-2 sm:p-4 overflow-hidden"
+            onClick={() => setLightboxPhoto(null)}
+          >
+            <img
+              src={lightboxPhoto.url}
+              alt={lightboxPhoto.title}
+              onClick={(e) => e.stopPropagation()}
+              className="max-h-[82vh] w-auto max-w-full object-contain rounded-xl shadow-2xl border border-white/10"
+            />
+          </div>
+
+          {/* Footer bar with tip */}
+          <div className="text-center py-1">
+            <p className="text-[11px] font-mono text-slate-400">
+              {locale === 'th'
+                ? 'กด ESC หรือคลิกพื้นที่ภายนอกเพื่อปิด'
+                : 'Press ESC or click outside to dismiss'}
+            </p>
+          </div>
+        </div>
+      )}
+    </>
   );
 };

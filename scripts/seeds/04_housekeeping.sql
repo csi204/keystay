@@ -10,23 +10,28 @@ INSERT OR REPLACE INTO housekeeping_staff (id, user_id, first_name, last_name, p
 -- 2. Housekeeping Tasks
 INSERT OR REPLACE INTO housekeeping_tasks (
   id, room_id, room_number, assigned_to, task_type, priority, status, notes,
-  scheduled_date, started_at, completed_at, event_source, created_at, updated_at
+  scheduled_date, started_at, completed_at, event_source, created_at, updated_at,
+  before_photo_url, after_photo_url
 ) VALUES
 -- Room 203: Checkout clean triggered by checkout event
 ('hkt-001', 'rm-203', '203', 'hk-staff-001', 'checkout_clean', 'urgent', 'in_progress', 'Priority clean: guest arriving at 2 PM',
- '2026-09-26', '2026-09-26T11:30:00Z', NULL, 'event_bus', '2026-09-26T11:15:00Z', '2026-09-26T11:30:00Z'),
+ '2026-09-26', '2026-09-26T11:30:00Z', NULL, 'event_bus', '2026-09-26T11:15:00Z', '2026-09-26T11:30:00Z',
+ 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800', NULL),
 
 -- Room 104: Routine checkout clean
 ('hkt-002', 'rm-104', '104', 'hk-staff-001', 'checkout_clean', 'high', 'assigned', 'Replace bed linens and restock minibar',
- '2026-09-26', NULL, NULL, 'manual', '2026-09-26T10:00:00Z', '2026-09-26T10:15:00Z'),
+ '2026-09-26', NULL, NULL, 'manual', '2026-09-26T10:00:00Z', '2026-09-26T10:15:00Z',
+ 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800', NULL),
 
 -- Room 305: Deep cleaning
 ('hkt-003', 'rm-305', '305', 'hk-staff-002', 'deep_clean', 'normal', 'in_progress', 'Carpet shampoo and balcony glass polish',
- '2026-09-26', '2026-09-26T09:30:00Z', NULL, 'manual', '2026-09-26T08:30:00Z', '2026-09-26T09:30:00Z'),
+ '2026-09-26', '2026-09-26T09:30:00Z', NULL, 'manual', '2026-09-26T08:30:00Z', '2026-09-26T09:30:00Z',
+ 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=800', NULL),
 
 -- Room 101: Daily stay-over clean completed earlier today
 ('hkt-004', 'rm-101', '101', 'hk-staff-001', 'daily_clean', 'normal', 'completed', 'Standard daily refresh passed inspection',
- '2026-09-26', '2026-09-26T08:45:00Z', '2026-09-26T09:15:00Z', 'manual', '2026-09-26T08:00:00Z', '2026-09-26T09:15:00Z');
+ '2026-09-26', '2026-09-26T08:45:00Z', '2026-09-26T09:15:00Z', 'manual', '2026-09-26T08:00:00Z', '2026-09-26T09:15:00Z',
+ 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800', 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800');
 
 -- 3. Room Issues (Maintenance & Damages)
 INSERT OR REPLACE INTO room_issues (

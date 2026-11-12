@@ -70,4 +70,17 @@ INSERT OR REPLACE INTO minibar_items (id, name, category, price_per_unit, unit, 
 ('mb-005', 'ช็อกโกแลต KitKat', 'ขนม', 35.00, 'แท่ง', 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z'),
 ('mb-006', 'กาแฟสำเร็จรูป', 'เครื่องดื่ม', 25.00, 'ซอง', 0, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z');
 
+-- 7. Seasonal Pricing Rules (กฎราคาตามฤดูกาลและเทศกาล)
+INSERT OR REPLACE INTO seasonal_pricing_rules (id, name, tier, room_type_id, start_date, end_date, days_of_week, adjustment_type, adjustment_value, priority, is_active, created_at, updated_at) VALUES
+('rule-high-winter', 'High Season ภาคเหนือ (พ.ย.-ก.พ.)', 'High Season', NULL, '2026-11-01', '2027-02-28', NULL, 'percent', 5.0, 10, 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z'),
+('rule-countdown', 'คืนเคานต์ดาวน์ปีใหม่', 'Special Holiday', NULL, '2026-12-31', '2027-01-01', NULL, 'fixed_amount', 300.0, 25, 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z');
+
+-- 8. Amenities Catalog (แคตตาล็อกของใช้และบริการเสริม)
+INSERT OR REPLACE INTO amenities_catalog (id, name_th, name_en, category, is_chargeable, unit_price, unit_name_th, unit_name_en, stock_quantity, is_active, created_at, updated_at) VALUES
+('am-extra-bed', 'เตียงเสริม', 'Extra Bed', 'bedding', 1, 300.0, 'หลัง', 'unit', 5, 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z'),
+('am-extra-pillow', 'หมอนหนุนเสริม', 'Extra Pillow', 'bedding', 0, 0.0, 'ใบ', 'piece', 30, 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z'),
+('am-hair-dryer', 'ไดร์เป่าผมพลังไอออน', 'Ionic Hair Dryer', 'appliance', 0, 0.0, 'เครื่อง', 'unit', 15, 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z'),
+('am-premium-dental', 'เซ็ตแปรงสีฟันพรีเมียม', 'Premium Dental Kit', 'bath', 1, 50.0, 'ชุด', 'set', 50, 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z');
+
+
 
