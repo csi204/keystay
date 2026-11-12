@@ -371,6 +371,7 @@ export const HousekeepingTasksPage: React.FC = () => {
 
   // Template Form Modal
   const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [templateModalTab, setTemplateModalTab] = useState<'general' | 'checklist'>('general');
   const [editTemplate, setEditTemplate] = useState<TaskTemplate | null>(null);
   const [templateForm, setTemplateForm] = useState<Omit<TaskTemplate, 'id'>>(EMPTY_TEMPLATE_FORM);
   const [deleteTargetTemplate, setDeleteTargetTemplate] = useState<TaskTemplate | null>(null);
@@ -521,6 +522,7 @@ export const HousekeepingTasksPage: React.FC = () => {
   // ============================================================================
   const openCreateTemplate = () => {
     setEditTemplate(null);
+    setTemplateModalTab('general');
     setTemplateForm({
       ...EMPTY_TEMPLATE_FORM,
       checklistItems: [
@@ -530,8 +532,9 @@ export const HousekeepingTasksPage: React.FC = () => {
     setShowTemplateModal(true);
   };
 
-  const openEditTemplate = (tpl: TaskTemplate) => {
+  const openEditTemplate = (tpl: TaskTemplate, initialTab: 'general' | 'checklist' = 'general') => {
     setEditTemplate(tpl);
+    setTemplateModalTab(initialTab);
     setTemplateForm({
       name: tpl.name,
       taskType: tpl.taskType,
@@ -1570,7 +1573,7 @@ export const HousekeepingTasksPage: React.FC = () => {
                       <th className="py-3 px-4 font-semibold text-slate-700">{isEn ? 'Template Name' : 'ชื่อแม่แบบงาน'}</th>
                       <th className="py-3 px-4 font-semibold text-slate-700">{isEn ? 'Task Type' : 'ประเภทงาน'}</th>
                       <th className="py-3 px-4 font-semibold text-slate-700">{isEn ? 'Est. Minutes' : 'เวลามาตรฐาน'}</th>
-                      <th className="py-3 px-4 font-semibold text-slate-700">{isEn ? 'SOP Checklist' : 'ข้อตรวจ SOP'}</th>
+                      <th className="py-3 px-4 font-semibold text-slate-700">{isEn ? 'Checklist' : 'รายการตรวจสอบ'}</th>
                       <th className="py-3 px-4 font-semibold text-slate-700">{isEn ? 'Description' : 'รายละเอียดขั้นตอน'}</th>
                       <th className="py-3 px-4 font-semibold text-slate-700">{isEn ? 'Status' : 'สถานะ'}</th>
                       <th className="py-3 px-4 font-semibold text-slate-700 text-right">{isEn ? 'Actions' : 'จัดการ'}</th>
@@ -1591,10 +1594,14 @@ export const HousekeepingTasksPage: React.FC = () => {
                           <td className="py-3 px-4 text-slate-700">{getTaskTypeLabel(tpl.taskType)}</td>
                           <td className="py-3 px-4 font-mono text-slate-900">{tpl.estimatedMinutes} {isEn ? 'mins' : 'นาที'}</td>
                           <td className="py-3 px-4">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                            <button
+                              type="button"
+                              onClick={() => openEditTemplate(tpl, 'checklist')}
+                              className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 hover:bg-orange-50 text-slate-700 hover:text-orange-600 border border-slate-200 hover:border-orange-200 transition-colors cursor-pointer"
+                            >
                               <CheckSquare className="w-3 h-3 mr-1 text-slate-500" />
                               {tpl.checklistItems?.length || 0} {isEn ? 'items' : 'ข้อ'}
-                            </span>
+                            </button>
                           </td>
                           <td className="py-3 px-4 text-slate-600 max-w-xs truncate" title={tpl.description}>
                             {tpl.description}
@@ -1957,149 +1964,202 @@ export const HousekeepingTasksPage: React.FC = () => {
       ══════════════════════════════════════════════════════════ */}
       {showTemplateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-2xl w-full flex flex-col max-h-[90vh] overflow-hidden">
-            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
-              <h3 className="text-base font-bold text-slate-900">
-                {editTemplate ? (isEn ? 'Edit Task Template' : 'แก้ไขแม่แบบงาน') : (isEn ? 'New Task Template' : 'เพิ่มแม่แบบงานใหม่')}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowTemplateModal(false)}
-                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
+          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-2xl w-full flex flex-col max-h-[88vh] overflow-hidden">
+            {/* Modal Header */}
+            <div className="px-5 pt-4 pb-0 border-b border-slate-100 bg-white shrink-0">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-base font-bold text-slate-900">
+                  {editTemplate ? (isEn ? 'Edit Task Template' : 'แก้ไขแม่แบบงาน') : (isEn ? 'New Task Template' : 'เพิ่มแม่แบบงานใหม่')}
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setShowTemplateModal(false)}
+                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Modal Underline Tabs */}
+              <div className="flex items-center gap-6 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setTemplateModalTab('general')}
+                  className={`pb-2.5 font-semibold border-b-2 transition-colors cursor-pointer ${
+                    templateModalTab === 'general'
+                      ? 'border-orange-500 text-orange-600'
+                      : 'border-transparent text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  {isEn ? 'General Information' : 'ข้อมูลทั่วไป'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTemplateModalTab('checklist')}
+                  className={`pb-2.5 font-semibold border-b-2 transition-colors flex items-center gap-1.5 cursor-pointer ${
+                    templateModalTab === 'checklist'
+                      ? 'border-orange-500 text-orange-600'
+                      : 'border-transparent text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  <span>{isEn ? 'Checklist Items' : 'รายการตรวจสอบ'}</span>
+                  <span
+                    className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+                      templateModalTab === 'checklist'
+                        ? 'bg-orange-50 text-orange-600'
+                        : 'bg-slate-100 text-slate-600'
+                    }`}
+                  >
+                    {templateForm.checklistItems?.length || 0}
+                  </span>
+                </button>
+              </div>
             </div>
 
-            <div className="p-5 space-y-4 overflow-y-auto text-xs">
-              {/* Name */}
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1">
-                  {isEn ? 'Template Name' : 'ชื่อแม่แบบงาน'} <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  value={templateForm.name}
-                  onChange={(e) => setTemplateForm({ ...templateForm, name: e.target.value })}
-                  placeholder={isEn ? 'e.g. Standard Checkout Cleaning' : 'เช่น ทำความสะอาดหลังเช็คเอาท์มาตรฐาน'}
-                  className="h-9 text-xs"
-                />
-              </div>
-
-              {/* Type & Priority */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-700 font-semibold mb-1">
-                    {isEn ? 'Task Type' : 'ประเภทงาน'} <span className="text-red-500">*</span>
-                  </label>
-                  <Select
-                    value={templateForm.taskType}
-                    onChange={(e) => setTemplateForm({ ...templateForm, taskType: e.target.value as any })}
-                    className="h-9 text-xs"
-                  >
-                    <option value="checkout_clean">{isEn ? 'Checkout Clean' : 'ทำความสะอาดหลังเช็คเอาท์'}</option>
-                    <option value="daily_clean">{isEn ? 'Daily Stayover Clean' : 'ทำความสะอาดประจำวัน'}</option>
-                    <option value="deep_clean">{isEn ? 'Deep Clean' : 'ทำความสะอาดละเอียด'}</option>
-                    <option value="inspection">{isEn ? 'Room Inspection' : 'ตรวจความพร้อมห้องพัก'}</option>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="block text-slate-700 font-semibold mb-1">
-                    {isEn ? 'Default Priority' : 'ระดับความเร่งด่วน'}
-                  </label>
-                  <Select
-                    value={templateForm.defaultPriority}
-                    onChange={(e) => setTemplateForm({ ...templateForm, defaultPriority: e.target.value as any })}
-                    className="h-9 text-xs"
-                  >
-                    <option value="normal">{isEn ? 'Normal' : 'ปกติ'}</option>
-                    <option value="high">{isEn ? 'High' : 'เร่งด่วน'}</option>
-                    <option value="urgent">{isEn ? 'Urgent' : 'ด่วนมาก'}</option>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Estimated Minutes */}
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1">
-                  {isEn ? 'Estimated Duration (Minutes)' : 'ระยะเวลาโดยประมาณ (นาที)'} <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  type="number"
-                  min={1}
-                  value={templateForm.estimatedMinutes || ''}
-                  onChange={(e) => setTemplateForm({ ...templateForm, estimatedMinutes: Number(e.target.value) })}
-                  className="h-9 text-xs font-mono"
-                />
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1">
-                  {isEn ? 'Procedures & Guidelines' : 'ขั้นตอนและรายละเอียดการทำความสะอาด'}
-                </label>
-                <textarea
-                  rows={2}
-                  value={templateForm.description}
-                  onChange={(e) => setTemplateForm({ ...templateForm, description: e.target.value })}
-                  placeholder={isEn ? 'Overview of cleaning procedures and standards...' : 'ระบุขั้นตอนการทำงาน รายการสิ่งของที่ต้องตรวจเช็คและเปลี่ยน...'}
-                  className="w-full text-xs p-2 rounded-md border border-slate-200 focus:outline-hidden focus:ring-1 focus:ring-orange-500"
-                />
-              </div>
-
-              {/* Checklist Items Builder */}
-              <div className="pt-2 border-t border-slate-100 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <label className="text-slate-800 font-bold text-xs">
-                      {isEn ? 'SOP Inspection Checklist Items' : 'รายการตรวจสอบขั้นตอน SOP (Checklist)'}
+            {/* Modal Body */}
+            <div className="p-5 overflow-y-auto text-xs flex-1">
+              {templateModalTab === 'general' ? (
+                <div className="space-y-4">
+                  {/* Name */}
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1">
+                      {isEn ? 'Template Name' : 'ชื่อแม่แบบงาน'} <span className="text-red-500">*</span>
                     </label>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
-                      {templateForm.checklistItems?.length || 0} {isEn ? 'items' : 'ข้อ'}
-                    </span>
+                    <Input
+                      value={templateForm.name}
+                      onChange={(e) => setTemplateForm({ ...templateForm, name: e.target.value })}
+                      placeholder={isEn ? 'e.g. Standard Checkout Cleaning' : 'เช่น ทำความสะอาดหลังเช็คเอาท์มาตรฐาน'}
+                      className="h-9 text-xs"
+                    />
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleAddChecklistItem}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-orange-600 hover:text-orange-700 hover:bg-orange-50 px-2 py-1 rounded-md border border-orange-200 transition-colors cursor-pointer"
-                  >
-                    <Plus className="w-3 h-3" />
-                    <span>{isEn ? 'Add Checklist Item' : 'เพิ่มข้อตรวจ'}</span>
-                  </button>
-                </div>
 
-                {(!templateForm.checklistItems || templateForm.checklistItems.length === 0) ? (
-                  <div className="py-6 text-center border border-dashed border-slate-200 rounded-lg text-slate-400 bg-slate-50/50">
-                    <p className="text-xs">
-                      {isEn ? 'No checklist items configured for this template.' : 'ยังไม่มีรายการตรวจสอบสำหรับแม่แบบนี้'}
-                    </p>
+                  {/* Type & Priority */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-700 font-semibold mb-1">
+                        {isEn ? 'Task Type' : 'ประเภทงาน'} <span className="text-red-500">*</span>
+                      </label>
+                      <Select
+                        value={templateForm.taskType}
+                        onChange={(e) => setTemplateForm({ ...templateForm, taskType: e.target.value as any })}
+                        className="h-9 text-xs"
+                      >
+                        <option value="checkout_clean">{isEn ? 'Checkout Clean' : 'ทำความสะอาดหลังเช็คเอาท์'}</option>
+                        <option value="daily_clean">{isEn ? 'Daily Stayover Clean' : 'ทำความสะอาดประจำวัน'}</option>
+                        <option value="deep_clean">{isEn ? 'Deep Clean' : 'ทำความสะอาดละเอียด'}</option>
+                        <option value="inspection">{isEn ? 'Room Inspection' : 'ตรวจความพร้อมห้องพัก'}</option>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-700 font-semibold mb-1">
+                        {isEn ? 'Default Priority' : 'ระดับความเร่งด่วน'}
+                      </label>
+                      <Select
+                        value={templateForm.defaultPriority}
+                        onChange={(e) => setTemplateForm({ ...templateForm, defaultPriority: e.target.value as any })}
+                        className="h-9 text-xs"
+                      >
+                        <option value="normal">{isEn ? 'Normal' : 'ปกติ'}</option>
+                        <option value="high">{isEn ? 'High' : 'เร่งด่วน'}</option>
+                        <option value="urgent">{isEn ? 'Urgent' : 'ด่วนมาก'}</option>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* Estimated Minutes */}
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1">
+                      {isEn ? 'Estimated Duration (Minutes)' : 'ระยะเวลาโดยประมาณ (นาที)'} <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={templateForm.estimatedMinutes || ''}
+                      onChange={(e) => setTemplateForm({ ...templateForm, estimatedMinutes: Number(e.target.value) })}
+                      className="h-9 text-xs font-mono"
+                    />
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1">
+                      {isEn ? 'Procedures & Guidelines' : 'ขั้นตอนและรายละเอียดการทำความสะอาด'}
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={templateForm.description}
+                      onChange={(e) => setTemplateForm({ ...templateForm, description: e.target.value })}
+                      placeholder={isEn ? 'Overview of cleaning procedures and standards...' : 'ระบุขั้นตอนการทำงาน รายการสิ่งของที่ต้องตรวจเช็คและเปลี่ยน...'}
+                      className="w-full text-xs p-2 rounded-md border border-slate-200 focus:outline-hidden focus:ring-1 focus:ring-orange-500"
+                    />
+                  </div>
+
+                  {/* Active Toggle */}
+                  <div className="flex items-center gap-2 pt-1">
+                    <input
+                      type="checkbox"
+                      id="tpl-active"
+                      checked={templateForm.isActive}
+                      onChange={(e) => setTemplateForm({ ...templateForm, isActive: e.target.checked })}
+                      className="rounded text-orange-500 focus:ring-orange-400"
+                    />
+                    <label htmlFor="tpl-active" className="text-slate-700 font-medium cursor-pointer">
+                      {isEn ? 'Enable this template' : 'เปิดใช้งานแม่แบบนี้'}
+                    </label>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {/* Top Bar */}
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                    <span className="text-slate-500">
+                      {isEn
+                        ? 'Define inspection items by room zone for housekeeping staff'
+                        : 'กำหนดหัวข้อการตรวจเช็คแยกตามโซนห้องพักสำหรับแม่บ้าน'}
+                    </span>
                     <button
                       type="button"
                       onClick={handleAddChecklistItem}
-                      className="mt-2 text-xs font-semibold text-orange-600 hover:underline cursor-pointer"
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-orange-600 hover:text-orange-700 hover:bg-orange-50 px-2.5 py-1 rounded-md border border-orange-200 transition-colors cursor-pointer shrink-0"
                     >
-                      {isEn ? '+ Click to add first item' : '+ คลิกเพื่อเพิ่มข้อตรวจข้อแรก'}
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>{isEn ? 'Add Item' : 'เพิ่มข้อตรวจ'}</span>
                     </button>
                   </div>
-                ) : (
-                  <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
-                    {templateForm.checklistItems.map((item, idx) => (
-                      <div
-                        key={item.id || idx}
-                        className="p-2.5 rounded-lg border border-slate-200 bg-slate-50/70 hover:bg-slate-50 transition-colors space-y-1.5"
+
+                  {/* Flat Divide-y Rows */}
+                  {(!templateForm.checklistItems || templateForm.checklistItems.length === 0) ? (
+                    <div className="py-10 text-center text-slate-400">
+                      <p className="text-xs">
+                        {isEn ? 'No checklist items configured for this template.' : 'ยังไม่มีรายการตรวจสอบสำหรับแม่แบบนี้'}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleAddChecklistItem}
+                        className="mt-2 text-xs font-semibold text-orange-600 hover:underline cursor-pointer"
                       >
-                        <div className="flex items-center gap-2">
-                          <span className="w-5 h-5 rounded-full bg-slate-200 text-slate-700 text-[10px] font-bold flex items-center justify-center shrink-0">
-                            {idx + 1}
+                        {isEn ? '+ Add first item' : '+ เพิ่มข้อตรวจข้อแรก'}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-slate-100">
+                      {templateForm.checklistItems.map((item, idx) => (
+                        <div
+                          key={item.id || idx}
+                          className="py-2.5 flex items-center gap-2.5 first:pt-1 last:pb-1"
+                        >
+                          <span className="w-5 text-right font-mono text-xs text-slate-400 shrink-0">
+                            {idx + 1}.
                           </span>
                           <div className="w-44 shrink-0">
                             <Select
                               value={item.zone || 'bedroom'}
                               onChange={(e) => handleUpdateChecklistItem(idx, 'zone', e.target.value)}
-                              className="h-8 text-[11px]"
+                              className="h-8 text-xs"
                             >
-                              <option value="bedroom">{isEn ? 'Bedroom' : 'โซนเตียงนอน & ห้องพัก'}</option>
-                              <option value="bathroom">{isEn ? 'Bathroom' : 'โซนห้องน้ำ & สุขภัณฑ์'}</option>
+                              <option value="bedroom">{isEn ? 'Bedroom' : 'เตียงนอน & ห้องพัก'}</option>
+                              <option value="bathroom">{isEn ? 'Bathroom' : 'ห้องน้ำ & สุขภัณฑ์'}</option>
                               <option value="minibar">{isEn ? 'Minibar' : 'มินิบาร์ & เครื่องดื่ม'}</option>
                               <option value="final_inspection">{isEn ? 'Final Inspection' : 'ตรวจรอบสุดท้าย'}</option>
                             </Select>
@@ -2108,7 +2168,7 @@ export const HousekeepingTasksPage: React.FC = () => {
                             <Input
                               value={item.label}
                               onChange={(e) => handleUpdateChecklistItem(idx, 'label', e.target.value)}
-                              placeholder={isEn ? 'Item title (e.g. Change bed sheets & pillow cases)' : 'หัวข้อการตรวจ เช่น เปลี่ยนผ้าปูที่นอน ปลอกหมอน'}
+                              placeholder={isEn ? 'Inspection item description...' : 'ระบุรายการตรวจเช็ค เช่น เปลี่ยนผ้าปูที่นอน ปลอกหมอน'}
                               className="h-8 text-xs"
                             />
                           </div>
@@ -2121,33 +2181,11 @@ export const HousekeepingTasksPage: React.FC = () => {
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
-                        <div className="pl-7">
-                          <Input
-                            value={item.sublabel || ''}
-                            onChange={(e) => handleUpdateChecklistItem(idx, 'sublabel', e.target.value)}
-                            placeholder={isEn ? 'Guideline / standard (e.g. Pull tight, hospital corner fold)' : 'คำแนะนำ/มาตรฐาน เช่น ดึงผ้าปูตึง ตบหมอนฟู จัดมุมเตียงเรียบร้อย'}
-                            className="h-7 text-[11px] text-slate-600 placeholder:text-slate-400 bg-white"
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Active Toggle */}
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  type="checkbox"
-                  id="tpl-active"
-                  checked={templateForm.isActive}
-                  onChange={(e) => setTemplateForm({ ...templateForm, isActive: e.target.checked })}
-                  className="rounded text-orange-500 focus:ring-orange-400"
-                />
-                <label htmlFor="tpl-active" className="text-slate-700 font-medium cursor-pointer">
-                  {isEn ? 'Enable this template' : 'เปิดใช้งานแม่แบบนี้'}
-                </label>
-              </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="px-5 py-3 border-t border-slate-100 flex items-center justify-end gap-2 bg-white shrink-0">
