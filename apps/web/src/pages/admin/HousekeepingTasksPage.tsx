@@ -973,7 +973,7 @@ export const HousekeepingTasksPage: React.FC = () => {
                       <th className="py-3 px-4 font-semibold text-slate-700">{isEn ? 'Status' : 'สถานะ'}</th>
                       <th className="py-3 px-4 font-semibold text-slate-700">{isEn ? 'Timeline' : 'เวลาเริ่ม - เสร็จสิ้น'}</th>
                       <th className="py-3 px-4 font-semibold text-slate-700 text-center">{isEn ? 'Photos (Before / After)' : 'รูปถ่าย ก่อน / หลัง'}</th>
-                      <th className="py-3 px-4 font-semibold text-slate-700 text-right">{isEn ? 'Action' : 'การตรวจรับ'}</th>
+                      <th className="py-3 px-4 font-semibold text-slate-700 text-right">{isEn ? 'Action' : 'การตรวจสอบ'}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -1099,7 +1099,7 @@ export const HousekeepingTasksPage: React.FC = () => {
                                 className="h-8 px-2.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border-slate-200 shadow-2xs"
                               >
                                 <Eye className="w-3.5 h-3.5 mr-1 text-slate-500" />
-                                <span>{isEn ? 'Inspect' : 'ตรวจรับงาน'}</span>
+                                <span>{isEn ? 'View Photos' : 'ดูภาพถ่าย'}</span>
                               </Button>
                             </td>
                           </tr>
@@ -1596,7 +1596,7 @@ export const HousekeepingTasksPage: React.FC = () => {
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-base font-bold text-slate-900">
-                    {isEn ? `Housekeeping Inspection: Room ${selectedTaskForZoom.roomNumber}` : `ตรวจรับงานทำความสะอาด: ห้อง ${selectedTaskForZoom.roomNumber}`}
+                    {isEn ? `Cleaning Audit: Room ${selectedTaskForZoom.roomNumber}` : `ตรวจสอบภาพถ่ายงานทำความสะอาด: ห้อง ${selectedTaskForZoom.roomNumber}`}
                   </h3>
                   <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-medium">
                     {getTaskTypeLabel(selectedTaskForZoom.taskType)}
@@ -1723,13 +1723,11 @@ export const HousekeepingTasksPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <span className="text-slate-400 block">{isEn ? 'Inspection Status' : 'ผลการตรวจรับ'}</span>
+                    <span className="text-slate-400 block">{isEn ? 'Room Readiness' : 'ความพร้อมของห้อง'}</span>
                     <span className="font-semibold text-slate-800 mt-0.5 block">
-                      {selectedTaskForZoom.inspectionStatus === 'passed'
-                        ? (isEn ? 'Passed' : 'ผ่านการตรวจรับแล้ว')
-                        : selectedTaskForZoom.inspectionStatus === 'needs_reclean'
-                        ? (isEn ? 'Needs Re-clean' : 'ต้องทำความสะอาดซ้ำ')
-                        : (isEn ? 'Pending Inspection' : 'รอการตรวจรับ')}
+                      {selectedTaskForZoom.status === 'completed'
+                        ? (isEn ? 'Available (Ready for Guest)' : 'พร้อมเปิดให้บริการ (Available)')
+                        : (isEn ? 'Cleaning in Progress' : 'กำลังทำความสะอาด')}
                     </span>
                   </div>
                 </div>
@@ -1758,24 +1756,17 @@ export const HousekeepingTasksPage: React.FC = () => {
               </Button>
 
               <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleInspectTask(selectedTaskForZoom.id, 'needs_reclean')}
-                  className="text-xs h-9 px-3 border-amber-300 text-amber-800 hover:bg-amber-50"
-                >
-                  <RotateCcw className="w-3.5 h-3.5 mr-1 text-amber-600" />
-                  <span>{isEn ? 'Request Re-clean' : 'แจ้งให้ทำความสะอาดซ้ำ'}</span>
-                </Button>
-
-                <Button
-                  size="sm"
-                  onClick={() => handleInspectTask(selectedTaskForZoom.id, 'passed')}
-                  className="text-xs h-9 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-2xs"
-                >
-                  <Check className="w-3.5 h-3.5 mr-1" />
-                  <span>{isEn ? 'Approve & Pass Inspection' : 'อนุมัติผ่านการตรวจรับ'}</span>
-                </Button>
+                {selectedTaskForZoom.status === 'completed' && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleInspectTask(selectedTaskForZoom.id, 'needs_reclean')}
+                    className="text-xs h-9 px-3 border-amber-300 text-amber-800 hover:bg-amber-50"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 mr-1 text-amber-600" />
+                    <span>{isEn ? 'Request Re-clean' : 'แจ้งให้ทำความสะอาดซ้ำ'}</span>
+                  </Button>
+                )}
               </div>
             </div>
           </div>
