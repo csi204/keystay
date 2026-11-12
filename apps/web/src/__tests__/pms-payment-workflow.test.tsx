@@ -78,6 +78,27 @@ describe('Task 4: Hotel PMS Payment Architecture Overhaul (Upfront Room+Deposit 
       /data\.status\s*===?\s*['"]paid['"]|status:\s*['"]paid['"]/,
       'services/billing/src/routes/bills.ts must support upfront paid status for initial folio'
     );
+
+    // In bills.ts: when created with status 'paid', inserts record into payments table
+    assert.match(
+      billingCode,
+      /INSERT INTO payments[^;]*'completed'/,
+      'services/billing/src/routes/bills.ts must record completed payment row when bill created with status paid'
+    );
+
+    // In bills.ts recalculateBill: preserves existing amount_paid
+    assert.match(
+      billingCode,
+      /amountPaid\s*=\s*Math\.max\([^)]*bill\.amount_paid/,
+      'recalculateBill must preserve existing bill.amount_paid to prevent zeroing upfront payments'
+    );
+
+    // In useReservations.ts: uses clean roomNumber fallback
+    assert.match(
+      hookCode,
+      /data\.roomId\.replace\(\/\^rm-\/,\s*['"]['"]\)/,
+      'useReservations.ts must use clean roomNumber fallback without rm- prefix'
+    );
   });
 
   it('3. Adding a minibar/extra charge updates folio bill status to unpaid (รอชำระ)', () => {

@@ -172,7 +172,7 @@ export function useReservations() {
           body: JSON.stringify({
             reservationId,
             guestName: data.guestName,
-            roomNumber: createdRes?.roomNumber || data.roomId,
+            roomNumber: createdRes?.roomNumber || (createdRes as any)?.room_number || data.roomId.replace(/^rm-/, ''),
             depositDeducted: deposit,
             status: 'paid',
             items: [

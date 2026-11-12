@@ -46,7 +46,8 @@ export async function recalculateBill(db: D1Database, billId: string) {
     .prepare("SELECT SUM(amount) as sum_paid FROM payments WHERE bill_id = ? AND status = 'completed'")
     .bind(billId)
     .first();
-  const amountPaid = Number(paymentsSum?.sum_paid || 0);
+  const recordedPayments = paymentsSum?.sum_paid !== null && paymentsSum?.sum_paid !== undefined ? Number(paymentsSum.sum_paid) : 0;
+  const amountPaid = Math.max(recordedPayments, Number(bill.amount_paid || 0));
 
   const amountDue = Math.max(0, Number((totalAmount - depositDeducted - amountPaid).toFixed(2)));
 
@@ -318,7 +319,20 @@ bills.post('/', async (c) => {
        VALUES (?, ?, ?, ?, ?, 'draft', ?)`
     ).bind(invoiceId, invoiceNumber, billId, data.guestName, totalAmount, now);
 
-    await c.env.DB.batch([insertBillStmt, ...billItemStmts, insertInvoiceStmt]);
+    const extraStmts: any[] = [];
+    if (status === 'paid' || data.status === 'paid' || amountPaid > 0) {
+      const paymentId = `pay-${crypto.randomUUID()}`;
+      const paymentMethodId = (data as any).paymentMethodId || (data as any).payment_method_id || (data as any).paymentMethod || 'upfront_checkin';
+      const refNumber = (data as any).referenceNumber || (data as any).reference_number || 'REF-UPFRONT';
+      extraStmts.push(
+        c.env.DB.prepare(
+          `INSERT INTO payments (id, bill_id, payment_method_id, amount, reference_number, status, paid_at, created_at)
+           VALUES (?, ?, ?, ?, ?, 'completed', ?, ?)`
+        ).bind(paymentId, billId, paymentMethodId, amountPaid, refNumber, now, now)
+      );
+    }
+
+    await c.env.DB.batch([insertBillStmt, ...billItemStmts, insertInvoiceStmt, ...extraStmts]);
 
     const created: any = await c.env.DB.prepare('SELECT * FROM bills WHERE id = ?').bind(billId).first();
     const createdItems = await c.env.DB.prepare('SELECT * FROM bill_items WHERE bill_id = ?').bind(billId).all();
