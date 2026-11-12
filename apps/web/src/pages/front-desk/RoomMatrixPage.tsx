@@ -202,7 +202,7 @@ export const RoomMatrixPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleModalAction = (
+  const handleRoomAction = (
     action: 'checkin' | 'checkout' | 'charge' | 'walkin' | 'clean' | 'extend' | 'refresh' | string,
     room: Room
   ) => {
@@ -225,25 +225,32 @@ export const RoomMatrixPage: React.FC = () => {
       action === 'amenities'
     ) {
       const roomRes =
-        activeReservation && activeReservation.roomId === room.id
+        reservations.find(
+          (r) =>
+            (r.roomId === room.id || (room.roomNumber && r.roomNumber === room.roomNumber)) &&
+            (r.status === 'checked_in' || (r.status as string) === 'extended')
+        ) ||
+        (activeReservation &&
+        (activeReservation.roomId === room.id ||
+          (room.roomNumber && activeReservation.roomNumber === room.roomNumber))
           ? activeReservation
           : reservations.find(
               (r) =>
-                r.roomId === room.id &&
+                (r.roomId === room.id || (room.roomNumber && r.roomNumber === room.roomNumber)) &&
                 (r.status === 'confirmed' ||
                   r.status === 'checked_in' ||
                   (r.status as string) === 'extended')
-            );
+            ));
+
       navigate('/front-desk/billing', {
         state: {
           roomId: room.id,
           roomNumber: room.roomNumber,
-          reservationId: roomRes?.id || activeReservation?.id,
+          reservationId: roomRes?.id,
           guestName:
             roomRes?.guestName ||
-            activeReservation?.guestName ||
+            roomRes?.guest?.fullName ||
             roomGuests[room.id] ||
-            (selectedRoom ? roomGuests[selectedRoom.id] : '') ||
             '',
           billId: (roomRes as any)?.billId || (activeReservation as any)?.billId,
           action,
@@ -253,6 +260,8 @@ export const RoomMatrixPage: React.FC = () => {
       refreshRooms();
     }
   };
+
+  const handleModalAction = handleRoomAction;
 
   const selectedRoomType = selectedRoom
     ? roomTypes.find((t) => t.id === selectedRoom.roomTypeId)

@@ -17,7 +17,6 @@ import {
   LogIn,
   LogOut,
   Receipt,
-  ReceiptText,
   CalendarPlus,
   WifiOff,
   Search,
@@ -121,12 +120,12 @@ export const DailyOperationsPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
           <div>
             <h1 className="text-2xl font-bold text-slate-900 tracking-tight font-sans">
-              {t('ops.title')}
+              {locale === 'th' ? 'เคาน์เตอร์เช็คอิน & เช็คเอาต์' : 'Check-In & Check-Out Desk'}
             </h1>
             <p className="text-sm text-slate-600 mt-0.5 font-sans">
-              {t('ops.todayDate', {
-                date: formatDate(todayStr, 'long'),
-              })}
+              {locale === 'th'
+                ? 'การจัดการงานบริการหน้าเคาน์เตอร์ประจำวัน'
+                : 'Daily front desk arrivals & departures operations'}
             </p>
           </div>
 
@@ -370,39 +369,20 @@ export const DailyOperationsPage: React.FC = () => {
                           <td className="py-3.5 px-4 text-right">
                             <div className="flex items-center justify-end gap-1.5">
                               <button
-                                onClick={() =>
-                                  navigate('/front-desk/billing', {
-                                    state: {
-                                      roomId: res.roomId || room?.id,
-                                      roomNumber: roomNum,
-                                      reservationId: res.id,
-                                      guestName: guestDisplayName,
-                                      billId: (res as any)?.billId,
-                                      action: 'folio',
-                                    },
-                                  })
-                                }
-                                className="inline-flex items-center gap-1.5 text-sm font-semibold py-1.5 px-3 text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-md shadow-xs transition-colors min-h-[36px] font-sans"
-                                title={t('ops.openFolio') || 'เปิด Folio / บิล'}
-                              >
-                                <ReceiptText className="w-3.5 h-3.5 text-slate-500" strokeWidth={1.75} aria-hidden="true" />
-                                <span>{t('ops.openFolio') || 'เปิด Folio / บิล'}</span>
-                              </button>
-                              <button
                                 onClick={() => setExtendTarget(res)}
                                 className="inline-flex items-center gap-1 text-sm font-semibold py-1.5 px-3.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors min-h-[36px] font-sans"
-                                title={t('extend.button')}
+                                title={t('extend.button') || (locale === 'th' ? 'ขยายเวลาเข้าพัก' : 'Extend Stay')}
                               >
                                 <CalendarPlus className="w-3.5 h-3.5 text-slate-500" aria-hidden="true" />
-                                <span>{t('extend.button')}</span>
+                                <span>{locale === 'th' ? 'ขยายเวลาเข้าพัก' : 'Extend Stay'}</span>
                               </button>
                               <button
                                 onClick={() => setCheckOutTarget(res)}
                                 className="inline-flex items-center gap-1.5 text-sm font-semibold py-1.5 px-3.5 text-white bg-slate-900 hover:bg-slate-800 rounded-md shadow-sm transition-colors min-h-[36px] font-sans"
-                                title={t('ops.checkOutAndSettle') || t('ops.checkOut')}
+                                title={t('ops.checkOutAndSettle') || (locale === 'th' ? 'เช็คเอาต์ & คิดเงิน' : 'Check-Out & Settle')}
                               >
                                 <LogOut className="w-3.5 h-3.5" aria-hidden="true" />
-                                <span>{t('ops.checkOutAndSettle') || t('ops.checkOut')}</span>
+                                <span>{locale === 'th' ? 'เช็คเอาต์ & คิดเงิน' : 'Check-Out & Settle'}</span>
                               </button>
                             </div>
                           </td>

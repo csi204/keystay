@@ -5,8 +5,8 @@ import type { Locale } from './i18n';
 // Pre-computed bidirectional lookup dictionaries
 const ROOM_TYPES_TH: Record<string, string> = {};
 const ROOM_TYPES_EN: Record<string, string> = {};
-const ROOM_NOTES_TH: Record<string, string> = {};
-const ROOM_NOTES_EN: Record<string, string> = {};
+export const ROOM_NOTES_TH: Record<string, string> = {};
+export const ROOM_NOTES_EN: Record<string, string> = {};
 const AMENITIES_TH: Record<string, string> = {};
 const AMENITIES_EN: Record<string, string> = {};
 const ROOM_DESCRIPTIONS_TH: Record<string, string> = {};
@@ -62,7 +62,7 @@ for (const [key, thVal] of Object.entries(th)) {
     ROOM_NOTES_TH[rawNote] = thVal;
     ROOM_NOTES_TH[thVal] = thVal;
     ROOM_NOTES_EN[rawNote] = enVal;
-    ROOM_NOTES_EN[thVal] = enVal;
+    ROOM_NOTES_EN[thVal] = rawNote;
   } else if (key.startsWith('amenities.')) {
     const rawAmenity = key.replace('amenities.', '');
     const enVal = en[key] || rawAmenity;

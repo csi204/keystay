@@ -14,17 +14,18 @@ describe('Task 5: Integrated Cashier Hub (Master-Detail, Pending Active Folio & 
     assert.ok(fs.existsSync(frontDeskLayoutPath), 'FrontDeskLayout.tsx should exist');
     const code = fs.readFileSync(frontDeskLayoutPath, 'utf-8');
 
-    // Must import ReceiptText
-    assert.match(code, /ReceiptText/, 'FrontDeskLayout should import ReceiptText icon');
+    // Must import CreditCard (or ReceiptText)
+    assert.match(code, /CreditCard|ReceiptText/, 'FrontDeskLayout should import navigation icon');
 
-    // Must have navigation entry for billing
-    assert.match(code, /\/front-desk\/billing/, 'FrontDeskLayout should have route /front-desk/billing in navTabs');
-    assert.match(code, /key:\s*['"]billing['"]/, 'FrontDeskLayout should include billing nav tab');
-    assert.match(code, /icon:\s*ReceiptText/, 'FrontDeskLayout should use ReceiptText icon for billing');
+    // Must have navigation entry for cashier/billing
+    assert.match(code, /\/front-desk\/cashier/, 'FrontDeskLayout should have route /front-desk/cashier in navTabs');
+    assert.match(code, /key:\s*['"]cashier['"]/, 'FrontDeskLayout should include cashier nav tab');
+    assert.match(code, /icon:\s*(?:CreditCard|ReceiptText)/, 'FrontDeskLayout should use CreditCard icon for cashier');
 
-    // Active state highlighting for billing
-    assert.match(code, /activeTab === ['"]billing['"]/, 'FrontDeskLayout should activate billing when activeTab is billing');
-    assert.match(code, /location\.pathname === ['"]\/front-desk\/billing['"]/, 'FrontDeskLayout should activate billing on /front-desk/billing path');
+    // Active state highlighting for cashier & billing mapping
+    assert.match(code, /activeTab === ['"](?:cashier|billing)['"]/, 'FrontDeskLayout should activate cashier when activeTab is cashier or billing');
+    assert.match(code, /location\.pathname === ['"]\/front-desk\/cashier['"]/, 'FrontDeskLayout should activate cashier on /front-desk/cashier path');
+    assert.match(code, /location\.pathname === ['"]\/front-desk\/billing['"]/, 'FrontDeskLayout should map /front-desk/billing path to cashier for active styling');
   });
 
   it('Requirement 2: services/billing/src/routes/bills.ts POST /bills never marks newly created in-house bill as paid even if totalAmount is 0', () => {
@@ -79,20 +80,26 @@ describe('Task 5: Integrated Cashier Hub (Master-Detail, Pending Active Folio & 
     assert.match(code, /กรุณาเลือกบิลเพื่อดูรายละเอียด|Select a bill/, 'CashierFolioPage must show empty state when no bill selected');
   });
 
-  it('Requirement 5: DailyOperationsPage departures table action column includes "เปิด Folio / บิล" shortcut', () => {
+  it('Requirement 5: DailyOperationsPage departures table streamlines row actions down to extend stay and checkout & settle without duplicate buttons', () => {
     assert.ok(fs.existsSync(dailyOpsPagePath), 'DailyOperationsPage.tsx should exist');
     const code = fs.readFileSync(dailyOpsPagePath, 'utf-8');
 
-    // Action column shortcut
+    // Omits duplicate "เปิด Folio / บิล" action button
+    assert.doesNotMatch(
+      code,
+      /ops\.openFolio|เปิด Folio \/ บิล/,
+      'DailyOperationsPage departures table should omit duplicate "เปิด Folio / บิล" button'
+    );
+    // Preserves Extend Stay and Check-Out & Settle
     assert.match(
       code,
-      /\/front-desk\/billing/,
-      'DailyOperationsPage departures table action column must navigate to /front-desk/billing'
+      /CalendarPlus/,
+      'DailyOperationsPage departures table preserves Extend Stay button'
     );
     assert.match(
       code,
-      /ops\.openFolio|เปิด Folio \/ บิล/,
-      'DailyOperationsPage departures table must have "เปิด Folio / บิล" button'
+      /LogOut/,
+      'DailyOperationsPage departures table preserves Check-Out & Settle button'
     );
   });
 });

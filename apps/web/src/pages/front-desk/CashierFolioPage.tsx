@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { FrontDeskLayout } from '@/components/front-desk/FrontDeskLayout';
 import { useBilling, DetailedBill } from '@/hooks/useBilling';
+import { useReservations, ExtendedReservation } from '@/hooks/useReservations';
 import { FolioSplitScreen } from '@/components/front-desk/FolioSplitScreen';
 import { AddExtraChargeModal } from '@/components/front-desk/AddExtraChargeModal';
 import { RequestAmenitiesModal } from '@/components/front-desk/RequestAmenitiesModal';
@@ -27,11 +28,13 @@ export const CashierFolioPage: React.FC = () => {
     action?: string;
   } | null;
 
+  const { reservations, loading: reservationsLoading } = useReservations();
+
   const {
-    bills,
-    selectedBill,
+    bills: rawBills,
+    selectedBill: rawSelectedBill,
     setSelectedBill,
-    loading,
+    loading: billingLoading,
     error,
     isOffline,
     lastRefreshed,
@@ -41,7 +44,104 @@ export const CashierFolioPage: React.FC = () => {
     addExtraCharge,
     deleteChargeItem,
     settleBillPayment,
-  } = useBilling();
+  } = useBilling(reservations);
+
+  const loading = billingLoading || reservationsLoading;
+
+  // Cross-reference bills with active in-house reservations & heal/exclude stale dummy bills
+  const bills = useMemo(() => {
+    return rawBills
+      .filter((bill) => {
+        const isDummyName =
+          typeof bill.guestName === 'string' &&
+          (bill.guestName.startsWith('Guest (Room ') || bill.guestName === 'Guest');
+        const total = Number(bill.totalAmount || bill.subtotal || 0);
+        const hasZeroItems = !bill.items || bill.items.length === 0;
+        const isStaleDummyPaid = bill.status === 'paid' && total === 0 && hasZeroItems && isDummyName;
+
+        if (isStaleDummyPaid) {
+          const matchingRes = reservations.find(
+            (r) =>
+              (r.id === bill.reservationId || r.roomNumber === bill.roomNumber) &&
+              (r.status === 'checked_in' || r.status === 'extended')
+          );
+          // If no matching active reservation exists, exclude stale dummy bill
+          if (!matchingRes) return false;
+        }
+        return true;
+      })
+      .map((bill) => {
+        const matchingRes = reservations.find(
+          (r) =>
+            (r.id === bill.reservationId || r.roomNumber === bill.roomNumber) &&
+            (r.status === 'checked_in' || r.status === 'extended')
+        );
+
+        if (!matchingRes) return bill;
+
+        const realGuestName = matchingRes.guestName || matchingRes.guest?.fullName;
+        const isFallbackName =
+          !bill.guestName ||
+          bill.guestName.startsWith('Guest (Room ') ||
+          bill.guestName === 'Guest' ||
+          bill.guestName === '—';
+
+        const effectiveGuestName =
+          realGuestName && realGuestName.trim() && realGuestName !== '—'
+            ? realGuestName.trim()
+            : isFallbackName
+            ? realGuestName || bill.guestName
+            : bill.guestName;
+
+        const total = Number(bill.totalAmount || bill.subtotal || 0);
+        const hasZeroItems = !bill.items || bill.items.length === 0;
+        const resPaymentStatus = matchingRes.paymentStatus || (matchingRes as any).payment_status;
+        const shouldBePending = resPaymentStatus !== 'paid' && total === 0 && hasZeroItems;
+
+        return {
+          ...bill,
+          guestName: effectiveGuestName,
+          status: shouldBePending ? ('pending' as const) : bill.status,
+        };
+      });
+  }, [rawBills, reservations]);
+
+  // Synchronize selected bill with active reservation details
+  const selectedBill = useMemo(() => {
+    if (!rawSelectedBill) return null;
+    const matchingRes = reservations.find(
+      (r) =>
+        (r.id === rawSelectedBill.reservationId || r.roomNumber === rawSelectedBill.roomNumber) &&
+        (r.status === 'checked_in' || r.status === 'extended')
+    );
+
+    if (!matchingRes) return rawSelectedBill;
+
+    const realGuestName = matchingRes.guestName || matchingRes.guest?.fullName;
+    const isFallbackName =
+      !rawSelectedBill.guestName ||
+      rawSelectedBill.guestName.startsWith('Guest (Room ') ||
+      rawSelectedBill.guestName === 'Guest' ||
+      rawSelectedBill.guestName === '—';
+
+    const effectiveGuestName =
+      realGuestName && realGuestName.trim() && realGuestName !== '—'
+        ? realGuestName.trim()
+        : isFallbackName
+        ? realGuestName || rawSelectedBill.guestName
+        : rawSelectedBill.guestName;
+
+    const total = Number(rawSelectedBill.totalAmount || rawSelectedBill.subtotal || 0);
+    const hasZeroItems = !rawSelectedBill.items || rawSelectedBill.items.length === 0;
+    const resPaymentStatus = matchingRes.paymentStatus || (matchingRes as any).payment_status;
+    const shouldBePending = resPaymentStatus !== 'paid' && total === 0 && hasZeroItems;
+
+    return {
+      ...rawSelectedBill,
+      guestName: effectiveGuestName,
+      status: shouldBePending ? ('pending' as const) : rawSelectedBill.status,
+    };
+  }, [rawSelectedBill, reservations]);
 
   const [isAddChargeOpen, setIsAddChargeOpen] = useState(false);
   const [isAmenitiesOpen, setIsAmenitiesOpen] = useState(false);
@@ -85,7 +185,53 @@ export const CashierFolioPage: React.FC = () => {
       autoCreatedRef.current = true;
       const roomNum = navState?.roomNumber || '—';
       const resId = navState?.reservationId || `res-${Date.now()}`;
-      const guestName = (navState as any)?.guestName || `Guest (Room ${roomNum})`;
+
+      // Look up matchingRes using roomNum or resId
+      const matchingRes = reservations.find(
+        (r) =>
+          (resId && r.id === resId) ||
+          (roomNum && roomNum !== '—' && r.roomNumber === roomNum) ||
+          (navState?.roomId && r.roomId === navState.roomId)
+      );
+
+      const guestName =
+        matchingRes?.guestName ||
+        matchingRes?.guest?.fullName ||
+        (navState as any)?.guestName ||
+        'Guest';
+
+      // Calculate nightly rate items if available
+      const items: Array<{
+        itemType: 'room_charge';
+        category: 'room';
+        description: string;
+        quantity: number;
+        unitPrice: number;
+      }> = [];
+
+      let depositDeducted = 0;
+      if (matchingRes) {
+        depositDeducted = Number(matchingRes.depositAmount || 0);
+        const nights = Math.max(1, Number(matchingRes.totalNights) || 1);
+        const nightlyRate =
+          matchingRes.nightlyRate !== undefined && matchingRes.nightlyRate !== null
+            ? Number(matchingRes.nightlyRate)
+            : matchingRes.totalAmount
+            ? Number(matchingRes.totalAmount) / nights
+            : 0;
+
+        if (nightlyRate > 0) {
+          items.push({
+            itemType: 'room_charge',
+            category: 'room',
+            description: `Room Charge (${nights} night${nights > 1 ? 's' : ''})`,
+            quantity: nights,
+            unitPrice: nightlyRate,
+          });
+        }
+      }
+
+      const subtotal = items.reduce((acc, it) => acc + it.quantity * it.unitPrice, 0);
 
       apiFetch<any>('/api/bills', {
         method: 'POST',
@@ -93,9 +239,10 @@ export const CashierFolioPage: React.FC = () => {
           reservationId: resId,
           guestName,
           roomNumber: roomNum,
-          subtotal: 0,
-          depositDeducted: 0,
-          items: [],
+          subtotal,
+          depositDeducted,
+          items,
+          status: 'pending',
         }),
       })
         .then(async (createRes) => {
@@ -112,7 +259,7 @@ export const CashierFolioPage: React.FC = () => {
     } else if (bills.length > 0 && !selectedBill) {
       loadBillDetails(bills[0].id);
     }
-  }, [navState, bills, loading]);
+  }, [navState, bills, loading, reservations]);
 
   // Handle direct actions triggered from navigation
   useEffect(() => {
@@ -155,16 +302,18 @@ export const CashierFolioPage: React.FC = () => {
   });
 
   return (
-    <FrontDeskLayout activeTab="billing">
+    <FrontDeskLayout activeTab="cashier">
       <div className="space-y-4">
         {/* Header with Standard Pulse Auto-Refresh Badge */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
           <div>
             <h1 className="text-2xl font-bold text-slate-900 tracking-tight font-sans">
-              {t('folio.title')}
+              {locale === 'th' ? 'แคชเชียร์และบิล (Cashier Hub)' : 'Cashier Hub & Folios'}
             </h1>
             <p className="text-sm text-slate-600 mt-0.5 font-sans">
-              {t('folio.subtitle')}
+              {locale === 'th'
+                ? 'ศูนย์กลางจัดการโฟลิโอค่าใช้จ่าย บันทึกการชำระเงิน และออกใบเสร็จ/ใบกำกับภาษี'
+                : 'Centralized Folio Billing & Payment Settlement Hub'}
             </p>
           </div>
 

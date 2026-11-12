@@ -10,13 +10,19 @@ export const createBillSchema = z.object({
   taxRate: z.coerce.number().min(0).max(1).optional(),
   items: z
     .array(
-      z.object({
-        itemType: z.enum(['room_charge', 'minibar', 'laundry', 'room_service', 'damage', 'other']),
-        description: z.string().min(1, 'Description is required'),
-        quantity: z.coerce.number().int().min(1).default(1),
-        unitPrice: z.coerce.number().min(0, 'Unit price must be non-negative'),
-        itemDate: z.string().optional(),
-      })
+      z
+        .object({
+          itemType: z.enum(['room_charge', 'minibar', 'laundry', 'room_service', 'damage', 'other']).optional(),
+          category: z.string().optional(),
+          description: z.string().min(1, 'Description is required'),
+          quantity: z.coerce.number().int().min(1).default(1),
+          unitPrice: z.coerce.number().min(0, 'Unit price must be non-negative'),
+          itemDate: z.string().optional(),
+        })
+        .refine((data) => Boolean(data.itemType || data.category), {
+          message: 'Either itemType or category must be specified',
+          path: ['itemType'],
+        })
     )
     .optional(),
 });
@@ -28,13 +34,19 @@ export const updateBillSchema = z.object({
   depositDeducted: z.coerce.number().min(0).optional(),
 });
 
-export const addBillItemSchema = z.object({
-  itemType: z.enum(['room_charge', 'minibar', 'laundry', 'room_service', 'damage', 'other']),
-  description: z.string().min(1, 'Description is required'),
-  quantity: z.coerce.number().int().min(1).default(1),
-  unitPrice: z.coerce.number().min(0, 'Unit price must be non-negative'),
-  itemDate: z.string().optional(),
-});
+export const addBillItemSchema = z
+  .object({
+    itemType: z.enum(['room_charge', 'minibar', 'laundry', 'room_service', 'damage', 'other']).optional(),
+    category: z.string().optional(),
+    description: z.string().min(1, 'Description is required'),
+    quantity: z.coerce.number().int().min(1).default(1),
+    unitPrice: z.coerce.number().min(0, 'Unit price must be non-negative'),
+    itemDate: z.string().optional(),
+  })
+  .refine((data) => Boolean(data.itemType || data.category), {
+    message: 'Either itemType or category must be specified',
+    path: ['itemType'],
+  });
 
 export const payBillSchema = z.object({
   paymentMethodId: z.string().optional(),

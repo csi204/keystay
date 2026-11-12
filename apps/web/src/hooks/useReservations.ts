@@ -2,10 +2,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { apiFetch } from '../lib/api';
 import type { Reservation } from '@keystay/types';
 
-export interface ExtendedReservation extends Reservation {
+export interface ExtendedReservation extends Omit<Reservation, 'status'> {
+  status: Reservation['status'] | 'extended';
   guestName?: string;
   roomNumber?: string;
   reservationCode?: string;
+  nightlyRate?: number | string;
   guest?: {
     id?: string;
     fullName?: string;

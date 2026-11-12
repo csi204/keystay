@@ -262,11 +262,17 @@ bills.post('/', async (c) => {
       const total = Number((qty * unit).toFixed(2));
       itemsSubtotal += total;
 
+      const rawType = item.itemType || item.category;
+      let itemType = 'other';
+      if (rawType === 'service' || rawType === 'room_service') itemType = 'room_service';
+      else if (rawType === 'room' || rawType === 'room_charge') itemType = 'room_charge';
+      else if (['minibar', 'laundry', 'damage', 'other'].includes(String(rawType))) itemType = String(rawType);
+
       billItemStmts.push(
         c.env.DB.prepare(
           `INSERT INTO bill_items (id, bill_id, item_type, description, quantity, unit_price, total_price, item_date, created_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-        ).bind(itemId, billId, item.itemType, item.description, qty, unit, total, item.itemDate || now.slice(0, 10), now)
+        ).bind(itemId, billId, itemType, item.description, qty, unit, total, item.itemDate || now.slice(0, 10), now)
       );
     }
 
@@ -424,11 +430,17 @@ bills.post('/:id/items', async (c) => {
     const totalPrice = Number((qty * unit).toFixed(2));
     const itemDate = data.itemDate || now.slice(0, 10);
 
+    const rawType = parsed.data.itemType || parsed.data.category;
+    let itemType = 'other';
+    if (rawType === 'service' || rawType === 'room_service') itemType = 'room_service';
+    else if (rawType === 'room' || rawType === 'room_charge') itemType = 'room_charge';
+    else if (['minibar', 'laundry', 'damage', 'other'].includes(String(rawType))) itemType = String(rawType);
+
     await c.env.DB.prepare(
       `INSERT INTO bill_items (id, bill_id, item_type, description, quantity, unit_price, total_price, item_date, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
-      .bind(itemId, existing.id, data.itemType, data.description, qty, unit, totalPrice, itemDate, now)
+      .bind(itemId, existing.id, itemType, data.description, qty, unit, totalPrice, itemDate, now)
       .run();
 
     const updatedBill = await recalculateBill(c.env.DB, existing.id);

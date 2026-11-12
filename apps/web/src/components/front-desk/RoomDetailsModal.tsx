@@ -153,15 +153,22 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
 
   // Editable Room Notes State
   const [isEditingNotes, setIsEditingNotes] = useState(false);
-  const [editedNotes, setEditedNotes] = useState(room?.notes || '');
+  const [editedNotes, setEditedNotes] = useState(room?.notes ? localizeRoomNote(room.notes, locale) : '');
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [currentNotes, setCurrentNotes] = useState<string | null>(room?.notes ?? null);
 
   useEffect(() => {
-    setEditedNotes(room?.notes || '');
-    setCurrentNotes(room?.notes ?? null);
+    const raw = room?.notes ?? null;
+    setCurrentNotes(raw);
+    setEditedNotes(raw ? localizeRoomNote(raw, locale) : '');
     setIsEditingNotes(false);
-  }, [room?.id, room?.notes]);
+  }, [room?.id, room?.notes, isOpen, locale]);
+
+  const handleStartEditNotes = () => {
+    const initialText = currentNotes ? localizeRoomNote(currentNotes, locale) : '';
+    setEditedNotes(initialText);
+    setIsEditingNotes(true);
+  };
 
   const handleSaveNotes = async () => {
     if (!room) return;
@@ -179,6 +186,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
       }
 
       setCurrentNotes(trimmedNotes);
+      setEditedNotes(trimmedNotes ? localizeRoomNote(trimmedNotes, locale) : '');
       setIsEditingNotes(false);
       toast.showSuccess(
         t('notes.savedTitle') || 'บันทึกสำเร็จ',
@@ -196,7 +204,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
   };
 
   const handleCancelEditNotes = () => {
-    setEditedNotes(currentNotes || '');
+    setEditedNotes(currentNotes ? localizeRoomNote(currentNotes, locale) : '');
     setIsEditingNotes(false);
   };
 
@@ -807,10 +815,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                   {!isEditingNotes && (
                     <button
                       type="button"
-                      onClick={() => {
-                        setEditedNotes(currentNotes || '');
-                        setIsEditingNotes(true);
-                      }}
+                      onClick={handleStartEditNotes}
                       className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
                       title={t('common.edit') || 'แก้ไขบันทึก'}
                       aria-label="Edit room notes"

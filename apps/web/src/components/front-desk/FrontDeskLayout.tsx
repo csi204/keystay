@@ -4,6 +4,7 @@ import { Logo } from '@/components/common/Logo';
 import {
   LayoutGrid,
   UserCheck,
+  CreditCard,
   ShieldCheck,
   Clock,
   Globe,
@@ -24,10 +25,12 @@ import { QuickEmergencyDrawer } from './QuickEmergencyDrawer';
 // t('nav.reservations')
 // t('nav.dailyOperations')
 // t('nav.billing')
+// t('nav.matrixAndReservations')
+// t('nav.operationsAndCashier')
 
 interface FrontDeskLayoutProps {
   children: React.ReactNode;
-  activeTab?: 'matrix' | 'reservations' | 'operations' | 'billing';
+  activeTab?: 'matrix' | 'reservations' | 'operations' | 'billing' | 'cashier';
 }
 
 export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
@@ -94,7 +97,7 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
   const navTabs = [
     {
       key: 'matrix',
-      title: t('nav.matrixAndReservations'),
+      title: locale === 'th' ? 'ผังห้องพัก' : 'Room Matrix',
       path: '/front-desk/room-matrix',
       icon: LayoutGrid,
       isActive:
@@ -105,7 +108,7 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
     },
     {
       key: 'operations',
-      title: t('nav.operationsAndCashier'),
+      title: locale === 'th' ? 'เช็คอิน & เช็คเอาต์' : 'Check-In & Out',
       path: '/front-desk/daily-operations',
       icon: UserCheck,
       isActive:
@@ -113,12 +116,14 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
         location.pathname === '/front-desk/daily-operations',
     },
     {
-      key: 'billing',
-      title: t('nav.billing') || 'แคชเชียร์และบิล',
-      path: '/front-desk/billing',
-      icon: ReceiptText,
+      key: 'cashier',
+      title: locale === 'th' ? 'แคชเชียร์ & บิล' : 'Cashier & Folios',
+      path: '/front-desk/cashier',
+      icon: CreditCard,
       isActive:
+        activeTab === 'cashier' ||
         activeTab === 'billing' ||
+        location.pathname === '/front-desk/cashier' ||
         location.pathname === '/front-desk/billing',
     },
   ];

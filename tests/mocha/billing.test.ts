@@ -171,6 +171,81 @@ describe('Billing Service (Dear - @allmusgus)', () => {
       expect(Number(json.data.item.totalPrice)).to.equal(240.0);
     });
 
+    it('SUCCESS: adds extra charge with category minibar (น้ำดื่ม)', async () => {
+      const res = await app.request(
+        '/bills/bill-002/items',
+        {
+          method: 'POST',
+          headers: HEADERS,
+          body: JSON.stringify({
+            category: 'minibar',
+            description: 'น้ำดื่ม',
+            unitPrice: 20,
+            quantity: 1,
+          }),
+        },
+        env
+      );
+
+      expect(res.status).to.equal(201);
+      const json = await res.json();
+      expect(json.success).to.be.true;
+      expect(json.data.item.itemType).to.equal('minibar');
+      expect(json.data.item.description).to.equal('น้ำดื่ม');
+      expect(Number(json.data.item.unitPrice)).to.equal(20);
+      expect(Number(json.data.item.totalPrice)).to.equal(20);
+    });
+
+    it('SUCCESS: adds extra charge with category service (บริการซักรีด -> room_service)', async () => {
+      const res = await app.request(
+        '/bills/bill-002/items',
+        {
+          method: 'POST',
+          headers: HEADERS,
+          body: JSON.stringify({
+            category: 'service',
+            description: 'บริการซักรีด',
+            unitPrice: 100,
+            quantity: 1,
+          }),
+        },
+        env
+      );
+
+      expect(res.status).to.equal(201);
+      const json = await res.json();
+      expect(json.success).to.be.true;
+      expect(json.data.item.itemType).to.equal('room_service');
+      expect(json.data.item.description).to.equal('บริการซักรีด');
+      expect(Number(json.data.item.unitPrice)).to.equal(100);
+      expect(Number(json.data.item.totalPrice)).to.equal(100);
+    });
+
+    it('SUCCESS: adds extra charge with itemType damage (คีย์การ์ดหาย)', async () => {
+      const res = await app.request(
+        '/bills/bill-002/items',
+        {
+          method: 'POST',
+          headers: HEADERS,
+          body: JSON.stringify({
+            itemType: 'damage',
+            description: 'คีย์การ์ดหาย',
+            unitPrice: 300,
+            quantity: 1,
+          }),
+        },
+        env
+      );
+
+      expect(res.status).to.equal(201);
+      const json = await res.json();
+      expect(json.success).to.be.true;
+      expect(json.data.item.itemType).to.equal('damage');
+      expect(json.data.item.description).to.equal('คีย์การ์ดหาย');
+      expect(Number(json.data.item.unitPrice)).to.equal(300);
+      expect(Number(json.data.item.totalPrice)).to.equal(300);
+    });
+
     it('SUCCESS: deletes an item from bill and recalculates subtotal and tax', async () => {
       // Delete laundry item bi-008 from bill-002
       const res = await app.request(

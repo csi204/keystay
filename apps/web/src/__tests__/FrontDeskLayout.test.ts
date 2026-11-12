@@ -26,20 +26,23 @@ describe('FrontDeskLayout — Collapsible Left Sidebar & 2-Menu Navigation', () 
 
   it('consolidates navigation down to primary operational menus including Cashier Hub', () => {
     // Primary workflows:
-    // 1. Matrix & Reservations (/front-desk/room-matrix)
-    assert.match(code, /nav\.matrixAndReservations/);
+    // 1. Matrix (/front-desk/room-matrix)
     assert.match(code, /\/front-desk\/room-matrix/);
     assert.match(code, /LayoutGrid/);
+    assert.match(code, /ผังห้องพัก/);
 
-    // 2. Operations & Cashier (/front-desk/daily-operations)
-    assert.match(code, /nav\.operationsAndCashier/);
+    // 2. Check-In & Check-Out (/front-desk/daily-operations)
     assert.match(code, /\/front-desk\/daily-operations/);
     assert.match(code, /UserCheck/);
+    assert.match(code, /เช็คอิน & เช็คเอาต์/);
 
-    // 3. Cashier & Folios (/front-desk/billing)
-    assert.match(code, /nav\.billing/);
+    // 3. Cashier & Folios (/front-desk/cashier)
+    assert.match(code, /\/front-desk\/cashier/);
+    assert.match(code, /CreditCard/);
+    assert.match(code, /แคชเชียร์ & บิล/);
+
+    // Active state highlighting maps /front-desk/billing to cashier
     assert.match(code, /\/front-desk\/billing/);
-    assert.match(code, /ReceiptText/);
 
     // Check that nav items array contains 3 primary items
     const navItemsMatch = code.match(/const\s+navTabs\s*=\s*\[([\s\S]*?)\];/);
