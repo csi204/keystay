@@ -133,6 +133,15 @@ export function useBilling(reservations?: ExtendedReservation[]) {
       }),
     });
     if (!res.error) {
+      // When an extra charge is added to an active bill, update bill.status = 'unpaid'
+      setBills((prevBills) =>
+        prevBills.map((b) =>
+          b.id === billId ? { ...b, status: 'unpaid' as any } : b
+        )
+      );
+      if (selectedBill && selectedBill.id === billId) {
+        setSelectedBill((prev) => (prev ? { ...prev, status: 'unpaid' as any } : null));
+      }
       await loadBillDetails(billId);
       await fetchBills();
       return { success: true };

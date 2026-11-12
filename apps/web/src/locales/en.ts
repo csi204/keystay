@@ -85,6 +85,7 @@ export const en: Record<string, string> = {
   'ops.arrivalsDescription': 'Guests scheduled to check in today',
   'ops.departuresDescription': 'Guests currently staying and scheduled to check out today',
   'ops.totalItems': 'Total {count} items',
+  'ops.netTotal': 'Net Total',
 
   // Check-in Modal
   'checkin.title': 'Record Check-in',

@@ -71,7 +71,7 @@ reservations.get('/today-checkins', async (c) => {
 });
 
 // ==========================================
-// 43. GET /reservations/today-checkouts — แขกที่ต้องเช็คเอาท์วันนี้
+// 43. GET /reservations/today-checkouts — แขกที่ต้องเช็คเอาต์วันนี้
 // ==========================================
 reservations.get('/today-checkouts', async (c) => {
   try {
@@ -413,8 +413,9 @@ reservations.post('/walk-in', async (c) => {
     const discountAmount = Number(data.discountAmount || 0);
     const taxableAmount = Math.max(0, subtotal - discountAmount);
     const taxAmount = Number((taxableAmount * 0.07).toFixed(2));
-    const totalAmount = Number((taxableAmount + taxAmount).toFixed(2));
     const depositAmount = Number(data.depositAmount || 0);
+    // Upfront Check-in calculation: Total Paid = Room Rate * Nights + Deposit
+    const totalAmount = Number((nightlyRate * totalNights + depositAmount).toFixed(2));
 
     const reservationId = `res-${crypto.randomUUID()}`;
     const codeSuffix = crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase();
@@ -434,7 +435,7 @@ reservations.post('/walk-in', async (c) => {
 
     // Insert Reservation
     const bookingSource = data.bookingSource || 'walk_in';
-    const paymentStatus = data.paymentStatus || (bookingSource === 'walk_in' ? 'paid' : 'unpaid');
+    const paymentStatus = data.paymentStatus || 'paid';
     const paymentSlipUrl = data.paymentSlipUrl || null;
     const paymentSlipRef = data.paymentSlipRef || null;
     const paymentVerifiedAt = paymentStatus === 'paid' ? now : null;
@@ -1323,13 +1324,15 @@ const handleCheckIn = async (c: Context<{ Bindings: Env }>) => {
 
     const stmts: any[] = [];
 
-    // 1. Update reservation status to checked_in
+    // 1. Update reservation status to checked_in, paymentStatus to paid, and include deposit in total_amount
+    const subtotal = Number(existing.subtotal || 0);
+    const newTotalAmount = subtotal > 0 ? Number((subtotal + depositAmount).toFixed(2)) : existing.total_amount;
     stmts.push(
       c.env.DB.prepare(
         `UPDATE reservations
-         SET status = 'checked_in', actual_check_in = ?, deposit_amount = ?, updated_at = ?
+         SET status = 'checked_in', actual_check_in = ?, deposit_amount = ?, payment_status = 'paid', total_amount = ?, updated_at = ?
          WHERE id = ?`
-      ).bind(actualCheckIn, depositAmount, now, existing.id)
+      ).bind(actualCheckIn, depositAmount, newTotalAmount, now, existing.id)
     );
 
     // 2. Update guest idCardNumber if provided
@@ -1408,7 +1411,7 @@ reservations.post('/:id/check-in', handleCheckIn);
 reservations.put('/:id/check-in', handleCheckIn);
 
 // ==========================================
-// 37. POST /reservations/:id/check-out — เช็คเอาท์และกระจาย Event Fan-out 1:4
+// 37. POST /reservations/:id/check-out — เช็คเอาต์และกระจาย Event Fan-out 1:4
 // ==========================================
 reservations.post('/:id/check-out', async (c) => {
   try {
@@ -1455,7 +1458,7 @@ reservations.post('/:id/check-out', async (c) => {
     // 1. Update reservation
     const stmtUpdate = c.env.DB.prepare(
       `UPDATE reservations
-       SET status = 'checked_out', actual_check_out = ?, updated_at = ?
+       SET status = 'checked_out', actual_check_out = ?, payment_status = 'paid', updated_at = ?
        WHERE id = ?`
     ).bind(actualCheckOut, now, existing.id);
 

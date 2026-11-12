@@ -108,6 +108,7 @@ export const DailyOperationsPage: React.FC = () => {
   }, [reservations, todayStr]);
 
   const departures = dueTodayDepartures;
+  const departuresCount = dueTodayDepartures.length + earlyOrExtendedDepartures.length;
 
   // Auto-open modals based on router location state navigation (e.g. from Room Matrix or Room Details)
   useEffect(() => {
@@ -256,7 +257,7 @@ export const DailyOperationsPage: React.FC = () => {
                   : 'bg-slate-100 text-slate-600'
               }`}
             >
-              ({departures.length})
+              ({departuresCount})
             </span>
           </button>
 
@@ -562,7 +563,7 @@ export const DailyOperationsPage: React.FC = () => {
                         {t('common.dates')}
                       </th>
                       <th className="text-xs font-semibold text-slate-600 uppercase tracking-wider py-3 px-4 font-sans text-right">
-                        {t('common.total')}
+                        {t('ops.netTotal') || (locale === 'th' ? 'ยอดสุทธิ' : 'Net Total')}
                       </th>
                       <th className="text-xs font-semibold text-slate-600 uppercase tracking-wider py-3 px-4 font-sans text-center">
                         {t('common.status')}

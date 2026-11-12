@@ -54,10 +54,8 @@ export async function recalculateBill(db: D1Database, billId: string) {
   if (status !== 'void' && status !== 'refunded') {
     if (amountDue === 0 && (amountPaid > 0 || depositDeducted >= totalAmount)) {
       status = 'paid';
-    } else if (amountPaid > 0) {
-      status = 'partially_paid';
     } else {
-      status = 'pending';
+      status = 'unpaid';
     }
   }
 
@@ -283,10 +281,11 @@ bills.post('/', async (c) => {
     const serviceChargeAmount = Number((subtotal * serviceChargeRate).toFixed(2));
     const totalAmount = Number((subtotal + taxAmount + serviceChargeAmount).toFixed(2));
     const depositDeducted = Number(data.depositDeducted || 0);
-    const amountPaid = 0;
-    const amountDue = Math.max(0, Number((totalAmount - depositDeducted).toFixed(2)));
-    // Decision A1: Newly created bills (especially with 0 items or totalAmount 0) start in 'pending' status so staff can add charges
-    const status = items.length > 0 && totalAmount > 0 && depositDeducted >= totalAmount ? 'paid' : 'pending';
+    const amountPaid = Number((data as any).amountPaid ?? (data.status === 'paid' ? totalAmount : 0));
+    const amountDue = Math.max(0, Number((totalAmount - depositDeducted - amountPaid).toFixed(2)));
+    const status = data.status === 'paid'
+      ? 'paid'
+      : items.length > 0 && totalAmount > 0 && depositDeducted >= totalAmount ? 'paid' : 'pending';
 
     const insertBillStmt = c.env.DB.prepare(
       `INSERT INTO bills (id, bill_number, reservation_id, guest_name, room_number, subtotal, discount_amount, tax_rate, tax_amount, service_charge, total_amount, deposit_deducted, amount_paid, amount_due, status, created_at, updated_at)
@@ -410,7 +409,7 @@ bills.post('/:id/items', async (c) => {
       return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Bill not found' } }, 404);
     }
 
-    if (existing.status === 'paid' || existing.status === 'void' || existing.status === 'refunded') {
+    if (existing.status === 'void' || existing.status === 'refunded') {
       return c.json(
         {
           success: false,
@@ -441,6 +440,11 @@ bills.post('/:id/items', async (c) => {
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
       .bind(itemId, existing.id, itemType, data.description, qty, unit, totalPrice, itemDate, now)
+      .run();
+
+    // Adding extra charge switches folio status to unpaid
+    await c.env.DB.prepare("UPDATE bills SET status = 'unpaid', updated_at = ? WHERE id = ?")
+      .bind(now, existing.id)
       .run();
 
     const updatedBill = await recalculateBill(c.env.DB, existing.id);

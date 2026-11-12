@@ -142,6 +142,7 @@ export function useReservations() {
     checkInDate: string;
     checkOutDate: string;
     depositAmount: string;
+    nightlyRate?: number | string;
     paymentMethod?: string;
     bookingSource?: 'walk_in' | 'phone' | 'facebook';
     paymentStatus?: 'unpaid' | 'paid';
@@ -152,11 +153,40 @@ export function useReservations() {
       bookingSource: data.bookingSource || 'walk_in',
       paymentStatus: data.paymentStatus || 'paid',
     };
-    const res = await apiFetch('/api/reservations/walk-in', {
+    const res = await apiFetch<any>('/api/reservations/walk-in', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
     if (!res.error) {
+      const createdRes = res.data;
+      const reservationId = createdRes?.id || (createdRes as any)?.reservationId;
+      if (reservationId) {
+        const checkInDate = new Date(data.checkInDate);
+        const checkOutDate = new Date(data.checkOutDate);
+        const nights = Math.max(1, Math.round((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 3600 * 24)));
+        const nightlyRate = Number(data.nightlyRate) || (createdRes?.nightlyRate ? Number(createdRes.nightlyRate) : 1000);
+        const deposit = Number(data.depositAmount || 0);
+
+        await apiFetch('/api/bills', {
+          method: 'POST',
+          body: JSON.stringify({
+            reservationId,
+            guestName: data.guestName,
+            roomNumber: createdRes?.roomNumber || data.roomId,
+            depositDeducted: deposit,
+            status: 'paid',
+            items: [
+              {
+                category: 'room',
+                itemType: 'room_charge',
+                description: `Room Charge (${nights} nights)`,
+                quantity: nights,
+                unitPrice: nightlyRate,
+              },
+            ],
+          }),
+        }).catch((e) => console.warn('Failed to auto-create initial bill:', e));
+      }
       await fetchReservations();
       return { success: true };
     }

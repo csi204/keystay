@@ -155,7 +155,7 @@ export interface OutsourceContact {
 // ==========================================
 // 5. Billing & Cashier Types
 // ==========================================
-export const BillStatusSchema = z.enum(['pending', 'partially_paid', 'paid', 'refunded', 'void']);
+export const BillStatusSchema = z.enum(['pending', 'partially_paid', 'paid', 'unpaid', 'refunded', 'void']);
 export type BillStatus = z.infer<typeof BillStatusSchema>;
 
 export interface Bill {

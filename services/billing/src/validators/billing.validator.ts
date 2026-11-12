@@ -8,6 +8,8 @@ export const createBillSchema = z.object({
   depositDeducted: z.coerce.number().min(0).default(0),
   serviceChargeRate: z.coerce.number().min(0).max(1).optional(),
   taxRate: z.coerce.number().min(0).max(1).optional(),
+  amountPaid: z.coerce.number().min(0).optional(),
+  status: z.enum(['pending', 'partially_paid', 'paid', 'unpaid', 'refunded', 'void']).optional(),
   items: z
     .array(
       z
@@ -30,7 +32,7 @@ export const createBillSchema = z.object({
 export const updateBillSchema = z.object({
   guestName: z.string().optional(),
   roomNumber: z.string().optional(),
-  status: z.enum(['pending', 'partially_paid', 'paid', 'refunded', 'void']).optional(),
+  status: z.enum(['pending', 'partially_paid', 'paid', 'unpaid', 'refunded', 'void']).optional(),
   depositDeducted: z.coerce.number().min(0).optional(),
 });
 

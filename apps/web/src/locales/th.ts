@@ -85,6 +85,7 @@ export const th: Record<string, string> = {
   'ops.arrivalsDescription': 'รายการแขกที่จองไว้และมีกำหนดเช็คอินวันนี้',
   'ops.departuresDescription': 'รายการแขกที่เข้าพักอยู่และมีกำหนดเช็คเอาต์วันนี้',
   'ops.totalItems': 'ทั้งหมด {count} รายการ',
+  'ops.netTotal': 'ยอดสุทธิ',
 
   // Check-in Modal
   'checkin.title': 'บันทึกเช็คอิน (Check-in)',
