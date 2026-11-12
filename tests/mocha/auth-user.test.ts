@@ -713,6 +713,26 @@ describe('Auth & User Service (Khet - @hazeco)', () => {
 
       expect(res.status).to.equal(404);
     });
+
+    it('BAD: returns 403 when user attempts to modify their own role', async () => {
+      const res = await app.request(
+        `/users/${createdUserId}/role`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-id': createdUserId,
+          },
+          body: JSON.stringify({ role: 'owner' }),
+        },
+        env
+      );
+
+      expect(res.status).to.equal(403);
+      const json = await res.json();
+      expect(json.success).to.be.false;
+      expect(json.error).to.equal('Cannot modify your own role');
+    });
   });
 
   describe('API #11: POST /change-password', () => {

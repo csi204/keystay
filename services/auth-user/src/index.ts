@@ -313,6 +313,10 @@ app.delete('/api/auth/users/:id', handleDeleteUser);
 const handleUpdateRole = async (c: any) => {
   try {
     const id = c.req.param('id');
+    const requestingUserId = c.req.header('x-user-id');
+    if (requestingUserId && requestingUserId === id) {
+      return c.json({ success: false, error: 'Cannot modify your own role' }, 403);
+    }
     const body = await c.req.json();
     const parsed = updateRoleSchema.safeParse(body);
     if (!parsed.success) {

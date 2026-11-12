@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { apiFetch, getAuthRole } from '@/lib/api';
+import { apiFetch, getAuthRole, getAuthUser } from '@/lib/api';
 import { useTranslation } from '@/lib/i18n';
 import {
   Users,
@@ -34,6 +34,7 @@ export interface UserItem {
 
 export const UsersManagementPage: React.FC = () => {
   const { t } = useTranslation();
+  const currentUser = getAuthUser();
   const [loading, setLoading] = useState<boolean>(true);
   const [isOffline, setIsOffline] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -191,8 +192,13 @@ export const UsersManagementPage: React.FC = () => {
       }),
     });
 
-    // Call update user role if changed
-    if (editingUser.role !== editForm.role) {
+    const isSelfOrOwner =
+      editingUser.id === currentUser?.id ||
+      (Boolean(currentUser?.email) && editingUser.email.toLowerCase() === currentUser?.email.toLowerCase()) ||
+      editingUser.role === 'owner';
+
+    // Call update user role if changed and not self/owner
+    if (editingUser.role !== editForm.role && !isSelfOrOwner) {
       await apiFetch(`/api/auth/users/${editingUser.id}/role`, {
         method: 'PATCH',
         body: JSON.stringify({ role: editForm.role }),
@@ -310,8 +316,7 @@ export const UsersManagementPage: React.FC = () => {
                 onChange={(e) => setRoleFilter(e.target.value)}
               >
                 <option value="all">ทั้งหมด (All Roles)</option>
-                <option value="admin">Admin</option>
-                <option value="manager">Manager</option>
+                <option value="owner">Owner</option>
                 <option value="front_desk">Front Desk</option>
                 <option value="housekeeping">Housekeeping</option>
               </Select>
@@ -513,10 +518,9 @@ export const UsersManagementPage: React.FC = () => {
                   value={createForm.role}
                   onChange={(e) => setCreateForm({ ...createForm, role: e.target.value as any })}
                 >
+                  <option value="owner">เจ้าของกิจการ (Owner)</option>
                   <option value="front_desk">พนักงานต้อนรับ (Front Desk)</option>
                   <option value="housekeeping">แผนกแม่บ้าน (Housekeeping)</option>
-                  <option value="manager">ผู้จัดการ (Manager)</option>
-                  <option value="admin">ผู้ดูแลระบบ (Admin)</option>
                 </Select>
               </div>
 
@@ -601,17 +605,35 @@ export const UsersManagementPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">
-                  บทบาท (Role) *
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-semibold text-slate-700">
+                    บทบาท (Role) *
+                  </label>
+                  {Boolean(
+                    editingUser?.id === currentUser?.id ||
+                    (Boolean(currentUser?.email) && editingUser?.email?.toLowerCase() === currentUser?.email?.toLowerCase()) ||
+                    editingUser?.role === 'owner'
+                  ) && (
+                    <span className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded font-medium">
+                      {editingUser?.id === currentUser?.id ||
+                      (Boolean(currentUser?.email) && editingUser?.email?.toLowerCase() === currentUser?.email?.toLowerCase())
+                        ? 'ไม่สามารถแก้ไขบทบาทของตนเองได้'
+                        : 'ไม่สามารถแก้ไขบทบาทของ Owner ได้'}
+                    </span>
+                  )}
+                </div>
                 <Select
+                  disabled={Boolean(
+                    editingUser?.id === currentUser?.id ||
+                    (Boolean(currentUser?.email) && editingUser?.email?.toLowerCase() === currentUser?.email?.toLowerCase()) ||
+                    editingUser?.role === 'owner'
+                  )}
                   value={editForm.role}
                   onChange={(e) => setEditForm({ ...editForm, role: e.target.value as any })}
                 >
+                  <option value="owner">เจ้าของกิจการ (Owner)</option>
                   <option value="front_desk">พนักงานต้อนรับ (Front Desk)</option>
                   <option value="housekeeping">แผนกแม่บ้าน (Housekeeping)</option>
-                  <option value="manager">ผู้จัดการ (Manager)</option>
-                  <option value="admin">ผู้ดูแลระบบ (Admin)</option>
                 </Select>
               </div>
 
