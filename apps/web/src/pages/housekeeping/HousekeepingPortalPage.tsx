@@ -399,6 +399,7 @@ export const HousekeepingPortalPage: React.FC = () => {
   const [isBeforePhotoModalOpen, setIsBeforePhotoModalOpen] = useState<boolean>(false);
   const [isAfterPhotoModalOpen, setIsAfterPhotoModalOpen] = useState<boolean>(false);
   const [isEvidenceModalOpen, setIsEvidenceModalOpen] = useState<boolean>(false);
+  const [fullscreenPhotoUrl, setFullscreenPhotoUrl] = useState<{ url: string; title: string } | null>(null);
   const [targetPhotoTask, setTargetPhotoTask] = useState<CleaningTaskItem | null>(null);
   const [selectedEvidenceRoom, setSelectedEvidenceRoom] = useState<CompletedRoomItem | null>(null);
   const [capturedBeforePhoto, setCapturedBeforePhoto] = useState<string | null>(null);
@@ -4955,13 +4956,35 @@ export const HousekeepingPortalPage: React.FC = () => {
                     </span>
                     <span className="text-[10px] text-slate-400 font-mono">ก่อนเริ่มงาน</span>
                   </div>
-                  <div className="rounded-2xl overflow-hidden border-2 border-amber-200 bg-slate-900 aspect-4/3 flex items-center justify-center">
+                  <div
+                    onClick={() => {
+                      if (selectedEvidenceRoom.beforePhotoUrl) {
+                        setFullscreenPhotoUrl({
+                          url: selectedEvidenceRoom.beforePhotoUrl,
+                          title: `ภาพก่อนทำความสะอาด (Before) - ห้อง ${selectedEvidenceRoom.roomNumber}`,
+                        });
+                      }
+                    }}
+                    className={`rounded-2xl overflow-hidden border-2 border-amber-200 bg-slate-900 aspect-4/3 flex items-center justify-center relative group ${
+                      selectedEvidenceRoom.beforePhotoUrl ? 'cursor-pointer hover:border-amber-400' : ''
+                    }`}
+                  >
                     {selectedEvidenceRoom.beforePhotoUrl ? (
-                      <img
-                        src={selectedEvidenceRoom.beforePhotoUrl}
-                        alt="Before"
-                        className="w-full h-full object-cover"
-                      />
+                      <>
+                        <img
+                          src={selectedEvidenceRoom.beforePhotoUrl}
+                          alt="Before"
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-bold backdrop-blur-2xs">
+                          <Eye className="w-4 h-4" />
+                          <span>แตะเพื่อดูรูปขนาดเต็ม</span>
+                        </div>
+                        <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-xs text-white text-[10px] font-mono flex items-center gap-1">
+                          <Maximize2 className="w-3 h-3" />
+                          <span>ดูเต็มจอ</span>
+                        </div>
+                      </>
                     ) : (
                       <div className="text-center p-4 text-slate-400">
                         <Camera className="w-8 h-8 mx-auto mb-1 opacity-50" />
@@ -4981,13 +5004,35 @@ export const HousekeepingPortalPage: React.FC = () => {
                     </span>
                     <span className="text-[10px] text-emerald-600 font-mono font-bold">ตรวจรับผ่าน</span>
                   </div>
-                  <div className="rounded-2xl overflow-hidden border-2 border-emerald-300 bg-slate-900 aspect-4/3 flex items-center justify-center">
+                  <div
+                    onClick={() => {
+                      if (selectedEvidenceRoom.afterPhotoUrl) {
+                        setFullscreenPhotoUrl({
+                          url: selectedEvidenceRoom.afterPhotoUrl,
+                          title: `ภาพหลังทำความสะอาดเสร็จ (After) - ห้อง ${selectedEvidenceRoom.roomNumber}`,
+                        });
+                      }
+                    }}
+                    className={`rounded-2xl overflow-hidden border-2 border-emerald-300 bg-slate-900 aspect-4/3 flex items-center justify-center relative group ${
+                      selectedEvidenceRoom.afterPhotoUrl ? 'cursor-pointer hover:border-emerald-500' : ''
+                    }`}
+                  >
                     {selectedEvidenceRoom.afterPhotoUrl ? (
-                      <img
-                        src={selectedEvidenceRoom.afterPhotoUrl}
-                        alt="After"
-                        className="w-full h-full object-cover"
-                      />
+                      <>
+                        <img
+                          src={selectedEvidenceRoom.afterPhotoUrl}
+                          alt="After"
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-bold backdrop-blur-2xs">
+                          <Eye className="w-4 h-4" />
+                          <span>แตะเพื่อดูรูปขนาดเต็ม</span>
+                        </div>
+                        <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-xs text-white text-[10px] font-mono flex items-center gap-1">
+                          <Maximize2 className="w-3 h-3" />
+                          <span>ดูเต็มจอ</span>
+                        </div>
+                      </>
                     ) : (
                       <div className="text-center p-4 text-slate-400">
                         <CheckCircle className="w-8 h-8 mx-auto mb-1 text-emerald-500 opacity-50" />
@@ -5021,6 +5066,53 @@ export const HousekeepingPortalPage: React.FC = () => {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ====================================================
+          MODAL 7: Fullscreen Photo Lightbox (แสดงภาพขนาดเต็มความละเอียดสูง)
+          ==================================================== */}
+      {fullscreenPhotoUrl && (
+        <div
+          onClick={() => setFullscreenPhotoUrl(null)}
+          className="fixed inset-0 z-60 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-in fade-in duration-200"
+        >
+          {/* Top Bar */}
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-4xl flex items-center justify-between pb-3 text-white"
+          >
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+              <h3 className="text-sm sm:text-base font-bold text-white tracking-wide">
+                {fullscreenPhotoUrl.title}
+              </h3>
+            </div>
+            <button
+              type="button"
+              onClick={() => setFullscreenPhotoUrl(null)}
+              className="p-2 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white transition-all cursor-pointer flex items-center gap-1.5 text-xs font-semibold"
+            >
+              <X className="w-5 h-5" />
+              <span className="hidden sm:inline">ปิด (Esc)</span>
+            </button>
+          </div>
+
+          {/* Fullscreen Image Container */}
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative max-w-4xl w-full max-h-[82vh] rounded-2xl overflow-hidden bg-black/50 border border-white/10 shadow-2xl flex items-center justify-center"
+          >
+            <img
+              src={fullscreenPhotoUrl.url}
+              alt={fullscreenPhotoUrl.title}
+              className="max-h-[82vh] w-auto max-w-full object-contain rounded-xl select-none"
+            />
+          </div>
+
+          <p className="text-white/60 text-xs mt-3 select-none">
+            แตะบริเวณพื้นหลังสีดำหรือปุ่มปิดเพื่อกลับสู่หน้ารายการ
+          </p>
         </div>
       )}
     </div>
