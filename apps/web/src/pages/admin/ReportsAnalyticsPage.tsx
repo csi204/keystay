@@ -350,31 +350,33 @@ export const ReportsAnalyticsPage: React.FC = () => {
   };
 
   // Dynamic Pagination for ภ.พ.30 Tax Report:
-  // Page 1: Official Header (~130px) + Table Header (~30px).
-  // Last page: Grand Total row (~35px) + Single Signature Block (~110px) + Footer (~25px).
-  // With 1123px total A4 height, <= 18 rows easily fits on a single page without overflowing.
+  // Ensures all pages (especially single page or last page with signature block) never overflow 1123px A4 canvas
   const pdfPagesData = useMemo(() => {
     const pages: any[][] = [];
     if (taxRows.length === 0) {
       return [[]];
     }
-    if (taxRows.length <= 18) {
+    // Single page with header + rows + sign-off: safe max 14 rows
+    if (taxRows.length <= 14) {
       return [taxRows];
     }
 
     const remaining = [...taxRows];
-    // First page holds up to 24 rows
-    pages.push(remaining.splice(0, 24));
+    // Page 1 (has full official header, but no sign-off block because multiple pages exist): max 18 rows
+    pages.push(remaining.splice(0, 18));
 
     while (remaining.length > 0) {
-      if (remaining.length <= 18) {
+      // If remaining rows can fit on the last page with sign-off block (<= 14 rows)
+      if (remaining.length <= 14) {
         pages.push(remaining.splice(0, remaining.length));
-      } else if (remaining.length <= 28) {
-        const half = Math.ceil(remaining.length / 2);
-        pages.push(remaining.splice(0, half));
+      } else if (remaining.length <= 26) {
+        // Balance across two pages to prevent tiny orphaned row on last page
+        const firstHalf = Math.ceil(remaining.length / 2);
+        pages.push(remaining.splice(0, firstHalf));
         pages.push(remaining.splice(0, remaining.length));
       } else {
-        pages.push(remaining.splice(0, 26));
+        // Middle page (minimal header, no sign-off): max 22 rows
+        pages.push(remaining.splice(0, 22));
       }
     }
     return pages;
@@ -565,19 +567,19 @@ export const ReportsAnalyticsPage: React.FC = () => {
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-white text-[11px] text-slate-500 font-semibold border-b border-slate-100 uppercase tracking-wider">
+                <thead className="bg-white text-[11px] text-slate-500 font-medium border-b border-slate-100 tracking-wider">
                   <tr>
-                    <th className="py-3 px-5">{isEn ? 'Date' : 'วันที่'}</th>
-                    <th className="py-3 px-4 text-center">{isEn ? 'Rooms Sold' : 'ห้องที่ขายได้'}</th>
-                    <th className="py-3 px-4 text-center">{isEn ? 'Occupancy' : 'อัตราเข้าพัก'}</th>
-                    <th className="py-3 px-4 text-right">{isEn ? 'Room Revenue' : 'ค่าห้องพัก'}</th>
-                    <th className="py-3 px-4 text-right">{isEn ? 'Minibar & Services' : 'มินิบาร์และบริการ'}</th>
-                    <th className="py-3 px-4 text-right font-bold text-slate-700">{isEn ? 'Net Sales' : 'ยอดขายก่อนภาษี'}</th>
-                    <th className="py-3 px-4 text-right font-bold text-orange-600">{isEn ? 'VAT 7%' : 'ภาษีมูลค่าเพิ่ม 7%'}</th>
-                    <th className="py-3 px-5 text-right font-bold text-slate-900">{isEn ? 'Total Revenue' : 'รายได้รวมสุทธิ'}</th>
+                    <th className="py-3 px-5 font-medium">{isEn ? 'Date' : 'วันที่'}</th>
+                    <th className="py-3 px-4 text-center font-medium">{isEn ? 'Rooms Sold' : 'ห้องที่ขายได้'}</th>
+                    <th className="py-3 px-4 text-center font-medium">{isEn ? 'Occupancy' : 'อัตราเข้าพัก'}</th>
+                    <th className="py-3 px-4 text-right font-medium">{isEn ? 'Room Revenue' : 'ค่าห้องพัก'}</th>
+                    <th className="py-3 px-4 text-right font-medium">{isEn ? 'Minibar & Services' : 'มินิบาร์และบริการ'}</th>
+                    <th className="py-3 px-4 text-right font-medium">{isEn ? 'Net Sales' : 'ยอดขายก่อนภาษี'}</th>
+                    <th className="py-3 px-4 text-right font-medium">{isEn ? 'VAT 7%' : 'ภาษีมูลค่าเพิ่ม 7%'}</th>
+                    <th className="py-3 px-5 text-right font-medium text-slate-700">{isEn ? 'Total Revenue' : 'รายได้รวมสุทธิ'}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 font-mono">
+                <tbody className="divide-y divide-slate-100 font-mono text-xs">
                   {paginatedStatementRows.length === 0 ? (
                     <tr>
                       <td colSpan={8} className="py-12 text-center text-slate-400 font-sans">
@@ -587,28 +589,28 @@ export const ReportsAnalyticsPage: React.FC = () => {
                   ) : (
                     paginatedStatementRows.map((r) => (
                       <tr key={r.date} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="py-3 px-5 font-sans text-slate-900 font-medium">
+                        <td className="py-3 px-5 font-sans text-slate-800 font-normal">
                           {r.date}
                         </td>
-                        <td className="py-3 px-4 text-center text-slate-700">
+                        <td className="py-3 px-4 text-center text-slate-600 font-normal">
                           {r.occ} / {r.totalRooms} ห้อง
                         </td>
-                        <td className="py-3 px-4 text-center font-bold text-emerald-700">
+                        <td className="py-3 px-4 text-center text-slate-700 font-normal">
                           {r.rate}
                         </td>
-                        <td className="py-3 px-4 text-right text-slate-600">
+                        <td className="py-3 px-4 text-right text-slate-700 font-normal">
                           ฿{r.roomRev.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                         </td>
-                        <td className="py-3 px-4 text-right text-slate-600">
+                        <td className="py-3 px-4 text-right text-slate-700 font-normal">
                           ฿{r.minibarRev.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                         </td>
-                        <td className="py-3 px-4 text-right font-semibold text-slate-800">
+                        <td className="py-3 px-4 text-right text-slate-700 font-normal">
                           ฿{r.net.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                         </td>
-                        <td className="py-3 px-4 text-right font-semibold text-orange-600">
+                        <td className="py-3 px-4 text-right text-slate-700 font-normal">
                           ฿{r.vat.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                         </td>
-                        <td className="py-3 px-5 text-right font-bold text-slate-900">
+                        <td className="py-3 px-5 text-right text-slate-900 font-medium">
                           ฿{r.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                         </td>
                       </tr>
@@ -1026,7 +1028,7 @@ export const ReportsAnalyticsPage: React.FC = () => {
                                       </div>
                                     </div>
                                     <div className="text-right">
-                                      <div className="inline-flex items-center justify-center border border-slate-900 px-3 py-1 text-center font-bold text-[11px] text-slate-900 uppercase tracking-wider leading-normal">
+                                      <div className="inline-block border border-slate-900 px-3.5 pt-1.5 pb-2 text-center font-bold text-xs text-slate-900 uppercase tracking-wider leading-none">
                                         <span>{isEn ? 'Form ภ.พ.30' : 'แบบ ภ.พ.30'}</span>
                                       </div>
                                       <div className="text-[9px] text-slate-500 font-mono mt-1">
@@ -1121,15 +1123,15 @@ export const ReportsAnalyticsPage: React.FC = () => {
 
                               {/* Sign-Off Authorization Section on Last Page */}
                               {isLastPage && (
-                                <div className="mt-8 pt-4 border-t border-slate-300">
-                                  <p className="text-[9px] text-slate-600 italic text-center mb-6">
+                                <div className="mt-5 pt-3 border-t border-slate-300">
+                                  <p className="text-[9px] text-slate-600 italic text-center mb-3">
                                     {isEn
                                       ? 'I hereby certify that the above statement is true and correct in all respects in accordance with tax invoices issued.'
                                       : 'ขอยืนยันว่ารายการข้างต้นนี้ถูกต้องครบถ้วนตามหลักฐานใบกำกับภาษีที่ได้ออกให้แก่ผู้รับบริการในงวดภาษีนี้จริงทุกประการ'}
                                   </p>
                                   <div className="flex justify-end pr-6">
-                                    <div className="text-center space-y-1.5 w-64">
-                                      <div className="border-b border-dotted border-slate-500 w-52 mx-auto h-7" />
+                                    <div className="text-center space-y-1 w-64">
+                                      <div className="border-b border-dotted border-slate-500 w-52 mx-auto h-6" />
                                       <p className="font-semibold text-slate-900 text-xs">
                                         ( ................................................................ )
                                       </p>

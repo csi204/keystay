@@ -273,7 +273,7 @@ export const MinibarCatalogPage: React.FC = () => {
           <CardHeader className="py-3 px-4 border-b border-slate-100 flex flex-row items-center justify-between bg-white">
             <div className="flex items-center gap-2">
               <Package className="w-4 h-4 text-slate-400" />
-              <CardTitle className="text-sm font-bold text-slate-900">
+              <CardTitle className="text-sm font-semibold text-slate-800">
                 รายการสินค้า · {filtered.length} รายการ
               </CardTitle>
             </div>
@@ -288,7 +288,7 @@ export const MinibarCatalogPage: React.FC = () => {
                   <tr>
                     <th className="py-2.5 px-4 w-72">ชื่อสินค้า</th>
                     <th className="py-2.5 px-3 w-40">หมวดหมู่</th>
-                    <th className="py-2.5 px-3 text-right w-36">ราคาต่อหน่วย</th>
+                    <th className="py-2.5 px-3 text-center w-36">ราคาต่อหน่วย</th>
                     <th className="py-2.5 px-3 text-center w-28">หน่วยนับ</th>
                     <th className="py-2.5 px-3 text-center w-36">สถานะ</th>
                     <th className="py-2.5 px-4 text-center w-40">การจัดการ</th>
@@ -304,11 +304,11 @@ export const MinibarCatalogPage: React.FC = () => {
                   ) : (
                     paginatedItems.map((item) => (
                       <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="py-3 px-4 font-semibold text-slate-900 text-xs">{item.name}</td>
+                        <td className="py-3 px-4 text-xs text-slate-700 font-normal">{item.name}</td>
                         <td className="py-3 px-3 text-slate-700">
                           <span className="text-xs text-slate-700 font-normal">{item.category}</span>
                         </td>
-                        <td className="py-3 px-3 text-right font-mono font-medium text-slate-900 text-xs">
+                        <td className="py-3 px-3 text-center text-xs text-slate-700 font-normal">
                           ฿{item.pricePerUnit.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                         </td>
                         <td className="py-3 px-3 text-center text-slate-700 text-xs">{item.unit}</td>

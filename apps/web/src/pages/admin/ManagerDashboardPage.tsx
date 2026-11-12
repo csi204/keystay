@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +18,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ShieldCheck,
+  ArrowRight,
 } from 'lucide-react';
 
 interface DashboardSummaryData {
@@ -54,7 +56,7 @@ interface RoomStatusCounts {
   total: number;
 }
 
-const ROWS_PER_PAGE = 15;
+const ROWS_TO_SHOW = 10;
 
 export const ManagerDashboardPage: React.FC = () => {
   const { t, locale } = useTranslation();
@@ -103,7 +105,6 @@ export const ManagerDashboardPage: React.FC = () => {
 
   // Daily Stats for Statement Table
   const [dailyStatsList, setDailyStatsList] = useState<any[]>([]);
-  const [tablePage, setTablePage] = useState<number>(1);
 
   const loadData = async () => {
     setLoading(true);
@@ -215,11 +216,10 @@ export const ManagerDashboardPage: React.FC = () => {
     return [];
   }, [dailyStatsList]);
 
-  const totalTablePages = Math.ceil(statementRows.length / ROWS_PER_PAGE) || 1;
-  const paginatedStatementRows = useMemo(() => {
-    const start = (tablePage - 1) * ROWS_PER_PAGE;
-    return statementRows.slice(start, start + ROWS_PER_PAGE);
-  }, [statementRows, tablePage]);
+  // Show top 10 rows on Dashboard without pagination; full history is in Reports page
+  const displayStatementRows = useMemo(() => {
+    return statementRows.slice(0, ROWS_TO_SHOW);
+  }, [statementRows]);
 
   // Operational status items with standard status dots
   const STATUS_ITEMS = [
@@ -512,7 +512,7 @@ export const ManagerDashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 4. Financial & Daily Tax Statement Table (Replaces Top Performing Rooms) */}
+        {/* 4. Financial & Daily Tax Statement Table (Clean 10 Rows with "View All" Link) */}
         <Card className="border-slate-200/90 shadow-2xs bg-white overflow-hidden rounded-xl">
           <CardHeader className="py-3.5 px-5 border-b border-slate-100 flex flex-row items-center justify-between bg-white">
             <div className="flex items-center gap-2">
@@ -520,60 +520,67 @@ export const ManagerDashboardPage: React.FC = () => {
               <CardTitle className="text-sm font-bold text-slate-900">
                 {isEn ? 'Financial & Tax Daily Statement' : 'สรุปผลประกอบการและฐานภาษีรายวัน'}
               </CardTitle>
+              <span className="text-xs text-slate-400 font-normal ml-1">
+                ({isEn ? '10 Recent Days' : '10 วันล่าสุด'})
+              </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500 font-medium">
-                {isEn ? 'Form PP.30 · VAT 7% Included' : 'แบบ ภ.พ.30 · รวมภาษีมูลค่าเพิ่ม 7%'}
-              </span>
+              <Link
+                to="/admin/reports"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#F97316] hover:text-[#ea580c] transition-colors py-1 px-2.5 rounded-lg hover:bg-orange-50/70"
+              >
+                <span>{isEn ? 'View All in Reports' : 'ดูทั้งหมด'}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
             </div>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-white text-[11px] text-slate-500 font-semibold border-b border-slate-100 uppercase tracking-wider">
+                <thead className="bg-white text-[11px] text-slate-500 font-medium border-b border-slate-100 tracking-wider">
                   <tr>
-                    <th className="py-3 px-5">{isEn ? 'Date' : 'วันที่'}</th>
-                    <th className="py-3 px-4 text-center">{isEn ? 'Rooms Sold' : 'ห้องที่ขายได้'}</th>
-                    <th className="py-3 px-4 text-center">{isEn ? 'Occupancy' : 'อัตราเข้าพัก'}</th>
-                    <th className="py-3 px-4 text-right">{isEn ? 'Room Revenue' : 'ค่าห้องพัก'}</th>
-                    <th className="py-3 px-4 text-right">{isEn ? 'Minibar & Services' : 'มินิบาร์และบริการ'}</th>
-                    <th className="py-3 px-4 text-right font-bold text-slate-800">{isEn ? 'Net Sales' : 'ยอดขายก่อนภาษี'}</th>
-                    <th className="py-3 px-4 text-right font-bold text-slate-800">{isEn ? 'VAT 7%' : 'ภาษีมูลค่าเพิ่ม 7%'}</th>
-                    <th className="py-3 px-5 text-right font-bold text-slate-900">{isEn ? 'Total Revenue' : 'รายได้รวมสุทธิ'}</th>
+                    <th className="py-3 px-5 font-medium">{isEn ? 'Date' : 'วันที่'}</th>
+                    <th className="py-3 px-4 text-center font-medium">{isEn ? 'Rooms Sold' : 'ห้องที่ขายได้'}</th>
+                    <th className="py-3 px-4 text-center font-medium">{isEn ? 'Occupancy' : 'อัตราเข้าพัก'}</th>
+                    <th className="py-3 px-4 text-right font-medium">{isEn ? 'Room Revenue' : 'ค่าห้องพัก'}</th>
+                    <th className="py-3 px-4 text-right font-medium">{isEn ? 'Minibar & Services' : 'มินิบาร์และบริการ'}</th>
+                    <th className="py-3 px-4 text-right font-medium">{isEn ? 'Net Sales' : 'ยอดขายก่อนภาษี'}</th>
+                    <th className="py-3 px-4 text-right font-medium">{isEn ? 'VAT 7%' : 'ภาษีมูลค่าเพิ่ม 7%'}</th>
+                    <th className="py-3 px-5 text-right font-medium text-slate-700">{isEn ? 'Total Revenue' : 'รายได้รวมสุทธิ'}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 font-mono">
-                  {paginatedStatementRows.length === 0 ? (
+                <tbody className="divide-y divide-slate-100 font-mono text-xs">
+                  {displayStatementRows.length === 0 ? (
                     <tr>
                       <td colSpan={8} className="py-12 text-center text-slate-400 font-sans">
                         {isEn ? 'No operational data available' : 'ไม่พบข้อมูลสถิติผลการดำเนินงาน'}
                       </td>
                     </tr>
                   ) : (
-                    paginatedStatementRows.map((r) => (
+                    displayStatementRows.map((r) => (
                       <tr key={r.date} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="py-3 px-5 font-sans text-slate-900 font-medium">
+                        <td className="py-3 px-5 font-sans text-slate-800 font-normal">
                           {r.date}
                         </td>
-                        <td className="py-3 px-4 text-center text-slate-700">
+                        <td className="py-3 px-4 text-center text-slate-600 font-normal">
                           {r.occ} / {r.totalRooms} {isEn ? 'rooms' : 'ห้อง'}
                         </td>
-                        <td className="py-3 px-4 text-center font-semibold text-slate-800">
+                        <td className="py-3 px-4 text-center text-slate-700 font-normal">
                           {r.rate}
                         </td>
-                        <td className="py-3 px-4 text-right text-slate-700">
+                        <td className="py-3 px-4 text-right text-slate-700 font-normal">
                           ฿{r.roomRev.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                         </td>
-                        <td className="py-3 px-4 text-right text-slate-700">
+                        <td className="py-3 px-4 text-right text-slate-700 font-normal">
                           ฿{r.minibarRev.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                         </td>
-                        <td className="py-3 px-4 text-right font-semibold text-slate-800">
+                        <td className="py-3 px-4 text-right text-slate-700 font-normal">
                           ฿{r.net.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                         </td>
-                        <td className="py-3 px-4 text-right font-semibold text-slate-800">
+                        <td className="py-3 px-4 text-right text-slate-700 font-normal">
                           ฿{r.vat.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                         </td>
-                        <td className="py-3 px-5 text-right font-bold text-slate-900">
+                        <td className="py-3 px-5 text-right text-slate-900 font-medium">
                           ฿{r.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                         </td>
                       </tr>
@@ -582,57 +589,6 @@ export const ManagerDashboardPage: React.FC = () => {
                 </tbody>
               </table>
             </div>
-
-            {/* Pagination Controls for Daily Statement Table (15 rows per page) */}
-            {statementRows.length > ROWS_PER_PAGE && (
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3 border-t border-slate-200 bg-white">
-                <div className="text-xs text-slate-500 font-mono">
-                  {isEn ? (
-                    <>
-                      Showing <span className="font-semibold text-slate-800">{(tablePage - 1) * ROWS_PER_PAGE + 1}</span> -{' '}
-                      <span className="font-semibold text-slate-800">
-                        {Math.min(tablePage * ROWS_PER_PAGE, statementRows.length)}
-                      </span>{' '}
-                      of <span className="font-semibold text-slate-800">{statementRows.length}</span> days (15 rows per page)
-                    </>
-                  ) : (
-                    <>
-                      แสดง <span className="font-semibold text-slate-800">{(tablePage - 1) * ROWS_PER_PAGE + 1}</span> -{' '}
-                      <span className="font-semibold text-slate-800">
-                        {Math.min(tablePage * ROWS_PER_PAGE, statementRows.length)}
-                      </span>{' '}
-                      จากทั้งหมด <span className="font-semibold text-slate-800">{statementRows.length}</span> วัน (15 แถวต่อหน้า)
-                    </>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={tablePage === 1}
-                    onClick={() => setTablePage((p) => Math.max(1, p - 1))}
-                    className="h-8 px-2.5 text-xs text-slate-600 border-slate-200 hover:bg-slate-50 disabled:opacity-40"
-                  >
-                    <ChevronLeft className="w-3.5 h-3.5" />
-                    <span>{isEn ? 'Previous' : 'ก่อนหน้า'}</span>
-                  </Button>
-                  <div className="text-xs font-mono px-2 text-slate-600">
-                    {tablePage} / {totalTablePages}
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={tablePage === totalTablePages}
-                    onClick={() => setTablePage((p) => Math.min(totalTablePages, p + 1))}
-                    className="h-8 px-2.5 text-xs text-slate-600 border-slate-200 hover:bg-slate-50 disabled:opacity-40"
-                  >
-                    <span>{isEn ? 'Next' : 'ถัดไป'}</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-              </div>
-            )}
           </CardContent>
         </Card>
       </div>
