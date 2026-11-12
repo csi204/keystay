@@ -3,6 +3,7 @@ import { DetailedBill, BillItem } from '../../hooks/useBilling';
 import { useI18n } from '../../lib/i18n';
 import { localizeFolioDescription } from '../../lib/localizeMetadata';
 import { FolioCategoryBadge } from '../../lib/folioCategory';
+import { ActionConfirmModal } from '../common/ActionConfirmModal';
 
 export { localizeFolioDescription };
 import {
@@ -11,6 +12,7 @@ import {
   QrCode,
   Plus,
   Trash2,
+  Lock,
   Printer,
   CheckCircle,
   AlertCircle,
@@ -143,6 +145,8 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<FolioItemLike | null>(null);
+  const [isConfirmPaymentOpen, setIsConfirmPaymentOpen] = useState(false);
 
   if (!bill) {
     return (
@@ -158,17 +162,21 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
   const summary = calculateFolioSummary(items, depositAmount, bill.subtotal);
   const isPaid = bill.status === 'paid' || paymentSuccess;
 
-  const handleSettle = async () => {
+  const handleSettlePayment = async () => {
     setPayError(null);
     setIsProcessing(true);
     const success = await onPay(paymentMethod, summary.netDue.toFixed(2));
     setIsProcessing(false);
     if (success) {
       setPaymentSuccess(true);
+      setIsConfirmPaymentOpen(false);
     } else {
       setPayError(t('payment.error'));
+      setIsConfirmPaymentOpen(false);
     }
   };
+
+  const handleSettle = handleSettlePayment;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -247,13 +255,27 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
                     </td>
                     {!isPaid && (
                       <td className="text-sm py-3.5 px-4 text-center">
-                        <button
-                          onClick={() => onDeleteItem(it.id)}
-                          className="p-1 text-slate-400 hover:text-red-600 rounded transition-colors"
-                          title={t('common.delete')}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {it.category === 'room' || (it as any).itemType === 'room_charge' || (it as any).item_type === 'room_charge' ? (
+                          <div
+                            className="inline-flex items-center justify-center p-2 rounded text-slate-400 bg-slate-100/80 cursor-not-allowed"
+                            title={
+                              locale === 'th'
+                                ? 'รายการค่าห้องพักหลัก (ล็อค)'
+                                : 'Core stay fee (locked)'
+                            }
+                          >
+                            <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" aria-hidden="true" />
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setItemToDelete(it)}
+                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors min-h-[44px] min-w-[44px] inline-flex items-center justify-center"
+                            title={t('common.delete')}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </td>
                     )}
                   </tr>
@@ -351,9 +373,10 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
         <div className="space-y-2 pt-4 border-t border-slate-200">
           {!isPaid ? (
             <button
-              onClick={handleSettle}
+              type="button"
+              onClick={() => setIsConfirmPaymentOpen(true)}
               disabled={isProcessing}
-              className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-md shadow-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-3 px-4 min-h-[44px] bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-md shadow-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <CheckCircle className="w-4 h-4" />
               <span>
@@ -370,14 +393,92 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
           )}
 
           <button
+            type="button"
             onClick={onViewInvoice}
-            className="w-full py-3 px-4 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 text-sm font-semibold rounded-md transition-colors flex items-center justify-center gap-2"
+            className="w-full py-3 px-4 min-h-[44px] bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 text-sm font-semibold rounded-md transition-colors flex items-center justify-center gap-2"
           >
             <Printer className="w-3.5 h-3.5 text-slate-600" />
             <span>{t('folio.printInvoice')}</span>
           </button>
         </div>
       </div>
+
+      {/* Delete Item Confirmation Modal */}
+      {itemToDelete && (
+        <ActionConfirmModal
+          isOpen={!!itemToDelete}
+          variant="danger"
+          title={locale === 'th' ? 'ยืนยันการลบรายการ' : 'Confirm Delete Item'}
+          description={
+            locale === 'th'
+              ? `ยืนยันการลบรายการ ${localizeFolioDescription(itemToDelete.description, locale)} (${formatCurrency(calculateItemTotal(itemToDelete))}) ใช่หรือไม่?`
+              : `Are you sure you want to delete ${localizeFolioDescription(itemToDelete.description, locale)} (${formatCurrency(calculateItemTotal(itemToDelete))})?`
+          }
+          confirmText={locale === 'th' ? 'ลบรายการ' : 'Delete Item'}
+          cancelText={locale === 'th' ? 'ยกเลิก' : 'Cancel'}
+          onConfirm={() => {
+            if (itemToDelete?.id) {
+              onDeleteItem(itemToDelete.id);
+            }
+            setItemToDelete(null);
+          }}
+          onClose={() => setItemToDelete(null)}
+        />
+      )}
+
+      {/* Settle Payment Confirmation Modal */}
+      <ActionConfirmModal
+        isOpen={isConfirmPaymentOpen}
+        variant="primary"
+        title={locale === 'th' ? 'ยืนยันการรับชำระเงิน' : 'Confirm Payment Settlement'}
+        description={
+          locale === 'th'
+            ? `ยืนยันการบันทึกรับเงินจำนวน ${formatCurrency(summary.netDue)} และปิดยอดโฟลิโอห้อง ${bill.roomNumber || '—'} ใช่หรือไม่?`
+            : `Confirm recording payment of ${formatCurrency(summary.netDue)} and settling folio for Room ${bill.roomNumber || '—'}?`
+        }
+        confirmText={
+          locale === 'th'
+            ? `บันทึกรับเงิน ${formatCurrency(summary.netDue)} และปิดยอด`
+            : `Confirm ${formatCurrency(summary.netDue)} & Settle`
+        }
+        cancelText={locale === 'th' ? 'ยกเลิก' : 'Cancel'}
+        isSubmitting={isProcessing}
+        onConfirm={handleSettlePayment}
+        onClose={() => setIsConfirmPaymentOpen(false)}
+        summaryDetails={[
+          {
+            label: locale === 'th' ? 'ห้อง' : 'Room',
+            value: bill.roomNumber || '—',
+          },
+          {
+            label: locale === 'th' ? 'ชื่อผู้เข้าพัก' : 'Guest',
+            value: bill.guestName || t('common.guest'),
+          },
+          {
+            label: locale === 'th' ? 'วิธีชำระเงิน' : 'Payment Method',
+            value:
+              paymentMethod === 'cash'
+                ? locale === 'th'
+                  ? 'เงินสด'
+                  : 'Cash'
+                : paymentMethod === 'credit_card'
+                ? locale === 'th'
+                  ? 'บัตรเครดิต'
+                  : 'Credit Card'
+                : paymentMethod === 'qr_promptpay'
+                ? locale === 'th'
+                  ? 'QR พร้อมเพย์'
+                  : 'QR PromptPay'
+                : locale === 'th'
+                ? 'โอนเงินธนาคาร'
+                : 'Bank Transfer',
+          },
+          {
+            label: locale === 'th' ? 'ยอดรับชำระสุทธิ' : 'Net Amount Due',
+            value: formatCurrency(summary.netDue),
+          },
+        ]}
+      />
     </div>
   );
 };

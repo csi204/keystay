@@ -6,6 +6,7 @@ export interface ExtendedReservation extends Omit<Reservation, 'status'> {
   status: Reservation['status'] | 'extended';
   guestName?: string;
   roomNumber?: string;
+  roomTypeName?: string;
   reservationCode?: string;
   nightlyRate?: number | string;
   guest?: {

@@ -162,5 +162,27 @@ export function localizeFolioDescription(desc: string | undefined | null, locale
     }
   }
 
+  // 4. Dynamic Room Charge pattern match: "Room Charge (X nights)" / "ค่าห้องพัก (X คืน)"
+  const roomChargeRegex = /^Room Charge\s*\(\s*(\d+)\s*nights?\s*\)$/i;
+  const rcMatch = trimmed.match(roomChargeRegex);
+  if (rcMatch) {
+    const nights = rcMatch[1];
+    return locale === 'th'
+      ? `ค่าห้องพัก (${nights} คืน)`
+      : `Room Charge (${nights} ${Number(nights) > 1 ? 'nights' : 'night'})`;
+  }
+
+  const thRoomChargeRegex = /^ค่าห้องพัก(?:\s*([^()]+))?\s*\(\s*(\d+)\s*คืน\s*\)$/;
+  const thMatch = trimmed.match(thRoomChargeRegex);
+  if (thMatch) {
+    const typePart = thMatch[1]?.trim();
+    const nights = thMatch[2];
+    if (locale === 'en') {
+      const enType = typePart ? (ROOM_TYPES_EN[typePart] || typePart) : '';
+      return `${enType ? enType : 'Room Charge'} (${nights} ${Number(nights) > 1 ? 'nights' : 'night'})`;
+    }
+    return trimmed;
+  }
+
   return trimmed;
 }

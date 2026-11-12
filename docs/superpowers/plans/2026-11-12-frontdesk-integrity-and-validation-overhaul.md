@@ -168,23 +168,23 @@
 - Modify: `apps/web/src/lib/folioCategory.ts`
 - Create: `apps/web/src/components/common/ActionConfirmModal.tsx`
 
-- [ ] **Step 5.1: Create `ActionConfirmModal.tsx`**
+- [x] **Step 5.1: Create `ActionConfirmModal.tsx`**
   - Generic accessible confirmation modal with title, description, summary details (room, guest, net amount), danger/primary style, and confirm/cancel buttons.
   - Zero raw emojis: use Lucide icons (`AlertCircle`, `CheckCircle2`, `Lock`).
-- [ ] **Step 5.2: Fix deposit binding in `CashierFolioPage.tsx`**
+- [x] **Step 5.2: Fix deposit binding in `CashierFolioPage.tsx`**
   - Pass dynamic `depositAmount`:
     ```ts
     const matchingRes = reservations.find(r => r.roomId === selectedBill.roomId || (selectedBill.roomNumber && r.roomNumber === selectedBill.roomNumber));
     depositAmount={String(matchingRes?.depositAmount ?? selectedBill.depositDeducted ?? 500)}
     ```
   - Display Net Total Due (ยอดที่ต้องชำระสุทธิ) prominently on Master bill cards.
-- [ ] **Step 5.3: Update `FolioSplitScreen.tsx` and `folioCategory.ts`**
+- [x] **Step 5.3: Update `FolioSplitScreen.tsx` and `folioCategory.ts`**
   - Add `whitespace-nowrap` to `FolioCategoryBadge` so "ค่าห้องพัก" never wraps.
   - Localize room charge description in Thai (e.g. `ค่าห้องพัก ${typeName} (${nights} คืน)`).
   - Lock Room Charge (`category === 'room'`): show Lucide `Lock` icon (`w-3.5 h-3.5 text-slate-400`), disable deletion.
   - Attach `ActionConfirmModal` when clicking delete on extra items (minibar, laundry, services).
   - Attach `ActionConfirmModal` before confirming settlement payment.
-- [ ] **Step 5.4: Run tests and commit**
+- [x] **Step 5.4: Run tests and commit**
   - Run `npm run test:web`.
   - Commit: `git commit -m "feat(cashier): lock room charges, bind dynamic deposit amount, show net total due, and add confirm dialogs"`.
 

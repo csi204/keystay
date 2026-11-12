@@ -3,11 +3,14 @@ import { useLocation } from 'react-router-dom';
 import { FrontDeskLayout } from '@/components/front-desk/FrontDeskLayout';
 import { useBilling, DetailedBill } from '@/hooks/useBilling';
 import { useReservations, ExtendedReservation } from '@/hooks/useReservations';
-import { FolioSplitScreen } from '@/components/front-desk/FolioSplitScreen';
+import { useRooms } from '@/hooks/useRooms';
+import { Room } from '@keystay/types';
+import { FolioSplitScreen, calculateFolioSummary } from '@/components/front-desk/FolioSplitScreen';
 import { AddExtraChargeModal } from '@/components/front-desk/AddExtraChargeModal';
 import { RequestAmenitiesModal } from '@/components/front-desk/RequestAmenitiesModal';
 import { ReceiptTaxInvoiceModal } from '@/components/front-desk/ReceiptTaxInvoiceModal';
 import { useI18n } from '@/lib/i18n';
+import { localizeRoomType } from '@/lib/localizeMetadata';
 import { apiFetch } from '@/lib/api';
 import {
   Search,
@@ -15,6 +18,98 @@ import {
   Receipt,
   ReceiptText,
 } from 'lucide-react';
+
+export type RoomWithRoomType = Room & {
+  roomType?: { name?: string; basePrice?: number | string };
+};
+
+export function reconcileLiveFolios(
+  rawBills: DetailedBill[],
+  reservations: ExtendedReservation[],
+  rooms: RoomWithRoomType[] = [],
+  locale: 'th' | 'en' = 'th'
+): DetailedBill[] {
+  return rawBills
+    .filter((bill) => {
+      const isDummyName =
+        typeof bill.guestName === 'string' &&
+        (bill.guestName.startsWith('Guest (Room ') || bill.guestName === 'Guest');
+      const total = Number(bill.totalAmount || bill.subtotal || 0);
+      const hasZeroItems = !bill.items || bill.items.length === 0;
+      const isStaleDummyPaid = bill.status === 'paid' && total === 0 && hasZeroItems && isDummyName;
+
+      if (isStaleDummyPaid) {
+        const matchingRes = reservations.find(
+          (r) =>
+            (r.id === bill.reservationId || r.roomNumber === bill.roomNumber) &&
+            (r.status === 'checked_in' || r.status === 'extended')
+        );
+        // If no matching active reservation exists, exclude stale dummy bill
+        if (!matchingRes) return false;
+      }
+      return true;
+    })
+    .map((bill) => {
+      const matchingRes = reservations.find(
+        (r) =>
+          (r.id === bill.reservationId || r.roomNumber === bill.roomNumber) &&
+          (r.status === 'checked_in' || r.status === 'extended')
+      );
+
+      if (!matchingRes) return bill;
+
+      const realGuestName = matchingRes.guestName || matchingRes.guest?.fullName;
+      const isFallbackName =
+        !bill.guestName ||
+        bill.guestName.startsWith('Guest (Room ') ||
+        bill.guestName === 'Guest' ||
+        bill.guestName === '—';
+
+      const effectiveGuestName =
+        realGuestName && realGuestName.trim() && realGuestName !== '—'
+          ? realGuestName.trim()
+          : isFallbackName
+          ? realGuestName || bill.guestName
+          : bill.guestName;
+
+      const total = Number(bill.totalAmount || bill.subtotal || 0);
+      const hasZeroItems = !bill.items || bill.items.length === 0;
+      const resPaymentStatus = matchingRes.paymentStatus || (matchingRes as any).payment_status;
+      const shouldBePending = resPaymentStatus !== 'paid' && total === 0 && hasZeroItems;
+
+      const room = rooms.find(
+        (rm) =>
+          rm.roomNumber === (bill.roomNumber || matchingRes.roomNumber) ||
+          rm.id === (bill.roomId || matchingRes.roomId)
+      );
+      const nights = Math.max(1, Number(matchingRes.totalNights) || 1);
+      const typeName = localizeRoomType(matchingRes.roomTypeName || room?.roomType?.name, locale);
+      const desc = locale === 'th' ? `ค่าห้องพัก ${typeName || ''} (${nights} คืน)` : `${typeName || 'Room Charge'} (${nights} nights)`;
+
+      const items = bill.items?.map((it) => {
+        if (
+          it.category === 'room' ||
+          (it as any).itemType === 'room_charge' ||
+          (it as any).item_type === 'room_charge' ||
+          it.description?.toLowerCase().includes('room charge') ||
+          it.description?.startsWith('ค่าห้องพัก')
+        ) {
+          return {
+            ...it,
+            description: desc,
+          };
+        }
+        return it;
+      });
+
+      return {
+        ...bill,
+        guestName: effectiveGuestName,
+        status: shouldBePending ? ('pending' as const) : bill.status,
+        items: items || bill.items,
+      };
+    });
+}
 
 export const CashierFolioPage: React.FC = () => {
   const { t, locale, formatRelativeTime, formatCurrency } = useI18n();
@@ -29,6 +124,15 @@ export const CashierFolioPage: React.FC = () => {
   } | null;
 
   const { reservations, loading: reservationsLoading } = useReservations();
+  const { rooms: rawRooms, roomTypes } = useRooms();
+  const rooms: RoomWithRoomType[] = useMemo(
+    () =>
+      rawRooms.map((rm) => ({
+        ...rm,
+        roomType: roomTypes.find((rt) => rt.id === rm.roomTypeId),
+      })),
+    [rawRooms, roomTypes]
+  );
 
   const {
     bills: rawBills,
@@ -50,61 +154,8 @@ export const CashierFolioPage: React.FC = () => {
 
   // Cross-reference bills with active in-house reservations & heal/exclude stale dummy bills
   const bills = useMemo(() => {
-    return rawBills
-      .filter((bill) => {
-        const isDummyName =
-          typeof bill.guestName === 'string' &&
-          (bill.guestName.startsWith('Guest (Room ') || bill.guestName === 'Guest');
-        const total = Number(bill.totalAmount || bill.subtotal || 0);
-        const hasZeroItems = !bill.items || bill.items.length === 0;
-        const isStaleDummyPaid = bill.status === 'paid' && total === 0 && hasZeroItems && isDummyName;
-
-        if (isStaleDummyPaid) {
-          const matchingRes = reservations.find(
-            (r) =>
-              (r.id === bill.reservationId || r.roomNumber === bill.roomNumber) &&
-              (r.status === 'checked_in' || r.status === 'extended')
-          );
-          // If no matching active reservation exists, exclude stale dummy bill
-          if (!matchingRes) return false;
-        }
-        return true;
-      })
-      .map((bill) => {
-        const matchingRes = reservations.find(
-          (r) =>
-            (r.id === bill.reservationId || r.roomNumber === bill.roomNumber) &&
-            (r.status === 'checked_in' || r.status === 'extended')
-        );
-
-        if (!matchingRes) return bill;
-
-        const realGuestName = matchingRes.guestName || matchingRes.guest?.fullName;
-        const isFallbackName =
-          !bill.guestName ||
-          bill.guestName.startsWith('Guest (Room ') ||
-          bill.guestName === 'Guest' ||
-          bill.guestName === '—';
-
-        const effectiveGuestName =
-          realGuestName && realGuestName.trim() && realGuestName !== '—'
-            ? realGuestName.trim()
-            : isFallbackName
-            ? realGuestName || bill.guestName
-            : bill.guestName;
-
-        const total = Number(bill.totalAmount || bill.subtotal || 0);
-        const hasZeroItems = !bill.items || bill.items.length === 0;
-        const resPaymentStatus = matchingRes.paymentStatus || (matchingRes as any).payment_status;
-        const shouldBePending = resPaymentStatus !== 'paid' && total === 0 && hasZeroItems;
-
-        return {
-          ...bill,
-          guestName: effectiveGuestName,
-          status: shouldBePending ? ('pending' as const) : bill.status,
-        };
-      });
-  }, [rawBills, reservations]);
+    return reconcileLiveFolios(rawBills, reservations, rooms, locale as any);
+  }, [rawBills, reservations, rooms, locale]);
 
   // Synchronize selected bill with active reservation details
   const selectedBill = useMemo(() => {
@@ -136,12 +187,38 @@ export const CashierFolioPage: React.FC = () => {
     const resPaymentStatus = matchingRes.paymentStatus || (matchingRes as any).payment_status;
     const shouldBePending = resPaymentStatus !== 'paid' && total === 0 && hasZeroItems;
 
+    const room = rooms.find(
+      (rm) =>
+        rm.roomNumber === (rawSelectedBill.roomNumber || matchingRes.roomNumber) ||
+        rm.id === (rawSelectedBill.roomId || matchingRes.roomId)
+    );
+    const nights = Math.max(1, Number(matchingRes.totalNights) || 1);
+    const typeName = localizeRoomType(matchingRes.roomTypeName || room?.roomType?.name, locale);
+    const desc = locale === 'th' ? `ค่าห้องพัก ${typeName || ''} (${nights} คืน)` : `${typeName || 'Room Charge'} (${nights} nights)`;
+
+    const items = rawSelectedBill.items?.map((it) => {
+      if (
+        it.category === 'room' ||
+        (it as any).itemType === 'room_charge' ||
+        (it as any).item_type === 'room_charge' ||
+        it.description?.toLowerCase().includes('room charge') ||
+        it.description?.startsWith('ค่าห้องพัก')
+      ) {
+        return {
+          ...it,
+          description: desc,
+        };
+      }
+      return it;
+    });
+
     return {
       ...rawSelectedBill,
       guestName: effectiveGuestName,
       status: shouldBePending ? ('pending' as const) : rawSelectedBill.status,
+      items: items || rawSelectedBill.items,
     };
-  }, [rawSelectedBill, reservations]);
+  }, [rawSelectedBill, reservations, rooms, locale]);
 
   const [isAddChargeOpen, setIsAddChargeOpen] = useState(false);
   const [isAmenitiesOpen, setIsAmenitiesOpen] = useState(false);
@@ -221,10 +298,17 @@ export const CashierFolioPage: React.FC = () => {
             : 0;
 
         if (nightlyRate > 0) {
+          const room = rooms.find(
+            (rm) =>
+              rm.roomNumber === (roomNum || matchingRes?.roomNumber) ||
+              rm.id === (navState?.roomId || matchingRes?.roomId)
+          );
+          const typeName = localizeRoomType(matchingRes?.roomTypeName || room?.roomType?.name, locale);
+          const desc = locale === 'th' ? `ค่าห้องพัก ${typeName || ''} (${nights} คืน)` : `${typeName || 'Room Charge'} (${nights} nights)`;
           items.push({
             itemType: 'room_charge',
             category: 'room',
-            description: `Room Charge (${nights} night${nights > 1 ? 's' : ''})`,
+            description: desc,
             quantity: nights,
             unitPrice: nightlyRate,
           });
@@ -259,7 +343,7 @@ export const CashierFolioPage: React.FC = () => {
     } else if (bills.length > 0 && !selectedBill) {
       loadBillDetails(bills[0].id);
     }
-  }, [navState, bills, loading, reservations]);
+  }, [navState, bills, loading, reservations, rooms, locale]);
 
   // Handle direct actions triggered from navigation
   useEffect(() => {
@@ -300,6 +384,14 @@ export const CashierFolioPage: React.FC = () => {
     const matchesId = b.id.toLowerCase().includes(q);
     return matchesGuest || matchesRoom || matchesBillNum || matchesId;
   });
+
+  const matchingRes = selectedBill
+    ? reservations.find(
+        (r) =>
+          (r.id === selectedBill.reservationId || (selectedBill.roomNumber && r.roomNumber === selectedBill.roomNumber)) &&
+          (r.status === 'checked_in' || r.status === 'extended')
+      )
+    : null;
 
   return (
     <FrontDeskLayout activeTab="cashier">
@@ -416,7 +508,15 @@ export const CashierFolioPage: React.FC = () => {
                   const isSelected = selectedBill?.id === b.id;
                   const isPaid = b.status === 'paid';
                   const roomNum = b.roomNumber || '—';
-                  const total = b.totalAmount || b.subtotal || 0;
+                  const billMatchingRes = reservations.find(
+                    (r) =>
+                      (r.id === b.reservationId || (b.roomNumber && r.roomNumber === b.roomNumber)) &&
+                      (r.status === 'checked_in' || r.status === 'extended')
+                  );
+                  const depositDeduction = Number(b.depositDeducted) || Number(billMatchingRes?.depositAmount) || 0;
+                  const summary = calculateFolioSummary(b.items, depositDeduction, b.subtotal || b.totalAmount || 0);
+                  const totalWithVat = summary.totalWithVat;
+                  const netAmount = Math.max(0, (totalWithVat || Number(b.totalAmount) || 0) - (Number(b.depositDeducted) || Number(billMatchingRes?.depositAmount) || 0));
 
                   return (
                     <button
@@ -471,13 +571,24 @@ export const CashierFolioPage: React.FC = () => {
                         >
                           {b.billNumber || b.id.slice(0, 12)}
                         </span>
-                        <span
-                          className={`font-mono font-bold tabular-nums text-sm ${
-                            isSelected ? 'text-emerald-300' : 'text-slate-900'
-                          }`}
-                        >
-                          {formatCurrency(total)}
-                        </span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span
+                            className={`text-[10px] px-1.5 py-0.5 rounded font-medium border ${
+                              isSelected
+                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            }`}
+                          >
+                            {locale === 'th' ? 'ยอดสุทธิ' : 'Net Due'}
+                          </span>
+                          <span
+                            className={`font-mono font-bold tabular-nums text-sm ${
+                              isSelected ? 'text-emerald-300' : 'text-slate-900'
+                            }`}
+                          >
+                            {formatCurrency(netAmount)}
+                          </span>
+                        </div>
                       </div>
                     </button>
                   );
@@ -491,7 +602,7 @@ export const CashierFolioPage: React.FC = () => {
             {selectedBill ? (
               <FolioSplitScreen
                 bill={selectedBill}
-                depositAmount="500"
+                depositAmount={String(matchingRes?.depositAmount ?? selectedBill.depositDeducted ?? 500)}
                 onAddCharge={() => setIsAddChargeOpen(true)}
                 onRequestAmenities={() => setIsAmenitiesOpen(true)}
                 onDeleteItem={(itemId) => {

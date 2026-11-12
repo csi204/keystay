@@ -186,7 +186,7 @@ export const FolioCategoryBadge: React.FC<FolioCategoryBadgeProps> = ({
   return React.createElement(
     'span',
     {
-      className: `inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-semibold border ${info.badgeClass} ${className}`.trim(),
+      className: `inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-semibold border whitespace-nowrap shrink-0 ${info.badgeClass} ${className}`.trim(),
     },
     showIcon &&
       React.createElement(IconComponent, {
