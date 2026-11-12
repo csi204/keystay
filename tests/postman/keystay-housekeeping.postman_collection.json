@@ -1,8 +1,8 @@
 {
   "info": {
     "_postman_id": "c7a9f203-4d93-5ea0-98b3-keystay-housekeeping",
-    "name": "KEYSTAY — Housekeeping Service (16 APIs)",
-    "description": "Comprehensive Postman Collection for KEYSTAY Housekeeping Service (Service #4, Issue #7)\nAPIs #55-#70 covering Tasks, Rooms to Clean, Staff Assignments, Shift Schedules, Cloudflare R2 Room Issues & QStash Fan-out Webhooks.\nHost: http://localhost:8791",
+    "name": "KEYSTAY — Housekeeping & Outsource Service (21 APIs)",
+    "description": "Comprehensive Postman Collection for KEYSTAY Housekeeping Service (Service #4, Issue #7 & Outsource Contacts)\nAPIs #55-#70 covering Tasks, Rooms to Clean, Staff Assignments, Shift Schedules, Cloudflare R2 Room Issues & QStash Fan-out Webhooks.\nAPIs #101-#105 covering Outsource Contacts (Vendor/Technician Master Data CRUD & Emergency Quick Contacts).\nHost: http://localhost:8791",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -507,6 +507,105 @@
               "raw": "{{baseUrl}}/housekeeping/webhooks/checkout",
               "host": ["{{baseUrl}}"],
               "path": ["housekeeping", "webhooks", "checkout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Outsource Contacts (APIs #101-#105)",
+      "item": [
+        {
+          "name": "#101 GET /housekeeping/outsource-contacts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/housekeeping/outsource-contacts?is_active=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["housekeeping", "outsource-contacts"],
+              "query": [
+                { "key": "is_active", "value": "1" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "#102 GET /housekeeping/outsource-contacts/:id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/housekeeping/outsource-contacts/out-001",
+              "host": ["{{baseUrl}}"],
+              "path": ["housekeeping", "outsource-contacts", "out-001"]
+            }
+          }
+        },
+        {
+          "name": "#103 POST /housekeeping/outsource-contacts",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-user-role",
+                "value": "admin"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"บจก. สยามแอร์เซอร์วิส\",\n  \"category\": \"air_conditioning\",\n  \"serviceType\": \"ซ่อม/ล้างแอร์ห้องพัก 24 ชม.\",\n  \"phonePrimary\": \"089-999-8888\",\n  \"phoneSecondary\": \"02-123-4567\",\n  \"lineId\": \"@siamair24\",\n  \"isEmergency\": 1,\n  \"availableHours\": \"24 ชั่วโมง\",\n  \"priceRateNote\": \"เริ่มต้น 500 บาท/เครื่อง\",\n  \"rating\": 4.9,\n  \"address\": \"123/45 ถ.สุขุมวิท กทม.\",\n  \"notes\": \"ติดต่อคุณสมศักดิ์ มาถึงภายใน 45 นาที\",\n  \"isActive\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/housekeeping/outsource-contacts",
+              "host": ["{{baseUrl}}"],
+              "path": ["housekeeping", "outsource-contacts"]
+            }
+          }
+        },
+        {
+          "name": "#104 PUT /housekeeping/outsource-contacts/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-user-role",
+                "value": "admin"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phonePrimary\": \"089-999-7777\",\n  \"notes\": \"อัปเดตเบอร์ตรงหัวหน้าช่างคุณสมศักดิ์\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/housekeeping/outsource-contacts/out-001",
+              "host": ["{{baseUrl}}"],
+              "path": ["housekeeping", "outsource-contacts", "out-001"]
+            }
+          }
+        },
+        {
+          "name": "#105 DELETE /housekeeping/outsource-contacts/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-user-role",
+                "value": "admin"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/housekeeping/outsource-contacts/out-005",
+              "host": ["{{baseUrl}}"],
+              "path": ["housekeeping", "outsource-contacts", "out-005"]
             }
           }
         }

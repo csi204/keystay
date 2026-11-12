@@ -88,6 +88,55 @@ export const outboxEvents = sqliteTable('outbox_events', {
   createdAt: text('created_at').notNull(),
 });
 
+// 7. Minibar Items Table (รายการสินค้าในมินิบาร์)
+export const minibarItems = sqliteTable('minibar_items', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  category: text('category').notNull(), // 'เครื่องดื่ม' | 'แอลกอฮอล์' | 'ขนม' | 'อื่นๆ'
+  pricePerUnit: real('price_per_unit').notNull(),
+  unit: text('unit').notNull(),
+  isActive: integer('is_active').notNull().default(1),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
+
+// 8. Seasonal Pricing Rules Table (กฎราคาตามฤดูกาลและเทศกาล)
+export const seasonalPricingRules = sqliteTable('seasonal_pricing_rules', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  tier: text('tier').notNull(), // 'High Season' | 'Regular' | 'Low Season' | 'Special Holiday'
+  roomTypeId: text('room_type_id').references(() => roomTypes.id, { onDelete: 'cascade' }),
+  startDate: text('start_date').notNull(),
+  endDate: text('end_date').notNull(),
+  daysOfWeek: text('days_of_week'), // JSON array '[5,6,0]' หรือ null
+  adjustmentType: text('adjustment_type', {
+    enum: ['percent', 'fixed_amount'],
+  }).notNull(),
+  adjustmentValue: real('adjustment_value').notNull().default(5.0),
+  priority: integer('priority').notNull().default(10),
+  isActive: integer('is_active').notNull().default(1),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
+
+// 9. Amenities Catalog Table (แคตตาล็อกของใช้และบริการเสริม)
+export const amenitiesCatalog = sqliteTable('amenities_catalog', {
+  id: text('id').primaryKey(),
+  nameTh: text('name_th').notNull(),
+  nameEn: text('name_en').notNull(),
+  category: text('category', {
+    enum: ['bedding', 'bath', 'appliance', 'food_drink', 'other'],
+  }).notNull(),
+  isChargeable: integer('is_chargeable').notNull().default(0), // 0 = ฟรี, 1 = มีค่าใช้จ่าย
+  unitPrice: real('unit_price').notNull().default(0.0),
+  unitNameTh: text('unit_name_th').notNull().default('ชิ้น'),
+  unitNameEn: text('unit_name_en').notNull().default('piece'),
+  stockQuantity: integer('stock_quantity').notNull().default(-1), // -1 = ไม่จำกัด
+  isActive: integer('is_active').notNull().default(1),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
+
 export type RoomType = typeof roomTypes.$inferSelect;
 export type NewRoomType = typeof roomTypes.$inferInsert;
 
@@ -105,3 +154,12 @@ export type NewRoomStatusHistory = typeof roomStatusHistory.$inferInsert;
 
 export type OutboxEvent = typeof outboxEvents.$inferSelect;
 export type NewOutboxEvent = typeof outboxEvents.$inferInsert;
+
+export type MinibarItem = typeof minibarItems.$inferSelect;
+export type NewMinibarItem = typeof minibarItems.$inferInsert;
+
+export type SeasonalPricingRule = typeof seasonalPricingRules.$inferSelect;
+export type NewSeasonalPricingRule = typeof seasonalPricingRules.$inferInsert;
+
+export type AmenityCatalogItem = typeof amenitiesCatalog.$inferSelect;
+export type NewAmenityCatalogItem = typeof amenitiesCatalog.$inferInsert;

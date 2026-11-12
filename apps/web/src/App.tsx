@@ -24,7 +24,9 @@ const ManagerDashboardPage = React.lazy(() => import('./pages/admin/ManagerDashb
 const RoomsPricingPage = React.lazy(() => import('./pages/admin/RoomsPricingPage'));
 const UsersManagementPage = React.lazy(() => import('./pages/admin/UsersManagementPage'));
 const ReportsAnalyticsPage = React.lazy(() => import('./pages/admin/ReportsAnalyticsPage'));
+const HousekeepingPortalPage = React.lazy(() => import('./pages/housekeeping/HousekeepingPortalPage'));
 const MinibarCatalogPage = React.lazy(() => import('./pages/admin/MinibarCatalogPage'));
+const HousekeepingTasksPage = React.lazy(() => import('./pages/admin/HousekeepingTasksPage'));
 const RoomMatrixPage = React.lazy(() => import('./pages/front-desk/RoomMatrixPage'));
 const ReservationsPage = React.lazy(() => import('./pages/front-desk/ReservationsPage'));
 const DailyOperationsPage = React.lazy(() => import('./pages/front-desk/DailyOperationsPage'));
@@ -34,7 +36,7 @@ const CashierFolioPage = React.lazy(() => import('./pages/front-desk/CashierFoli
 // ENTERPRISE ROUTE GUARDS (ความปลอดภัยระดับสูง แยกตาม Tab Session)
 // ============================================================================
 
-// Guard 1: ห้ามคนนอกแอบพิมพ์ URL เข้าหน้าภายในโดยตรง (ถ้าไม่มี token จะส่งกลับหน้า /login)
+// Guard 1: ตรวจสอบการยืนยันตัวตน (ถ้าไม่มี token จะส่งไปหน้า /login ตั้งแต่เริ่มโหลดเพจทันที)
 const RequireAuth: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const token = getAuthToken();
   if (!token) {
@@ -62,6 +64,9 @@ const AuthenticatedHome: React.FC = () => {
   // If user is Owner, seamlessly forward to owner portal dashboard
   if (role === 'owner') {
     return <Navigate to="/admin/dashboard" replace />;
+  }
+  if (role === 'housekeeping') {
+    return <Navigate to="/housekeeping" replace />;
   }
   if (role === 'front_desk') {
     return <Navigate to="/front-desk/room-matrix" replace />;
@@ -186,7 +191,7 @@ export const App: React.FC = () => {
             }
           >
             <Routes>
-          {/* หน้าหลัก: หากยังไม่ล็อกอิน ให้ไปที่หน้า /login อัตโนมัติ */}
+          {/* หน้าแรก: ถ้ามี token ให้ส่งต่อไปยังหน้าตามบทบาท ถ้าไม่มี token ส่งไป /login ตั้งแต่เริ่มโหลดเพจทันที */}
           <Route
             path="/"
             element={
@@ -228,6 +233,14 @@ export const App: React.FC = () => {
           />
           <Route
             path="/front-desk/billing"
+            element={
+              <RequireAuth>
+                <CashierFolioPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/front-desk/cashier"
             element={
               <RequireAuth>
                 <CashierFolioPage />
@@ -276,6 +289,24 @@ export const App: React.FC = () => {
             element={
               <RequireAuth>
                 <MinibarCatalogPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/admin/tasks"
+            element={
+              <RequireAuth>
+                <HousekeepingTasksPage />
+              </RequireAuth>
+            }
+          />
+
+          {/* Housekeeping Portal */}
+          <Route
+            path="/housekeeping"
+            element={
+              <RequireAuth>
+                <HousekeepingPortalPage />
               </RequireAuth>
             }
           />
