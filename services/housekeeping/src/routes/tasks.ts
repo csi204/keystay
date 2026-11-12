@@ -430,6 +430,8 @@ tasksRoute.put('/:id/complete', async (c) => {
     staffId: staff ? staff.id : 'unassigned',
     staffName: staff ? `${staff.firstName} ${staff.lastName}` : 'Unassigned',
     completedAt: now,
+    beforePhotoUrl: task.beforePhotoUrl ?? null,
+    afterPhotoUrl: parsed.data.afterPhotoUrl ?? task.afterPhotoUrl ?? null,
     inspectionStatus: parsed.data.inspectionStatus ?? 'passed',
     nextRoomStatus: 'available',
     notes: parsed.data.notes ?? task.notes,
@@ -442,6 +444,7 @@ tasksRoute.put('/:id/complete', async (c) => {
       .set({
         status: 'completed',
         completedAt: now,
+        afterPhotoUrl: parsed.data.afterPhotoUrl ?? task.afterPhotoUrl ?? null,
         notes: parsed.data.notes ? `${task.notes ? task.notes + ' | ' : ''}${parsed.data.notes}` : task.notes,
         updatedAt: now,
       })
@@ -465,6 +468,8 @@ tasksRoute.put('/:id/complete', async (c) => {
       roomNumber: task.roomNumber,
       status: 'completed',
       completedAt: now,
+      beforePhotoUrl: task.beforePhotoUrl ?? null,
+      afterPhotoUrl: parsed.data.afterPhotoUrl ?? task.afterPhotoUrl ?? null,
       inspectionStatus: parsed.data.inspectionStatus ?? 'passed',
       eventPublished: {
         eventType: 'HousekeepingTaskCompleted',

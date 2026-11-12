@@ -42,6 +42,8 @@ export const housekeepingTasks = sqliteTable('housekeeping_tasks', {
   scheduledDate: text('scheduled_date').notNull(),
   startedAt: text('started_at'),
   completedAt: text('completed_at'),
+  beforePhotoUrl: text('before_photo_url'),
+  afterPhotoUrl: text('after_photo_url'),
   eventSource: text('event_source').notNull().default('manual'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),

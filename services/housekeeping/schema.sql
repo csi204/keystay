@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS housekeeping_tasks (
     scheduled_date TEXT NOT NULL,
     started_at TEXT,
     completed_at TEXT,
+    before_photo_url TEXT,
+    after_photo_url TEXT,
     event_source TEXT NOT NULL DEFAULT 'manual',
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL

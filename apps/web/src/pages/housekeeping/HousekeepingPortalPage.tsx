@@ -175,6 +175,8 @@ interface CleaningTaskItem {
   guestName?: string;
   notes?: string;
   checklist: Record<string, boolean>;
+  beforePhotoUrl?: string | null;
+  afterPhotoUrl?: string | null;
 }
 
 interface RoomStatusItem {
@@ -188,9 +190,12 @@ interface RoomStatusItem {
 }
 
 interface CompletedRoomItem {
+  id?: string;
   roomNumber: string;
   finishedAt: string;
   inspector: string;
+  beforePhotoUrl?: string | null;
+  afterPhotoUrl?: string | null;
 }
 
 // ========================================================
@@ -390,6 +395,15 @@ export const HousekeepingPortalPage: React.FC = () => {
   const [isMaintenanceModalOpen, setIsMaintenanceModalOpen] = useState<boolean>(false);
   const [handoverNote, setHandoverNote] = useState<string>('');
 
+  // Before & After Photo Evidence Modals
+  const [isBeforePhotoModalOpen, setIsBeforePhotoModalOpen] = useState<boolean>(false);
+  const [isAfterPhotoModalOpen, setIsAfterPhotoModalOpen] = useState<boolean>(false);
+  const [isEvidenceModalOpen, setIsEvidenceModalOpen] = useState<boolean>(false);
+  const [targetPhotoTask, setTargetPhotoTask] = useState<CleaningTaskItem | null>(null);
+  const [selectedEvidenceRoom, setSelectedEvidenceRoom] = useState<CompletedRoomItem | null>(null);
+  const [capturedBeforePhoto, setCapturedBeforePhoto] = useState<string | null>(null);
+  const [capturedAfterPhoto, setCapturedAfterPhoto] = useState<string | null>(null);
+
   // Quick Minibar Check State (30-sec checkout express for Front Desk Billing)
   const [isQuickMinibarModalOpen, setIsQuickMinibarModalOpen] = useState<boolean>(false);
   const [quickMinibarRoom, setQuickMinibarRoom] = useState<string>('203');
@@ -464,9 +478,12 @@ export const HousekeepingPortalPage: React.FC = () => {
                 ? new Date(t.completedAt).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.'
                 : 'เสร็จสมบูรณ์';
               return {
+                id: t.id,
                 roomNumber: num,
                 finishedAt: timeStr,
                 inspector: t.assignedStaff?.name || staffName,
+                beforePhotoUrl: t.beforePhotoUrl || null,
+                afterPhotoUrl: t.afterPhotoUrl || null,
               };
             });
           setCompletedRooms(completedFromDb);
@@ -500,6 +517,8 @@ export const HousekeepingPortalPage: React.FC = () => {
                 estMinutes: t.taskType === 'checkout_clean' ? 35 : t.taskType === 'deep_clean' ? 120 : 20,
                 notes: t.notes || '',
                 checklist: savedChecklist,
+                beforePhotoUrl: t.beforePhotoUrl || null,
+                afterPhotoUrl: t.afterPhotoUrl || null,
               };
             });
           setTasks(activeAndPending);
@@ -637,10 +656,27 @@ export const HousekeepingPortalPage: React.FC = () => {
     showToast(forceDone ? 'ตรวจรับครบทุกข้อเรียบร้อย (12/12)' : 'รีเซ็ตรายการตรวจสอบ');
   };
 
-  // Complete Active Task: บันทึกงานเสร็จสมบูรณ์ ปลดปล่อยห้องเป็น available พร้อมบันทึกเข้า DB จริง
-  const handleCompleteActiveTask = async (taskId: string) => {
+  // 2. Mandatory After Photo Flow: ตรวจสอบก่อนส่งมอบงานตรวจรับ
+  const handleInitiateCompleteTask = (taskId: string) => {
     const task = tasks.find((t) => t.id === taskId);
     if (!task) return;
+
+    setTargetPhotoTask(task);
+    setCapturedAfterPhoto(task.afterPhotoUrl || null);
+    setIsAfterPhotoModalOpen(true);
+  };
+
+  // Complete Active Task: บันทึกงานเสร็จสมบูรณ์ ปลดปล่อยห้องเป็น available พร้อมบันทึกเข้า DB จริง
+  const handleCompleteActiveTask = async (taskId: string) => {
+    handleInitiateCompleteTask(taskId);
+  };
+
+  // ดำเนินการส่งมอบงานหลังจากบันทึกภาพถ่ายสภาพห้องหลังทำความสะอาดเสร็จสมบูรณ์
+  const handleConfirmCompleteWithAfterPhoto = async () => {
+    if (!targetPhotoTask) return;
+    const taskId = targetPhotoTask.id;
+    const task = targetPhotoTask;
+    const afterPhoto = capturedAfterPhoto;
 
     // ล้างแคช checklist ของงานนี้ออกจาก localStorage ทันทีที่จบงาน
     try {
@@ -657,9 +693,12 @@ export const HousekeepingPortalPage: React.FC = () => {
     // 2. เพิ่มลงใน completedRooms
     setCompletedRooms((prev) => [
       {
+        id: task.id,
         roomNumber: task.roomNumber,
         finishedAt: `เสร็จล่าสุด ${timeStr}`,
         inspector: `${staffName} (${authUser?.id || 'hk-staff-001'})`,
+        beforePhotoUrl: task.beforePhotoUrl || null,
+        afterPhotoUrl: afterPhoto || null,
       },
       ...prev,
     ]);
@@ -678,11 +717,12 @@ export const HousekeepingPortalPage: React.FC = () => {
       )
     );
 
+    setIsAfterPhotoModalOpen(false);
     setIsTimerRunning(false);
     setIsFocusModeOpen(false);
-    showToast(`บันทึกทำความสะอาดห้อง ${task.roomNumber} เสร็จสิ้น! ปล่อยห้องพร้อมขายเรียบร้อย`);
+    showToast(`✨ บันทึกภาพหลังทำห้อง ${task.roomNumber} เรียบร้อย! ปล่อยห้องพร้อมขายทันที`);
 
-    // เชื่อมต่อ Backend API สด (Service #4: complete task & Service #2: room status available)
+    // เชื่อมต่อ Backend API สด (Service #4: complete task with afterPhotoUrl & Service #2: room status available)
     try {
       await fetch(apiUrl(`/api/housekeeping/tasks/${taskId}/complete`), {
         method: 'PUT',
@@ -692,7 +732,8 @@ export const HousekeepingPortalPage: React.FC = () => {
         },
         body: JSON.stringify({
           inspectionStatus: 'passed',
-          notes: 'ทำความสะอาดครบ 12 ข้อตามมาตรฐาน และเติมมินิบาร์ครบเซ็ตเรียบร้อยแล้วพร้อมปล่อยขาย',
+          afterPhotoUrl: afterPhoto,
+          notes: 'ทำความสะอาดครบ 12 ข้อตามมาตรฐาน บันทึกภาพถ่ายยืนยันความสะอาดเรียบร้อยแล้วพร้อมปล่อยขาย',
         }),
       });
 
@@ -705,7 +746,7 @@ export const HousekeepingPortalPage: React.FC = () => {
         },
         body: JSON.stringify({
           status: 'available',
-          changeReason: 'Housekeeping cleaning inspection completed',
+          changeReason: 'Housekeeping cleaning inspection completed with photo evidence',
         }),
       });
 
@@ -716,8 +757,8 @@ export const HousekeepingPortalPage: React.FC = () => {
     }
   };
 
-  // Start Queue Task: สลับงานห้องที่เลือกเป็น in_progress และบันทึกเข้า DB จริง
-  const handleStartTask = async (taskId: string) => {
+  // 1. Mandatory Before Photo Flow: ตรวจสอบก่อนเริ่มงาน
+  const handleInitiateStartTask = (taskId: string) => {
     const currentActive = tasks.find((t) => t.status === 'in_progress');
     if (currentActive && currentActive.id !== taskId) {
       showToast(`กรุณาตรวจรับงานห้อง ${currentActive.roomNumber} ให้เสร็จสิ้นก่อนเริ่มทำความสะอาดห้องใหม่`);
@@ -727,6 +768,18 @@ export const HousekeepingPortalPage: React.FC = () => {
     const targetTask = tasks.find((t) => t.id === taskId);
     if (!targetTask) return;
 
+    setTargetPhotoTask(targetTask);
+    setCapturedBeforePhoto(targetTask.beforePhotoUrl || null);
+    setIsBeforePhotoModalOpen(true);
+  };
+
+  // ดำเนินการเริ่มงานหลังจากบันทึกภาพถ่ายสภาพห้องก่อนทำความสะอาดเรียบร้อยแล้ว
+  const handleConfirmStartWithBeforePhoto = async () => {
+    if (!targetPhotoTask) return;
+    const taskId = targetPhotoTask.id;
+    const targetTask = targetPhotoTask;
+    const beforePhoto = capturedBeforePhoto;
+
     // เคลียร์ checklist ให้เริ่มจาก 0/12 ว่างเปล่าเสมอเมื่องานเริ่มทำใหม่ ไม่ใช้ค่าเก่า
     try {
       localStorage.removeItem(`keystay_checklist_${taskId}`);
@@ -735,7 +788,7 @@ export const HousekeepingPortalPage: React.FC = () => {
     // Reset งานอื่นที่อาจค้าง in_progress อยู่ ให้กลับเป็น pending และตั้ง checklist เป็น {}
     setTasks((prev) =>
       prev.map((t) => {
-        if (t.id === taskId) return { ...t, status: 'in_progress', checklist: {} };
+        if (t.id === taskId) return { ...t, status: 'in_progress', checklist: {}, beforePhotoUrl: beforePhoto };
         if (t.status === 'in_progress') return { ...t, status: 'pending' };
         return t;
       })
@@ -750,12 +803,13 @@ export const HousekeepingPortalPage: React.FC = () => {
       )
     );
 
+    setIsBeforePhotoModalOpen(false);
     setTimerSeconds(30 * 60);
     setIsTimerRunning(true);
     setIsFocusModeOpen(true);
-    showToast(`เริ่มงานทำความสะอาดห้อง ${targetTask.roomNumber} แล้ว (เข้าสู่โหมดโฟกัส)`);
+    showToast(`📸 บันทึกภาพก่อนทำห้อง ${targetTask.roomNumber} เรียบร้อย เข้าสู่โหมดเช็คลิสต์`);
 
-    // เชื่อมต่อ Backend API สด (Service #4: update task & Service #2: room status cleaning)
+    // เชื่อมต่อ Backend API สด (Service #4: update task with beforePhotoUrl & Service #2: room status cleaning)
     const token = getAuthToken();
     try {
       await fetch(apiUrl(`/api/housekeeping/tasks/${taskId}`), {
@@ -767,6 +821,7 @@ export const HousekeepingPortalPage: React.FC = () => {
         body: JSON.stringify({
           status: 'in_progress',
           startedAt: new Date().toISOString(),
+          beforePhotoUrl: beforePhoto,
         }),
       });
 
@@ -779,12 +834,17 @@ export const HousekeepingPortalPage: React.FC = () => {
         },
         body: JSON.stringify({
           status: 'cleaning',
-          changeReason: 'Housekeeping cleaning in progress',
+          changeReason: 'Housekeeping cleaning in progress with before photo evidence',
         }),
       });
     } catch (err) {
       console.warn('API sync warning:', err);
     }
+  };
+
+  // Start Queue Task: สลับงานห้องที่เลือกเป็น in_progress และบันทึกเข้า DB จริง
+  const handleStartTask = async (taskId: string) => {
+    handleInitiateStartTask(taskId);
   };
 
 
@@ -2165,7 +2225,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                 {completedRooms.map((c) => (
                   <div
                     key={c.roomNumber}
-                    className="bg-white rounded-xl border border-slate-200 shadow-xs p-3 flex items-center justify-between opacity-90"
+                    className="bg-white rounded-xl border border-slate-200 shadow-xs p-3 flex items-center justify-between opacity-95 hover:border-slate-300 transition-all"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
@@ -2183,9 +2243,26 @@ export const HousekeepingPortalPage: React.FC = () => {
                         <p className="text-[11px] text-slate-400">ผู้ตรวจรับ: {c.inspector}</p>
                       </div>
                     </div>
-                    <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold">
-                      พร้อมขาย
-                    </span>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedEvidenceRoom(c);
+                          setIsEvidenceModalOpen(true);
+                        }}
+                        className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer border border-slate-200"
+                        title="ดูรูปภาพสภาพห้องก่อนและหลังทำความสะอาด"
+                      >
+                        <Camera className="w-3.5 h-3.5 text-blue-600" />
+                        <span className="hidden sm:inline">ดูหลักฐานภาพถ่าย</span>
+                        <span className="sm:hidden">รูปถ่าย</span>
+                      </button>
+
+                      <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold">
+                        พร้อมขาย
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -4530,6 +4607,413 @@ export const HousekeepingPortalPage: React.FC = () => {
               >
                 <Zap className="w-4 h-4 text-amber-400" />
                 <span>ส่งยอดแจ้ง Front Desk ทันที</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ====================================================
+          MODAL 4: Mandatory Before Photo (รูปถ่ายสภาพห้องก่อนทำความสะอาด)
+          ==================================================== */}
+      {isBeforePhotoModalOpen && targetPhotoTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
+            {/* Header */}
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-amber-50/60 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
+                  <Camera className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-sm sm:text-base font-bold text-slate-900">
+                    ถ่ายภาพรวมห้องก่อนทำความสะอาด (ห้อง {targetPhotoTask.roomNumber})
+                  </h2>
+                  <p className="text-[11px] text-amber-800 font-medium">
+                    * บังคับถ่ายภาพสภาพห้องก่อนเข้าทำ เพื่อเป็นหลักฐานความโปร่งใส
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsBeforePhotoModalOpen(false)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-4 space-y-4 overflow-y-auto">
+              {capturedBeforePhoto ? (
+                <div className="space-y-2">
+                  <div className="relative rounded-2xl overflow-hidden border-2 border-amber-300 bg-slate-950 aspect-video flex items-center justify-center group">
+                    <img
+                      src={capturedBeforePhoto}
+                      alt="Before cleaning"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute top-2 left-2 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-xs text-white text-[10px] font-mono font-bold flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                      <span>สภาพก่อนทำความสะอาด (Before)</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setCapturedBeforePhoto(null)}
+                    className="w-full py-2 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>ถ่ายใหม่ / เปลี่ยนรูป</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <label className="border-2 border-dashed border-amber-300 hover:border-amber-400 bg-amber-50/40 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-colors active:scale-99">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (ev) => {
+                            setCapturedBeforePhoto(ev.target?.result as string);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                    <div className="w-14 h-14 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shadow-xs">
+                      <Camera className="w-7 h-7" />
+                    </div>
+                    <div className="text-center">
+                      <span className="text-xs sm:text-sm font-bold text-slate-800 block">
+                        แตะตรงนี้เพื่อเปิดกล้องมือถือถ่ายรูป
+                      </span>
+                      <span className="text-[11px] text-slate-500 mt-0.5 block">
+                        หรือเลือกรูปถ่ายสภาพห้องก่อนทำจากอัลบั้ม
+                      </span>
+                    </div>
+                  </label>
+
+                  {/* Quick Preset Demo Photo for PC testing */}
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-center">
+                    <span className="text-[11px] text-slate-500 block mb-2">
+                      (สำหรับการทดสอบบนคอมพิวเตอร์ / ไม่มีกล้อง)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCapturedBeforePhoto(
+                          'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=800&q=80'
+                        )
+                      }
+                      className="py-1.5 px-3 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 active:scale-95 text-slate-700 text-xs font-semibold transition-all cursor-pointer inline-flex items-center gap-1.5"
+                    >
+                      <span>ใช้รูปตัวอย่างจำลองสภาพห้อง</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-1">
+                <span className="font-bold text-slate-800 block">คำแนะนำมาตรฐาน:</span>
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  • ยืนถ่ายจากมุมประตูห้องพัก ให้เห็นสภาพรวมของเตียงนอน พื้น และโต๊ะวางของ
+                </p>
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  • ภาพถ่ายจะถูกประทับเวลาและเก็บไว้ในระบบเพื่อยืนยันกับลูกค้า
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-slate-100 bg-slate-50 shrink-0 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => setIsBeforePhotoModalOpen(false)}
+                className="py-2.5 px-4 rounded-xl border border-slate-200 hover:bg-slate-100 active:scale-98 text-slate-700 text-xs font-semibold cursor-pointer"
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="button"
+                disabled={!capturedBeforePhoto}
+                onClick={handleConfirmStartWithBeforePhoto}
+                className={`flex-1 py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all ${
+                  capturedBeforePhoto
+                    ? 'bg-gradient-to-r from-[#F97316] to-[#EA580C] hover:from-[#EA580C] text-white active:scale-98 cursor-pointer'
+                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                }`}
+              >
+                <Check className="w-4 h-4" />
+                <span>ยืนยันภาพถ่าย & เข้าสู่รายการเช็คลิสต์</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ====================================================
+          MODAL 5: Mandatory After Photo (รูปถ่ายสภาพห้องหลังทำความสะอาดเสร็จ)
+          ==================================================== */}
+      {isAfterPhotoModalOpen && targetPhotoTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
+            {/* Header */}
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-emerald-50/70 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-sm sm:text-base font-bold text-slate-900">
+                    ถ่ายภาพยืนยันห้องหลังทำเสร็จ (ห้อง {targetPhotoTask.roomNumber})
+                  </h2>
+                  <p className="text-[11px] text-emerald-800 font-medium">
+                    * บันทึกสภาพห้องหลังทำความสะอาดเรียบร้อย ก่อนปลดปล่อยห้องขาย
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAfterPhotoModalOpen(false)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-4 space-y-4 overflow-y-auto">
+              {capturedAfterPhoto ? (
+                <div className="space-y-2">
+                  <div className="relative rounded-2xl overflow-hidden border-2 border-emerald-400 bg-slate-950 aspect-video flex items-center justify-center group">
+                    <img
+                      src={capturedAfterPhoto}
+                      alt="After cleaning"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute top-2 left-2 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-xs text-white text-[10px] font-mono font-bold flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      <span>สภาพหลังทำเสร็จสมบูรณ์ (After)</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setCapturedAfterPhoto(null)}
+                    className="w-full py-2 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>ถ่ายใหม่ / เปลี่ยนรูป</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <label className="border-2 border-dashed border-emerald-300 hover:border-emerald-400 bg-emerald-50/40 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-colors active:scale-99">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (ev) => {
+                            setCapturedAfterPhoto(ev.target?.result as string);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                    <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-xs">
+                      <Camera className="w-7 h-7" />
+                    </div>
+                    <div className="text-center">
+                      <span className="text-xs sm:text-sm font-bold text-slate-800 block">
+                        แตะตรงนี้เพื่อเปิดกล้องถ่ายภาพห้องที่ทำเสร็จแล้ว
+                      </span>
+                      <span className="text-[11px] text-slate-500 mt-0.5 block">
+                        ถ่ายภาพเตียงตึง ห้องน้ำแห้ง และของใช้ครบเซ็ต
+                      </span>
+                    </div>
+                  </label>
+
+                  {/* Quick Preset Demo Photo for PC testing */}
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-center">
+                    <span className="text-[11px] text-slate-500 block mb-2">
+                      (สำหรับการทดสอบบนคอมพิวเตอร์ / ไม่มีกล้อง)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCapturedAfterPhoto(
+                          'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=800&q=80'
+                        )
+                      }
+                      className="py-1.5 px-3 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 active:scale-95 text-slate-700 text-xs font-semibold transition-all cursor-pointer inline-flex items-center gap-1.5"
+                    >
+                      <span>ใช้รูปตัวอย่างห้องสะอาดพร้อมขาย</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200 text-xs text-emerald-900 space-y-1">
+                <span className="font-bold block">เกณฑ์การตรวจรับห้อง 100%:</span>
+                <p className="text-[11px] text-emerald-800 leading-relaxed">
+                  ✓ เตียงนอนดึงตึงเปรี๊ยะ ไม่มีรอยยับหรือเส้นผม
+                </p>
+                <p className="text-[11px] text-emerald-800 leading-relaxed">
+                  ✓ พื้นและห้องน้ำแห้งสนิท ไร้คราบน้ำและกลิ่นอับ
+                </p>
+                <p className="text-[11px] text-emerald-800 leading-relaxed">
+                  ✓ ของใช้และมินิบาร์จัดวางตามตำแหน่งมาตรฐานครบถ้วน
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-slate-100 bg-slate-50 shrink-0 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => setIsAfterPhotoModalOpen(false)}
+                className="py-2.5 px-4 rounded-xl border border-slate-200 hover:bg-slate-100 active:scale-98 text-slate-700 text-xs font-semibold cursor-pointer"
+              >
+                กลับไปเช็คลิสต์
+              </button>
+              <button
+                type="button"
+                disabled={!capturedAfterPhoto}
+                onClick={handleConfirmCompleteWithAfterPhoto}
+                className={`flex-1 py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all ${
+                  capturedAfterPhoto
+                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white active:scale-98 cursor-pointer'
+                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                }`}
+              >
+                <Check className="w-4 h-4" />
+                <span>ยืนยันตรวจรับ & ปลดห้องพร้อมขาย (Available)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ====================================================
+          MODAL 6: View Evidence Comparison (ดูรูปเปรียบเทียบก่อน-หลังทำ)
+          ==================================================== */}
+      {isEvidenceModalOpen && selectedEvidenceRoom && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
+            {/* Header */}
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-[#0F172A] text-white flex items-center justify-center shadow-xs">
+                  <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-sm sm:text-base font-bold text-slate-900">
+                      หลักฐานภาพถ่ายตรวจรับห้อง {selectedEvidenceRoom.roomNumber}
+                    </h2>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                      พร้อมขาย
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    เสร็จสิ้นเมื่อ {selectedEvidenceRoom.finishedAt} • ผู้ตรวจรับ: {selectedEvidenceRoom.inspector}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEvidenceModalOpen(false)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body: Comparison Grid (Before vs After) */}
+            <div className="p-4 space-y-4 overflow-y-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Before Photo */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-amber-700 flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>1. สภาพก่อนทำ (Before)</span>
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-mono">ก่อนเริ่มงาน</span>
+                  </div>
+                  <div className="rounded-2xl overflow-hidden border-2 border-amber-200 bg-slate-900 aspect-4/3 flex items-center justify-center">
+                    {selectedEvidenceRoom.beforePhotoUrl ? (
+                      <img
+                        src={selectedEvidenceRoom.beforePhotoUrl}
+                        alt="Before"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="text-center p-4 text-slate-400">
+                        <Camera className="w-8 h-8 mx-auto mb-1 opacity-50" />
+                        <span className="text-xs block">ไม่มีภาพถ่ายก่อนทำ</span>
+                        <span className="text-[10px] text-slate-500 block">(บันทึกแบบเร่งด่วน)</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* After Photo */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-emerald-700 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>2. สภาพหลังทำเสร็จ (After)</span>
+                    </span>
+                    <span className="text-[10px] text-emerald-600 font-mono font-bold">ตรวจรับผ่าน</span>
+                  </div>
+                  <div className="rounded-2xl overflow-hidden border-2 border-emerald-300 bg-slate-900 aspect-4/3 flex items-center justify-center">
+                    {selectedEvidenceRoom.afterPhotoUrl ? (
+                      <img
+                        src={selectedEvidenceRoom.afterPhotoUrl}
+                        alt="After"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="text-center p-4 text-slate-400">
+                        <CheckCircle className="w-8 h-8 mx-auto mb-1 text-emerald-500 opacity-50" />
+                        <span className="text-xs block">ตรวจรับเสร็จสมบูรณ์</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Anti-Dispute Verification Note */}
+              <div className="p-3.5 rounded-2xl bg-blue-50/70 border border-blue-200 text-xs text-blue-900 space-y-1">
+                <div className="flex items-center gap-1.5 font-bold">
+                  <ShieldCheck className="w-4 h-4 text-blue-600" />
+                  <span>บันทึกความโปร่งใส (Dispute Prevention Record):</span>
+                </div>
+                <p className="text-[11px] text-blue-800 leading-relaxed">
+                  ภาพถ่ายชุดนี้ถูกบันทึกและผูกกับประวัติห้องพักในระบบ D1 เรียบร้อยแล้ว สามารถใช้เปิดยืนยันกับลูกค้าหน้าเคาน์เตอร์ Front Desk ได้ทันทีหากมีข้อโต้แย้งเรื่องความสะอาด
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-slate-100 bg-slate-50 shrink-0 flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => setIsEvidenceModalOpen(false)}
+                className="py-2 px-5 rounded-xl bg-[#0F172A] hover:bg-slate-800 active:scale-98 text-white text-xs font-bold transition-all cursor-pointer"
+              >
+                ปิดหน้าต่าง
               </button>
             </div>
           </div>

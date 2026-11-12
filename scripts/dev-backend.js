@@ -19,16 +19,22 @@ const pnpmCmd = isWin ? 'pnpm.cmd' : 'pnpm';
 const children = [];
 
 services.forEach((srv) => {
+  const args = [
+    'dlx',
+    '--allow-build=esbuild,workerd,@cloudflare/workerd-darwin-arm64,@cloudflare/workerd-linux-64,@cloudflare/workerd-windows-64',
+    'wrangler',
+    'dev',
+    '--port',
+    srv.port.toString(),
+  ];
+
+  if (srv.name === 'api-gateway') {
+    args.push('--inspector-port', '9228');
+  }
+
   const child = spawn(
     pnpmCmd,
-    [
-      'dlx',
-      '--allow-build=esbuild,workerd,@cloudflare/workerd-darwin-arm64,@cloudflare/workerd-linux-64,@cloudflare/workerd-windows-64',
-      'wrangler',
-      'dev',
-      '--port',
-      srv.port.toString(),
-    ],
+    args,
     {
       cwd: srv.cwd,
       stdio: 'inherit',

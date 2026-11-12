@@ -59,6 +59,8 @@ export const UpdateTaskSchema = z.object({
   scheduledDate: z.string().optional(),
   startedAt: z.string().optional(),
   completedAt: z.string().optional(),
+  beforePhotoUrl: z.string().optional().nullable(),
+  afterPhotoUrl: z.string().optional().nullable(),
 });
 
 export const AssignTaskSchema = z.object({
@@ -71,6 +73,7 @@ export const CompleteTaskSchema = z.object({
   inspectionStatus: z.enum(['passed', 'pending_inspection']).default('passed'),
   notes: z.string().optional(),
   completedBy: z.string().optional(),
+  afterPhotoUrl: z.string().optional().nullable(),
 });
 
 // ==========================================
