@@ -9,6 +9,7 @@ import { useTranslation } from '@/lib/i18n';
 import {
   ClipboardCheck,
   ClipboardList,
+  CheckSquare,
   AlertTriangle,
   Plus,
   Pencil,
@@ -82,6 +83,13 @@ export interface RoomIssue {
   createdAt: string;
 }
 
+export interface ChecklistItem {
+  id: string;
+  label: string;
+  sublabel?: string;
+  zone: 'bedroom' | 'bathroom' | 'minibar' | 'final_inspection';
+}
+
 export interface TaskTemplate {
   id: string;
   name: string;
@@ -89,6 +97,7 @@ export interface TaskTemplate {
   defaultPriority: 'normal' | 'high' | 'urgent';
   estimatedMinutes: number;
   description: string;
+  checklistItems?: ChecklistItem[];
   isActive: boolean;
 }
 
@@ -243,6 +252,20 @@ const SEED_TEMPLATES: TaskTemplate[] = [
     defaultPriority: 'high',
     estimatedMinutes: 45,
     description: 'เปลี่ยนผ้าปูเตียง ทำความสะอาดห้องน้ำ เช็ดฝุ่น เปลี่ยนผ้าเช็ดตัว เติมสบู่และน้ำดื่ม',
+    checklistItems: [
+      { id: 'linen', label: 'เปลี่ยนผ้าปูที่นอน ปลอกหมอน และปลอกผ้านวมชุดใหม่', sublabel: 'ใช้ผ้าซักฆ่าเชื้อ สะอาด ไร้รอยเปื้อน และกลิ่นอับ', zone: 'bedroom' },
+      { id: 'bedTuck', label: 'ดึงผ้าปูตึง ตบหมอนฟู จัดมุมเตียง 45 องศาสวยงาม', sublabel: 'มาตรฐานความตึงระดับโรงแรม เรียบกริบไร้รอยย่น', zone: 'bedroom' },
+      { id: 'dusting', label: 'เช็ดฝุ่นโต๊ะข้างเตียง โต๊ะทำงาน หัวเตียง และโคมไฟ', sublabel: 'ใช้ผ้าไมโครไฟเบอร์ชุบน้ำยาเฉพาะ ไม่ทิ้งคราบ', zone: 'bedroom' },
+      { id: 'floorClean', label: 'ดูดฝุ่น กวาด และถูพื้นห้องนอนรวมถึงใต้เตียง', sublabel: 'ตรวจเช็คไม่มีเศษเส้นผมหรือสิ่งสกปรกตกค้าง', zone: 'bedroom' },
+      { id: 'toiletSanitize', label: 'ขัดล้างและฆ่าเชื้อโถสุขภัณฑ์ อ่างล้างหน้า และฝักบัว', sublabel: 'ใช้น้ำยาฆ่าเชื้อแบคทีเรียและเช็ดแห้งสนิท', zone: 'bathroom' },
+      { id: 'glassMirror', label: 'เช็ดกระจกเงาและกระจกกั้นโซนเปียกใสไร้คราบน้ำ', sublabel: 'ไร้คราบสบู่ ละอองน้ำ และรอยนิ้วมือ', zone: 'bathroom' },
+      { id: 'towelsReplace', label: 'จัดชุดผ้าเช็ดตัว ผ้าเช็ดหน้า และพรมเท้าเซ็ตใหม่', sublabel: 'พับวางเรียงตามตำแหน่งมาตรฐานโรงแรมครบชุด', zone: 'bathroom' },
+      { id: 'amenitiesRefill', label: 'เติมสบู่ แชมพู ครีมนวด แปรงสีฟัน และหมวกคลุมผม', sublabel: 'เช็คซีลและแพ็กเกจจิ้งสมบูรณ์ วางบนถาดอะเมนิตี้', zone: 'bathroom' },
+      { id: 'minibarRefill', label: 'ตรวจเช็คและเติมมินิบาร์ครบเซ็ตแล้ว (พร้อมปล่อยห้อง)', sublabel: 'เครื่องดื่ม ขนมขบเคี้ยวในตู้เย็น และเบียร์ครบจำนวนตามมาตรฐาน', zone: 'minibar' },
+      { id: 'waterKettle', label: 'ล้างแก้วน้ำ กาน้ำร้อน และเติมน้ำดื่ม Keystay 2 ขวด', sublabel: 'แก้วคว่ำบนถาดรองสะอาดพร้อมฝาครอบแก้ว', zone: 'minibar' },
+      { id: 'trashEmptied', label: 'เทถังขยะและใส่ถุงขยะใหม่ทุกจุด (ห้องนอน & ห้องน้ำ)', sublabel: 'เช็ดถังขยะให้สะอาดและแห้งสนิททั้งภายนอกและภายใน', zone: 'final_inspection' },
+      { id: 'acRemoteSpray', label: 'ทดสอบแอร์ ทีวี ปิดผ้าม่าน และฉีดสเปรย์ปรับอากาศ', sublabel: 'กลิ่นหอมสะอาดสดชื่น บรรยากาศพร้อมต้อนรับแขกใหม่', zone: 'final_inspection' },
+    ],
     isActive: true,
   },
   {
@@ -252,6 +275,12 @@ const SEED_TEMPLATES: TaskTemplate[] = [
     defaultPriority: 'normal',
     estimatedMinutes: 20,
     description: 'จัดเตียง ทำความสะอาดห้องน้ำ เติมของใช้ในห้อง เก็บขยะ',
+    checklistItems: [
+      { id: 'stayover_bed', label: 'จัดเตียงและดึงผ้าปูที่นอนให้ตึงเรียบร้อย', sublabel: 'จัดหมอนและผ้าห่มให้เป็นระเบียบ', zone: 'bedroom' },
+      { id: 'stayover_bath', label: 'เช็ดทำความสะอาดอ่างล้างหน้า โถสุขภัณฑ์ และเปลี่ยนผ้าเช็ดตัว', sublabel: 'เติมสบู่และแชมพูที่พร่อง', zone: 'bathroom' },
+      { id: 'stayover_trash', label: 'เก็บขยะและเปลี่ยนถุงขยะใหม่ทุกจุด', sublabel: 'ทั้งในห้องนอนและห้องน้ำ', zone: 'final_inspection' },
+      { id: 'stayover_water', label: 'เติมน้ำดื่ม Keystay ประจำวัน 2 ขวด', sublabel: 'วางคู่กับแก้วน้ำสะอาด', zone: 'minibar' },
+    ],
     isActive: true,
   },
   {
@@ -261,6 +290,13 @@ const SEED_TEMPLATES: TaskTemplate[] = [
     defaultPriority: 'normal',
     estimatedMinutes: 120,
     description: 'ทำความสะอาดทุกซอก เช็ดกระจก ซักผ้าม่าน ทำความสะอาดเครื่องปรับอากาศ ขัดระเบียง',
+    checklistItems: [
+      { id: 'deep_curtain', label: 'ซักและดูดฝุ่นผ้าม่านทั้งห้อง', sublabel: 'ตรวจเช็ครางม่านและตัวเกี่ยว', zone: 'bedroom' },
+      { id: 'deep_carpet', label: 'ซักพรมและดูดไรฝุ่นที่นอนอย่างละเอียด', sublabel: 'ใช้น้ำยาซักพรมฆ่าเชื้อโรค', zone: 'bedroom' },
+      { id: 'deep_ac', label: 'ถอดล้างแผ่นกรองเครื่องปรับอากาศและเช็ดหน้ากากแอร์', sublabel: 'เช็คระบบระบายน้ำทิ้ง', zone: 'bedroom' },
+      { id: 'deep_balcony', label: 'ขัดล้างพื้นระเบียงและเช็ดกระจกภายนอก', sublabel: 'เช็ดราวกันตกและโต๊ะระเบียง', zone: 'final_inspection' },
+      { id: 'deep_grout', label: 'ขัดคราบยาแนวและกระเบื้องห้องน้ำทั้งห้อง', sublabel: 'ขจัดคราบหินปูนและตะกรัน', zone: 'bathroom' },
+    ],
     isActive: true,
   },
   {
@@ -270,6 +306,12 @@ const SEED_TEMPLATES: TaskTemplate[] = [
     defaultPriority: 'urgent',
     estimatedMinutes: 15,
     description: 'ตรวจอุปกรณ์ไฟฟ้า เช็คห้องน้ำ ตรวจมินิบาร์ ตรวจความเรียบร้อยและฉีดสเปรย์ปรับอากาศ',
+    checklistItems: [
+      { id: 'insp_elec', label: 'ทดสอบระบบไฟฟ้า แอร์ ทีวี และคีย์การ์ด', sublabel: 'ไฟติดครบทุกดวง รีโมทใช้งานได้', zone: 'bedroom' },
+      { id: 'insp_plumb', label: 'ตรวจเช็คน้ำไหลแรง ท่อไม่ตัน ชักโครกกดทำงานปกติ', sublabel: 'ไม่มีน้ำรั่วซึม', zone: 'bathroom' },
+      { id: 'insp_minibar', label: 'ตรวจเช็คสต็อกมินิบาร์และวันหมดอายุสินค้า', sublabel: 'สินค้าเรียงสวยงามตรงป้ายราคา', zone: 'minibar' },
+      { id: 'insp_scent', label: 'ตรวจกลิ่นอับและความสะอาด ฉีดสเปรย์ปรับอากาศ', sublabel: 'อุณหภูมิห้อง 24 องศาพร้อมรับแขก', zone: 'final_inspection' },
+    ],
     isActive: true,
   },
 ];
@@ -280,6 +322,7 @@ const EMPTY_TEMPLATE_FORM: Omit<TaskTemplate, 'id'> = {
   defaultPriority: 'normal',
   estimatedMinutes: 30,
   description: '',
+  checklistItems: [],
   isActive: true,
 };
 
@@ -328,6 +371,7 @@ export const HousekeepingTasksPage: React.FC = () => {
 
   // Template Form Modal
   const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [templateModalTab, setTemplateModalTab] = useState<'general' | 'checklist'>('general');
   const [editTemplate, setEditTemplate] = useState<TaskTemplate | null>(null);
   const [templateForm, setTemplateForm] = useState<Omit<TaskTemplate, 'id'>>(EMPTY_TEMPLATE_FORM);
   const [deleteTargetTemplate, setDeleteTargetTemplate] = useState<TaskTemplate | null>(null);
@@ -474,25 +518,63 @@ export const HousekeepingTasksPage: React.FC = () => {
   };
 
   // ============================================================================
-  // Template CRUD
+  // Template CRUD & Checklist Item Builder
   // ============================================================================
   const openCreateTemplate = () => {
     setEditTemplate(null);
-    setTemplateForm(EMPTY_TEMPLATE_FORM);
+    setTemplateModalTab('general');
+    setTemplateForm({
+      ...EMPTY_TEMPLATE_FORM,
+      checklistItems: [
+        { id: `c-${Date.now()}-1`, label: '', sublabel: '', zone: 'bedroom' },
+      ],
+    });
     setShowTemplateModal(true);
   };
 
-  const openEditTemplate = (tpl: TaskTemplate) => {
+  const openEditTemplate = (tpl: TaskTemplate, initialTab: 'general' | 'checklist' = 'general') => {
     setEditTemplate(tpl);
+    setTemplateModalTab(initialTab);
     setTemplateForm({
       name: tpl.name,
       taskType: tpl.taskType,
       defaultPriority: tpl.defaultPriority,
       estimatedMinutes: tpl.estimatedMinutes,
       description: tpl.description,
+      checklistItems: tpl.checklistItems ? [...tpl.checklistItems] : [],
       isActive: tpl.isActive,
     });
     setShowTemplateModal(true);
+  };
+
+  const handleAddChecklistItem = () => {
+    const newItem: ChecklistItem = {
+      id: `c-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      label: '',
+      sublabel: '',
+      zone: 'bedroom',
+    };
+    setTemplateForm((prev) => ({
+      ...prev,
+      checklistItems: [...(prev.checklistItems || []), newItem],
+    }));
+  };
+
+  const handleUpdateChecklistItem = (index: number, field: keyof ChecklistItem, value: string) => {
+    setTemplateForm((prev) => {
+      const items = [...(prev.checklistItems || [])];
+      if (items[index]) {
+        items[index] = { ...items[index], [field]: value };
+      }
+      return { ...prev, checklistItems: items };
+    });
+  };
+
+  const handleDeleteChecklistItem = (index: number) => {
+    setTemplateForm((prev) => ({
+      ...prev,
+      checklistItems: (prev.checklistItems || []).filter((_, i) => i !== index),
+    }));
   };
 
   const handleSaveTemplate = async () => {
@@ -973,7 +1055,7 @@ export const HousekeepingTasksPage: React.FC = () => {
                       <th className="py-3 px-4 font-semibold text-slate-700">{isEn ? 'Status' : 'สถานะ'}</th>
                       <th className="py-3 px-4 font-semibold text-slate-700">{isEn ? 'Timeline' : 'เวลาเริ่ม - เสร็จสิ้น'}</th>
                       <th className="py-3 px-4 font-semibold text-slate-700 text-center">{isEn ? 'Photos (Before / After)' : 'รูปถ่าย ก่อน / หลัง'}</th>
-                      <th className="py-3 px-4 font-semibold text-slate-700 text-right">{isEn ? 'Action' : 'การตรวจรับ'}</th>
+                      <th className="py-3 px-4 font-semibold text-slate-700 text-right">{isEn ? 'Action' : 'การตรวจสอบ'}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -1099,7 +1181,7 @@ export const HousekeepingTasksPage: React.FC = () => {
                                 className="h-8 px-2.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border-slate-200 shadow-2xs"
                               >
                                 <Eye className="w-3.5 h-3.5 mr-1 text-slate-500" />
-                                <span>{isEn ? 'Inspect' : 'ตรวจรับงาน'}</span>
+                                <span>{isEn ? 'View Photos' : 'ดูภาพถ่าย'}</span>
                               </Button>
                             </td>
                           </tr>
@@ -1491,6 +1573,7 @@ export const HousekeepingTasksPage: React.FC = () => {
                       <th className="py-3 px-4 font-semibold text-slate-700">{isEn ? 'Template Name' : 'ชื่อแม่แบบงาน'}</th>
                       <th className="py-3 px-4 font-semibold text-slate-700">{isEn ? 'Task Type' : 'ประเภทงาน'}</th>
                       <th className="py-3 px-4 font-semibold text-slate-700">{isEn ? 'Est. Minutes' : 'เวลามาตรฐาน'}</th>
+                      <th className="py-3 px-4 font-semibold text-slate-700">{isEn ? 'Checklist' : 'รายการตรวจสอบ'}</th>
                       <th className="py-3 px-4 font-semibold text-slate-700">{isEn ? 'Description' : 'รายละเอียดขั้นตอน'}</th>
                       <th className="py-3 px-4 font-semibold text-slate-700">{isEn ? 'Status' : 'สถานะ'}</th>
                       <th className="py-3 px-4 font-semibold text-slate-700 text-right">{isEn ? 'Actions' : 'จัดการ'}</th>
@@ -1499,7 +1582,7 @@ export const HousekeepingTasksPage: React.FC = () => {
                   <tbody className="divide-y divide-slate-100">
                     {paginatedTemplates.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="py-12 text-center text-slate-400">
+                        <td colSpan={7} className="py-12 text-center text-slate-400">
                           <ClipboardList className="w-8 h-8 mx-auto mb-2 opacity-40" />
                           <p>{isEn ? 'No task templates found' : 'ไม่พบข้อมูลแม่แบบงาน'}</p>
                         </td>
@@ -1510,7 +1593,16 @@ export const HousekeepingTasksPage: React.FC = () => {
                           <td className="py-3 px-4 font-medium text-slate-900">{tpl.name}</td>
                           <td className="py-3 px-4 text-slate-700">{getTaskTypeLabel(tpl.taskType)}</td>
                           <td className="py-3 px-4 font-mono text-slate-900">{tpl.estimatedMinutes} {isEn ? 'mins' : 'นาที'}</td>
-                          <td className="py-3 px-4 text-slate-600 max-w-sm truncate" title={tpl.description}>
+                          <td className="py-3 px-4">
+                            <button
+                              type="button"
+                              onClick={() => openEditTemplate(tpl, 'checklist')}
+                              className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 hover:bg-orange-50 text-slate-700 hover:text-orange-600 border border-slate-200 hover:border-orange-200 transition-colors cursor-pointer"
+                            >
+                              {tpl.checklistItems?.length || 0} {isEn ? 'items' : 'ข้อ'}
+                            </button>
+                          </td>
+                          <td className="py-3 px-4 text-slate-600 max-w-xs truncate" title={tpl.description}>
                             {tpl.description}
                           </td>
                           <td className="py-3 px-4">
@@ -1596,7 +1688,7 @@ export const HousekeepingTasksPage: React.FC = () => {
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-base font-bold text-slate-900">
-                    {isEn ? `Housekeeping Inspection: Room ${selectedTaskForZoom.roomNumber}` : `ตรวจรับงานทำความสะอาด: ห้อง ${selectedTaskForZoom.roomNumber}`}
+                    {isEn ? `Cleaning Audit: Room ${selectedTaskForZoom.roomNumber}` : `ตรวจสอบภาพถ่ายงานทำความสะอาด: ห้อง ${selectedTaskForZoom.roomNumber}`}
                   </h3>
                   <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-medium">
                     {getTaskTypeLabel(selectedTaskForZoom.taskType)}
@@ -1723,13 +1815,11 @@ export const HousekeepingTasksPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <span className="text-slate-400 block">{isEn ? 'Inspection Status' : 'ผลการตรวจรับ'}</span>
+                    <span className="text-slate-400 block">{isEn ? 'Room Readiness' : 'ความพร้อมของห้อง'}</span>
                     <span className="font-semibold text-slate-800 mt-0.5 block">
-                      {selectedTaskForZoom.inspectionStatus === 'passed'
-                        ? (isEn ? 'Passed' : 'ผ่านการตรวจรับแล้ว')
-                        : selectedTaskForZoom.inspectionStatus === 'needs_reclean'
-                        ? (isEn ? 'Needs Re-clean' : 'ต้องทำความสะอาดซ้ำ')
-                        : (isEn ? 'Pending Inspection' : 'รอการตรวจรับ')}
+                      {selectedTaskForZoom.status === 'completed'
+                        ? (isEn ? 'Available (Ready for Guest)' : 'พร้อมเปิดให้บริการ (Available)')
+                        : (isEn ? 'Cleaning in Progress' : 'กำลังทำความสะอาด')}
                     </span>
                   </div>
                 </div>
@@ -1758,24 +1848,17 @@ export const HousekeepingTasksPage: React.FC = () => {
               </Button>
 
               <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleInspectTask(selectedTaskForZoom.id, 'needs_reclean')}
-                  className="text-xs h-9 px-3 border-amber-300 text-amber-800 hover:bg-amber-50"
-                >
-                  <RotateCcw className="w-3.5 h-3.5 mr-1 text-amber-600" />
-                  <span>{isEn ? 'Request Re-clean' : 'แจ้งให้ทำความสะอาดซ้ำ'}</span>
-                </Button>
-
-                <Button
-                  size="sm"
-                  onClick={() => handleInspectTask(selectedTaskForZoom.id, 'passed')}
-                  className="text-xs h-9 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-2xs"
-                >
-                  <Check className="w-3.5 h-3.5 mr-1" />
-                  <span>{isEn ? 'Approve & Pass Inspection' : 'อนุมัติผ่านการตรวจรับ'}</span>
-                </Button>
+                {selectedTaskForZoom.status === 'completed' && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleInspectTask(selectedTaskForZoom.id, 'needs_reclean')}
+                    className="text-xs h-9 px-3 border-amber-300 text-amber-800 hover:bg-amber-50"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 mr-1 text-amber-600" />
+                    <span>{isEn ? 'Request Re-clean' : 'แจ้งให้ทำความสะอาดซ้ำ'}</span>
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -1880,109 +1963,228 @@ export const HousekeepingTasksPage: React.FC = () => {
       ══════════════════════════════════════════════════════════ */}
       {showTemplateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-lg w-full flex flex-col overflow-hidden">
-            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
-              <h3 className="text-base font-bold text-slate-900">
-                {editTemplate ? (isEn ? 'Edit Task Template' : 'แก้ไขแม่แบบงาน') : (isEn ? 'New Task Template' : 'เพิ่มแม่แบบงานใหม่')}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowTemplateModal(false)}
-                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
+          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-2xl w-full flex flex-col max-h-[88vh] overflow-hidden">
+            {/* Modal Header */}
+            <div className="px-5 pt-4 pb-0 border-b border-slate-100 bg-white shrink-0">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-base font-bold text-slate-900">
+                  {editTemplate ? (isEn ? 'Edit Task Template' : 'แก้ไขแม่แบบงาน') : (isEn ? 'New Task Template' : 'เพิ่มแม่แบบงานใหม่')}
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setShowTemplateModal(false)}
+                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Modal Underline Tabs */}
+              <div className="flex items-center gap-6 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setTemplateModalTab('general')}
+                  className={`pb-2.5 font-semibold border-b-2 transition-colors cursor-pointer ${
+                    templateModalTab === 'general'
+                      ? 'border-orange-500 text-orange-600'
+                      : 'border-transparent text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  {isEn ? 'General Information' : 'ข้อมูลทั่วไป'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTemplateModalTab('checklist')}
+                  className={`pb-2.5 font-semibold border-b-2 transition-colors flex items-center gap-1.5 cursor-pointer ${
+                    templateModalTab === 'checklist'
+                      ? 'border-orange-500 text-orange-600'
+                      : 'border-transparent text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  <span>{isEn ? 'Checklist Items' : 'รายการตรวจสอบ'}</span>
+                  <span
+                    className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+                      templateModalTab === 'checklist'
+                        ? 'bg-orange-50 text-orange-600'
+                        : 'bg-slate-100 text-slate-600'
+                    }`}
+                  >
+                    {templateForm.checklistItems?.length || 0}
+                  </span>
+                </button>
+              </div>
             </div>
 
-            <div className="p-5 space-y-4 overflow-y-auto text-xs">
-              {/* Name */}
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1">
-                  {isEn ? 'Template Name' : 'ชื่อแม่แบบงาน'} <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  value={templateForm.name}
-                  onChange={(e) => setTemplateForm({ ...templateForm, name: e.target.value })}
-                  placeholder={isEn ? 'e.g. Standard Checkout Cleaning' : 'เช่น ทำความสะอาดหลังเช็คเอาท์มาตรฐาน'}
-                  className="h-9 text-xs"
-                />
-              </div>
+            {/* Modal Body */}
+            <div className="p-5 overflow-y-auto text-xs flex-1">
+              {templateModalTab === 'general' ? (
+                <div className="space-y-4">
+                  {/* Name */}
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1">
+                      {isEn ? 'Template Name' : 'ชื่อแม่แบบงาน'} <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      value={templateForm.name}
+                      onChange={(e) => setTemplateForm({ ...templateForm, name: e.target.value })}
+                      placeholder={isEn ? 'e.g. Standard Checkout Cleaning' : 'เช่น ทำความสะอาดหลังเช็คเอาท์มาตรฐาน'}
+                      className="h-9 text-xs"
+                    />
+                  </div>
 
-              {/* Type & Priority */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-700 font-semibold mb-1">
-                    {isEn ? 'Task Type' : 'ประเภทงาน'} <span className="text-red-500">*</span>
-                  </label>
-                  <Select
-                    value={templateForm.taskType}
-                    onChange={(e) => setTemplateForm({ ...templateForm, taskType: e.target.value as any })}
-                    className="h-9 text-xs"
-                  >
-                    <option value="checkout_clean">{isEn ? 'Checkout Clean' : 'ทำความสะอาดหลังเช็คเอาท์'}</option>
-                    <option value="daily_clean">{isEn ? 'Daily Stayover Clean' : 'ทำความสะอาดประจำวัน'}</option>
-                    <option value="deep_clean">{isEn ? 'Deep Clean' : 'ทำความสะอาดละเอียด'}</option>
-                    <option value="inspection">{isEn ? 'Room Inspection' : 'ตรวจความพร้อมห้องพัก'}</option>
-                  </Select>
+                  {/* Type & Priority */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-700 font-semibold mb-1">
+                        {isEn ? 'Task Type' : 'ประเภทงาน'} <span className="text-red-500">*</span>
+                      </label>
+                      <Select
+                        value={templateForm.taskType}
+                        onChange={(e) => setTemplateForm({ ...templateForm, taskType: e.target.value as any })}
+                        className="h-9 text-xs"
+                      >
+                        <option value="checkout_clean">{isEn ? 'Checkout Clean' : 'ทำความสะอาดหลังเช็คเอาท์'}</option>
+                        <option value="daily_clean">{isEn ? 'Daily Stayover Clean' : 'ทำความสะอาดประจำวัน'}</option>
+                        <option value="deep_clean">{isEn ? 'Deep Clean' : 'ทำความสะอาดละเอียด'}</option>
+                        <option value="inspection">{isEn ? 'Room Inspection' : 'ตรวจความพร้อมห้องพัก'}</option>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-700 font-semibold mb-1">
+                        {isEn ? 'Default Priority' : 'ระดับความเร่งด่วน'}
+                      </label>
+                      <Select
+                        value={templateForm.defaultPriority}
+                        onChange={(e) => setTemplateForm({ ...templateForm, defaultPriority: e.target.value as any })}
+                        className="h-9 text-xs"
+                      >
+                        <option value="normal">{isEn ? 'Normal' : 'ปกติ'}</option>
+                        <option value="high">{isEn ? 'High' : 'เร่งด่วน'}</option>
+                        <option value="urgent">{isEn ? 'Urgent' : 'ด่วนมาก'}</option>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* Estimated Minutes */}
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1">
+                      {isEn ? 'Estimated Duration (Minutes)' : 'ระยะเวลาโดยประมาณ (นาที)'} <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={templateForm.estimatedMinutes || ''}
+                      onChange={(e) => setTemplateForm({ ...templateForm, estimatedMinutes: Number(e.target.value) })}
+                      className="h-9 text-xs font-mono"
+                    />
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1">
+                      {isEn ? 'Procedures & Guidelines' : 'ขั้นตอนและรายละเอียดการทำความสะอาด'}
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={templateForm.description}
+                      onChange={(e) => setTemplateForm({ ...templateForm, description: e.target.value })}
+                      placeholder={isEn ? 'Overview of cleaning procedures and standards...' : 'ระบุขั้นตอนการทำงาน รายการสิ่งของที่ต้องตรวจเช็คและเปลี่ยน...'}
+                      className="w-full text-xs p-2 rounded-md border border-slate-200 focus:outline-hidden focus:ring-1 focus:ring-orange-500"
+                    />
+                  </div>
+
+                  {/* Active Toggle */}
+                  <div className="flex items-center gap-2 pt-1">
+                    <input
+                      type="checkbox"
+                      id="tpl-active"
+                      checked={templateForm.isActive}
+                      onChange={(e) => setTemplateForm({ ...templateForm, isActive: e.target.checked })}
+                      className="rounded text-orange-500 focus:ring-orange-400"
+                    />
+                    <label htmlFor="tpl-active" className="text-slate-700 font-medium cursor-pointer">
+                      {isEn ? 'Enable this template' : 'เปิดใช้งานแม่แบบนี้'}
+                    </label>
+                  </div>
                 </div>
+              ) : (
+                <div className="space-y-3">
+                  {/* Top Bar */}
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                    <span className="text-slate-500">
+                      {isEn
+                        ? 'Define inspection items by room zone for housekeeping staff'
+                        : 'กำหนดหัวข้อการตรวจเช็คแยกตามโซนห้องพักสำหรับแม่บ้าน'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleAddChecklistItem}
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-orange-600 hover:text-orange-700 hover:bg-orange-50 px-2.5 py-1 rounded-md border border-orange-200 transition-colors cursor-pointer shrink-0"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>{isEn ? 'Add Item' : 'เพิ่มข้อตรวจ'}</span>
+                    </button>
+                  </div>
 
-                <div>
-                  <label className="block text-slate-700 font-semibold mb-1">
-                    {isEn ? 'Default Priority' : 'ระดับความเร่งด่วน'}
-                  </label>
-                  <Select
-                    value={templateForm.defaultPriority}
-                    onChange={(e) => setTemplateForm({ ...templateForm, defaultPriority: e.target.value as any })}
-                    className="h-9 text-xs"
-                  >
-                    <option value="normal">{isEn ? 'Normal' : 'ปกติ'}</option>
-                    <option value="high">{isEn ? 'High' : 'เร่งด่วน'}</option>
-                    <option value="urgent">{isEn ? 'Urgent' : 'ด่วนมาก'}</option>
-                  </Select>
+                  {/* Flat Divide-y Rows */}
+                  {(!templateForm.checklistItems || templateForm.checklistItems.length === 0) ? (
+                    <div className="py-10 text-center text-slate-400">
+                      <p className="text-xs">
+                        {isEn ? 'No checklist items configured for this template.' : 'ยังไม่มีรายการตรวจสอบสำหรับแม่แบบนี้'}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleAddChecklistItem}
+                        className="mt-2 text-xs font-semibold text-orange-600 hover:underline cursor-pointer"
+                      >
+                        {isEn ? '+ Add first item' : '+ เพิ่มข้อตรวจข้อแรก'}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-slate-100">
+                      {templateForm.checklistItems.map((item, idx) => (
+                        <div
+                          key={item.id || idx}
+                          className="py-2.5 flex items-center gap-2.5 first:pt-1 last:pb-1"
+                        >
+                          <span className="w-5 text-right font-mono text-xs text-slate-400 shrink-0">
+                            {idx + 1}.
+                          </span>
+                          <div className="w-44 shrink-0">
+                            <Select
+                              value={item.zone || 'bedroom'}
+                              onChange={(e) => handleUpdateChecklistItem(idx, 'zone', e.target.value)}
+                              className="h-8 text-xs"
+                            >
+                              <option value="bedroom">{isEn ? 'Bedroom' : 'เตียงนอน & ห้องพัก'}</option>
+                              <option value="bathroom">{isEn ? 'Bathroom' : 'ห้องน้ำ & สุขภัณฑ์'}</option>
+                              <option value="minibar">{isEn ? 'Minibar' : 'มินิบาร์ & เครื่องดื่ม'}</option>
+                              <option value="final_inspection">{isEn ? 'Final Inspection' : 'ตรวจรอบสุดท้าย'}</option>
+                            </Select>
+                          </div>
+                          <div className="flex-1">
+                            <Input
+                              value={item.label}
+                              onChange={(e) => handleUpdateChecklistItem(idx, 'label', e.target.value)}
+                              placeholder={isEn ? 'Inspection item description...' : 'ระบุรายการตรวจเช็ค เช่น เปลี่ยนผ้าปูที่นอน ปลอกหมอน'}
+                              className="h-8 text-xs"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteChecklistItem(idx)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors shrink-0"
+                            title={isEn ? 'Delete item' : 'ลบข้อนี้'}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              </div>
-
-              {/* Estimated Minutes */}
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1">
-                  {isEn ? 'Estimated Duration (Minutes)' : 'ระยะเวลาโดยประมาณ (นาที)'} <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  type="number"
-                  min={1}
-                  value={templateForm.estimatedMinutes || ''}
-                  onChange={(e) => setTemplateForm({ ...templateForm, estimatedMinutes: Number(e.target.value) })}
-                  className="h-9 text-xs font-mono"
-                />
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1">
-                  {isEn ? 'Procedures & Checklist' : 'ขั้นตอนและรายละเอียดการทำความสะอาด'}
-                </label>
-                <textarea
-                  rows={3}
-                  value={templateForm.description}
-                  onChange={(e) => setTemplateForm({ ...templateForm, description: e.target.value })}
-                  placeholder={isEn ? 'Details of cleaning checklist...' : 'ระบุขั้นตอนการทำงาน รายการสิ่งของที่ต้องตรวจเช็คและเปลี่ยน...'}
-                  className="w-full text-xs p-2 rounded-md border border-slate-200 focus:outline-hidden focus:ring-1 focus:ring-orange-500"
-                />
-              </div>
-
-              {/* Active Toggle */}
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  type="checkbox"
-                  id="tpl-active"
-                  checked={templateForm.isActive}
-                  onChange={(e) => setTemplateForm({ ...templateForm, isActive: e.target.checked })}
-                  className="rounded text-orange-500 focus:ring-orange-400"
-                />
-                <label htmlFor="tpl-active" className="text-slate-700 font-medium cursor-pointer">
-                  {isEn ? 'Enable this template' : 'เปิดใช้งานแม่แบบนี้'}
-                </label>
-              </div>
+              )}
             </div>
 
             <div className="px-5 py-3 border-t border-slate-100 flex items-center justify-end gap-2 bg-white shrink-0">

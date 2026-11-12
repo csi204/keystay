@@ -426,6 +426,7 @@ export const HousekeepingPortalPage: React.FC = () => {
   const [selectedRoomDetail, setSelectedRoomDetail] = useState<RoomStatusItem | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [, setIsLoadingData] = useState<boolean>(false);
+  const [taskTemplates, setTaskTemplates] = useState<any[]>([]);
 
 
   // Preferences & Toggles
@@ -575,6 +576,24 @@ export const HousekeepingPortalPage: React.FC = () => {
     }
   };
 
+  // 3. Fetch live task templates from /api/housekeeping/task-templates
+  const fetchTaskTemplates = async () => {
+    try {
+      const token = getAuthToken();
+      const res = await fetch(apiUrl('/api/housekeeping/task-templates'), {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          setTaskTemplates(json.data);
+        }
+      }
+    } catch (err) {
+      console.warn('Fallback to static templates:', err);
+    }
+  };
+
   // ตรวจสอบสิทธิ์และดึงข้อมูลสดจากฐานข้อมูลเมื่อเข้าสู่หน้าเว็บ (Initial Load)
   useEffect(() => {
     const token = getAuthToken();
@@ -583,7 +602,7 @@ export const HousekeepingPortalPage: React.FC = () => {
       return;
     }
     setIsLoadingData(true);
-    Promise.all([fetchLiveTasks(), fetchLiveRooms()]).finally(() => setIsLoadingData(false));
+    Promise.all([fetchLiveTasks(), fetchLiveRooms(), fetchTaskTemplates()]).finally(() => setIsLoadingData(false));
   }, [navigate]);
 
   // Real-time clock tick (every 10s to keep date & minutes current)
@@ -639,13 +658,65 @@ export const HousekeepingPortalPage: React.FC = () => {
     );
   };
 
-  // Helper: ติ๊กครบ 12 ข้อทันที (สำหรับ Supervisor / ตรวจผ่านรวดเร็ว)
+  // Helper: คำนวณรายการตรวจ SOP ตามประเภทงานจากเทมเพลตไดนามิก (หรือใช้ค่าเริ่มต้น 12 ข้อ)
+  const getTaskChecklistGroups = (task?: CleaningTaskItem | null): ChecklistGroup[] => {
+    if (!task) return HOTEL_CHECKLIST_GROUPS;
+    const normalizedType = task.taskType === 'stayover_clean' ? 'daily_clean' : task.taskType;
+    const template = taskTemplates.find((tpl) => tpl.taskType === normalizedType);
+
+    if (template && Array.isArray(template.checklistItems) && template.checklistItems.length > 0) {
+      const ZONE_CONFIG: Record<string, { title: string; iconType: ChecklistGroup['iconType'] }> = {
+        bedroom: { title: '1. โซนเตียงนอน & ห้องพัก', iconType: 'bed' },
+        bathroom: { title: '2. โซนห้องน้ำ & สุขภัณฑ์', iconType: 'bath' },
+        minibar: { title: '3. มินิบาร์ & สิ่งอำนวยความสะดวก', iconType: 'minibar' },
+        final_inspection: { title: '4. ตรวจความเรียบร้อยรอบสุดท้าย', iconType: 'final' },
+      };
+
+      const grouped: Record<string, ChecklistSubItem[]> = {
+        bedroom: [],
+        bathroom: [],
+        minibar: [],
+        final_inspection: [],
+      };
+
+      template.checklistItems.forEach((item: any) => {
+        const z = item.zone && grouped[item.zone] ? item.zone : 'bedroom';
+        grouped[z].push({
+          id: item.id || `c-${Math.random()}`,
+          label: item.label,
+          sublabel: item.sublabel || '',
+        });
+      });
+
+      const result: ChecklistGroup[] = [];
+      (['bedroom', 'bathroom', 'minibar', 'final_inspection'] as const).forEach((z) => {
+        if (grouped[z] && grouped[z].length > 0) {
+          result.push({
+            id: z,
+            title: ZONE_CONFIG[z]?.title || z,
+            iconType: ZONE_CONFIG[z]?.iconType || 'bed',
+            items: grouped[z],
+          });
+        }
+      });
+
+      return result.length > 0 ? result : HOTEL_CHECKLIST_GROUPS;
+    }
+
+    return HOTEL_CHECKLIST_GROUPS;
+  };
+
+  // Helper: ติ๊กครบทุกข้อทันที (สำหรับ Supervisor / ตรวจผ่านรวดเร็ว)
   const handleToggleAllChecklist = (taskId: string, forceDone: boolean) => {
+    const targetTask = tasks.find((t) => t.id === taskId);
+    const groups = getTaskChecklistGroups(targetTask);
+    const itemIds = groups.flatMap((g) => g.items).map((i) => i.id);
+
     setTasks((prev) =>
       prev.map((t) => {
         if (t.id !== taskId) return t;
         const newChecklist = { ...t.checklist };
-        ALL_CHECKLIST_ITEM_IDS.forEach((id) => {
+        itemIds.forEach((id) => {
           newChecklist[id] = forceDone;
         });
         try {
@@ -654,7 +725,7 @@ export const HousekeepingPortalPage: React.FC = () => {
         return { ...t, checklist: newChecklist };
       })
     );
-    showToast(forceDone ? 'ตรวจรับครบทุกข้อเรียบร้อย (12/12)' : 'รีเซ็ตรายการตรวจสอบ');
+    showToast(forceDone ? `ตรวจรับครบทุกข้อเรียบร้อย (${itemIds.length}/${itemIds.length})` : 'รีเซ็ตรายการตรวจสอบ');
   };
 
   // 2. Mandatory After Photo Flow: ตรวจสอบก่อนส่งมอบงานตรวจรับ
@@ -1107,12 +1178,16 @@ export const HousekeepingPortalPage: React.FC = () => {
 
   // Active Room Task & Checklist Metrics
   const activeTask = tasks.find((t) => t.status === 'in_progress');
-  const checklistTotalCount = ALL_CHECKLIST_ITEM_IDS.length; // 12 ข้อ
+  const currentChecklistGroups = getTaskChecklistGroups(activeTask);
+  const currentChecklistItems = currentChecklistGroups.flatMap((g) => g.items);
+  const currentChecklistItemIds = currentChecklistItems.map((i) => i.id);
+
+  const checklistTotalCount = currentChecklistItems.length;
   const checklistCheckedCount = activeTask
-    ? ALL_CHECKLIST_ITEM_IDS.filter((id) => Boolean(activeTask.checklist[id])).length
+    ? currentChecklistItemIds.filter((id) => Boolean(activeTask.checklist[id])).length
     : 0;
-  const isAllChecked = activeTask ? checklistCheckedCount === checklistTotalCount : false;
-  const checklistPercent = Math.round((checklistCheckedCount / checklistTotalCount) * 100);
+  const isAllChecked = activeTask && checklistTotalCount > 0 ? checklistCheckedCount === checklistTotalCount : false;
+  const checklistPercent = checklistTotalCount > 0 ? Math.round((checklistCheckedCount / checklistTotalCount) * 100) : 0;
 
   // Smart Sorting Weights (Business Priority & Hotel SOP Rules)
   const PRIORITY_WEIGHT: Record<string, number> = {
@@ -1452,7 +1527,7 @@ export const HousekeepingPortalPage: React.FC = () => {
             {/* Checklist Category Section Header & Quick Toggle All */}
             <div className="flex items-center justify-between px-1 pt-1">
               <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                รายการตรวจมาตรฐาน 4 หมวด ({checklistCheckedCount}/{checklistTotalCount})
+                รายการตรวจมาตรฐาน ({checklistCheckedCount}/{checklistTotalCount})
               </span>
               <button
                 type="button"
@@ -1464,8 +1539,8 @@ export const HousekeepingPortalPage: React.FC = () => {
               </button>
             </div>
 
-            {/* 4 Categorized Checklist Cards */}
-            {HOTEL_CHECKLIST_GROUPS.map((group) => {
+            {/* Categorized Checklist Cards */}
+            {currentChecklistGroups.map((group) => {
               const groupCheckedCount = group.items.filter((item) =>
                 Boolean(activeTask.checklist[item.id])
               ).length;
