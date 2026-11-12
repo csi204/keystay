@@ -4,6 +4,7 @@ import type { ExtendedReservation } from '@/hooks/useReservations';
 import { getAvailableRoomsForDates } from '@/lib/roomAvailability';
 import { useI18n } from '@/lib/i18n';
 import { localizeRoomType, localizeAmenity } from '@/lib/localizeMetadata';
+import { compressImageToBase64 } from '@/lib/imageCompression';
 import { CustomDatePicker, formatDisplayDate } from '../common/CustomDatePicker';
 import { ROOM_STATUS_CONFIG } from './RoomCard';
 import {
@@ -31,6 +32,9 @@ import {
   AlertCircle,
   Loader2,
   ChevronDown,
+  UploadCloud,
+  Trash2,
+  FileCheck2,
 } from 'lucide-react';
 
 export interface FastBookingFormData {
@@ -73,6 +77,8 @@ export interface WalkInModalProps {
     depositAmount: string;
     paymentMethod?: string;
     bookingSource?: 'walk_in' | 'phone' | 'facebook';
+    paymentSlipUrl?: string;
+    paymentSlipRef?: string;
   }) => Promise<{ success: boolean; error?: string }>;
 }
 
@@ -106,8 +112,47 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
   const [checkOutDate, setCheckOutDate] = useState(tomorrowStr);
   const [depositAmount, setDepositAmount] = useState('500');
   const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [paymentSlipUrl, setPaymentSlipUrl] = useState('');
+  const [paymentSlipRef, setPaymentSlipRef] = useState('');
+  const [slipPreview, setSlipPreview] = useState<string | null>(null);
+  const [isCompressingSlip, setIsCompressingSlip] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setPaymentSlipRef('');
+      setPaymentSlipUrl('');
+      setSlipPreview(null);
+      setIsCompressingSlip(false);
+    }
+  }, [isOpen]);
+
+  const handleSlipFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setError(locale === 'th' ? 'กรุณาเลือกไฟล์รูปภาพ (PNG, JPG, WEBP)' : 'Please select an image file');
+      return;
+    }
+    try {
+      setIsCompressingSlip(true);
+      setError(null);
+      const compressed = await compressImageToBase64(file);
+      setSlipPreview(compressed);
+      setPaymentSlipUrl(compressed);
+    } catch (err) {
+      console.error('Error compressing slip image:', err);
+      setError(locale === 'th' ? 'ไม่สามารถบีบอัดรูปภาพสลิปได้' : 'Failed to compress slip image');
+    } finally {
+      setIsCompressingSlip(false);
+    }
+  };
+
+  const removeSlip = () => {
+    setSlipPreview(null);
+    setPaymentSlipUrl('');
+  };
 
   const poolOfRooms = allRooms || rooms || availableRooms || [];
 
@@ -249,6 +294,8 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
       depositAmount: depositAmount.trim() || '0',
       paymentMethod,
       bookingSource: 'walk_in',
+      paymentSlipUrl: paymentSlipUrl || undefined,
+      paymentSlipRef: paymentSlipRef.trim() || undefined,
     });
     setIsSubmitting(false);
 
@@ -601,6 +648,67 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
                       );
                     })}
                   </div>
+                </div>
+
+                {/* Payment Slip Attachment */}
+                <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                    <FileCheck2 className="w-3.5 h-3.5 text-slate-500" />
+                    <span>{locale === 'th' ? 'หลักฐานการโอนเงิน (Payment Slip)' : 'Payment Slip Details'}</span>
+                  </h3>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                        {locale === 'th' ? 'เลขอ้างอิงธุรกรรมธนาคาร' : 'Bank Reference No.'}
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. BBL-20261111-987654"
+                        value={paymentSlipRef}
+                        onChange={(e) => setPaymentSlipRef(e.target.value)}
+                        className="w-full min-h-[38px] px-3 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono text-slate-900 dark:text-slate-100"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                        {locale === 'th' ? 'แนบรูปภาพสลิป' : 'Upload Slip Image'}
+                      </label>
+                      <label className="flex items-center justify-center gap-2 w-full min-h-[38px] px-3 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 border-dashed rounded-lg cursor-pointer transition-colors text-slate-600 dark:text-slate-300 text-xs">
+                        <UploadCloud className="w-4 h-4 text-slate-500 shrink-0" />
+                        <span className="truncate">
+                          {isCompressingSlip
+                            ? (locale === 'th' ? 'กำลังบีบอัดรูปภาพ...' : 'Compressing image...')
+                            : slipPreview
+                            ? (locale === 'th' ? 'เปลี่ยนรูปสลิป' : 'Change Image')
+                            : (locale === 'th' ? 'เลือกรูปสลิป' : 'Choose Slip')}
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleSlipFileChange}
+                          disabled={isCompressingSlip}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Slip Thumbnail Preview */}
+                  {slipPreview && (
+                    <div className="relative inline-block mt-1.5 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden bg-slate-50 dark:bg-slate-800 p-1">
+                      <img src={slipPreview} alt="Slip preview" className="h-16 w-auto object-cover rounded" />
+                      <button
+                        type="button"
+                        onClick={removeSlip}
+                        className="absolute top-1.5 right-1.5 p-1 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors shadow-xs"
+                        title="Remove slip"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Action Buttons */}

@@ -11,6 +11,7 @@ import {
 import { ExtendedReservation } from '@/hooks/useReservations';
 import { ExtendStayModal } from './ExtendStayModal';
 import { SlipViewerModal } from './SlipViewerModal';
+import { compressImageToBase64 } from '@/lib/imageCompression';
 import { RequestAmenitiesModal } from './RequestAmenitiesModal';
 import { CustomDatePicker } from '../common/CustomDatePicker';
 import {
@@ -341,6 +342,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
   const [paymentSlipRef, setPaymentSlipRef] = useState('');
   const [paymentSlipUrl, setPaymentSlipUrl] = useState('');
   const [slipPreview, setSlipPreview] = useState<string | null>(null);
+  const [isCompressingSlip, setIsCompressingSlip] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -502,20 +504,25 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
     return errors;
   };
 
-  const handleSlipFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSlipFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       setSubmitError(locale === 'th' ? 'กรุณาเลือกไฟล์รูปภาพ (PNG, JPG, WEBP)' : 'Please select an image file');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      setSlipPreview(result);
-      setPaymentSlipUrl(result);
-    };
-    reader.readAsDataURL(file);
+    try {
+      setIsCompressingSlip(true);
+      setSubmitError(null);
+      const compressed = await compressImageToBase64(file);
+      setSlipPreview(compressed);
+      setPaymentSlipUrl(compressed);
+    } catch (err) {
+      console.error('Error compressing slip image:', err);
+      setSubmitError(locale === 'th' ? 'ไม่สามารถบีบอัดรูปภาพสลิปได้' : 'Failed to compress slip image');
+    } finally {
+      setIsCompressingSlip(false);
+    }
   };
 
   const removeSlip = () => {
@@ -1813,12 +1820,17 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                       <label className="flex items-center justify-center gap-2 w-full h-9 px-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 border-dashed rounded-lg cursor-pointer transition-colors text-slate-600 text-xs">
                         <UploadCloud className="w-4 h-4 text-slate-500 shrink-0" />
                         <span className="truncate">
-                          {slipPreview ? (locale === 'th' ? 'เปลี่ยนรูปสลิป' : 'Change Image') : (locale === 'th' ? 'เลือกรูปสลิป' : 'Choose Slip')}
+                          {isCompressingSlip
+                            ? (locale === 'th' ? 'กำลังบีบอัดรูปภาพ...' : 'Compressing image...')
+                            : slipPreview
+                            ? (locale === 'th' ? 'เปลี่ยนรูปสลิป' : 'Change Image')
+                            : (locale === 'th' ? 'เลือกรูปสลิป' : 'Choose Slip')}
                         </span>
                         <input
                           type="file"
                           accept="image/*"
                           onChange={handleSlipFileChange}
+                          disabled={isCompressingSlip}
                           className="hidden"
                         />
                       </label>

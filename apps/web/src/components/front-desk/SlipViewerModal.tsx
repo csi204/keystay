@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useI18n } from '@/lib/i18n';
+import { compressImageToBase64 } from '@/lib/imageCompression';
 import {
   X,
   CheckCircle2,
@@ -13,6 +14,9 @@ import {
   ExternalLink,
   ShieldCheck,
   Trash2,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
 } from 'lucide-react';
 
 export interface SlipViewerModalProps {
@@ -49,6 +53,8 @@ export const SlipViewerModal: React.FC<SlipViewerModalProps> = ({
 
   const [slipRef, setSlipRef] = useState(initialSlipRef || '');
   const [currentSlipUrl, setCurrentSlipUrl] = useState<string | null>(paymentSlipUrl || null);
+  const [zoom, setZoom] = useState(1);
+  const [isCompressing, setIsCompressing] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -57,6 +63,7 @@ export const SlipViewerModal: React.FC<SlipViewerModalProps> = ({
     if (isOpen) {
       setSlipRef(initialSlipRef || '');
       setCurrentSlipUrl(paymentSlipUrl || null);
+      setZoom(1);
       setError(null);
       setSuccessMsg(null);
     }
@@ -72,19 +79,25 @@ export const SlipViewerModal: React.FC<SlipViewerModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       setError(locale === 'th' ? 'กรุณาเลือกไฟล์รูปภาพ (PNG, JPG, WEBP)' : 'Please select an image file');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      setCurrentSlipUrl(result);
-    };
-    reader.readAsDataURL(file);
+    try {
+      setIsCompressing(true);
+      setError(null);
+      const compressed = await compressImageToBase64(file);
+      setCurrentSlipUrl(compressed);
+      setZoom(1);
+    } catch (err) {
+      console.error('Error compressing slip image:', err);
+      setError(locale === 'th' ? 'ไม่สามารถบีบอัดรูปภาพสลิปได้' : 'Failed to compress slip image');
+    } finally {
+      setIsCompressing(false);
+    }
   };
 
   const handleVerify = async () => {
@@ -212,40 +225,107 @@ export const SlipViewerModal: React.FC<SlipViewerModalProps> = ({
           </div>
 
           {/* Image Lightbox Viewer Box */}
-          <div className="bg-slate-900/5 rounded-xl border border-slate-200 p-3 flex flex-col items-center justify-center min-h-[220px] max-h-[360px] overflow-hidden relative">
+          <div className="bg-slate-900/5 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center min-h-[240px] max-h-[420px] overflow-hidden relative">
             {currentSlipUrl ? (
-              <div className="relative group max-h-[340px] flex items-center justify-center">
-                <img
-                  src={currentSlipUrl}
-                  alt="Payment Slip"
-                  className="max-h-[320px] w-auto object-contain rounded-lg shadow-sm"
-                />
-                {!isPaid && (
-                  <button
-                    type="button"
-                    onClick={() => setCurrentSlipUrl(null)}
-                    className="absolute top-2 right-2 p-1.5 bg-red-600 text-white rounded-full hover:bg-red-700 shadow-md transition-colors opacity-90 group-hover:opacity-100"
-                    title="Remove slip"
+              <div className="w-full h-full flex flex-col">
+                {/* Zoom Controls & Action Toolbar */}
+                <div className="flex items-center justify-between px-3 py-1.5 bg-slate-100/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-700 text-xs shrink-0">
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setZoom((z) => Math.max(0.5, parseFloat((z - 0.25).toFixed(2))))}
+                      disabled={zoom <= 0.5}
+                      className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 disabled:opacity-40 transition-colors"
+                      title={locale === 'th' ? 'ย่อภาพ' : 'Zoom Out'}
+                      aria-label="Zoom Out"
+                    >
+                      <ZoomOut className="w-4 h-4" />
+                    </button>
+                    <span className="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300 min-w-[48px] text-center select-none tabular-nums">
+                      {Math.round(zoom * 100)}%
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setZoom((z) => Math.min(3, parseFloat((z + 0.25).toFixed(2))))}
+                      disabled={zoom >= 3}
+                      className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 disabled:opacity-40 transition-colors"
+                      title={locale === 'th' ? 'ขยายภาพ' : 'Zoom In'}
+                      aria-label="Zoom In"
+                    >
+                      <ZoomIn className="w-4 h-4" />
+                    </button>
+                    {zoom !== 1 && (
+                      <button
+                        type="button"
+                        onClick={() => setZoom(1)}
+                        className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors ml-1"
+                        title={locale === 'th' ? 'รีเซ็ตขนาด 100%' : 'Reset Zoom'}
+                        aria-label="Reset Zoom"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {!isPaid && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCurrentSlipUrl(null);
+                        setZoom(1);
+                      }}
+                      className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors flex items-center gap-1 text-xs font-medium"
+                      title="Remove slip"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>{locale === 'th' ? 'ลบรูปสลิป' : 'Remove Slip'}</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Scrollable Viewport Container for Zoomed Inspection */}
+                <div className="flex-1 overflow-auto p-4 flex items-center justify-center max-h-[350px]">
+                  <div
+                    style={{
+                      transform: `scale(${zoom})`,
+                      transformOrigin: 'center center',
+                      transition: 'transform 0.15s ease-out',
+                    }}
+                    className="inline-block"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                )}
+                    <img
+                      src={currentSlipUrl}
+                      alt="Payment Slip"
+                      className="max-h-[300px] w-auto object-contain rounded-lg shadow-sm"
+                    />
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="text-center p-6 space-y-2">
-                <UploadCloud className="w-10 h-10 text-slate-300 mx-auto" />
-                <p className="text-xs font-medium text-slate-600">
+                <UploadCloud className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto" />
+                <p className="text-xs font-medium text-slate-600 dark:text-slate-300">
                   {locale === 'th' ? 'ยังไม่ได้แนบรูปภาพสลิป' : 'No slip image attached yet'}
                 </p>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-slate-400 dark:text-slate-500">
                   {locale === 'th'
                     ? 'สามารถบันทึกรูปจากแชทเพจ Facebook แล้วอัปโหลดแนบที่นี่ได้'
                     : 'Download slip from Facebook Page chat and upload here.'}
                 </p>
-                <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-medium rounded-lg cursor-pointer transition-colors shadow-2xs mt-2">
+                <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-lg cursor-pointer transition-colors shadow-2xs mt-2">
                   <UploadCloud className="w-3.5 h-3.5 text-slate-500" />
-                  <span>{locale === 'th' ? 'อัปโหลดรูปภาพสลิป' : 'Upload Slip Image'}</span>
-                  <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                  <span>
+                    {isCompressing
+                      ? (locale === 'th' ? 'กำลังบีบอัดรูปภาพ...' : 'Compressing image...')
+                      : (locale === 'th' ? 'อัปโหลดรูปภาพสลิป' : 'Upload Slip Image')}
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    disabled={isCompressing}
+                    className="hidden"
+                  />
                 </label>
               </div>
             )}
