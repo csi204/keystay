@@ -6,7 +6,9 @@ import { th } from '../locales/th';
 import { en } from '../locales/en';
 
 describe('FrontDeskLayout — Collapsible Left Sidebar & 2-Menu Navigation', () => {
-  const layoutPath = path.resolve(process.cwd(), 'apps/web/src/components/front-desk/FrontDeskLayout.tsx');
+  const cwd = process.cwd();
+  const rootDir = cwd.endsWith('apps/web') || cwd.endsWith('apps\\web') ? path.resolve(cwd, '../..') : cwd;
+  const layoutPath = path.resolve(rootDir, 'apps/web/src/components/front-desk/FrontDeskLayout.tsx');
   const code = fs.readFileSync(layoutPath, 'utf-8');
 
   it('uses fixed viewport container preventing window stretching', () => {

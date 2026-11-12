@@ -15,10 +15,12 @@ import {
   Menu,
   X,
   ReceiptText,
+  Search,
 } from 'lucide-react';
 import { getAuthUser, clearAuthSession } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { QuickEmergencyDrawer } from './QuickEmergencyDrawer';
+import { GlobalCommandPalette } from './GlobalCommandPalette';
 
 // Backward compatibility references for existing layout tests:
 // t('nav.roomMatrix')
@@ -42,6 +44,34 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
   const { locale, setLocale, t } = useI18n();
   const [isEmergencyOpen, setIsEmergencyOpen] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
+
+  // Global Command Palette Shortcut (Ctrl+K, Cmd+K, or / when not focused in input)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isInput =
+        target?.tagName === 'INPUT' ||
+        target?.tagName === 'TEXTAREA' ||
+        target?.tagName === 'SELECT' ||
+        Boolean(target?.isContentEditable);
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+        return;
+      }
+
+      if (e.key === '/' && !isInput) {
+        e.preventDefault();
+        setIsCommandPaletteOpen(true);
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Sidebar Collapsible state (remember in localStorage)
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
@@ -148,6 +178,17 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Mobile Quick Search / Omnibar Button */}
+          <button
+            type="button"
+            onClick={() => setIsCommandPaletteOpen(true)}
+            className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
+            title="ค้นหาด่วนหรือพิมพ์คำสั่ง (Ctrl+K)"
+            aria-label="ค้นหาด่วนหรือพิมพ์คำสั่ง (Ctrl+K)"
+          >
+            <Search className="w-5 h-5 text-slate-600" strokeWidth={1.75} aria-hidden="true" />
+          </button>
+
           {/* Mobile Quick Emergency Contact */}
           <button
             type="button"
@@ -355,6 +396,36 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
             </button>
           </div>
 
+          {/* Omnibar Search Trigger Button */}
+          <div className={isCollapsed ? 'p-2 flex justify-center' : 'px-3 pt-3 pb-1'}>
+            {isCollapsed ? (
+              <button
+                type="button"
+                onClick={() => setIsCommandPaletteOpen(true)}
+                title="ค้นหาด่วนหรือพิมพ์คำสั่ง... (Ctrl+K)"
+                aria-label="ค้นหาด่วนหรือพิมพ์คำสั่ง... (Ctrl+K)"
+                className="p-2 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors"
+              >
+                <Search className="w-4 h-4 text-slate-400" strokeWidth={1.75} />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsCommandPaletteOpen(true)}
+                className="w-full flex items-center justify-between px-3 py-2 text-xs text-slate-500 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-400 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors shadow-2xs"
+                aria-label="ค้นหาด่วนหรือพิมพ์คำสั่ง (Ctrl+K)"
+              >
+                <div className="flex items-center gap-2 truncate">
+                  <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" strokeWidth={1.75} />
+                  <span className="truncate">ค้นหาด่วนหรือพิมพ์คำสั่ง...</span>
+                </div>
+                <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded text-slate-600 dark:text-slate-300 shrink-0">
+                  Ctrl K
+                </kbd>
+              </button>
+            )}
+          </div>
+
           {/* Navigation Menu Links */}
           <nav className="p-2 space-y-1 overflow-y-auto flex-1">
             {!isCollapsed && (
@@ -550,6 +621,14 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
       <QuickEmergencyDrawer
         isOpen={isEmergencyOpen}
         onClose={() => setIsEmergencyOpen(false)}
+      />
+
+      {/* ========================================================================= */}
+      {/* 6. GLOBAL COMMAND PALETTE (Ctrl+K / / Omnibar)                             */}
+      {/* ========================================================================= */}
+      <GlobalCommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
       />
     </div>
   );
