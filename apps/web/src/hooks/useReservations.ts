@@ -164,7 +164,11 @@ export function useReservations() {
         const checkInDate = new Date(data.checkInDate);
         const checkOutDate = new Date(data.checkOutDate);
         const nights = Math.max(1, Math.round((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 3600 * 24)));
-        const nightlyRate = Number(data.nightlyRate) || (createdRes?.nightlyRate ? Number(createdRes.nightlyRate) : 1000);
+        const nightlyRate =
+          Number(data.nightlyRate) ||
+          (createdRes?.nightlyRate ? Number(createdRes.nightlyRate) : 0) ||
+          Number((data as any).roomPrice || (data as any).roomRate || (createdRes as any)?.nightly_rate) ||
+          1000;
         const deposit = Number(data.depositAmount || 0);
 
         await apiFetch('/api/bills', {

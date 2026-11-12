@@ -53,7 +53,7 @@ export async function recalculateBill(db: D1Database, billId: string) {
 
   let status = bill.status;
   if (status !== 'void' && status !== 'refunded') {
-    if (amountDue === 0 && (amountPaid > 0 || depositDeducted >= totalAmount)) {
+    if (amountDue === 0 && (amountPaid > 0 || (depositDeducted > 0 && depositDeducted >= totalAmount))) {
       status = 'paid';
     } else {
       status = 'unpaid';

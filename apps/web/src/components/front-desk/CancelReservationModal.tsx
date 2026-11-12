@@ -250,6 +250,7 @@ export const CancelReservationModal: React.FC<CancelReservationModalProps> = ({
                 name="cancellationNotes"
                 aria-label={locale === 'th' ? 'บันทึกเพิ่มเติม' : 'Cancellation notes'}
                 rows={3}
+                maxLength={500}
                 value={cancellationNotes}
                 onChange={(e) => setCancellationNotes(e.target.value)}
                 placeholder={

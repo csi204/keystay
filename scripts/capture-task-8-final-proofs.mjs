@@ -424,7 +424,7 @@ async function main() {
     await saveScreenshot(page, '23-compressed-slip-viewer.png');
 
     console.log('\n===============================================================');
-    console.log('✅ ALL 5 TASK 8 VISUAL PROOFS CAPTURED SUCCESSFULLY!');
+    console.log('[SUCCESS] ALL 5 TASK 8 VISUAL PROOFS CAPTURED SUCCESSFULLY!');
     console.log('===============================================================\n');
 
   } finally {
