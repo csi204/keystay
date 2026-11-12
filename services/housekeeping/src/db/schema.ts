@@ -129,7 +129,10 @@ export const outsourceContacts = sqliteTable('outsource_contacts', {
   phoneSecondary: text('phone_secondary'),
   lineId: text('line_id'),
   isEmergency: integer('is_emergency').notNull().default(0),
+  categories: text('categories'), // JSON array เช่น '["air_conditioning","general_maintenance"]'
   availableHours: text('available_hours').default('24 ชั่วโมง'),
+  openTime: text('open_time'), // HH:MM
+  closeTime: text('close_time'), // HH:MM
   priceRateNote: text('price_rate_note'),
   rating: real('rating').default(5.0),
   address: text('address'),

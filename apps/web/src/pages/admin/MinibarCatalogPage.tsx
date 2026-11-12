@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
+import { apiFetch } from '@/lib/api';
 import { useTranslation } from '@/lib/i18n';
-import { getAuthToken, apiUrl } from '@/lib/api';
 import {
   ShoppingCart,
   Plus,
@@ -14,9 +14,12 @@ import {
   Search,
   Save,
   X,
+  AlertTriangle,
   Package,
   RefreshCw,
-  CheckCircle2,
+  RotateCcw,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 // ============================================================================
@@ -34,13 +37,22 @@ export interface MinibarItem {
 const SEED_ITEMS: MinibarItem[] = [
   { id: 'mb-001', name: 'น้ำดื่ม 600ml', category: 'เครื่องดื่ม', pricePerUnit: 20, unit: 'ขวด', isActive: true },
   { id: 'mb-002', name: 'โค้ก 330ml', category: 'เครื่องดื่ม', pricePerUnit: 35, unit: 'กระป๋อง', isActive: true },
-  { id: 'mb-003', name: 'เบียร์ Chang 330ml', category: 'แอลกอฮอล์', pricePerUnit: 80, unit: 'กระป๋อง', isActive: true },
-  { id: 'mb-004', name: 'มันฝรั่งทอด', category: 'ขนม', pricePerUnit: 45, unit: 'ถุง', isActive: true },
-  { id: 'mb-005', name: 'ช็อกโกแลต KitKat', category: 'ขนม', pricePerUnit: 35, unit: 'แท่ง', isActive: true },
-  { id: 'mb-006', name: 'กาแฟสำเร็จรูป', category: 'เครื่องดื่ม', pricePerUnit: 25, unit: 'ซอง', isActive: false },
+  { id: 'mb-003', name: 'สไปรท์ 330ml', category: 'เครื่องดื่ม', pricePerUnit: 35, unit: 'กระป๋อง', isActive: true },
+  { id: 'mb-004', name: 'เบียร์ Chang 330ml', category: 'แอลกอฮอล์', pricePerUnit: 80, unit: 'กระป๋อง', isActive: true },
+  { id: 'mb-005', name: 'เบียร์ Singha 330ml', category: 'แอลกอฮอล์', pricePerUnit: 90, unit: 'กระป๋อง', isActive: true },
+  { id: 'mb-006', name: 'ไวน์แดงขวดเล็ก 187ml', category: 'แอลกอฮอล์', pricePerUnit: 280, unit: 'ขวด', isActive: true },
+  { id: 'mb-007', name: 'มันฝรั่งทอด Lay\'s', category: 'ขนม', pricePerUnit: 45, unit: 'ถุง', isActive: true },
+  { id: 'mb-008', name: 'ช็อกโกแลต KitKat', category: 'ขนม', pricePerUnit: 35, unit: 'แท่ง', isActive: true },
+  { id: 'mb-009', name: 'ถั่วรวมอบเกลือ', category: 'ขนม', pricePerUnit: 50, unit: 'ซอง', isActive: true },
+  { id: 'mb-010', name: 'กาแฟสำเร็จรูป', category: 'เครื่องดื่ม', pricePerUnit: 25, unit: 'ซอง', isActive: false },
+  { id: 'mb-011', name: 'ชาเขียวโออิชิ 380ml', category: 'เครื่องดื่ม', pricePerUnit: 30, unit: 'ขวด', isActive: true },
+  { id: 'mb-012', name: 'ป๊อปคอร์นคาราเมล', category: 'ขนม', pricePerUnit: 65, unit: 'ถุง', isActive: true },
+  { id: 'mb-013', name: 'บะหมี่กึ่งสำเร็จรูป', category: 'ขนม', pricePerUnit: 35, unit: 'ถ้วย', isActive: true },
+  { id: 'mb-014', name: 'น้ำแร่ Perrier 330ml', category: 'เครื่องดื่ม', pricePerUnit: 95, unit: 'ขวด', isActive: true },
 ];
 
 const CATEGORIES = ['ทั้งหมด', 'เครื่องดื่ม', 'แอลกอฮอล์', 'ขนม', 'อื่นๆ'];
+const ITEMS_PER_PAGE = 10;
 
 const EMPTY_FORM: Omit<MinibarItem, 'id'> = {
   name: '',
@@ -58,42 +70,70 @@ export const MinibarCatalogPage: React.FC = () => {
   const [items, setItems] = useState<MinibarItem[]>(SEED_ITEMS);
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState('ทั้งหมด');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isOffline, setIsOffline] = useState(false);
+  const [loading, setLoading] = useState(false);
+
   const [showModal, setShowModal] = useState(false);
   const [editItem, setEditItem] = useState<MinibarItem | null>(null);
   const [form, setForm] = useState<Omit<MinibarItem, 'id'>>(EMPTY_FORM);
   const [deleteTarget, setDeleteTarget] = useState<MinibarItem | null>(null);
   const [refreshSuccess, setRefreshSuccess] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
-  const fetchItems = async () => {
-    setIsLoading(true);
+  const loadMinibarItems = async () => {
+    setLoading(true);
     try {
-      const token = getAuthToken();
-      const res = await fetch(apiUrl('/api/room-inventory/minibar-items'), {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success && Array.isArray(json.data)) {
-          setItems(json.data);
-        }
+      const res = await apiFetch<MinibarItem[]>('/api/minibar-items');
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        setIsOffline(false);
+        setItems(res.data);
+      } else {
+        setIsOffline(res.isOffline);
+        setItems(SEED_ITEMS);
       }
-    } catch (err) {
-      console.warn('Fallback to local state:', err);
+    } catch {
+      setIsOffline(true);
+      setItems(SEED_ITEMS);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchItems();
+    loadMinibarItems();
   }, []);
 
-  const filtered = items.filter((it) => {
-    const matchSearch = it.name.toLowerCase().includes(search.toLowerCase());
-    const matchCat = filterCat === 'ทั้งหมด' || it.category === filterCat;
-    return matchSearch && matchCat;
-  });
+  const handleRefresh = async () => {
+    setRefreshSuccess(false);
+    await loadMinibarItems();
+    setRefreshSuccess(true);
+    setTimeout(() => setRefreshSuccess(false), 2500);
+  };
+
+  const filtered = useMemo(() => {
+    return items.filter((it) => {
+      const matchSearch = it.name.toLowerCase().includes(search.toLowerCase());
+      const matchCat = filterCat === 'ทั้งหมด' || it.category === filterCat;
+      return matchSearch && matchCat;
+    });
+  }, [items, search, filterCat]);
+
+  // Reset to page 1 on filter/search change
+  const handleSearchChange = (val: string) => {
+    setSearch(val);
+    setCurrentPage(1);
+  };
+
+  const handleCategoryChange = (val: string) => {
+    setFilterCat(val);
+    setCurrentPage(1);
+  };
+
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
+  const paginatedItems = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filtered.slice(start, start + ITEMS_PER_PAGE);
+  }, [filtered, currentPage]);
 
   const openCreate = () => {
     setEditItem(null);
@@ -115,34 +155,32 @@ export const MinibarCatalogPage: React.FC = () => {
 
   const handleSave = async () => {
     if (!form.name.trim() || form.pricePerUnit <= 0) return;
-    const token = getAuthToken();
+    const payload = {
+      name: form.name.trim(),
+      category: form.category,
+      pricePerUnit: Number(form.pricePerUnit),
+      unit: form.unit.trim() || 'ชิ้น',
+      isActive: form.isActive,
+    };
+
     try {
       if (editItem) {
-        await fetch(apiUrl(`/api/room-inventory/minibar-items/${editItem.id}`), {
+        await apiFetch(`/api/minibar-items/${editItem.id}`, {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify(form),
+          body: JSON.stringify(payload),
         });
       } else {
-        await fetch(apiUrl('/api/room-inventory/minibar-items'), {
+        await apiFetch('/api/minibar-items', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify(form),
+          body: JSON.stringify(payload),
         });
       }
-      await fetchItems();
+      await loadMinibarItems();
     } catch {
-      // Local optimistic fallback
       if (editItem) {
-        setItems((prev) => prev.map((it) => (it.id === editItem.id ? { ...editItem, ...form } : it)));
+        setItems((prev) => prev.map((it) => (it.id === editItem.id ? { ...editItem, ...payload } : it)));
       } else {
-        setItems((prev) => [...prev, { id: `mb-${Date.now()}`, ...form }]);
+        setItems((prev) => [{ id: `mb-${Date.now()}`, ...payload }, ...prev]);
       }
     }
     setShowModal(false);
@@ -150,13 +188,11 @@ export const MinibarCatalogPage: React.FC = () => {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    const token = getAuthToken();
     try {
-      await fetch(apiUrl(`/api/room-inventory/minibar-items/${deleteTarget.id}`), {
+      await apiFetch(`/api/minibar-items/${deleteTarget.id}`, {
         method: 'DELETE',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-      await fetchItems();
+      await loadMinibarItems();
     } catch {
       setItems((prev) => prev.filter((it) => it.id !== deleteTarget.id));
     }
@@ -164,293 +200,425 @@ export const MinibarCatalogPage: React.FC = () => {
   };
 
   const toggleActive = async (id: string) => {
-    const it = items.find((i) => i.id === id);
-    if (!it) return;
-    const token = getAuthToken();
+    const target = items.find((it) => it.id === id);
+    if (!target) return;
+    const newActive = !target.isActive;
     try {
-      await fetch(apiUrl(`/api/room-inventory/minibar-items/${id}`), {
+      await apiFetch(`/api/minibar-items/${id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ isActive: !it.isActive }),
+        body: JSON.stringify({ isActive: newActive }),
       });
-      await fetchItems();
+      setItems((prev) => prev.map((it) => (it.id === id ? { ...it, isActive: newActive } : it)));
     } catch {
-      setItems((prev) => prev.map((item) => (item.id === id ? { ...item, isActive: !item.isActive } : item)));
+      setItems((prev) => prev.map((it) => (it.id === id ? { ...it, isActive: newActive } : it)));
     }
   };
 
   return (
-    <AdminLayout activePath="/admin/minibar" isBackendOffline={false}>
-      <div className="px-4 py-3.5 space-y-4">
-        {/* Header */}
-        <div className="flex items-center justify-between">
+    <AdminLayout activePath="/admin/minibar" isBackendOffline={isOffline}>
+      {/* ── Page Header ── */}
+      <div className="bg-white px-4 py-3.5 mb-4 shadow-2xs">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-              <ShoppingCart className="w-5 h-5 text-orange-500" />
-              {t('header.minibar.title') || 'รายการมินิบาร์ (Minibar Catalog)'}
+            <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
+              <span>{t('nav.home')}</span>
+              <span>/</span>
+              <span className="font-semibold text-slate-800">{t('header.minibar.title')}</span>
+            </div>
+            <h1 className="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+              <ShoppingCart className="w-5 h-5 text-[#F97316]" />
+              <span>{t('header.minibar.title')}</span>
             </h1>
-            <p className="text-xs text-slate-500 mt-0.5">
-              กำหนดราคาสินค้าในมินิบาร์ — Owner และ Front Desk จัดการร่วมกัน
-            </p>
+            <p className="text-xs text-slate-500 mt-1">{t('header.minibar.desc')}</p>
           </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-2 self-start md:self-auto">
             <Button
               variant="outline"
               size="sm"
-              onClick={async () => {
-                await fetchItems();
-                setRefreshSuccess(true);
-                setTimeout(() => setRefreshSuccess(false), 2500);
-              }}
-              className="text-xs font-semibold gap-1.5 h-9 px-3 bg-white hover:bg-slate-50 border-slate-300 text-slate-700 shadow-2xs cursor-pointer"
+              onClick={handleRefresh}
+              className="text-xs font-semibold gap-1.5 h-9 px-3 bg-white hover:bg-slate-50 border-slate-300 text-slate-700 shadow-2xs"
             >
-              <RefreshCw className={`w-3.5 h-3.5 text-slate-600 ${isLoading ? 'animate-spin' : ''}`} />
-              <span>{refreshSuccess ? 'อัปเดตเรียบร้อย' : 'รีเฟรช'}</span>
+              <RefreshCw className={`w-3.5 h-3.5 text-slate-600 ${loading ? 'animate-spin' : ''}`} />
+              <span>{refreshSuccess ? t('action.refreshSuccess') : t('action.refresh')}</span>
             </Button>
-            <Button onClick={openCreate} className="bg-orange-500 hover:bg-orange-600 text-white text-sm px-3 h-9 flex items-center gap-1.5 font-semibold cursor-pointer">
+            <Button
+              size="sm"
+              onClick={openCreate}
+              className="bg-[#F97316] hover:bg-orange-600 text-white text-xs font-semibold px-3 h-9 flex items-center gap-1.5 shadow-2xs"
+            >
               <Plus className="w-4 h-4" />
-              เพิ่มสินค้า
+              <span>{t('action.addItem')}</span>
             </Button>
           </div>
         </div>
+      </div>
 
-        {/* Filter row */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-            <Input
-              placeholder="ค้นหาสินค้า..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 text-sm h-8"
-            />
-          </div>
-          <div className="flex gap-1.5 flex-wrap">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setFilterCat(cat)}
-                className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors cursor-pointer ${
-                  filterCat === cat
-                    ? 'bg-orange-500 text-white border-orange-500'
-                    : 'bg-white text-slate-600 border-slate-200 hover:border-orange-300'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Stats row */}
-        <div className="grid grid-cols-3 gap-3">
+      <div className="px-4 pb-6 space-y-4">
+        {/* ── 3 Neutral Stats Cards (Zero Rainbow Slop) ── */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {[
-            { label: 'สินค้าทั้งหมด', value: items.length, color: 'text-slate-700' },
-            { label: 'พร้อมขาย', value: items.filter((i) => i.isActive).length, color: 'text-emerald-600' },
-            { label: 'ระงับการขาย', value: items.filter((i) => !i.isActive).length, color: 'text-slate-400' },
+            { label: 'สินค้าทั้งหมด', value: items.length },
+            { label: 'พร้อมขาย', value: items.filter((i) => i.isActive).length },
+            { label: 'ระงับการขาย', value: items.filter((i) => !i.isActive).length },
           ].map((s) => (
-            <Card key={s.label} className="shadow-none border border-slate-100">
-              <CardContent className="p-3">
-                <p className="text-xs text-slate-500">{s.label}</p>
-                <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
+            <Card key={s.label} className="border-slate-200 bg-white shadow-2xs">
+              <CardContent className="p-4">
+                <p className="text-xs text-slate-500 font-medium">{s.label}</p>
+                <p className="text-2xl font-bold font-mono text-slate-900 mt-1">{s.value}</p>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        {/* Items Table */}
-        <Card className="shadow-none border border-slate-100">
-          <CardHeader className="p-3.5 pb-2 border-b border-slate-100">
-            <CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-              <Package className="w-4 h-4 text-orange-500" />
-              รายการสินค้า ({filtered.length})
-            </CardTitle>
+        {/* ── Clean Toolbar with Selection Dropdown (Matching Room Types Tab) ── */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2.5 flex-1">
+            <div className="relative min-w-[200px] flex-1 max-w-sm">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Input
+                placeholder="ค้นหาชื่อสินค้า..."
+                value={search}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                className="pl-9 h-9 text-xs border-slate-200 bg-white"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => handleSearchChange('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            <div className="w-44">
+              <Select
+                value={filterCat}
+                onChange={(e) => handleCategoryChange(e.target.value)}
+                className="text-xs h-9 bg-white"
+              >
+                <option value="ทั้งหมด">ทุกหมวดหมู่</option>
+                {CATEGORIES.filter((c) => c !== 'ทั้งหมด').map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </Select>
+            </div>
+
+            {(search || filterCat !== 'ทั้งหมด') && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSearch('');
+                  setFilterCat('ทั้งหมด');
+                  setCurrentPage(1);
+                }}
+                className="h-9 text-xs text-slate-500 hover:text-slate-800"
+              >
+                <RotateCcw className="w-3 h-3 mr-1" />
+                ล้างตัวกรอง
+              </Button>
+            )}
+          </div>
+
+          <div className="text-xs text-slate-500 shrink-0 font-medium">
+            แสดง {filtered.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1} -{' '}
+            {Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} จากทั้งหมด {filtered.length} รายการสินค้า
+          </div>
+        </div>
+
+        {/* ── Table (Matching Room Types Enterprise Font & Spacing) ── */}
+        <Card className="border-slate-200 shadow-2xs bg-white overflow-hidden rounded-xl">
+          <CardHeader className="py-3 px-4 border-b border-slate-100 flex flex-row items-center justify-between bg-white">
+            <div className="flex items-center gap-2">
+              <Package className="w-4 h-4 text-slate-400" />
+              <CardTitle className="text-sm font-semibold text-slate-800">
+                รายการสินค้า · {filtered.length} รายการ
+              </CardTitle>
+            </div>
+            <span className="text-[11px] text-slate-400 font-mono">
+              * ราคารวมภาษีมูลค่าเพิ่ม 7% เมื่อลงบิลเช็คเอาท์
+            </span>
           </CardHeader>
           <CardContent className="p-0">
-            {filtered.length === 0 ? (
-              <div className="py-12 text-center text-slate-400 text-sm">
-                ไม่พบรายการสินค้าที่ค้นหา
-              </div>
-            ) : (
-              <div className="divide-y divide-slate-100">
-                {filtered.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-800">{item.name}</p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-xs text-slate-400 font-mono">{item.id}</span>
-                          <Badge variant="outline" className="text-[11px] px-1.5 py-0 border-slate-200 text-slate-600">
-                            {item.category}
-                          </Badge>
-                          <span className="text-xs text-slate-500">หน่วย: {item.unit}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <span className="text-sm font-bold text-slate-800">
-                          ฿{item.pricePerUnit.toLocaleString()}
-                        </span>
-                        <span className="text-xs text-slate-400">/{item.unit}</span>
-                      </div>
-
-                      <button
-                        onClick={() => toggleActive(item.id)}
-                        className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors cursor-pointer ${
-                          item.isActive
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                            : 'bg-slate-100 text-slate-500 border border-slate-200'
-                        }`}
-                      >
-                        {item.isActive ? 'พร้อมขาย' : 'ระงับ'}
-                      </button>
-
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEdit(item)}
-                          className="h-7 w-7 p-0 text-slate-500 hover:text-slate-800 cursor-pointer"
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setDeleteTarget(item)}
-                          className="h-7 w-7 p-0 text-rose-500 hover:text-rose-700 cursor-pointer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-white text-[11px] text-slate-500 font-semibold border-b border-slate-100 uppercase tracking-wider">
+                  <tr>
+                    <th className="py-2.5 px-4 w-72">ชื่อสินค้า</th>
+                    <th className="py-2.5 px-3 w-40">หมวดหมู่</th>
+                    <th className="py-2.5 px-3 text-center w-36">ราคาต่อหน่วย</th>
+                    <th className="py-2.5 px-3 text-center w-28">หน่วยนับ</th>
+                    <th className="py-2.5 px-3 text-center w-36">สถานะ</th>
+                    <th className="py-2.5 px-4 text-center w-40">การจัดการ</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {paginatedItems.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-12 text-center text-slate-400 text-xs">
+                        ไม่พบสินค้าที่ตรงกับเงื่อนไข
+                      </td>
+                    </tr>
+                  ) : (
+                    paginatedItems.map((item) => (
+                      <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="py-3 px-4 text-xs text-slate-700 font-normal">{item.name}</td>
+                        <td className="py-3 px-3 text-slate-700">
+                          <span className="text-xs text-slate-700 font-normal">{item.category}</span>
+                        </td>
+                        <td className="py-3 px-3 text-center text-xs text-slate-700 font-normal">
+                          ฿{item.pricePerUnit.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        </td>
+                        <td className="py-3 px-3 text-center text-slate-700 text-xs">{item.unit}</td>
+                        <td className="py-3 px-3 text-center">
+                          <button
+                            type="button"
+                            onClick={() => toggleActive(item.id)}
+                            className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 hover:text-slate-900 transition-colors"
+                            title="คลิกเพื่อสลับสถานะ"
+                          >
+                            <span
+                              className={`w-2 h-2 rounded-full shrink-0 ${
+                                item.isActive ? 'bg-emerald-500' : 'bg-slate-300'
+                              }`}
+                            />
+                            <span>{item.isActive ? 'พร้อมขาย' : 'ระงับการขาย'}</span>
+                          </button>
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openEdit(item)}
+                              className="h-7 text-xs px-2 border-slate-300 text-slate-700 hover:bg-slate-50 gap-1 font-medium"
+                            >
+                              <Pencil className="w-3 h-3 text-slate-500" />
+                              <span>แก้ไข</span>
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setDeleteTarget(item)}
+                              className="h-7 text-xs px-2 border-red-200 text-red-600 hover:bg-red-50"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Modal Create / Edit */}
-        {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-            <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-              <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100">
-                <h3 className="font-semibold text-slate-800 text-sm flex items-center gap-2">
-                  <ShoppingCart className="w-4 h-4 text-orange-500" />
-                  {editItem ? 'แก้ไขสินค้ามินิบาร์' : 'เพิ่มสินค้ามินิบาร์ใหม่'}
-                </h3>
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="p-1 rounded-md text-slate-400 hover:text-slate-600 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="p-5 space-y-3.5">
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 mb-1 block">ชื่อสินค้า</label>
-                  <Input
-                    placeholder="เช่น น้ำแร่ 500ml"
-                    value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    className="text-sm"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-semibold text-slate-700 mb-1 block">หมวดหมู่</label>
-                    <select
-                      value={form.category}
-                      onChange={(e) => setForm({ ...form, category: e.target.value })}
-                      className="w-full text-sm border border-slate-200 rounded-md px-2.5 py-1.5 bg-white text-slate-700 focus:outline-none focus:border-orange-500"
-                    >
-                      {CATEGORIES.filter((c) => c !== 'ทั้งหมด').map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-semibold text-slate-700 mb-1 block">หน่วยนับ</label>
-                    <Input
-                      placeholder="เช่น ขวด, กระป๋อง"
-                      value={form.unit}
-                      onChange={(e) => setForm({ ...form, unit: e.target.value })}
-                      className="text-sm"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 mb-1 block">ราคาขายต่อหน่วย (บาท)</label>
-                  <Input
-                    type="number"
-                    min="1"
-                    placeholder="0.00"
-                    value={form.pricePerUnit || ''}
-                    onChange={(e) => setForm({ ...form, pricePerUnit: parseFloat(e.target.value) || 0 })}
-                    className="text-sm"
-                  />
-                </div>
-
-                <div className="flex items-center gap-2 pt-1">
-                  <input
-                    type="checkbox"
-                    id="isActiveCheck"
-                    checked={form.isActive}
-                    onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
-                    className="rounded text-orange-500 focus:ring-orange-400"
-                  />
-                  <label htmlFor="isActiveCheck" className="text-xs text-slate-700 select-none">
-                    พร้อมจำหน่ายทันที (Active)
-                  </label>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 px-5 py-3 border-t border-slate-100 bg-slate-50">
-                <Button variant="outline" size="sm" onClick={() => setShowModal(false)}>
-                  ยกเลิก
-                </Button>
-                <Button size="sm" onClick={handleSave} className="bg-orange-500 hover:bg-orange-600 text-white flex items-center gap-1.5">
-                  <Save className="w-3.5 h-3.5" />
-                  บันทึก
-                </Button>
-              </div>
+        {/* ── Pagination Bar (Active when items > 10) ── */}
+        {filtered.length > ITEMS_PER_PAGE && (
+          <div className="flex items-center justify-between bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-2xs mt-4">
+            <div className="text-xs text-slate-500 font-medium">
+              แสดง <span className="font-semibold text-slate-800">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> -{' '}
+              <span className="font-semibold text-slate-800">
+                {Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)}
+              </span>{' '}
+              จากทั้งหมด <span className="font-semibold text-slate-800">{filtered.length}</span> รายการสินค้า · 10 รายการต่อหน้า
             </div>
-          </div>
-        )}
 
-        {/* Modal Delete Confirm */}
-        {deleteTarget && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-            <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-sm p-5 space-y-3">
-              <h3 className="font-semibold text-slate-800 text-sm">ยืนยันการลบสินค้า</h3>
-              <p className="text-xs text-slate-500">
-                ต้องการลบ <strong className="text-slate-800">{deleteTarget.name}</strong> ออกจากระบบหรือไม่?
-              </p>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button variant="outline" size="sm" onClick={() => setDeleteTarget(null)}>
-                  ยกเลิก
-                </Button>
-                <Button size="sm" onClick={handleDelete} className="bg-rose-600 hover:bg-rose-700 text-white">
-                  ยืนยันลบ
-                </Button>
-              </div>
+            <div className="flex items-center gap-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className="h-8 px-2.5 text-xs text-slate-600 border-slate-200 hover:bg-slate-50 disabled:opacity-40"
+              >
+                <ChevronLeft className="w-3.5 h-3.5 mr-1" />
+                ก่อนหน้า
+              </Button>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                <button
+                  key={pageNum}
+                  onClick={() => setCurrentPage(pageNum)}
+                  className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all ${
+                    currentPage === pageNum
+                      ? 'bg-slate-900 text-white shadow-2xs'
+                      : 'text-slate-600 hover:bg-slate-100 border border-transparent'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              ))}
+
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                className="h-8 px-2.5 text-xs text-slate-600 border-slate-200 hover:bg-slate-50 disabled:opacity-40"
+              >
+                ถัดไป
+                <ChevronRight className="w-3.5 h-3.5 ml-1" />
+              </Button>
             </div>
           </div>
         )}
       </div>
+
+      {/* ── Create / Edit Modal (Styled like Add Room Type Modal with Red Asterisks) ── */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <ShoppingCart className="w-5 h-5 text-[#F97316]" />
+                <h3 className="text-base font-bold text-slate-900">
+                  {editItem ? 'แก้ไขสินค้ามินิบาร์' : 'เพิ่มสินค้ามินิบาร์ใหม่'}
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowModal(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-md"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="py-4 space-y-3.5">
+              <div>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  ชื่อสินค้า <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  value={form.name}
+                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  placeholder="เช่น น้ำดื่ม 600ml"
+                  className="text-xs h-9"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    หมวดหมู่ <span className="text-red-500">*</span>
+                  </label>
+                  <Select
+                    value={form.category}
+                    onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+                    className="text-xs h-9"
+                  >
+                    {CATEGORIES.filter((c) => c !== 'ทั้งหมด').map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    หน่วยนับ <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    value={form.unit}
+                    onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
+                    placeholder="ขวด / กระป๋อง / ถุง"
+                    className="text-xs h-9"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  ราคาต่อหน่วย · บาท <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  type="number"
+                  min={0}
+                  step={0.5}
+                  value={form.pricePerUnit}
+                  onChange={(e) => setForm((f) => ({ ...f, pricePerUnit: Number(e.target.value) }))}
+                  className="text-xs font-mono h-9"
+                  required
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="isActive"
+                  checked={form.isActive}
+                  onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
+                  className="accent-[#F97316] w-4 h-4 rounded"
+                />
+                <label htmlFor="isActive" className="text-xs font-medium text-slate-700 cursor-pointer">
+                  เปิดให้จำหน่าย (พร้อมขาย)
+                </label>
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-3 border-t border-slate-100">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowModal(false)}
+                className="flex-1 text-xs h-9"
+              >
+                ยกเลิก
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSave}
+                disabled={!form.name.trim() || form.pricePerUnit <= 0}
+                className="flex-1 bg-[#F97316] hover:bg-orange-600 text-white text-xs h-9 flex items-center justify-center gap-1.5 shadow-2xs"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>บันทึก</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete Confirm Modal ── */}
+      {deleteTarget && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-5 border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle className="w-5 h-5 text-red-500" />
+              <h3 className="text-base font-bold text-slate-800">ยืนยันการลบสินค้า</h3>
+            </div>
+            <p className="text-xs text-slate-600 mb-4 leading-relaxed">
+              ต้องการลบรายการ <strong>{deleteTarget.name}</strong> ออกจากแคตตาล็อกมินิบาร์หรือไม่?
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDeleteTarget(null)}
+                className="flex-1 text-xs h-9"
+              >
+                ยกเลิก
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleDelete}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white text-xs h-9 shadow-2xs"
+              >
+                ยืนยันการลบ
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 };
