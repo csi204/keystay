@@ -217,19 +217,16 @@
 **Files:**
 - Run test suites and capture screenshots.
 
-- [ ] **Step 7.1: Run Mocha Backend Suite**
-  - Command: `pnpm test` (all 211 tests must pass).
-- [ ] **Step 7.2: Run Web Test Suite**
-  - Command: `npm run test:web` (all 315+ web tests must pass).
-- [ ] **Step 7.3: Monorepo Typecheck**
+- [x] **Step 7.1: Run Mocha Backend Suite**
+  - Command: `pnpm test` (all 216 tests must pass).
+- [x] **Step 7.2: Run Web Test Suite**
+  - Command: `npm run test:web` (all 368 web tests must pass).
+- [x] **Step 7.3: Monorepo Typecheck**
   - Command: `pnpm dlx turbo run typecheck` (11 packages 0 errors).
-- [ ] **Step 7.4: Visual Proof & Screenshots**
-  - Capture screenshots verifying:
-    1. Phone & Thai ID masked formatting.
-    2. Room 102 blocked from walk-in/new booking dropdown for today.
-    3. Single name "อัศวิน" saved cleanly without "Customer".
-    4. Room charge locked with Lucide `Lock` icon and non-deletable.
-    5. Daily operations departures tab with 2 sub-tabs (Due Today and Early/Extended).
-    6. Net total due displayed clearly and deposit matching ฿3,000.
-    7. All Thai spellings standardized to "เช็คเอาต์".
+- [x] **Step 7.4: Visual Proof & Screenshots**
+  - Captured screenshots in `preview-responsive/`:
+    1. `10-daily-operations-early-checkout-subtabs.png`: Early checkout & extended subtabs with count badges.
+    2. `11-masked-inputs-walkin-modal.png`: Phone (`xxx-xxx-xxxx`) and Thai ID (`x-xxxx-xxxxx-xx-x`) / Passport masked inputs.
+    3. `12-cashier-hub-locked-room-charge-and-net-due.png`: Net Total Due (`ยอดสุทธิ`), locked room charge (`Lock` icon), dynamic deposit amount.
+    4. `13-room-matrix-overview.png`: Clean room matrix with real guest names and zero ghost suffixes.
 
