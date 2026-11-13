@@ -5,6 +5,8 @@ import type { ExtendedReservation } from '../hooks/useReservations';
  * Synchronizes a single bill with active in-house reservation details.
  * - Overrides guestName with the real guest name if present.
  * - Heals phantom 'paid' status to 'pending' if the reservation is not paid and the bill has 0 items / empty total.
+ * - Preserves individual line item descriptions and `isPaid` flags untouched (never merges or overwrites
+ *   initial room nights with `totalNights` so initial nights and extension nights stay separate).
  */
 export function syncBillWithReservation(
   bill: DetailedBill,

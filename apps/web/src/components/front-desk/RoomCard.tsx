@@ -131,10 +131,10 @@ export const ROOM_STATUS_CONFIG: Record<
   },
   reserved: {
     label: 'ติดจอง',
-    bg: 'bg-amber-100 dark:bg-amber-950/40',
-    text: 'text-amber-950 dark:text-amber-200',
-    border: 'border-amber-400 dark:border-amber-800',
-    dot: 'bg-amber-500 ring-2 ring-amber-300 dark:ring-amber-900',
+    bg: 'bg-amber-100',
+    text: 'text-amber-950',
+    border: 'border-amber-300',
+    dot: 'bg-amber-500 ring-2 ring-amber-300',
   },
   checked_out: {
     label: 'รอทำความสะอาด',
@@ -255,7 +255,13 @@ export const RoomCard: React.FC<RoomCardProps> = ({
           {room.roomNumber}
         </span>
         <div className="flex items-center gap-1.5">
-          <span className="inline-flex items-center gap-1.5 rounded-full text-xs px-2.5 py-0.5 font-semibold text-slate-900 bg-slate-100/70 backdrop-blur-xs border border-slate-200/70 shadow-2xs">
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full text-xs px-2.5 py-0.5 font-semibold shadow-2xs ${
+              room.status === 'reserved'
+                ? 'bg-amber-100 text-amber-950 border border-amber-300'
+                : 'text-slate-900 bg-slate-100/70 backdrop-blur-xs border border-slate-200/70'
+            }`}
+          >
             <span className={`w-2 h-2 rounded-full shrink-0 ${statusCfg.dot}`} />
             <span>{localizedStatus}</span>
           </span>
@@ -269,9 +275,9 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                 e.stopPropagation();
                 setIsMenuOpen((prev) => !prev);
               }}
-              className="p-1 rounded-md text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none cursor-pointer"
+              className="p-1 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors focus:outline-none cursor-pointer"
             >
-              <MoreVertical className="w-3.5 h-3.5 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200" strokeWidth={1.75} aria-hidden="true" />
+              <MoreVertical className="w-3.5 h-3.5 text-slate-500 hover:text-slate-900" strokeWidth={1.75} aria-hidden="true" />
             </button>
 
             {/* Quick Actions Dropdown Menu */}
@@ -279,10 +285,10 @@ export const RoomCard: React.FC<RoomCardProps> = ({
               <div
                 role="menu"
                 aria-orientation="vertical"
-                className="absolute right-0 top-full mt-1.5 w-48 bg-white dark:bg-slate-900 rounded-lg shadow-xl border border-slate-200 dark:border-slate-800 py-1.5 z-30 overflow-hidden"
+                className="absolute right-0 top-full mt-1.5 w-48 bg-white rounded-lg shadow-xl border border-slate-200 py-1.5 z-30 overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="px-3 py-1 text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 mb-1">
+                <div className="px-3 py-1 text-[11px] font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-100 mb-1">
                   {locale === 'th' ? `ห้อง ${room.roomNumber}` : `Room ${room.roomNumber}`}
                 </div>
                 {quickActions.map((action) => {
@@ -300,8 +306,8 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                       }}
                       className={`w-full px-3 py-2 text-left text-xs font-medium flex items-center gap-2.5 transition-colors cursor-pointer ${
                         isDanger
-                          ? 'text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40'
-                          : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          ? 'text-rose-600 hover:bg-rose-50'
+                          : 'text-slate-700 hover:bg-slate-100'
                       }`}
                     >
                       <Icon className="w-4 h-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />
@@ -350,9 +356,12 @@ export const RoomCard: React.FC<RoomCardProps> = ({
               <span className="leading-none">{bathLabel}</span>
             </span>
             {room.notes && (
-              <div className="inline-flex items-center gap-1 text-[11px] bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-800 max-w-full truncate">
-                <FileText className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
-                <span className="truncate">{localizeRoomNote(room.notes, locale)}</span>
+              <div
+                title={localizeRoomNote(room.notes, locale)}
+                className="inline-flex items-center gap-1 text-[11px] bg-amber-50 text-amber-900 px-2 py-0.5 rounded border border-amber-200 max-w-full truncate"
+              >
+                <FileText className="w-3 h-3 text-amber-700 shrink-0" />
+                <span className="truncate line-clamp-1">{localizeRoomNote(room.notes, locale)}</span>
               </div>
             )}
           </div>
@@ -374,9 +383,12 @@ export const RoomCard: React.FC<RoomCardProps> = ({
               </div>
             )}
             {room.notes && (
-              <div className="inline-flex items-center gap-1 text-[11px] bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-800 max-w-full truncate">
-                <FileText className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
-                <span className="truncate">{localizeRoomNote(room.notes, locale)}</span>
+              <div
+                title={localizeRoomNote(room.notes, locale)}
+                className="inline-flex items-center gap-1 text-[11px] bg-amber-50 text-amber-900 px-2 py-0.5 rounded border border-amber-200 max-w-full truncate"
+              >
+                <FileText className="w-3 h-3 text-amber-700 shrink-0" />
+                <span className="truncate line-clamp-1">{localizeRoomNote(room.notes, locale)}</span>
               </div>
             )}
           </div>
@@ -387,17 +399,20 @@ export const RoomCard: React.FC<RoomCardProps> = ({
           <div className="flex flex-wrap items-center gap-1.5">
             {displayGuest && (
               <span
-                className="inline-flex items-center gap-1 text-xs bg-amber-100/90 text-amber-950 font-bold border border-amber-300 dark:bg-amber-900/40 dark:text-amber-200 dark:border-amber-700 px-1.5 py-0.5 rounded max-w-[140px] truncate"
+                className="inline-flex items-center gap-1 text-xs bg-amber-100 text-amber-950 font-semibold border border-amber-300 px-2 py-0.5 rounded max-w-[140px] truncate"
                 title={displayGuest}
               >
-                <User className="w-3 h-3 text-amber-700 dark:text-amber-400 shrink-0" strokeWidth={1.75} />
+                <User className="w-3 h-3 text-amber-800 shrink-0" strokeWidth={1.75} />
                 <span className="truncate">{displayGuest}</span>
               </span>
             )}
             {room.notes ? (
-              <div className="inline-flex items-center gap-1 text-[11px] bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-800 max-w-full truncate">
-                <FileText className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
-                <span className="truncate">{localizeRoomNote(room.notes, locale)}</span>
+              <div
+                title={localizeRoomNote(room.notes, locale)}
+                className="inline-flex items-center gap-1 text-[11px] bg-amber-50 text-amber-900 px-2 py-0.5 rounded border border-amber-200 max-w-full truncate"
+              >
+                <FileText className="w-3 h-3 text-amber-700 shrink-0" />
+                <span className="truncate line-clamp-1">{localizeRoomNote(room.notes, locale)}</span>
               </div>
             ) : !displayGuest ? (
               <span className="text-slate-400 font-mono text-[11px]">—</span>
@@ -421,9 +436,12 @@ export const RoomCard: React.FC<RoomCardProps> = ({
           room.status !== 'out_of_order' && (
             <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-600 leading-snug">
               {room.notes ? (
-                <div className="inline-flex items-center gap-1 text-[11px] bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-800 max-w-full truncate">
-                  <FileText className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
-                  <span className="truncate">{localizeRoomNote(room.notes, locale)}</span>
+                <div
+                  title={localizeRoomNote(room.notes, locale)}
+                  className="inline-flex items-center gap-1 text-[11px] bg-amber-50 text-amber-900 px-2 py-0.5 rounded border border-amber-200 max-w-full truncate"
+                >
+                  <FileText className="w-3 h-3 text-amber-700 shrink-0" />
+                  <span className="truncate line-clamp-1">{localizeRoomNote(room.notes, locale)}</span>
                 </div>
               ) : (
                 <span className="text-slate-400 font-mono text-[11px]">—</span>

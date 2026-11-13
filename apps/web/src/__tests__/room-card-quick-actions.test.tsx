@@ -46,11 +46,11 @@ describe('Task 4: Quick Actions Context Menu (... MoreVertical) on RoomCard', ()
       'RoomCard.tsx must import MoreVertical from lucide-react'
     );
 
-    // Check button icon styling classes specified in brief
+    // Check button icon styling classes in light mode
     assert.match(
       roomCardCode,
-      /w-3\.5\s+h-3\.5\s+text-slate-400\s+hover:text-slate-800\s+dark:hover:text-slate-200/,
-      'MoreVertical button icon must have specified styling'
+      /w-3\.5\s+h-3\.5\s+text-slate-500\s+hover:text-slate-900/,
+      'MoreVertical button icon must have crisp light-mode styling'
     );
 
     // Check stopPropagation on trigger to prevent card onClick from firing
@@ -239,7 +239,7 @@ describe('Task 4: Quick Actions Context Menu (... MoreVertical) on RoomCard', ()
     // Button should be rendered with Quick Actions aria-label
     assert.match(html, /aria-label="Quick Actions"/);
     // Button styling classes present
-    assert.match(html, /text-slate-400\s+hover:text-slate-800/);
+    assert.match(html, /text-slate-500\s+hover:text-slate-900/);
     // Room number 101 rendered
     assert.match(html, /101/);
   });

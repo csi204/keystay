@@ -1,11 +1,16 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { ExtendedReservation, resolveGuestName } from '@/hooks/useReservations';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { ExtendedReservation, resolveGuestName, resolveReservationNightlyRate } from '@/hooks/useReservations';
 import { RoomType } from '@keystay/types';
 import { DetailedBill, BillItem } from '@/hooks/useBilling';
 import { useI18n } from '@/lib/i18n';
 import { useToast } from '@/context/ToastContext';
 import { localizeRoomType, localizeFolioDescription } from '@/lib/localizeMetadata';
-import { calculateFolioSummary, FolioItemLike } from '@/components/front-desk/FolioSplitScreen';
+import {
+  calculateFolioSummary,
+  FolioItemLike,
+  isFolioItemPaid,
+  isExtensionChargeDescription,
+} from '@/components/front-desk/FolioSplitScreen';
 import { AddExtraChargeModal } from '@/components/front-desk/AddExtraChargeModal';
 import { ReceiptTaxInvoiceModal } from '@/components/front-desk/ReceiptTaxInvoiceModal';
 import { FolioCategoryBadge } from '@/lib/folioCategory';
@@ -33,6 +38,7 @@ export interface CheckOutModalProps {
   reservation: ExtendedReservation | null;
   roomType?: RoomType | null;
   isOpen: boolean;
+  initialFolioItems?: BillItem[];
   onClose: () => void;
   onSuccess?: () => void;
   onConfirm?: (
@@ -49,6 +55,7 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
   reservation,
   roomType,
   isOpen,
+  initialFolioItems,
   onClose,
   onSuccess,
   onConfirm,
@@ -64,7 +71,7 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
 
   // Folio state
   const [billId, setBillId] = useState<string | null>(null);
-  const [folioItems, setFolioItems] = useState<BillItem[]>([]);
+  const [folioItems, setFolioItems] = useState<BillItem[]>(initialFolioItems || []);
   const [isAddChargeOpen, setIsAddChargeOpen] = useState<boolean>(false);
   const [isReceiptOpen, setIsReceiptOpen] = useState<boolean>(false);
   const [settledBill, setSettledBill] = useState<DetailedBill | null>(null);
@@ -89,9 +96,48 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
   const depositAmountNum = Number(reservation?.depositAmount || 1000);
   const depositFormatted = formatCurrency(depositAmountNum);
 
-  // Initialize folio items when modal opens
+  const prevOpenRef = useRef<boolean>(false);
+  const prevReservationIdRef = useRef<string | undefined>(undefined);
+
+  const buildDefaultRoomItem = (): BillItem | null => {
+    if (!reservation) return null;
+    const nights = Math.max(1, Number(reservation.totalNights) || 1);
+    const nightlyRate = resolveReservationNightlyRate(reservation, roomType, 1200);
+    const roomSubtotal = nightlyRate * nights;
+
+    return {
+      id: `room-${reservation.id}`,
+      billId: reservation.id,
+      description: roomTypeName
+        ? `${roomTypeName} (${nights} ${locale === 'th' ? 'คืน' : 'nights'})`
+        : `Room Charge (${nights} nights)`,
+      category: 'room',
+      itemType: 'room_charge',
+      quantity: nights,
+      unitPrice: String(nightlyRate),
+      totalAmount: String(roomSubtotal),
+      isPaid: reservation.paymentStatus === 'paid',
+      createdAt: new Date().toISOString(),
+    };
+  };
+
+  const defaultRoomItemRef = useRef<BillItem | null>(null);
+  defaultRoomItemRef.current = buildDefaultRoomItem();
+
+  const reservationId = reservation?.id;
+
+  // 1. Reset form fields ONLY when modal opens (false -> true) or reservation.id changes
   useEffect(() => {
-    if (!isOpen || !reservation) return;
+    const wasOpen = prevOpenRef.current;
+    const prevResId = prevReservationIdRef.current;
+    prevOpenRef.current = isOpen;
+    prevReservationIdRef.current = reservationId;
+
+    if (!isOpen || !reservationId) return;
+
+    const justOpened = !wasOpen && isOpen;
+    const switchedReservation = reservationId !== prevResId;
+    if (!justOpened && !switchedReservation) return;
 
     setKeyCardReturned(true);
     setNote('');
@@ -99,54 +145,42 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
     setError(null);
     setIsSuccess(false);
     setSettledBill(null);
+  }, [isOpen, reservationId]);
 
-    const nights = Math.max(1, Number(reservation.totalNights) || 1);
-    const nightlyRate = roomType?.basePrice
-      ? Number(roomType.basePrice)
-      : Math.round(Number(reservation.totalAmount || 1200) / nights);
-    const roomSubtotal = nightlyRate * nights;
-
-    const defaultRoomItem: BillItem = {
-      id: `room-${reservation.id}`,
-      billId: reservation.id,
-      description: roomTypeName
-        ? `${roomTypeName} (${nights} ${locale === 'th' ? 'คืน' : 'nights'})`
-        : `Room Charge (${nights} nights)`,
-      category: 'room',
-      quantity: nights,
-      unitPrice: String(nightlyRate),
-      totalAmount: String(roomSubtotal),
-      createdAt: new Date().toISOString(),
-    };
+  // 2. Fetch existing bill from backend strictly keyed on [isOpen, reservation?.id]
+  //    so parent object identity re-renders never cancel an in-flight folio fetch.
+  useEffect(() => {
+    if (!isOpen || !reservationId) return;
 
     let isMounted = true;
 
-    // Fetch existing bill from backend if exists
-    apiFetch<DetailedBill>(`/api/bills/by-reservation/${reservation.id}`)
+    apiFetch<DetailedBill>(`/api/bills/by-reservation/${reservationId}`)
       .then((res) => {
         if (!isMounted) return;
+        const fallbackItems = defaultRoomItemRef.current ? [defaultRoomItemRef.current] : [];
         if (res.data) {
           setBillId(res.data.id);
           if (res.data.items && res.data.items.length > 0) {
             setFolioItems(res.data.items);
           } else {
-            setFolioItems([defaultRoomItem]);
+            setFolioItems(fallbackItems);
           }
         } else {
           setBillId(null);
-          setFolioItems([defaultRoomItem]);
+          setFolioItems(fallbackItems);
         }
       })
       .catch(() => {
         if (!isMounted) return;
+        const fallbackItems = defaultRoomItemRef.current ? [defaultRoomItemRef.current] : [];
         setBillId(null);
-        setFolioItems([defaultRoomItem]);
+        setFolioItems(fallbackItems);
       });
 
     return () => {
       isMounted = false;
     };
-  }, [isOpen, reservation, roomType, roomTypeName, locale]);
+  }, [isOpen, reservationId]);
 
   // Handle Escape key
   useEffect(() => {
@@ -163,7 +197,12 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
   const summary = useMemo(() => {
     const fallbackSubtotal = reservation?.totalAmount || 1200;
     const effectiveDeposit = keyCardReturned ? depositAmountNum : 0;
-    return calculateFolioSummary(folioItems as FolioItemLike[], effectiveDeposit, fallbackSubtotal);
+    return calculateFolioSummary(
+      folioItems as FolioItemLike[],
+      effectiveDeposit,
+      fallbackSubtotal,
+      { reservationPaymentStatus: reservation?.paymentStatus }
+    );
   }, [folioItems, keyCardReturned, depositAmountNum, reservation]);
 
   if (!isOpen || !reservation) return null;
@@ -187,6 +226,7 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
       quantity: data.quantity,
       unitPrice: data.unitPrice,
       totalAmount: calculatedTotal,
+      isPaid: false,
       createdAt: new Date().toISOString(),
     };
 
@@ -194,7 +234,7 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
       try {
         await apiFetch(`/api/bills/${billId}/items`, {
           method: 'POST',
-          body: JSON.stringify(data),
+          body: JSON.stringify({ ...data, isPaid: false }),
         });
       } catch (e) {
         console.warn('Backend add item failed, fallback to local state', e);
@@ -268,16 +308,20 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
       if (!billIdToPay) {
         const mappedItems = folioItems.map((item) => {
           let itemType = 'other';
-          if (item.category === 'room') itemType = 'room_charge';
+          if (item.category === 'room' || item.itemType === 'room_charge') itemType = 'room_charge';
           else if (item.category === 'minibar') itemType = 'minibar';
           else if (item.category === 'laundry') itemType = 'laundry';
           else if (item.category === 'service') itemType = 'room_service';
           else if (item.category === 'damage') itemType = 'damage';
           return {
             itemType,
+            category: item.category || 'other',
             description: item.description,
             quantity: Number(item.quantity) || 1,
             unitPrice: Number(item.unitPrice) || 0,
+            isPaid: isFolioItemPaid(item as FolioItemLike, {
+              reservationPaymentStatus: reservation.paymentStatus,
+            }),
           };
         });
 
@@ -287,7 +331,12 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
             reservationId: reservation.id,
             guestName: guestDisplayName,
             roomNumber: reservation.roomNumber || '—',
-            depositDeducted: depositAmountNum,
+            serviceChargeRate: 0,
+            depositDeducted: summary.depositDeduction,
+            status:
+              summary.netDue === 0 && !summary.hasUnpaidCharges && reservation.paymentStatus === 'paid'
+                ? 'paid'
+                : 'pending',
             items: mappedItems,
           }),
         });
@@ -300,7 +349,8 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
         await apiFetch(`/api/bills/${billIdToPay}/pay`, {
           method: 'POST',
           body: JSON.stringify({
-            paymentMethod,
+            paymentMethod: summary.netDue > 0 ? paymentMethod : 'cash',
+            depositDeducted: summary.depositDeduction,
             amount: Math.max(0, summary.netDue).toFixed(2),
           }),
         }).catch((e) => console.warn('Payment recording error:', e));
@@ -362,7 +412,7 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
+      <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
         {/* Backdrop */}
         <div
           className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity"
@@ -426,14 +476,22 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
                 {/* Hero Metric Settled */}
                 <div className="max-w-md mx-auto p-4 bg-emerald-50/70 border border-emerald-200 rounded-xl space-y-1">
                   <div className="text-xs font-semibold text-emerald-800 uppercase tracking-wider">
-                    {t('checkout.paidStatus')}
+                    {summary.netDue > 0
+                      ? t('checkout.paidStatus')
+                      : summary.refundAmount > 0
+                        ? summary.refundAmount === depositAmountNum && depositAmountNum > 0
+                          ? (locale === 'th' ? 'คืนเงินมัดจำเต็มจำนวน' : 'Full Deposit Refund')
+                          : (locale === 'th' ? 'คืนเงินมัดจำคงเหลือ' : 'Remaining Deposit Refund')
+                        : t('checkout.paidStatus')}
                   </div>
                   <div className="text-3xl font-extrabold font-mono tabular-nums text-emerald-950">
-                    {formatCurrency(summary.netDue)}
+                    {formatCurrency(summary.netDue > 0 ? summary.netDue : summary.refundAmount)}
                   </div>
-                  <div className="text-xs text-emerald-700 font-medium">
-                    {t('checkout.paymentMethod')}: {t(`payment.${paymentMethod}`)}
-                  </div>
+                  {summary.netDue > 0 && (
+                    <div className="text-xs text-emerald-700 font-medium">
+                      {t('checkout.paymentMethod')}: {t(`payment.${paymentMethod}`)}
+                    </div>
+                  )}
                 </div>
 
                 {/* Actions: Print ABB & Finish */}
@@ -525,17 +583,35 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
                           </tr>
                         ) : (
                           folioItems.map((item) => {
-                            const isRoom = item.category === 'room' || item.id?.startsWith('room-');
+                            const itemPaid = isFolioItemPaid(item as FolioItemLike, {
+                              reservationPaymentStatus: reservation.paymentStatus,
+                            });
+                            const isCoreRoom =
+                              (item.category === 'room' ||
+                                item.itemType === 'room_charge' ||
+                                item.id?.startsWith('room-')) &&
+                              !isExtensionChargeDescription(item.description);
                             const itemPrice = parseFloat(item.unitPrice || '0') || 0;
                             const itemTotal = parseFloat(item.totalAmount || '0') || itemPrice * (item.quantity || 1);
 
                             return (
                               <tr key={item.id} className="hover:bg-slate-50 transition-colors">
                                 <td className="py-2.5 px-3 text-slate-800 font-medium">
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-2 flex-wrap">
                                     <FolioCategoryBadge item={item} />
-                                    <span className="truncate max-w-[220px] sm:max-w-xs">
+                                    <span className="truncate max-w-[200px] sm:max-w-xs">
                                       {localizeFolioDescription(item.description, locale)}
+                                    </span>
+                                    <span
+                                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border ${
+                                        itemPaid
+                                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                          : 'bg-amber-50 text-amber-800 border-amber-200'
+                                      }`}
+                                    >
+                                      {itemPaid
+                                        ? (locale === 'th' ? 'ชำระแล้ว' : 'Paid')
+                                        : (locale === 'th' ? 'ค้างชำระ' : 'Unpaid')}
                                     </span>
                                   </div>
                                 </td>
@@ -549,7 +625,7 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
                                   {formatCurrency(itemTotal)}
                                 </td>
                                 <td className="py-2.5 px-2 text-center">
-                                  {!isRoom && (
+                                  {!itemPaid && !isCoreRoom && (
                                     <button
                                       type="button"
                                       onClick={() => handleDeleteItem(item.id)}
@@ -570,19 +646,37 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
 
                   {/* Financial Breakdown & Deductions */}
                   <div className="p-4 bg-slate-50/50 border-t border-slate-200 space-y-2 text-xs sm:text-sm font-mono tabular-nums">
+                    {summary.paidTotalWithVat > 0 && (
+                      <div className="flex justify-between items-center text-emerald-700 pb-1.5 border-b border-slate-200/80">
+                        <span className="font-sans flex items-center gap-1.5 font-medium">
+                          <span>
+                            {locale === 'th' ? 'ค่าห้องพักเบื้องต้น (รวม VAT 7%)' : 'Initial Stay (incl. 7% VAT)'}
+                          </span>
+                          <span className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            {locale === 'th' ? 'ชำระแล้ว' : 'Paid'}
+                          </span>
+                        </span>
+                        <span className="font-semibold">{formatCurrency(summary.paidTotalWithVat)}</span>
+                      </div>
+                    )}
+
                     <div className="flex justify-between text-slate-600">
-                      <span className="font-sans">{t('checkout.subtotal')}</span>
-                      <span>{formatCurrency(summary.subtotal)}</span>
+                      <span className="font-sans">
+                        {locale === 'th' ? 'ยอดรายการค้างชำระ (ก่อน VAT)' : t('checkout.subtotal')}
+                      </span>
+                      <span>{formatCurrency(summary.unpaidSubtotal)}</span>
                     </div>
 
                     <div className="flex justify-between text-slate-600">
                       <span className="font-sans">{t('checkout.vat')}</span>
-                      <span>{formatCurrency(summary.vat)}</span>
+                      <span>{formatCurrency(summary.unpaidVat)}</span>
                     </div>
 
                     <div className="flex justify-between text-slate-800 font-semibold pt-1 border-t border-slate-200">
-                      <span className="font-sans">{t('checkout.totalWithVat')}</span>
-                      <span>{formatCurrency(summary.totalWithVat)}</span>
+                      <span className="font-sans">
+                        {locale === 'th' ? 'รวมค่าใช้จ่ายใหม่สุทธิ' : t('checkout.totalWithVat')}
+                      </span>
+                      <span>{formatCurrency(summary.unpaidTotalWithVat)}</span>
                     </div>
 
                     {keyCardReturned && summary.depositDeduction > 0 && (
@@ -596,22 +690,53 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
                     )}
                   </div>
 
-                  {/* Net Due Hero Metric */}
-                  <div className="p-4 bg-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div>
-                      <div className="text-xs uppercase tracking-wider text-slate-400 font-sans font-semibold">
-                        {t('checkout.netDue')} (ยอดชำระสุทธิ)
+                  {/* Net Due / Deposit Refund Hero Metric */}
+                  {summary.netDue > 0 ? (
+                    <div className="p-4 bg-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <div className="text-xs uppercase tracking-wider text-slate-400 font-sans font-semibold">
+                          {locale === 'th' ? 'ยอดค้างชำระสุทธิ' : t('checkout.netDue')}
+                        </div>
+                        <div className="text-xs text-slate-400 font-sans mt-0.5">
+                          {keyCardReturned
+                            ? t('checkout.keyDepositRefundTitle') + ` (-${depositFormatted})`
+                            : t('checkout.keyCardMissingWarning')}
+                        </div>
                       </div>
-                      <div className="text-xs text-slate-400 font-sans mt-0.5">
-                        {keyCardReturned
-                          ? t('checkout.keyDepositRefundTitle') + ` (-${depositFormatted})`
-                          : t('checkout.keyCardMissingWarning')}
+                      <div className="text-2xl sm:text-3xl font-extrabold font-mono tabular-nums text-white">
+                        {formatCurrency(summary.netDue)}
                       </div>
                     </div>
-                    <div className="text-2xl sm:text-3xl font-extrabold font-mono tabular-nums text-white">
-                      {formatCurrency(summary.netDue)}
+                  ) : (
+                    <div className="p-4 bg-emerald-50 border-t border-emerald-200 text-emerald-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <div className="text-xs uppercase tracking-wider text-emerald-800 font-sans font-bold flex items-center gap-1.5">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600" aria-hidden="true" />
+                          <span>
+                            {summary.refundAmount > 0
+                              ? summary.refundAmount === depositAmountNum && depositAmountNum > 0
+                                ? (locale === 'th' ? 'คืนเงินมัดจำเต็มจำนวน' : 'Full Deposit Refund')
+                                : (locale === 'th' ? 'คืนเงินมัดจำคงเหลือ' : 'Remaining Deposit Refund')
+                              : (locale === 'th' ? 'ไม่มียอดค้างชำระ' : 'Zero Balance Due')}
+                          </span>
+                        </div>
+                        <div className="text-xs text-emerald-700 font-sans mt-0.5">
+                          {keyCardReturned
+                            ? summary.refundAmount > 0
+                              ? (locale === 'th'
+                                ? `ค่าห้องพักเบื้องต้นชำระแล้ว — คืนเงินมัดจำให้แขก ${formatCurrency(summary.refundAmount)}`
+                                : `Initial stay pre-paid — refund ${formatCurrency(summary.refundAmount)} deposit to guest`)
+                              : (locale === 'th'
+                                ? 'มัดจำคีย์การ์ดหักลบค่าใช้จ่ายเพิ่มเติมพอดี'
+                                : 'Keycard deposit covers all extra charges')
+                            : t('checkout.keyCardMissingWarning')}
+                        </div>
+                      </div>
+                      <div className="text-2xl sm:text-3xl font-extrabold font-mono tabular-nums text-emerald-800">
+                        {formatCurrency(summary.refundAmount)}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Key Card Return Checkbox */}
@@ -699,7 +824,7 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
                     placeholder={t('checkout.notesPlaceholder')}
-                    className="w-full text-xs sm:text-sm py-2 px-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 resize-none font-sans"
+                    className="w-full text-xs sm:text-sm py-2 px-3 bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 resize-none font-sans"
                   />
                 </div>
 
@@ -766,25 +891,43 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
               ? (locale === 'th' ? 'คืนเรียบร้อย' : 'Returned')
               : (locale === 'th' ? 'ยังไม่ได้รับคืน (หักมัดจำ)' : 'Not Returned'),
           },
-          {
-            label: locale === 'th' ? 'วิธีชำระเงิน' : 'Payment Method',
-            value:
-              paymentMethod === 'cash'
-                ? (locale === 'th' ? 'เงินสด' : 'Cash')
-                : paymentMethod === 'qr_promptpay'
-                  ? (locale === 'th' ? 'ไทยคิวอาร์ (PromptPay)' : 'Thai QR')
-                  : paymentMethod === 'credit_card'
-                    ? (locale === 'th' ? 'บัตรเครดิต/เดบิต' : 'Credit/Debit Card')
-                    : (locale === 'th' ? 'โอนเงินธนาคาร' : 'Bank Transfer'),
-          },
-          {
-            label: locale === 'th' ? 'ยอดชำระสุทธิ' : 'Net Payment Due',
-            value: (
-              <span className="font-mono font-bold text-emerald-700">
-                {formatCurrency(summary.netDue)}
-              </span>
-            ),
-          },
+          ...(summary.netDue > 0
+            ? [
+                {
+                  label: locale === 'th' ? 'วิธีชำระเงิน' : 'Payment Method',
+                  value:
+                    paymentMethod === 'cash'
+                      ? (locale === 'th' ? 'เงินสด' : 'Cash')
+                      : paymentMethod === 'qr_promptpay'
+                        ? (locale === 'th' ? 'ไทยคิวอาร์ (PromptPay)' : 'Thai QR')
+                        : paymentMethod === 'credit_card'
+                          ? (locale === 'th' ? 'บัตรเครดิต/เดบิต' : 'Credit/Debit Card')
+                          : (locale === 'th' ? 'โอนเงินธนาคาร' : 'Bank Transfer'),
+                },
+                {
+                  label: locale === 'th' ? 'ยอดชำระสุทธิ' : 'Net Payment Due',
+                  value: (
+                    <span className="font-mono font-bold text-emerald-700">
+                      {formatCurrency(summary.netDue)}
+                    </span>
+                  ),
+                },
+              ]
+            : [
+                {
+                  label:
+                    summary.refundAmount > 0
+                      ? summary.refundAmount === depositAmountNum && depositAmountNum > 0
+                        ? (locale === 'th' ? 'คืนเงินมัดจำเต็มจำนวน' : 'Full Deposit Refund')
+                        : (locale === 'th' ? 'คืนเงินมัดจำคงเหลือ' : 'Remaining Deposit Refund')
+                      : (locale === 'th' ? 'ยอดชำระสุทธิ' : 'Net Payment Due'),
+                  value: (
+                    <span className="font-mono font-bold text-emerald-700">
+                      {formatCurrency(summary.refundAmount)}
+                    </span>
+                  ),
+                },
+              ]),
         ]}
       />
 

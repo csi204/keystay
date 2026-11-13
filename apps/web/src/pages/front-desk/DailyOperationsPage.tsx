@@ -1,9 +1,10 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FrontDeskLayout } from '@/components/front-desk/FrontDeskLayout';
 import { useReservations, ExtendedReservation, resolveGuestName } from '@/hooks/useReservations';
 import { useRooms } from '@/hooks/useRooms';
 import { useBilling, DetailedBill } from '@/hooks/useBilling';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { useI18n } from '@/lib/i18n';
 import { localizeRoomType } from '@/lib/localizeMetadata';
 import { CheckInModal } from '@/components/front-desk/CheckInModal';
@@ -11,7 +12,16 @@ import { CheckOutModal } from '@/components/front-desk/CheckOutModal';
 import { ExtendStayModal } from '@/components/front-desk/ExtendStayModal';
 import { RapidWalkInModal } from '@/components/front-desk/RapidWalkInModal';
 import { getAvailableRoomsForDates } from '@/lib/roomAvailability';
+import { reconcileLiveRooms } from '@/lib/roomStatusReconciliation';
+import { calculateFolioSummary } from '@/components/front-desk/FolioSplitScreen';
 import { ReceiptTaxInvoiceModal, TaxInvoiceAbbModal } from '@/components/front-desk/ReceiptTaxInvoiceModal';
+import {
+  TableDateFilter,
+  DateFilterValue,
+  EMPTY_DATE_FILTER,
+  matchesDateFilter,
+} from '@/components/common/TableDateFilter';
+import { PaginationBar, paginateItems } from '@/components/common/PaginationBar';
 import {
   UserPlus,
   LogIn,
@@ -22,6 +32,14 @@ import {
   Search,
   Printer,
 } from 'lucide-react';
+
+export function computeBillingHistoryNetTotal(
+  bill: Pick<DetailedBill, 'totalAmount' | 'items' | 'subtotal'>
+): number {
+  return Number(bill.totalAmount) > 0
+    ? Number(bill.totalAmount)
+    : calculateFolioSummary(bill.items, 0, bill.subtotal).totalWithVat;
+}
 
 export const DailyOperationsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -61,24 +79,44 @@ export const DailyOperationsPage: React.FC = () => {
 
   // Billing history sub-tab state
   const [billingSearchQuery, setBillingSearchQuery] = useState('');
+  const [billingDateFilter, setBillingDateFilter] = useState<DateFilterValue>(EMPTY_DATE_FILTER);
+  const [billingPage, setBillingPage] = useState<number>(1);
   const [selectedBillForInvoice, setSelectedBillForInvoice] = useState<DetailedBill | null>(null);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
 
-  const handleManualRefresh = async () => {
+  const handleManualRefresh = useCallback(async () => {
     await Promise.all([refreshReservations(), refreshRooms(), refreshBilling()]);
-  };
+  }, [refreshReservations, refreshRooms, refreshBilling]);
+
+  const isAnyModalOpen =
+    Boolean(checkInTarget) ||
+    Boolean(checkOutTarget) ||
+    Boolean(extendTarget) ||
+    isWalkInOpen ||
+    isInvoiceModalOpen;
+
+  useAutoRefresh({
+    onRefresh: handleManualRefresh,
+    intervalMs: 60000,
+    paused: isAnyModalOpen,
+  });
 
   const refreshTimeStr = lastRefreshed.toLocaleTimeString(
     locale === 'th' ? 'th-TH' : 'en-US',
     { hour: '2-digit', minute: '2-digit', second: '2-digit' }
   );
 
+  // Reconcile room statuses with active reservations (occupied/reserved/cleaning)
+  const liveRooms = useMemo(() => {
+    return reconcileLiveRooms(rooms, reservations);
+  }, [rooms, reservations]);
+
   // Available rooms for Walk-in filtered by smart room availability
   const availableRooms = useMemo(() => {
-    return getAvailableRoomsForDates(rooms, reservations, todayStr, tomorrowStr, {
+    return getAvailableRoomsForDates(liveRooms, reservations, todayStr, tomorrowStr, {
       isWalkInToday: true,
     });
-  }, [rooms, reservations, todayStr, tomorrowStr]);
+  }, [liveRooms, reservations, todayStr, tomorrowStr]);
 
   // Today's Arrivals: checkInDate <= todayStr and status is confirmed or pending
   const arrivals = useMemo(() => {
@@ -155,14 +193,30 @@ export const DailyOperationsPage: React.FC = () => {
   // Filtered bills for billing history ledger
   const filteredBills = useMemo(() => {
     return bills.filter((b) => {
-      if (!billingSearchQuery.trim()) return true;
-      const q = billingSearchQuery.toLowerCase().trim();
-      const matchesGuest = b.guestName?.toLowerCase().includes(q) || false;
-      const matchesRoom = b.roomNumber?.toLowerCase().includes(q) || false;
-      const matchesId = b.id.toLowerCase().includes(q);
-      return matchesGuest || matchesRoom || matchesId;
+      if (billingSearchQuery.trim()) {
+        const q = billingSearchQuery.toLowerCase().trim();
+        const matchesGuest = b.guestName?.toLowerCase().includes(q) || false;
+        const matchesRoom = b.roomNumber?.toLowerCase().includes(q) || false;
+        const matchesId = b.id.toLowerCase().includes(q);
+        if (!matchesGuest && !matchesRoom && !matchesId) return false;
+      }
+      if (billingDateFilter.day || billingDateFilter.month || billingDateFilter.year) {
+        if (!matchesDateFilter(b.createdAt, billingDateFilter)) return false;
+      }
+      return true;
     });
-  }, [bills, billingSearchQuery]);
+  }, [bills, billingSearchQuery, billingDateFilter]);
+
+  useEffect(() => {
+    setBillingPage(1);
+  }, [billingSearchQuery, billingDateFilter]);
+
+  const paginatedBills = useMemo(
+    () => paginateItems(filteredBills, billingPage, 10),
+    [filteredBills, billingPage]
+  );
+
+  const billingDates = useMemo(() => bills.map((b) => b.createdAt), [bills]);
 
   const handleOpenReprintInvoice = async (bill: DetailedBill) => {
     const full = await loadBillDetails(bill.id);
@@ -174,12 +228,12 @@ export const DailyOperationsPage: React.FC = () => {
     <FrontDeskLayout activeTab="operations">
       <div className="space-y-4">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight font-sans">
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight font-sans">
               {locale === 'th' ? 'เคาน์เตอร์เช็คอิน & เช็คเอาต์' : 'Check-In & Check-Out Desk'}
             </h1>
-            <p className="text-sm text-slate-600 dark:text-slate-300 mt-0.5 font-sans">
+            <p className="text-sm text-slate-600 mt-0.5 font-sans">
               {locale === 'th'
                 ? 'การจัดการงานบริการหน้าเคาน์เตอร์ประจำวัน'
                 : 'Daily front desk arrivals & departures operations'}
@@ -187,12 +241,12 @@ export const DailyOperationsPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200/60 dark:border-slate-700 shrink-0">
+            <div className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-50 rounded-lg border border-slate-200/60 shrink-0">
               <span
                 className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"
                 aria-hidden="true"
               />
-              <span className="font-mono tabular-nums text-xs text-slate-500 dark:text-slate-400 font-medium">
+              <span className="font-mono tabular-nums text-xs text-slate-600 font-medium">
                 {locale === 'th' ? `อัปเดตอัตโนมัติ: ${refreshTimeStr}` : `Auto-refresh: ${refreshTimeStr}`}
               </span>
             </div>
@@ -527,19 +581,27 @@ export const DailyOperationsPage: React.FC = () => {
         {activeSubTab === 'billing' && (
           <div className="space-y-3">
             {/* Search & Ledger Header */}
-            <div className="bg-white dark:bg-slate-900 p-3.5 rounded-lg border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-              <div className="relative flex-1 max-w-md">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
-                <input
-                  type="text"
-                  placeholder={t('ops.searchBillingPlaceholder') || t('folio.searchPlaceholder')}
-                  value={billingSearchQuery}
-                  onChange={(e) => setBillingSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-slate-100 font-sans"
+            <div className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-xs flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
+                <div className="relative flex-1 max-w-md">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+                  <input
+                    type="text"
+                    placeholder={t('ops.searchBillingPlaceholder') || t('folio.searchPlaceholder')}
+                    value={billingSearchQuery}
+                    onChange={(e) => setBillingSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-sans"
+                  />
+                </div>
+
+                <TableDateFilter
+                  value={billingDateFilter}
+                  onChange={setBillingDateFilter}
+                  dates={billingDates}
                 />
               </div>
 
-              <div className="text-xs text-slate-500 dark:text-slate-400 font-medium font-sans">
+              <div className="text-xs text-slate-600 font-medium font-sans shrink-0">
                 {t('ops.totalItems', { count: filteredBills.length })}
               </div>
             </div>
@@ -581,9 +643,9 @@ export const DailyOperationsPage: React.FC = () => {
                         </td>
                       </tr>
                     ) : (
-                      filteredBills.map((b) => {
+                      paginatedBills.pageItems.map((b) => {
                         const isPaid = b.status === 'paid';
-                        const billTotal = parseFloat(b.netAmount || b.subtotal || '0');
+                        const billTotal = computeBillingHistoryNetTotal(b);
 
                         return (
                           <tr key={b.id} className="hover:bg-slate-50 transition-colors">
@@ -632,6 +694,14 @@ export const DailyOperationsPage: React.FC = () => {
                   </tbody>
                 </table>
               </div>
+              <PaginationBar
+                currentPage={paginatedBills.currentPage}
+                totalPages={paginatedBills.totalPages}
+                totalItems={paginatedBills.totalItems}
+                startIndex={paginatedBills.startIndex}
+                endIndex={paginatedBills.endIndex}
+                onPageChange={setBillingPage}
+              />
             </div>
           </div>
         )}
@@ -681,7 +751,7 @@ export const DailyOperationsPage: React.FC = () => {
       <RapidWalkInModal
         isOpen={isWalkInOpen}
         availableRooms={availableRooms}
-        rooms={rooms}
+        rooms={liveRooms}
         reservations={reservations}
         roomTypes={roomTypes || []}
         onClose={() => setIsWalkInOpen(false)}

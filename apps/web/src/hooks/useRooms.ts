@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiFetch } from '@/lib/api';
 import { Room, RoomType } from '@keystay/types';
 
@@ -9,9 +9,14 @@ export function useRooms() {
   const [error, setError] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState<boolean>(false);
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+  const hasLoadedOnceRef = useRef<boolean>(false);
 
-  const fetchRooms = useCallback(async () => {
-    setLoading(true);
+  const fetchRooms = useCallback(async (options?: boolean | { forceLoading?: boolean }) => {
+    const forceLoading =
+      options === true || (typeof options === 'object' && options !== null && options.forceLoading === true);
+    if (!hasLoadedOnceRef.current || forceLoading) {
+      setLoading(true);
+    }
     setError(null);
 
     const [roomsRes, typesRes] = await Promise.all([
@@ -39,6 +44,7 @@ export function useRooms() {
       setRoomTypes(typesRes.data);
     }
 
+    hasLoadedOnceRef.current = true;
     setLastRefreshed(new Date());
     setLoading(false);
   }, []);

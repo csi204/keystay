@@ -81,16 +81,20 @@ describe('RoomMatrixPage — Unified Toolbar, Popover Filter, Auto-Refresh & Sub
     assert.match(pageCode, /res\.newReservation/);
   });
 
-  it('implements silent 1-minute background auto-refresh and immediate visibilitychange refetch', () => {
-    // 60-second (1-minute) interval
-    assert.match(pageCode, /60000|60\s*\*\s*1000/);
-    assert.match(pageCode, /setInterval/);
-    assert.match(pageCode, /clearInterval/);
+  it('implements silent 1-minute background auto-refresh and immediate visibilitychange refetch via useAutoRefresh', () => {
+    const autoRefreshPath = path.resolve(process.cwd(), 'apps/web/src/hooks/useAutoRefresh.ts');
+    const hookCode = fs.readFileSync(autoRefreshPath, 'utf-8');
 
-    // visibilitychange listener
-    assert.match(pageCode, /document\.addEventListener\(['"]visibilitychange['"]/);
-    assert.match(pageCode, /document\.visibilityState\s*===\s*['"]visible['"]/);
-    assert.match(pageCode, /document\.removeEventListener\(['"]visibilitychange['"]/);
+    // RoomMatrixPage wires useAutoRefresh with 60s interval and paused flag
+    assert.match(pageCode, /useAutoRefresh/);
+    assert.match(pageCode, /60000|60\s*\*\s*1000/);
+
+    // useAutoRefresh implements interval & visibilitychange listener
+    assert.match(hookCode, /setInterval/);
+    assert.match(hookCode, /clearInterval/);
+    assert.match(hookCode, /document\.addEventListener\(['"]visibilitychange['"]/);
+    assert.match(hookCode, /document\.visibilityState\s*===\s*['"]visible['"]/);
+    assert.match(hookCode, /document\.removeEventListener\(['"]visibilitychange['"]/);
   });
 
   it('provides 1:1 translation parity for new matrix sub-tabs and auto-refresh across TH and EN', () => {

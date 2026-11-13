@@ -95,14 +95,19 @@ describe('Task 4: Smart Date-Range Room Availability Filtering & Overbooking Gua
 
     it('filters out rooms with overlapping reservations (confirmed, checked_in, extended)', async () => {
       const { getAvailableRoomsForDates } = await import('../lib/roomAvailability');
+      const offsetDate = (days: number) => {
+        const d = new Date();
+        d.setDate(d.getDate() + days);
+        return d.toISOString().split('T')[0];
+      };
       const reservations: Reservation[] = [
         {
           id: 'res-1',
           bookingNumber: 'BK-101',
           guestId: 'gst-1',
           roomId: 'rm-101',
-          checkInDate: '2026-11-12',
-          checkOutDate: '2026-11-15',
+          checkInDate: offsetDate(9),
+          checkOutDate: offsetDate(12),
           totalNights: '3',
           totalAmount: '3600',
           depositAmount: '500',
@@ -115,8 +120,8 @@ describe('Task 4: Smart Date-Range Room Availability Filtering & Overbooking Gua
           bookingNumber: 'BK-102',
           guestId: 'gst-2',
           roomId: 'rm-102',
-          checkInDate: '2026-11-10',
-          checkOutDate: '2026-11-14',
+          checkInDate: offsetDate(7),
+          checkOutDate: offsetDate(11),
           totalNights: '4',
           totalAmount: '4800',
           depositAmount: '500',
@@ -129,8 +134,8 @@ describe('Task 4: Smart Date-Range Room Availability Filtering & Overbooking Gua
           bookingNumber: 'BK-103',
           guestId: 'gst-3',
           roomId: 'rm-103',
-          checkInDate: '2026-11-11',
-          checkOutDate: '2026-11-14',
+          checkInDate: offsetDate(8),
+          checkOutDate: offsetDate(11),
           totalNights: '3',
           totalAmount: '4500',
           depositAmount: '500',
@@ -140,18 +145,18 @@ describe('Task 4: Smart Date-Range Room Availability Filtering & Overbooking Gua
         },
       ];
 
-      // For target window 2026-11-13 to 2026-11-14:
-      // rm-101 has confirmed res (2026-11-12..15) -> blocked
-      // rm-102 has checked_in res (2026-11-10..14) -> blocked
-      // rm-103 has extended res (2026-11-11..14) -> blocked
+      // For future target window (+10 to +11 days):
+      // rm-101 has confirmed res (+9..+12) -> blocked
+      // rm-102 has checked_in res (+7..+11) -> blocked
+      // rm-103 has extended res (+8..+11) -> blocked
       // rm-104 is maintenance -> blocked
       // rm-105 is out_of_order -> blocked
       // rm-106 is cleaning (not same-day walk-in) -> available
       const available = getAvailableRoomsForDates(
         mockRooms,
         reservations,
-        '2026-11-13',
-        '2026-11-14'
+        offsetDate(10),
+        offsetDate(11)
       );
 
       const availableRoomIds = available.map((r) => r.id);

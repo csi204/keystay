@@ -46,6 +46,10 @@ export async function ensureReservationSchema(db: D1Database): Promise<void> {
     `CREATE INDEX IF NOT EXISTS idx_reservations_channel ON reservations(booking_source)`,
     `CREATE INDEX IF NOT EXISTS idx_reservations_payment_status ON reservations(payment_status)`,
     `CREATE INDEX IF NOT EXISTS idx_amenity_req_res ON reservation_amenity_requests(reservation_id)`,
+    `DROP INDEX IF EXISTS idx_guests_phone_unique`,
+    `DROP INDEX IF EXISTS idx_guests_id_card_unique`,
+    `CREATE INDEX IF NOT EXISTS idx_guests_phone ON guests(phone) WHERE phone IS NOT NULL`,
+    `CREATE INDEX IF NOT EXISTS idx_guests_id_card ON guests(id_card_number) WHERE id_card_number IS NOT NULL`,
   ];
 
   for (const sql of tableStatements) {

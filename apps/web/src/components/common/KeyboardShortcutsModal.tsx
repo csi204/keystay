@@ -78,16 +78,8 @@ export const SHORTCUT_CATEGORIES: ShortcutCategory[] = [
   {
     id: 'system',
     titleTh: 'ระบบ & มุมมอง',
-    titleEn: 'System & Themes',
+    titleEn: 'System & Preferences',
     shortcuts: [
-      {
-        id: 'dark-mode',
-        keys: ['Ctrl', 'K'],
-        badgeTh: 'พิมพ์ "dark"',
-        badgeEn: 'Type "dark"',
-        descriptionTh: 'สลับโหมดกะดึก (Dark Mode) ใน Command Palette',
-        descriptionEn: 'Toggle Night Audit (Dark Mode) in Command Palette',
-      },
       {
         id: 'language',
         keys: ['TH', 'EN'],
@@ -149,23 +141,23 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
         }
       }}
     >
-      <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[85vh]">
+      <div className="relative w-full max-w-lg bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh]">
         {/* Header */}
-        <div className="bg-slate-50 dark:bg-slate-800/70 px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+        <div className="bg-slate-50 px-5 py-4 border-b border-slate-200 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 flex items-center justify-center text-blue-600 dark:text-blue-400">
+            <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600">
               <Keyboard className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
             </div>
             <div>
               <h2
                 id="shortcuts-dialog-title"
-                className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-tight"
+                className="text-sm font-bold text-slate-900 leading-tight"
               >
                 {isThai
                   ? 'คีย์ลัดสำหรับแผนกต้อนรับ (Keyboard Shortcuts)'
                   : 'Front Desk Keyboard Shortcuts'}
               </h2>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
+              <p className="text-[11px] text-slate-500 leading-tight mt-0.5">
                 {isThai
                   ? 'กดปุ่มลัดเพื่อการทำงานที่รวดเร็วและแม่นยำ'
                   : 'Fast operational keyboard navigation reference'}
@@ -176,7 +168,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
             type="button"
             onClick={onClose}
             aria-label={isThai ? 'ปิดหน้าต่าง' : 'Close modal'}
-            className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
           >
             <X className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
           </button>
@@ -186,21 +178,21 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
         <div className="p-5 space-y-5 overflow-y-auto flex-1">
           {SHORTCUT_CATEGORIES.map((category) => (
             <div key={category.id} className="space-y-2">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 pb-1 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 pb-1 border-b border-slate-100">
                 {isThai ? category.titleTh : category.titleEn}
               </h3>
-              <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
+              <div className="divide-y divide-slate-100">
                 {category.shortcuts.map((shortcut) => (
                   <div
                     key={shortcut.id}
                     className="py-2 flex items-center justify-between gap-4 text-xs"
                   >
                     <div className="min-w-0 pr-2">
-                      <p className="text-slate-800 dark:text-slate-200 font-medium">
+                      <p className="text-slate-800 font-medium">
                         {isThai ? shortcut.descriptionTh : shortcut.descriptionEn}
                       </p>
                       {(shortcut.badgeTh || shortcut.badgeEn) && (
-                        <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
+                        <p className="text-[10px] text-slate-400 mt-0.5">
                           {isThai ? shortcut.badgeTh : shortcut.badgeEn}
                         </p>
                       )}
@@ -211,7 +203,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
                           {idx > 0 && (
                             <span className="text-[10px] text-slate-400 font-bold px-0.5">+</span>
                           )}
-                          <kbd className="px-2 py-0.5 text-xs font-mono font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded shadow-2xs">
+                          <kbd className="px-2 py-0.5 text-xs font-mono font-semibold bg-slate-100 text-slate-700 border border-slate-200 rounded shadow-2xs">
                             {k}
                           </kbd>
                         </React.Fragment>
@@ -225,7 +217,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+        <div className="px-5 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-500">
           <span>
             {isThai
               ? 'กด ? จากทุกหน้าเพื่อเปิดหน้าต่างนี้'
@@ -233,7 +225,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
           </span>
           <div className="flex items-center gap-1 font-mono">
             <span>{isThai ? 'ปิด:' : 'Dismiss:'}</span>
-            <kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold text-[10px]">
+            <kbd className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-700 font-bold text-[10px]">
               Esc
             </kbd>
           </div>

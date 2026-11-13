@@ -37,7 +37,6 @@ describe('Task 3: Instant On-Blur Inline Validation in Masked Inputs & Booking M
 
       assert.doesNotMatch(html, /เบอร์โทรศัพท์ต้องครบ 10 หลัก/);
       assert.doesNotMatch(html, /border-rose-400/);
-      assert.doesNotMatch(html, /dark:border-rose-500/);
     });
 
     it('2. Blur with partial phone (08123) shows inline error and red border', () => {
@@ -53,7 +52,6 @@ describe('Task 3: Instant On-Blur Inline Validation in Masked Inputs & Booking M
 
       assert.match(html, /เบอร์โทรศัพท์ต้องครบ 10 หลัก \(0xx-xxx-xxxx\)/);
       assert.match(html, /border-rose-400/);
-      assert.match(html, /dark:border-rose-500/);
       assert.match(html, /text-rose-600/);
     });
 
@@ -88,7 +86,6 @@ describe('Task 3: Instant On-Blur Inline Validation in Masked Inputs & Booking M
 
       assert.match(html, /เลขบัตรประชาชนต้องครบ 13 หลัก \(x-xxxx-xxxxx-xx-x\)/);
       assert.match(html, /border-rose-400/);
-      assert.match(html, /dark:border-rose-500/);
       assert.match(html, /text-rose-600/);
     });
 
@@ -121,7 +118,6 @@ describe('Task 3: Instant On-Blur Inline Validation in Masked Inputs & Booking M
 
       assert.match(partialHtml, /หมายเลขหนังสือเดินทางต้องมี 7–9 หลัก/);
       assert.match(partialHtml, /border-rose-400/);
-      assert.match(partialHtml, /dark:border-rose-500/);
 
       const validHtml = renderToStaticMarkup(
         React.createElement(NationalIdOrPassportInput, {

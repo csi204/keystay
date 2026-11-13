@@ -105,7 +105,7 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
     : (locale === 'th' ? '2 ท่าน' : '2 Guests');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
@@ -229,8 +229,8 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
                   setNationalIdOrPassport(e.target.value);
                   if (error) setError(null);
                 }}
-                className={`w-full text-sm py-2.5 px-3 pl-9 bg-slate-50 border rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono tabular-nums transition-all ${
-                  error ? 'border-red-300 ring-1 ring-red-300' : 'border-slate-200'
+                className={`w-full text-sm py-2.5 px-3 pl-9 bg-white text-slate-900 placeholder:text-slate-400 border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono tabular-nums transition-all ${
+                  error ? 'border-red-300 ring-1 ring-red-300' : 'border-slate-300'
                 }`}
               />
             </div>

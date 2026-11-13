@@ -192,7 +192,7 @@ describe('CustomDatePicker & Date Formatting Helpers', () => {
       assert.ok(day14Match, 'Day 14 button should exist');
       assert.ok(day14Match[0].includes('disabled=""') || day14Match[0].includes('disabled'), 'Day 14 should be disabled');
       assert.ok(
-        day14Match[0].includes('text-slate-300 dark:text-slate-600 cursor-not-allowed hover:bg-transparent'),
+        day14Match[0].includes('text-slate-300 cursor-not-allowed hover:bg-transparent'),
         'Day 14 should have disabled styling'
       );
 

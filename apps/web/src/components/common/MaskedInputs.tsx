@@ -155,7 +155,7 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
   return (
     <div className={`space-y-1 ${className}`}>
       {label && (
-        <label htmlFor={id} className="block text-sm font-semibold text-slate-800 dark:text-slate-200">
+        <label htmlFor={id} className="block text-sm font-semibold text-slate-800">
           {label} {required && <span className="text-rose-500 font-bold ml-1 text-xs select-none">*</span>}
         </label>
       )}
@@ -175,13 +175,13 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
           disabled={disabled}
           autoFocus={autoFocus}
           maxLength={12}
-          className={`w-full min-h-[44px] py-2 px-3 ${showIcon ? 'pl-9' : ''} bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 dark:focus:border-slate-400 font-mono tabular-nums shadow-2xs transition-colors ${
-            isInvalid ? 'border-rose-400 dark:border-rose-500 focus:border-rose-500 focus:ring-rose-500/20' : 'border-slate-300 dark:border-slate-600'
+          className={`w-full min-h-[44px] py-2 px-3 ${showIcon ? 'pl-9' : ''} bg-white text-slate-900 placeholder:text-slate-400 border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono tabular-nums shadow-2xs transition-colors ${
+            isInvalid ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/20' : 'border-slate-300'
           } ${inputClassName}`}
         />
       </div>
       {errorMessage && (
-        <p className="text-xs text-rose-600 dark:text-rose-400 flex items-center gap-1 mt-1 font-medium">
+        <p className="text-xs text-rose-600 flex items-center gap-1 mt-1 font-medium">
           <AlertCircle className="w-3 h-3 text-rose-500 shrink-0" />
           <span>{errorMessage}</span>
         </p>
@@ -290,24 +290,24 @@ export const NationalIdOrPassportInput: React.FC<NationalIdOrPassportInputProps>
     <div className={`space-y-1.5 ${className}`}>
       {/* Header with Mode Toggle Segmented Pills */}
       <div className="flex flex-wrap items-center justify-between gap-1.5">
-        <label htmlFor={id} className="block text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200">
+        <label htmlFor={id} className="block text-xs sm:text-sm font-semibold text-slate-800">
           {label || (currentMode === 'thai_id' ? 'เลขบัตรประชาชน' : 'เลขพาสปอร์ต')}
-          <span className="text-slate-400 font-normal text-xs ml-1">
+          <span className="text-slate-500 font-normal text-xs ml-1">
             {currentMode === 'thai_id' ? '(Thai ID)' : '(Passport)'}
           </span>
           {required && <span className="text-rose-500 font-bold ml-1 text-xs select-none">*</span>}
         </label>
 
         {/* Segmented Pills */}
-        <div className="inline-flex p-0.5 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">
+        <div className="inline-flex p-0.5 bg-slate-100 rounded-lg border border-slate-200 text-xs">
           <button
             type="button"
             onClick={() => handleModeChange('thai_id')}
             disabled={disabled}
             className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs transition-all min-h-[30px] ${
               currentMode === 'thai_id'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-semibold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium'
+                ? 'bg-white text-slate-900 shadow-xs font-semibold'
+                : 'text-slate-600 hover:text-slate-900 font-medium'
             }`}
           >
             <CreditCard className="w-3.5 h-3.5 shrink-0" />
@@ -319,8 +319,8 @@ export const NationalIdOrPassportInput: React.FC<NationalIdOrPassportInputProps>
             disabled={disabled}
             className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs transition-all min-h-[30px] ${
               currentMode === 'passport'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-semibold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium'
+                ? 'bg-white text-slate-900 shadow-xs font-semibold'
+                : 'text-slate-600 hover:text-slate-900 font-medium'
             }`}
           >
             <Globe className="w-3.5 h-3.5 shrink-0" />
@@ -347,14 +347,14 @@ export const NationalIdOrPassportInput: React.FC<NationalIdOrPassportInputProps>
           disabled={disabled}
           placeholder={currentMode === 'thai_id' ? '1-2345-67890-12-3' : 'AC1234567'}
           maxLength={currentMode === 'thai_id' ? 17 : 9}
-          className={`w-full min-h-[44px] py-2 px-3 pl-9 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 dark:focus:border-slate-400 font-mono tabular-nums shadow-2xs transition-colors ${
-            isInvalid ? 'border-rose-400 dark:border-rose-500 focus:border-rose-500 focus:ring-rose-500/20' : 'border-slate-300 dark:border-slate-600'
+          className={`w-full min-h-[44px] py-2 px-3 pl-9 bg-white text-slate-900 placeholder:text-slate-400 border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono tabular-nums shadow-2xs transition-colors ${
+            isInvalid ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/20' : 'border-slate-300'
           } ${inputClassName}`}
         />
       </div>
 
       {errorMessage && (
-        <p className="text-xs text-rose-600 dark:text-rose-400 flex items-center gap-1 mt-1 font-medium">
+        <p className="text-xs text-rose-600 flex items-center gap-1 mt-1 font-medium">
           <AlertCircle className="w-3 h-3 text-rose-500 shrink-0" />
           <span>{errorMessage}</span>
         </p>

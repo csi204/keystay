@@ -43,45 +43,6 @@
     --color-accent: #F97316;
     --color-accent-hover: #EA580C;
   }
-
-  .dark {
-    --background: 222 47% 6%;
-    --foreground: 210 40% 98%;
-
-    --card: 222 47% 9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222 47% 9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222 47% 11%;
-
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
-
-    --accent: 24 95% 53%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 212 96% 78%;
-
-    /* Legacy tokens compatibility for dark mode */
-    --color-base-bg: #0B0F19;
-    --color-surface: #0F1626;
-    --color-text-primary: #F8FAFC;
-    --color-text-muted: #94A3B8;
-    --color-border: #1E293B;
-    --color-accent: #F97316;
-    --color-accent-hover: #FB923C;
-  }
 }
 
 @layer base {

@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { Receiver } from '@upstash/qstash';
 import { type Env, mapBill, mapBillItem } from '../types';
+import { ensureBillItemsIsPaidColumn } from './bills';
 
 const webhooks = new Hono<{ Bindings: Env }>();
 
@@ -41,6 +42,7 @@ webhooks.use('*', async (c, next) => {
 // ==========================================
 webhooks.post('/checkout', async (c) => {
   try {
+    await ensureBillItemsIsPaidColumn(c.env.DB);
     const rawBody = await c.req.json();
     console.log('[Webhook:Checkout] Received checkout event:', JSON.stringify(rawBody));
 
@@ -103,8 +105,8 @@ webhooks.post('/checkout', async (c) => {
     const stmts = [
       // Insert Bill
       c.env.DB.prepare(
-        `INSERT INTO bills (id, bill_number, reservation_id, guest_name, room_number, subtotal, discount_amount, tax_rate, tax_amount, service_charge, total_amount, deposit_deducted, amount_paid, amount_due, status, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)`
+        `INSERT INTO bills (id, bill_number, reservation_id, guest_name, room_number, subtotal, discount_amount, tax_rate, tax_amount, service_charge_rate, service_charge, total_amount, deposit_deducted, amount_paid, amount_due, status, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)`
       ).bind(
         billId,
         billNumber,
@@ -114,6 +116,7 @@ webhooks.post('/checkout', async (c) => {
         subtotal,
         taxRate,
         taxAmount,
+        serviceChargeRate,
         serviceCharge,
         totalAmount,
         depositDeducted,

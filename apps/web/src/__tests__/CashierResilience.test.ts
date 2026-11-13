@@ -70,21 +70,15 @@ describe('Task 5: Cashier Folio Resilience, Room Charge Lock & Deposit Parity', 
     );
   });
 
-  it('Requirement 3: CashierFolioPage exports reconcileLiveFolios and localizes room charge description', () => {
+  it('Requirement 3: CashierFolioPage exports reconcileLiveFolios and preserves individual room charge and extension item descriptions', () => {
     assert.ok(fs.existsSync(cashierFolioPagePath), 'CashierFolioPage.tsx must exist');
     const code = fs.readFileSync(cashierFolioPagePath, 'utf-8');
 
-    // Checks localizeRoomType usage with matchingRes roomTypeName or roomType name
-    assert.match(
-      code,
-      /const\s+typeName\s*=\s*localizeRoomType\(\s*matchingRes\.roomTypeName\s*\|\|\s*room\?\.roomType\?\.name,\s*locale\s*\)/
-    );
+    // Exports reconcileLiveFolios
+    assert.match(code, /export\s+function\s+reconcileLiveFolios/);
 
-    // Checks description format in Thai and English
-    assert.match(
-      code,
-      /const\s+desc\s*=\s*locale\s*===\s*['"]th['"]\s*\?\s*`ค่าห้องพัก\s*\$\{typeName\s*\|\|\s*['"]['"]\}\s*\(\$\{nights\}\s*คืน\)`\s*:\s*`\$\{typeName\s*\|\|\s*['"]Room Charge['"]\}\s*\(\$\{nights\}\s*nights\)`/
-    );
+    // Passes reservationPaymentStatus to calculateFolioSummary
+    assert.match(code, /reservationPaymentStatus:\s*billMatchingRes\?\.paymentStatus/);
 
     // Functional verification of reconcileLiveFolios
     const mockBill: DetailedBill = {
@@ -111,6 +105,17 @@ describe('Task 5: Cashier Folio Resilience, Room Charge Lock & Deposit Parity', 
           totalAmount: '2400',
           createdAt: new Date().toISOString(),
         },
+        {
+          id: 'item-ext',
+          billId: 'bill-asawin-101',
+          description: 'ขยายเวลาเข้าพัก (+1 คืน)',
+          category: 'room',
+          quantity: 1,
+          unitPrice: '1200',
+          totalAmount: '1200',
+          isPaid: false,
+          createdAt: new Date().toISOString(),
+        },
       ],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -125,13 +130,13 @@ describe('Task 5: Cashier Folio Resilience, Room Charge Lock & Deposit Parity', 
       roomId: 'room-101',
       roomTypeName: 'Standard Room',
       checkInDate: '2026-11-12T00:00:00Z',
-      checkOutDate: '2026-11-14T00:00:00Z',
-      totalNights: '2',
-      totalAmount: '2400',
+      checkOutDate: '2026-11-15T00:00:00Z',
+      totalNights: '3',
+      totalAmount: '3600',
       depositAmount: '1000',
       nightlyRate: 1200,
-      status: 'checked_in',
-      paymentStatus: 'unpaid',
+      status: 'extended',
+      paymentStatus: 'paid',
       createdAt: '2026-11-12T00:00:00Z',
       updatedAt: '2026-11-12T00:00:00Z',
     };
@@ -139,12 +144,11 @@ describe('Task 5: Cashier Folio Resilience, Room Charge Lock & Deposit Parity', 
     const reconciled = reconcileLiveFolios([mockBill], [mockRes], [], 'th');
     assert.strictEqual(reconciled.length, 1);
     assert.strictEqual(reconciled[0].guestName, 'อัศวิน');
-    assert.ok(reconciled[0].items && reconciled[0].items.length > 0);
-    // Verifies localized description in Thai
-    assert.strictEqual(
-      reconciled[0].items[0].description,
-      'ค่าห้องพัก ห้องสแตนดาร์ด (2 คืน)'
-    );
+    assert.ok(reconciled[0].items && reconciled[0].items.length === 2);
+    // Preserves separate initial stay and extension item descriptions
+    assert.strictEqual(reconciled[0].items[0].description, 'Room Charge (2 nights)');
+    assert.strictEqual(reconciled[0].items[1].description, 'ขยายเวลาเข้าพัก (+1 คืน)');
+    assert.strictEqual(localizeFolioDescription(reconciled[0].items[0].description, 'th'), 'ค่าห้องพัก (2 คืน)');
   });
 
   it('Requirement 3: CashierFolioPage calculates net amount due and displays ยอดสุทธิ in Left Panel bill cards', () => {

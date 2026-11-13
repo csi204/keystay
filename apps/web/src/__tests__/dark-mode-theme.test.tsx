@@ -46,34 +46,26 @@ describe('Task 7: Night Audit / Dark Mode System (ThemeContext, UI Tokens & Togg
     assert.match(code, /<ThemeProvider>[\s\S]*<\/ThemeProvider>/, 'ThemeProvider must enclose app routes');
   });
 
-  it('4. FrontDeskLayout.tsx integrates Night Audit toggle in sidebar (expanded & collapsed) and mobile drawer', () => {
+  it('4. FrontDeskLayout.tsx removes Night Audit toggle completely from sidebar & drawer', () => {
     assert.ok(fs.existsSync(layoutPath), 'FrontDeskLayout.tsx must exist');
     const code = fs.readFileSync(layoutPath, 'utf-8');
-    assert.match(code, /useTheme/, 'FrontDeskLayout must call useTheme');
-    assert.match(code, /โหมดกะดึก \(Night Audit\)/, 'Sidebar must contain label โหมดกะดึก (Night Audit)');
-    assert.match(code, /Moon|Sun/, 'Must use Moon or Sun icons from lucide-react');
+    assert.doesNotMatch(code, /โหมดกะดึก|Night Audit/, 'Sidebar must not contain Night Audit toggle');
+    assert.doesNotMatch(code, /toggleTheme/, 'FrontDeskLayout must not wire toggleTheme');
     assert.match(code, /strokeWidth=\{1\.75\}/, 'Lucide icons must maintain strokeWidth={1.75}');
-    assert.match(code, /onToggleTheme=\{toggleTheme\}/, 'GlobalCommandPalette must be wired to toggleTheme');
   });
 
-  it('5. Night Audit dark palette tokens applied across FrontDeskLayout and RoomMatrixPage', () => {
+  it('5. Light mode locked: FrontDeskLayout and RoomMatrixPage contain zero dark: classes', () => {
     const layoutCode = fs.readFileSync(layoutPath, 'utf-8');
     const matrixCode = fs.readFileSync(roomMatrixPath, 'utf-8');
 
-    // Layout dark tokens
-    assert.match(layoutCode, /dark:bg-slate-950/, 'Layout background must support dark:bg-slate-950');
-    assert.match(layoutCode, /dark:bg-slate-900/, 'Sidebar/topbar must support dark:bg-slate-900');
-    assert.match(layoutCode, /dark:border-slate-800/, 'Sidebar borders must support dark:border-slate-800');
-
-    // Room matrix dark tokens
-    assert.match(matrixCode, /dark:bg-slate-900/, 'Room matrix toolbar/subtabs must support dark:bg-slate-900');
-    assert.match(matrixCode, /dark:border-slate-800/, 'Room matrix borders must support dark:border-slate-800');
+    assert.doesNotMatch(layoutCode, /dark:/, 'FrontDeskLayout must have zero dark: classes');
+    assert.doesNotMatch(matrixCode, /dark:/, 'RoomMatrixPage must have zero dark: classes');
   });
 
-  it('6. Runtime behavior: ThemeProvider initializes from localStorage and updates documentElement', async () => {
+  it('6. Runtime behavior: ThemeProvider locks theme to light even if localStorage previously had dark', async () => {
     // Setup mock browser globals
     const storage: Record<string, string> = { keystay_theme: 'dark' };
-    const classList = new Set<string>();
+    const classList = new Set<string>(['dark']);
 
     (globalThis as any).localStorage = {
       getItem: (key: string) => storage[key] ?? null,
@@ -109,9 +101,12 @@ describe('Task 7: Night Audit / Dark Mode System (ThemeContext, UI Tokens & Togg
     );
 
     assert.ok(capturedTheme, 'Consumer must receive theme context');
-    assert.equal(capturedTheme.theme, 'dark', 'Theme should initialize to dark from localStorage');
-    assert.equal(capturedTheme.isDark, true, 'isDark should be true when theme is dark');
+    assert.equal(capturedTheme.theme, 'light', 'Theme should always lock to light');
+    assert.equal(capturedTheme.isDark, false, 'isDark should always be false');
     assert.equal(typeof capturedTheme.toggleTheme, 'function', 'toggleTheme must be a function');
+    capturedTheme.setTheme('dark');
+    capturedTheme.toggleTheme();
+    assert.equal(classList.has('dark'), false, 'dark class must stay removed from documentElement');
   });
 
   it('7. Zero emoji audit & Thai orthography compliance', () => {

@@ -164,7 +164,7 @@ describe('Task 5: Global Command Palette (Ctrl+K / / Omnibar) & Navigation Hub',
     assert.equal(resultsCode.filter((r) => r.category === 'guests').length, 1);
   });
 
-  it('4. Navigation & system commands: contains Room Matrix, Daily Operations, Cashier, Dark Mode, and Shortcuts', () => {
+  it('4. Navigation & system commands: contains Room Matrix, Daily Operations, Cashier, and Shortcuts (no Dark Mode)', () => {
     const defaultItems = filterPaletteItems({
       query: '',
       rooms: mockRooms,
@@ -173,13 +173,13 @@ describe('Task 5: Global Command Palette (Ctrl+K / / Omnibar) & Navigation Hub',
     });
 
     const navCommands = defaultItems.filter((r) => r.category === 'commands');
-    assert.ok(navCommands.length >= 5, 'Should have at least 5 primary navigation commands');
+    assert.ok(navCommands.length >= 4, 'Should have at least 4 primary navigation commands');
 
     const commandTitles = navCommands.map((c) => c.title);
     assert.ok(commandTitles.some((t) => t.includes('ผังห้องพัก')));
     assert.ok(commandTitles.some((t) => t.includes('เช็คอิน & เช็คเอาต์')));
     assert.ok(commandTitles.some((t) => t.includes('แคชเชียร์ & บิล')));
-    assert.ok(commandTitles.some((t) => t.includes('สลับโหมดกะดึก')));
+    assert.ok(!commandTitles.some((t) => t.includes('สลับโหมดกะดึก')), 'Night Audit command should be removed');
     assert.ok(commandTitles.some((t) => t.includes('ดูคีย์ลัดทั้งหมด')));
   });
 

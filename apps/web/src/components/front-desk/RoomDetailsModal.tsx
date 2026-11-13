@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Room, RoomType } from '@keystay/types';
 import { ROOM_STATUS_CONFIG } from './RoomCard';
 import { useI18n } from '@/lib/i18n';
@@ -116,6 +116,7 @@ export interface RoomDetailsModalProps {
     | ((action: 'checkin' | 'checkout' | 'charge' | 'walkin' | 'clean' | 'extend' | 'refresh', room: Room) => void);
   currentReservation?: ExtendedReservation | null;
   initialMode?: 'details' | 'booking';
+  initialTab?: 'stay' | 'room';
   bookingMode?: 'walkin' | 'booking';
   onSubmitBooking?: (data: FastBookingFormData) => Promise<{ success: boolean; error?: string }>;
   onWalkInCheckIn?: (data: {
@@ -129,13 +130,16 @@ export interface RoomDetailsModalProps {
     checkInDate: string;
     checkOutDate: string;
     depositAmount: string;
+    nightlyRate?: number;
     paymentMethod?: string;
     bookingSource?: 'walk_in' | 'phone' | 'facebook';
+    paymentSlipUrl?: string;
+    paymentSlipRef?: string;
   }) => Promise<{ success: boolean; error?: string }>;
   onVerifySlip?: (
     reservationId: string,
     data: { paymentSlipRef?: string; paymentSlipUrl?: string }
-  ) => Promise<{ success: boolean; error?: string }>;
+  ) => Promise<{ success: boolean; error?: string; data?: ExtendedReservation }>;
   onRequestAmenity?: (data: {
     amenityId: string;
     amenityName: string;
@@ -168,6 +172,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
   onAction,
   currentReservation: initialReservation,
   initialMode = 'details',
+  initialTab,
   bookingMode: initialBookingMode = 'walkin',
   onSubmitBooking,
   onWalkInCheckIn,
@@ -192,12 +197,21 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
   const [editedNotes, setEditedNotes] = useState(room?.notes ? localizeRoomNote(room.notes, locale) : '');
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [currentNotes, setCurrentNotes] = useState<string | null>(room?.notes ?? null);
+  const isEditingNotesRef = useRef<boolean>(false);
+  isEditingNotesRef.current = isEditingNotes;
+  const prevNotesRoomIdRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     const raw = room?.notes ?? null;
     setCurrentNotes(raw);
-    setEditedNotes(raw ? localizeRoomNote(raw, locale) : '');
-    setIsEditingNotes(false);
+    const switchedRoom = prevNotesRoomIdRef.current !== room?.id;
+    prevNotesRoomIdRef.current = room?.id;
+
+    // Do NOT clear editedNotes or exit edit mode if user is actively editing notes on the same open room
+    if (!isOpen || switchedRoom || !isEditingNotesRef.current) {
+      setEditedNotes(raw ? localizeRoomNote(raw, locale) : '');
+      setIsEditingNotes(false);
+    }
   }, [room?.id, room?.notes, isOpen, locale]);
 
   const handleStartEditNotes = () => {
@@ -248,7 +262,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
   const [mode, setMode] = useState<'details' | 'booking'>(initialMode);
   const [bookingMode, setBookingMode] = useState<'walkin' | 'booking'>(initialBookingMode);
   const [activeTab, setActiveTab] = useState<'stay' | 'room'>(
-    room?.status === 'occupied' ? 'stay' : 'room'
+    initialTab ?? (room?.status === 'occupied' ? 'stay' : 'room')
   );
   const [isExtendOpen, setIsExtendOpen] = useState(false);
   const [isSlipViewerOpen, setIsSlipViewerOpen] = useState(false);
@@ -370,12 +384,29 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
     setGuestsCount((prev) => Math.min(Math.max(1, prev || 1), maxCap));
   }, [roomType?.capacity, room]);
 
-  // Sync mode and form fields when opened or initialMode changes
+  const prevOpenRef = useRef<boolean>(false);
+  const prevRoomIdRef = useRef<string | undefined>(undefined);
+
+  // Sync mode and form fields ONLY when opening (false -> true) or switching rooms
   useEffect(() => {
-    if (isOpen) {
+    const wasOpen = prevOpenRef.current;
+    const prevRoomId = prevRoomIdRef.current;
+    const currentRoomId = room?.id;
+
+    prevOpenRef.current = isOpen;
+    prevRoomIdRef.current = currentRoomId;
+
+    if (!isOpen) return;
+
+    const justOpened = !wasOpen && isOpen;
+    const switchedRoom = currentRoomId !== prevRoomId;
+
+    if (justOpened || switchedRoom) {
       setMode(initialMode);
       setBookingMode(initialBookingMode);
-      setActiveTab(room?.status === 'occupied' ? 'stay' : 'room');
+      setActiveTab(
+        initialTab ?? (room?.status === 'occupied' || room?.status === 'reserved' ? 'stay' : 'room')
+      );
       setGuestName('');
       setPhone('');
       setIdCardNumber('');
@@ -392,7 +423,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
       setValidationErrors([]);
       setSubmitError(null);
     }
-  }, [isOpen, initialMode, initialBookingMode, todayStr, tomorrowStr, roomType, room?.status]);
+  }, [isOpen, room?.id, initialMode, initialBookingMode, todayStr, tomorrowStr, roomType, room?.status]);
 
   // Close on Escape key press
   useEffect(() => {
@@ -571,8 +602,11 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
           checkInDate,
           checkOutDate,
           depositAmount,
+          nightlyRate: roomType?.basePrice ? Number(roomType.basePrice) : undefined,
           paymentMethod,
           bookingSource: 'walk_in',
+          paymentSlipUrl: paymentSlipUrl || undefined,
+          paymentSlipRef: paymentSlipRef.trim() || undefined,
         });
 
         if (!result.success) {
@@ -621,7 +655,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 overflow-y-auto">
+      <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 overflow-y-auto">
       {/* Backdrop with frosted blur */}
       <div
         className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity duration-200"
@@ -793,7 +827,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                         </div>
                       )}
 
-                      {/* Slip & Cancel Action Buttons */}
+                      {/* Slip Action Button */}
                       <div className="pt-1 flex flex-col sm:flex-row gap-2">
                         <button
                           type="button"
@@ -803,16 +837,6 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                           <FileCheck2 className="w-3.5 h-3.5 text-slate-600" />
                           <span>{locale === 'th' ? 'ดูหลักฐานสลิป / ยืนยันสลิป' : 'View / Verify Payment Slip'}</span>
                         </button>
-                        {((currentReservation as any)?.status === 'confirmed' || room?.status === 'reserved') && (
-                          <button
-                            type="button"
-                            onClick={() => setIsCancelModalOpen(true)}
-                            className="flex items-center justify-center gap-1.5 py-2 px-3 bg-white hover:bg-rose-50 border border-rose-200 text-rose-600 rounded-lg text-xs font-semibold transition-colors shadow-2xs min-h-[44px]"
-                          >
-                            <Ban className="w-3.5 h-3.5 text-rose-500" />
-                            <span>{locale === 'th' ? 'ยกเลิกการจอง' : 'Cancel Reservation'}</span>
-                          </button>
-                        )}
                       </div>
                     </div>
                   ) : room.status === 'occupied' ? (
@@ -1684,7 +1708,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                         if (validationErrors.length > 0) setValidationErrors([]);
                       }}
                       placeholder={locale === 'th' ? 'ชื่อ-นามสกุล แขกผู้เข้าพัก' : 'Guest Full Name'}
-                      className="w-full min-h-[38px] pl-8 pr-3 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors"
+                      className="w-full min-h-[38px] pl-8 pr-3 text-xs bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors"
                     />
                   </div>
                 </div>
@@ -1714,7 +1738,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="guest@example.com"
-                        className="w-full min-h-[38px] pl-8 pr-3 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors"
+                        className="w-full min-h-[38px] pl-8 pr-3 text-xs bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors"
                       />
                     </div>
                   </div>
@@ -1748,7 +1772,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                         }
                         if (validationErrors.length > 0) setValidationErrors([]);
                       }}
-                      className="w-full h-9 px-3 text-xs font-mono bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors"
+                      className="w-full h-9 px-3 text-xs font-mono bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors"
                     />
                   </div>
 
@@ -1770,7 +1794,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                         setCheckOutDate(date);
                         if (validationErrors.length > 0) setValidationErrors([]);
                       }}
-                      className="w-full h-9 px-3 text-xs font-mono bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors"
+                      className="w-full h-9 px-3 text-xs font-mono bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors"
                     />
                   </div>
                 </div>
@@ -1791,7 +1815,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                           setGuestsCount(Math.min(parseInt(e.target.value) || 1, maxCapacity));
                           if (validationErrors.length > 0) setValidationErrors([]);
                         }}
-                        className="w-full h-9 pl-3 pr-8 text-xs font-mono bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors appearance-none"
+                        className="w-full h-9 pl-3 pr-8 text-xs font-mono bg-white text-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors appearance-none"
                       >
                         {Array.from({ length: maxCapacity }, (_, i) => i + 1).map((num) => (
                           <option key={num} value={num}>
@@ -1815,7 +1839,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                         setDepositAmount(e.target.value);
                         if (validationErrors.length > 0) setValidationErrors([]);
                       }}
-                      className="w-full h-9 px-3 text-xs font-mono bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors"
+                      className="w-full h-9 px-3 text-xs font-mono bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors"
                     />
                   </div>
                 </div>
@@ -1837,7 +1861,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                         placeholder="e.g. BBL-20261111-987654"
                         value={paymentSlipRef}
                         onChange={(e) => setPaymentSlipRef(e.target.value)}
-                        className="w-full h-9 px-3 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono"
+                        className="w-full h-9 px-3 text-xs bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono"
                       />
                     </div>
 
@@ -1994,7 +2018,25 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
           paymentVerifiedAt={(currentReservation as any).paymentVerifiedAt}
           onVerify={async (data) => {
             if (onVerifySlip) {
-              return onVerifySlip(currentReservation.id, data);
+              const res = await onVerifySlip(currentReservation.id, data);
+              if (res.success) {
+                setCurrentReservation((prev) =>
+                  prev
+                    ? {
+                        ...prev,
+                        ...(res.data || {}),
+                        paymentStatus: 'paid',
+                        paymentSlipUrl:
+                          res.data?.paymentSlipUrl ?? data.paymentSlipUrl ?? (prev as any).paymentSlipUrl,
+                        paymentSlipRef:
+                          res.data?.paymentSlipRef ?? data.paymentSlipRef ?? (prev as any).paymentSlipRef,
+                        paymentVerifiedAt:
+                          res.data?.paymentVerifiedAt ?? new Date().toISOString(),
+                      }
+                    : prev
+                );
+              }
+              return res;
             }
             return { success: true };
           }}

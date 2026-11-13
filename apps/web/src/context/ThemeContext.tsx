@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useCallback, useMemo } from 'react';
 
 export type Theme = 'light' | 'dark';
 
@@ -9,106 +9,59 @@ export interface ThemeContextValue {
   toggleTheme: () => void;
 }
 
+const noop = () => {};
+
 const defaultThemeContext: ThemeContextValue = {
   theme: 'light',
   isDark: false,
-  setTheme: () => {},
-  toggleTheme: () => {},
+  setTheme: noop,
+  toggleTheme: noop,
 };
 
 export const ThemeContext = createContext<ThemeContextValue>(defaultThemeContext);
 
 const THEME_STORAGE_KEY = 'keystay_theme';
 
-const getInitialTheme = (): Theme => {
-  if (typeof localStorage === 'undefined') return 'light';
-  try {
-    const saved = localStorage.getItem(THEME_STORAGE_KEY);
-    if (saved === 'dark' || saved === 'light') {
-      return saved;
-    }
-  } catch {
-    // Ignore storage access errors
-  }
-  return 'light';
-};
-
 export interface ThemeProviderProps {
   children?: React.ReactNode;
   initialTheme?: Theme;
 }
 
-export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children, initialTheme }) => {
-  const [theme, setThemeState] = useState<Theme>(() => initialTheme || getInitialTheme());
-
-  // Apply dark class to document.documentElement and sync to localStorage
+export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
+  // Light mode is locked globally across the Front Desk workspace
   useEffect(() => {
     if (typeof document !== 'undefined') {
-      const root = document.documentElement;
-      if (theme === 'dark') {
-        root.classList.add('dark');
-      } else {
-        root.classList.remove('dark');
-      }
+      document.documentElement.classList.remove('dark');
     }
     try {
       if (typeof localStorage !== 'undefined') {
-        localStorage.setItem(THEME_STORAGE_KEY, theme);
+        localStorage.removeItem(THEME_STORAGE_KEY);
       }
     } catch {
       // Ignore storage access errors
     }
-  }, [theme]);
+  }, []);
 
-  const setTheme = useCallback((newTheme: Theme) => {
+  const setTheme = useCallback((_newTheme: Theme) => {
     if (typeof document !== 'undefined') {
-      const root = document.documentElement;
-      if (newTheme === 'dark') {
-        root.classList.add('dark');
-      } else {
-        root.classList.remove('dark');
-      }
+      document.documentElement.classList.remove('dark');
     }
-    try {
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem(THEME_STORAGE_KEY, newTheme);
-      }
-    } catch {
-      // Ignore storage access errors
-    }
-    setThemeState(newTheme);
   }, []);
 
   const toggleTheme = useCallback(() => {
-    setThemeState((prev) => {
-      const nextTheme = prev === 'dark' ? 'light' : 'dark';
-      if (typeof document !== 'undefined') {
-        const root = document.documentElement;
-        if (nextTheme === 'dark') {
-          root.classList.add('dark');
-        } else {
-          root.classList.remove('dark');
-        }
-      }
-      try {
-        if (typeof localStorage !== 'undefined') {
-          localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
-        }
-      } catch {
-        // Ignore storage access errors
-      }
-      return nextTheme;
-    });
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.remove('dark');
+    }
   }, []);
 
   const value = useMemo<ThemeContextValue>(
     () => ({
-      theme,
-      isDark: theme === 'dark',
+      theme: 'light',
+      isDark: false,
       setTheme,
       toggleTheme,
     }),
-    [theme, setTheme, toggleTheme]
+    [setTheme, toggleTheme]
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

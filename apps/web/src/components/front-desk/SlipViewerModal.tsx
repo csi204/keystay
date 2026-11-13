@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useI18n } from '@/lib/i18n';
 import { compressImageToBase64 } from '@/lib/imageCompression';
 import {
@@ -58,16 +58,41 @@ export const SlipViewerModal: React.FC<SlipViewerModalProps> = ({
   const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const prevOpenRef = useRef<boolean>(false);
+  const prevReservationIdRef = useRef<string | undefined>(undefined);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (isOpen) {
+    const wasOpen = prevOpenRef.current;
+    const prevResId = prevReservationIdRef.current;
+    prevOpenRef.current = isOpen;
+    prevReservationIdRef.current = reservationId;
+
+    if (!isOpen) {
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
+      }
+      return;
+    }
+
+    if (!wasOpen || prevResId !== reservationId) {
       setSlipRef(initialSlipRef || '');
       setCurrentSlipUrl(paymentSlipUrl || null);
       setZoom(1);
       setError(null);
       setSuccessMsg(null);
     }
-  }, [isOpen, initialSlipRef, paymentSlipUrl]);
+  }, [isOpen, reservationId, initialSlipRef, paymentSlipUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -105,15 +130,24 @@ export const SlipViewerModal: React.FC<SlipViewerModalProps> = ({
     setError(null);
     setIsVerifying(true);
 
+    const submittedRef = slipRef.trim();
+    const submittedUrl = currentSlipUrl;
+
     const result = await onVerify({
-      paymentSlipRef: slipRef.trim() || undefined,
-      paymentSlipUrl: currentSlipUrl || undefined,
+      paymentSlipRef: submittedRef || undefined,
+      paymentSlipUrl: submittedUrl || undefined,
     });
     setIsVerifying(false);
 
     if (result.success) {
+      setSlipRef(submittedRef);
+      setCurrentSlipUrl(submittedUrl);
       setSuccessMsg(locale === 'th' ? 'ยืนยันการชำระเงินเรียบร้อยแล้ว' : 'Payment verified successfully');
-      setTimeout(() => {
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+      }
+      closeTimerRef.current = setTimeout(() => {
+        closeTimerRef.current = null;
         onClose();
       }, 1000);
     } else {
@@ -124,7 +158,7 @@ export const SlipViewerModal: React.FC<SlipViewerModalProps> = ({
   const isPaid = paymentStatus === 'paid' || Boolean(successMsg);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 overflow-y-auto">
+    <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 overflow-y-auto">
       {/* Backdrop with frosted blur */}
       <div
         className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity duration-200"
@@ -225,30 +259,30 @@ export const SlipViewerModal: React.FC<SlipViewerModalProps> = ({
           </div>
 
           {/* Image Lightbox Viewer Box */}
-          <div className="bg-slate-900/5 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center min-h-[240px] max-h-[420px] overflow-hidden relative">
+          <div className="bg-slate-900/5 rounded-xl border border-slate-200 flex flex-col items-center justify-center min-h-[240px] max-h-[420px] overflow-hidden relative">
             {currentSlipUrl ? (
               <div className="w-full h-full flex flex-col">
                 {/* Zoom Controls & Action Toolbar */}
-                <div className="flex items-center justify-between px-3 py-1.5 bg-slate-100/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-700 text-xs shrink-0">
+                <div className="flex items-center justify-between px-3 py-1.5 bg-slate-100/90 border-b border-slate-200 text-xs shrink-0">
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
                       onClick={() => setZoom((z) => Math.max(0.5, parseFloat((z - 0.25).toFixed(2))))}
                       disabled={zoom <= 0.5}
-                      className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 disabled:opacity-40 transition-colors"
+                      className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-700 disabled:opacity-40 transition-colors"
                       title={locale === 'th' ? 'ย่อภาพ' : 'Zoom Out'}
                       aria-label="Zoom Out"
                     >
                       <ZoomOut className="w-4 h-4" />
                     </button>
-                    <span className="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300 min-w-[48px] text-center select-none tabular-nums">
+                    <span className="font-mono text-xs font-semibold text-slate-700 min-w-[48px] text-center select-none tabular-nums">
                       {Math.round(zoom * 100)}%
                     </span>
                     <button
                       type="button"
                       onClick={() => setZoom((z) => Math.min(3, parseFloat((z + 0.25).toFixed(2))))}
                       disabled={zoom >= 3}
-                      className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 disabled:opacity-40 transition-colors"
+                      className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-700 disabled:opacity-40 transition-colors"
                       title={locale === 'th' ? 'ขยายภาพ' : 'Zoom In'}
                       aria-label="Zoom In"
                     >
@@ -258,7 +292,7 @@ export const SlipViewerModal: React.FC<SlipViewerModalProps> = ({
                       <button
                         type="button"
                         onClick={() => setZoom(1)}
-                        className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors ml-1"
+                        className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-colors ml-1"
                         title={locale === 'th' ? 'รีเซ็ตขนาด 100%' : 'Reset Zoom'}
                         aria-label="Reset Zoom"
                       >
@@ -274,7 +308,7 @@ export const SlipViewerModal: React.FC<SlipViewerModalProps> = ({
                         setCurrentSlipUrl(null);
                         setZoom(1);
                       }}
-                      className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors flex items-center gap-1 text-xs font-medium"
+                      className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-1 text-xs font-medium"
                       title="Remove slip"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -303,16 +337,16 @@ export const SlipViewerModal: React.FC<SlipViewerModalProps> = ({
               </div>
             ) : (
               <div className="text-center p-6 space-y-2">
-                <UploadCloud className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto" />
-                <p className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                <UploadCloud className="w-10 h-10 text-slate-300 mx-auto" />
+                <p className="text-xs font-medium text-slate-600">
                   {locale === 'th' ? 'ยังไม่ได้แนบรูปภาพสลิป' : 'No slip image attached yet'}
                 </p>
-                <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                <p className="text-[11px] text-slate-400">
                   {locale === 'th'
                     ? 'สามารถบันทึกรูปจากแชทเพจ Facebook แล้วอัปโหลดแนบที่นี่ได้'
                     : 'Download slip from Facebook Page chat and upload here.'}
                 </p>
-                <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-lg cursor-pointer transition-colors shadow-2xs mt-2">
+                <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-medium rounded-lg cursor-pointer transition-colors shadow-2xs mt-2">
                   <UploadCloud className="w-3.5 h-3.5 text-slate-500" />
                   <span>
                     {isCompressing
@@ -342,7 +376,7 @@ export const SlipViewerModal: React.FC<SlipViewerModalProps> = ({
               value={slipRef}
               onChange={(e) => setSlipRef(e.target.value)}
               disabled={isPaid}
-              className="w-full h-9 px-3 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono disabled:opacity-75"
+              className="w-full h-9 px-3 text-xs bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono disabled:opacity-75"
             />
           </div>
         </div>

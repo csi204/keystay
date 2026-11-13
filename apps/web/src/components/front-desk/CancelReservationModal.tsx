@@ -111,20 +111,20 @@ export const CancelReservationModal: React.FC<CancelReservationModalProps> = ({
       aria-labelledby="cancel-modal-title"
     >
       <div
-        className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]"
+        className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-rose-100 dark:border-rose-950/40 bg-rose-50/70 dark:bg-rose-950/20">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-rose-100 bg-rose-50/70">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
               <AlertTriangle className="w-5 h-5" strokeWidth={1.75} aria-hidden="true" />
             </div>
             <div>
-              <h3 id="cancel-modal-title" className="text-base font-bold text-slate-900 dark:text-slate-100">
+              <h3 id="cancel-modal-title" className="text-base font-bold text-slate-900">
                 {locale === 'th' ? 'ยกเลิกการจองห้องพัก' : 'Cancel Reservation'}
               </h3>
-              <p className="text-xs text-rose-700 dark:text-rose-300">
+              <p className="text-xs text-rose-700">
                 {locale === 'th'
                   ? 'ห้องจะถูกปล่อยว่างกลับสู่ระบบทันที พร้อมบันทึกประวัติการยกเลิก'
                   : 'Room will be immediately released back to available and audit log recorded'}
@@ -135,7 +135,7 @@ export const CancelReservationModal: React.FC<CancelReservationModalProps> = ({
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
+            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors disabled:opacity-50"
             aria-label={locale === 'th' ? 'ปิด' : 'Close'}
           >
             <X className="w-5 h-5" />
@@ -145,66 +145,66 @@ export const CancelReservationModal: React.FC<CancelReservationModalProps> = ({
         {/* Content & Form */}
         <form onSubmit={handleFormSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
           {errorMessage && (
-            <div className="p-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 rounded-xl flex items-start gap-2.5 text-xs text-rose-800 dark:text-rose-300">
-              <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-xs text-rose-800">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
               <span>{errorMessage}</span>
             </div>
           )}
 
           {/* Reservation Summary Card */}
-          <div className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-4 border border-slate-200 dark:border-slate-750 space-y-2.5 text-xs">
+          <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-2.5 text-xs">
             <div className="flex items-center justify-between">
-              <span className="text-slate-500 dark:text-slate-400">
+              <span className="text-slate-500">
                 {locale === 'th' ? 'รหัสการจอง' : 'Booking Code'}
               </span>
-              <span className="font-mono font-bold text-slate-900 dark:text-slate-100 tabular-nums bg-white dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
+              <span className="font-mono font-bold text-slate-900 tabular-nums bg-white px-2 py-0.5 rounded border border-slate-200">
                 {reservationCode}
               </span>
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+              <span className="text-slate-500 flex items-center gap-1.5">
                 <User className="w-3.5 h-3.5" />
                 <span>{locale === 'th' ? 'ผู้เข้าพัก' : 'Guest'}</span>
               </span>
-              <span className="font-semibold text-slate-900 dark:text-slate-100">{guestName}</span>
+              <span className="font-semibold text-slate-900">{guestName}</span>
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+              <span className="text-slate-500 flex items-center gap-1.5">
                 <DoorOpen className="w-3.5 h-3.5" />
                 <span>{locale === 'th' ? 'หมายเลขห้อง' : 'Room Number'}</span>
               </span>
-              <span className="font-mono font-bold text-slate-900 dark:text-slate-100 tabular-nums">
+              <span className="font-mono font-bold text-slate-900 tabular-nums">
                 {roomNumber}
               </span>
             </div>
 
             {reservation.checkInDate && (
               <div className="flex items-center justify-between">
-                <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                <span className="text-slate-500 flex items-center gap-1.5">
                   <Calendar className="w-3.5 h-3.5" />
                   <span>{locale === 'th' ? 'กำหนดเข้าพัก' : 'Stay Dates'}</span>
                 </span>
-                <span className="font-mono text-slate-700 dark:text-slate-300 tabular-nums">
+                <span className="font-mono text-slate-700 tabular-nums">
                   {formatDateRange(reservation.checkInDate, reservation.checkOutDate, reservation.totalNights)}
                 </span>
               </div>
             )}
 
-            <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-700">
-              <span className="text-slate-500 dark:text-slate-400">
+            <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+              <span className="text-slate-500">
                 {locale === 'th' ? 'ยอดรวมห้องพัก' : 'Total Amount'}
               </span>
-              <span className="font-mono tabular-nums font-bold text-slate-900 dark:text-slate-100">
+              <span className="font-mono tabular-nums font-bold text-slate-900">
                 {formatCurrency(totalAmount)}
               </span>
             </div>
 
             {Number(depositAmount) > 0 && (
-              <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
+              <div className="flex items-center justify-between text-slate-600">
                 <span>{locale === 'th' ? 'เงินมัดจำ' : 'Deposit'}</span>
-                <span className="font-mono tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">
+                <span className="font-mono tabular-nums font-semibold text-emerald-600">
                   {formatCurrency(depositAmount)}
                 </span>
               </div>
@@ -215,7 +215,7 @@ export const CancelReservationModal: React.FC<CancelReservationModalProps> = ({
           <div className="space-y-1.5">
             <label
               htmlFor="cancellation-reason"
-              className="block text-xs font-semibold text-slate-700 dark:text-slate-300"
+              className="block text-xs font-semibold text-slate-700"
             >
               {locale === 'th' ? 'เหตุผลการยกเลิก' : 'Cancellation Reason'} <span className="text-rose-500">*</span>
             </label>
@@ -226,7 +226,7 @@ export const CancelReservationModal: React.FC<CancelReservationModalProps> = ({
               value={selectedReason}
               onChange={(e) => setSelectedReason(e.target.value)}
               disabled={isSubmitting}
-              className="w-full text-xs font-medium px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 disabled:opacity-50"
+              className="w-full text-xs font-medium px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 disabled:opacity-50"
             >
               {CANCELLATION_REASONS.map((reason) => (
                 <option key={reason} value={reason}>
@@ -240,7 +240,7 @@ export const CancelReservationModal: React.FC<CancelReservationModalProps> = ({
           <div className="space-y-1.5">
             <label
               htmlFor="cancellation-notes"
-              className="block text-xs font-semibold text-slate-700 dark:text-slate-300"
+              className="block text-xs font-semibold text-slate-700"
             >
               {locale === 'th' ? 'บันทึกเพิ่มเติม (ไม่บังคับ)' : 'Notes / Remarks (Optional)'}
             </label>
@@ -259,18 +259,18 @@ export const CancelReservationModal: React.FC<CancelReservationModalProps> = ({
                     : 'Enter additional details or remarks for audit trail...'
                 }
                 disabled={isSubmitting}
-                className="w-full text-xs font-normal p-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 disabled:opacity-50 resize-none"
+                className="w-full text-xs font-normal p-3 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 disabled:opacity-50 resize-none"
               />
               <FileText className="w-3.5 h-3.5 text-slate-400 absolute right-3 bottom-3 pointer-events-none" />
             </div>
           </div>
 
           {/* Warning Banner */}
-          <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-800/40 rounded-xl text-[11px] text-amber-800 dark:text-amber-300 space-y-1">
+          <div className="p-3 bg-amber-50 border border-amber-200/80 rounded-xl text-[11px] text-amber-800 space-y-1">
             <p className="font-semibold">
               {locale === 'th' ? 'ข้อควรระวังก่อนการยกเลิก:' : 'Important Notice:'}
             </p>
-            <ul className="list-disc list-inside space-y-0.5 text-amber-700 dark:text-amber-400/90">
+            <ul className="list-disc list-inside space-y-0.5 text-amber-700">
               <li>
                 {locale === 'th'
                   ? 'สถานะการจองจะเปลี่ยนเป็น "ยกเลิก" (Cancelled) ทันที'
@@ -285,12 +285,12 @@ export const CancelReservationModal: React.FC<CancelReservationModalProps> = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
             <button
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-4 py-2.5 min-h-[44px] text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors disabled:opacity-50"
+              className="px-4 py-2.5 min-h-[44px] text-xs font-medium text-slate-700 hover:bg-slate-100 rounded-xl transition-colors disabled:opacity-50"
             >
               {locale === 'th' ? 'ยกเลิก' : 'Cancel'}
             </button>

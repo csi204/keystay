@@ -20,7 +20,7 @@ describe('Task 1: Theme Toggle & High-Contrast Typography / Input Colors Fix', (
   const extraChargeModalPath = resolveFilePath('apps/web/src/components/front-desk/AddExtraChargeModal.tsx');
   const dailyOpsPath = resolveFilePath('apps/web/src/pages/front-desk/DailyOperationsPage.tsx');
 
-  it('1. ThemeContext canonical import in App.tsx and FrontDeskLayout.tsx points to @/context/ThemeContext', () => {
+  it('1. ThemeContext canonical import in App.tsx and FrontDeskLayout.tsx removes Night Audit dark mode toggle', () => {
     assert.ok(fs.existsSync(appPath), 'App.tsx must exist');
     assert.ok(fs.existsSync(layoutPath), 'FrontDeskLayout.tsx must exist');
 
@@ -39,63 +39,57 @@ describe('Task 1: Theme Toggle & High-Contrast Typography / Input Colors Fix', (
       'App.tsx must NOT import ThemeProvider from relative path "./context/ThemeContext"'
     );
 
-    // FrontDeskLayout.tsx must import from '@/context/ThemeContext'
-    assert.match(
-      layoutCode,
-      /from\s+['"]@\/context\/ThemeContext['"]/,
-      'FrontDeskLayout.tsx must import from "@/context/ThemeContext"'
-    );
+    // FrontDeskLayout.tsx must NOT include Night Audit toggle or dark: classes
+    assert.doesNotMatch(layoutCode, /โหมดกะดึก/, 'FrontDeskLayout.tsx must remove Night Audit toggle');
+    assert.doesNotMatch(layoutCode, /dark:/, 'FrontDeskLayout.tsx must remove all dark: classes');
   });
 
-  it('2. globals.css defines .dark CSS variables for high contrast dark mode', () => {
+  it('2. globals.css removes .dark CSS variables and locks clean light mode tokens', () => {
     assert.ok(fs.existsSync(globalsCssPath), 'globals.css must exist');
     const cssContent = fs.readFileSync(globalsCssPath, 'utf-8');
 
-    assert.match(cssContent, /\.dark\s*\{/, 'globals.css must define a .dark selector');
-    assert.match(cssContent, /--background:\s*222\s+47%\s+(?:6%|11%)/, 'globals.css must define dark --background');
-    assert.match(cssContent, /--foreground:\s*210\s+40%\s+98%/, 'globals.css must define dark --foreground');
-    assert.match(cssContent, /--card:\s*222\s+47%\s+9%/, 'globals.css must define dark --card');
-    assert.match(cssContent, /--card-foreground:\s*210\s+40%\s+98%/, 'globals.css must define dark --card-foreground');
-    assert.match(cssContent, /--border:\s*217\s+33%\s+17%/, 'globals.css must define dark --border');
-    assert.match(cssContent, /--input:\s*217\s+33%\s+17%/, 'globals.css must define dark --input');
+    assert.doesNotMatch(cssContent, /\.dark\s*\{/, 'globals.css must NOT define a .dark selector');
+    assert.match(cssContent, /:root\s*\{/, 'globals.css must define :root light mode CSS variables');
   });
 
-  it('3. AddExtraChargeModal.tsx specifies explicit high-contrast text and background colors for select and option elements', () => {
+  it('3. AddExtraChargeModal.tsx specifies explicit high-contrast light-mode text and background colors for select, option, and inputs', () => {
     assert.ok(fs.existsSync(extraChargeModalPath), 'AddExtraChargeModal.tsx must exist');
     const modalCode = fs.readFileSync(extraChargeModalPath, 'utf-8');
 
-    // Category select must have high contrast classes and dark mode styling
+    // Category select must have crisp light-mode high contrast classes and zero dark: classes
     assert.match(
       modalCode,
-      /<select[\s\S]*?className="[^"]*text-slate-900[^"]*bg-white[^"]*dark:text-slate-100[^"]*dark:bg-slate-800[^"]*border-slate-300[^"]*dark:border-slate-600[^"]*"[\s\S]*?>/,
-      'AddExtraChargeModal.tsx category <select> must specify high-contrast light and dark styling'
+      /<select[\s\S]*?className="[^"]*text-slate-900[^"]*bg-white[^"]*border-slate-300[^"]*"[\s\S]*?>/,
+      'AddExtraChargeModal.tsx category <select> must specify crisp light-mode high-contrast styling'
     );
+    assert.doesNotMatch(modalCode, /dark:/, 'AddExtraChargeModal.tsx must contain zero dark: classes');
 
     // Options inside category select must also have explicit high contrast classes
     assert.match(
       modalCode,
-      /<option[^>]*className="[^"]*(?:text-slate-900|dark:text-slate-100)[^"]*"[^>]*>/,
-      'AddExtraChargeModal.tsx <option> tags must specify high contrast classes'
+      /<option[^>]*className="[^"]*text-slate-900\s+bg-white[^"]*"[^>]*>/,
+      'AddExtraChargeModal.tsx <option> tags must specify crisp light-mode high contrast classes'
     );
   });
 
-  it('4. DailyOperationsPage.tsx and inputs have high contrast text classes', () => {
+  it('4. DailyOperationsPage.tsx and inputs have crisp high-contrast light-mode text classes', () => {
     assert.ok(fs.existsSync(dailyOpsPath), 'DailyOperationsPage.tsx must exist');
     const opsCode = fs.readFileSync(dailyOpsPath, 'utf-8');
 
-    // Subtitle must have high contrast text class in dark mode
+    // Subtitle must have crisp high-contrast text class
     assert.match(
       opsCode,
-      /text-slate-600\s+dark:text-slate-300/,
-      'DailyOperationsPage.tsx subtitle must use text-slate-600 dark:text-slate-300'
+      /text-slate-600/,
+      'DailyOperationsPage.tsx subtitle must use high-contrast text-slate-600'
     );
 
-    // Billing search input must have high contrast input styling
+    // Billing search input must have crisp light-mode contrast
     assert.match(
       opsCode,
-      /dark:bg-slate-800[^"]*dark:text-slate-100/,
-      'DailyOperationsPage.tsx search input must specify dark mode background and high-contrast text'
+      /bg-white\s+text-slate-900\s+placeholder:text-slate-400\s+border\s+border-slate-300/,
+      'DailyOperationsPage.tsx search input must specify high-contrast light-mode input colors'
     );
+    assert.doesNotMatch(opsCode, /dark:/, 'DailyOperationsPage.tsx must contain zero dark: classes');
   });
 
   it('5. Thai orthography constraint: strictly use "เช็คเอาต์" with zero instances of "เช็คเอาท์"', () => {

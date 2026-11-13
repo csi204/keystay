@@ -495,7 +495,7 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
             'h-8 w-8 mx-auto flex items-center justify-center text-xs font-mono tabular-nums rounded-lg transition-colors ';
           if (isDayDisabled) {
             btnClass +=
-              'text-slate-300 dark:text-slate-600 cursor-not-allowed hover:bg-transparent';
+              'text-slate-300 cursor-not-allowed hover:bg-transparent';
           } else if (isSelected) {
             btnClass +=
               'bg-slate-900 text-white font-bold rounded-lg shadow-sm cursor-pointer';
@@ -552,7 +552,7 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
     <div ref={containerRef} className="relative w-full">
       <div
         onClick={handleOpen}
-        className={`flex items-center w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg font-mono tabular-nums text-sm transition-colors cursor-pointer ${
+        className={`flex items-center w-full px-3 py-2 bg-white border border-slate-300 rounded-lg font-mono tabular-nums text-sm transition-colors cursor-pointer ${
           disabled
             ? 'opacity-50 cursor-not-allowed bg-slate-100'
             : 'focus-within:bg-white focus-within:ring-2 focus-within:ring-slate-900/10 focus-within:border-slate-900'
@@ -571,7 +571,7 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
           onChange={handleInputChange}
           onBlur={handleInputBlur}
           onFocus={handleOpen}
-          className="w-full bg-transparent border-0 p-0 text-slate-900 focus:outline-none focus:ring-0 font-mono tabular-nums text-inherit"
+          className="w-full bg-transparent border-0 p-0 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-0 font-mono tabular-nums text-inherit"
         />
       </div>
 

@@ -9,6 +9,9 @@ export const createBillSchema = z.object({
   serviceChargeRate: z.coerce.number().min(0).max(1).optional(),
   taxRate: z.coerce.number().min(0).max(1).optional(),
   amountPaid: z.coerce.number().min(0).optional(),
+  paymentMethod: z.string().optional(),
+  paymentMethodId: z.string().optional(),
+  referenceNumber: z.string().optional(),
   status: z.enum(['pending', 'partially_paid', 'paid', 'unpaid', 'refunded', 'void']).optional(),
   items: z
     .array(
@@ -20,6 +23,7 @@ export const createBillSchema = z.object({
           quantity: z.coerce.number().int().min(1).default(1),
           unitPrice: z.coerce.number().min(0, 'Unit price must be non-negative'),
           itemDate: z.string().optional(),
+          isPaid: z.boolean().optional(),
         })
         .refine((data) => Boolean(data.itemType || data.category), {
           message: 'Either itemType or category must be specified',
@@ -44,6 +48,7 @@ export const addBillItemSchema = z
     quantity: z.coerce.number().int().min(1).default(1),
     unitPrice: z.coerce.number().min(0, 'Unit price must be non-negative'),
     itemDate: z.string().optional(),
+    isPaid: z.boolean().optional(),
   })
   .refine((data) => Boolean(data.itemType || data.category), {
     message: 'Either itemType or category must be specified',

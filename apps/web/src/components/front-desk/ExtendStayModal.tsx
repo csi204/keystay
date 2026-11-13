@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { ExtendedReservation, resolveGuestName } from '@/hooks/useReservations';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { ExtendedReservation, resolveGuestName, resolveReservationNightlyRate } from '@/hooks/useReservations';
 import { Room, RoomType } from '@keystay/types';
 import { useI18n } from '@/lib/i18n';
 import { useToast } from '@/context/ToastContext';
@@ -32,6 +32,87 @@ export interface ExtendStayModalProps {
   ) => Promise<{ success: boolean; error?: string; data?: ExtendedReservation }>;
 }
 
+export async function syncExtensionChargeToBill(params: {
+  reservation: ExtendedReservation;
+  extraNights: number;
+  nightlyRate: number;
+  prevNights: number;
+  guestDisplayName: string;
+  roomDisplayNumber: string;
+  roomTypeName?: string;
+  locale: string;
+}): Promise<void> {
+  const {
+    reservation,
+    extraNights,
+    nightlyRate,
+    prevNights,
+    guestDisplayName,
+    roomDisplayNumber,
+    roomTypeName,
+    locale,
+  } = params;
+
+  if (extraNights <= 0) return;
+
+  let targetBillId: string | undefined;
+  const existingBillRes = await apiFetch<{ id?: string }>(
+    `/api/bills/by-reservation/${reservation.id}`
+  );
+  targetBillId = existingBillRes?.data?.id;
+
+  if (!targetBillId) {
+    const isInitialPaid = reservation.paymentStatus === 'paid';
+    const initialDesc = roomTypeName
+      ? locale === 'th'
+        ? `ค่าห้องพัก ${roomTypeName} (${prevNights} คืน)`
+        : `${roomTypeName} (${prevNights} nights)`
+      : locale === 'th'
+        ? `ค่าห้องพักเบื้องต้น (${prevNights} คืน)`
+        : `Room Charge (${prevNights} nights)`;
+
+    const createRes = await apiFetch<{ id?: string }>('/api/bills', {
+      method: 'POST',
+      body: JSON.stringify({
+        reservationId: reservation.id,
+        guestName: guestDisplayName,
+        roomNumber: roomDisplayNumber,
+        serviceChargeRate: 0,
+        depositDeducted: Number(reservation.depositAmount || 0),
+        status: isInitialPaid ? 'paid' : 'pending',
+        items: [
+          {
+            category: 'room',
+            itemType: 'room_charge',
+            description: initialDesc,
+            quantity: prevNights,
+            unitPrice: nightlyRate,
+            isPaid: isInitialPaid,
+          },
+        ],
+      }),
+    });
+    targetBillId = createRes?.data?.id;
+  }
+
+  if (targetBillId) {
+    await apiFetch(`/api/bills/${targetBillId}/items`, {
+      method: 'POST',
+      body: JSON.stringify({
+        itemType: 'room_charge',
+        category: 'room',
+        description:
+          locale === 'th'
+            ? `ขยายเวลาเข้าพัก (+${extraNights} คืน)`
+            : `Extended Stay (+${extraNights} nights)`,
+        quantity: extraNights,
+        unitPrice: nightlyRate,
+        isPaid: false,
+      }),
+    });
+  }
+}
+
 export const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
   reservation,
   room,
@@ -56,16 +137,28 @@ export const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
     return cur.toISOString().split('T')[0];
   }, [reservation?.checkOutDate]);
 
-  // Reset state when opened or reservation changes
+  const prevOpenRef = useRef<boolean>(false);
+  const prevReservationIdRef = useRef<string | undefined>(undefined);
+
+  // Reset state ONLY when opened (false -> true) or reservation.id changes
   useEffect(() => {
-    if (isOpen && reservation?.checkOutDate) {
+    const wasOpen = prevOpenRef.current;
+    const prevResId = prevReservationIdRef.current;
+    prevOpenRef.current = isOpen;
+    prevReservationIdRef.current = reservation?.id;
+
+    if (!isOpen || !reservation?.checkOutDate) return;
+
+    const justOpened = !wasOpen && isOpen;
+    const switchedReservation = reservation.id !== prevResId;
+    if (justOpened || switchedReservation) {
       const cur = new Date(reservation.checkOutDate);
       cur.setDate(cur.getDate() + 1);
       const nextDayStr = cur.toISOString().split('T')[0];
       setNewCheckOutDate(nextDayStr);
       setError(null);
     }
-  }, [isOpen, reservation?.checkOutDate]);
+  }, [isOpen, reservation?.id, reservation?.checkOutDate]);
 
   // Handle Escape key to close
   useEffect(() => {
@@ -77,15 +170,17 @@ export const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
   }, [isOpen, onClose]);
 
   // Determine nightly rate
-  const nightlyRate = useMemo(() => {
-    if (roomType?.basePrice) {
-      return Number(roomType.basePrice);
-    }
-    if (reservation?.totalAmount && reservation?.totalNights && Number(reservation.totalNights) > 0) {
-      return Math.round(Number(reservation.totalAmount) / Number(reservation.totalNights));
-    }
-    return 1000;
-  }, [roomType?.basePrice, reservation?.totalAmount, reservation?.totalNights]);
+  const nightlyRate = useMemo(
+    () => resolveReservationNightlyRate(reservation, roomType, 1000),
+    [
+      roomType?.basePrice,
+      reservation?.nightlyRate,
+      (reservation as any)?.nightly_rate,
+      reservation?.subtotal,
+      reservation?.totalAmount,
+      reservation?.totalNights,
+    ]
+  );
 
   // Calculate extra nights
   const extraNights = useMemo(() => {
@@ -126,66 +221,70 @@ export const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
       return;
     }
 
+    const prevNights = Math.max(1, Number(reservation.totalNights) || 1);
     setError(null);
     setIsSubmitting(true);
 
     try {
-      if (onConfirm) {
-        const res = await onConfirm(
-          reservation.id,
-          newCheckOutDate,
-          extraNights,
-          extraCharge
-        );
-        if (res.success) {
-          toast.showSuccess(
-            t('extend.successTitle') || (locale === 'th' ? 'ขยายเวลาเข้าพักสำเร็จ' : 'Stay Extended'),
-            t('extend.successDesc') || (locale === 'th' ? `ขยายเวลาเข้าพักถึง ${newCheckOutDate} แล้ว` : `Extended stay until ${newCheckOutDate}`)
-          );
-          const updatedRes: ExtendedReservation = {
-            ...reservation,
-            ...((res.data as ExtendedReservation) || {}),
-            guest: (res.data as any)?.guest || reservation.guest,
-            guestName: (res.data as any)?.guestName || reservation.guestName,
-            roomNumber: (res.data as any)?.roomNumber || reservation.roomNumber,
-            checkOutDate: newCheckOutDate,
-            totalNights: String(Number(reservation.totalNights || 1) + extraNights),
-            status: 'extended',
-          };
-          onSuccess?.(updatedRes);
-          onClose();
-        } else {
-          setError(res.error || t('extend.errorGeneral'));
-        }
-      } else {
-        const res = await apiFetch<ExtendedReservation>(`/api/reservations/${reservation.id}/extend-stay`, {
-          method: 'POST',
-          body: JSON.stringify({
-            newCheckOutDate,
-            additionalDeposit: 0,
-          }),
-        });
+      const res: { success: boolean; error?: string; data?: ExtendedReservation | null } = onConfirm
+        ? await onConfirm(reservation.id, newCheckOutDate, extraNights, extraCharge)
+        : await apiFetch<ExtendedReservation>(`/api/reservations/${reservation.id}/extend-stay`, {
+            method: 'POST',
+            body: JSON.stringify({
+              newCheckOutDate,
+              additionalDeposit: 0,
+            }),
+          }).then((r) => ({
+            success: !r.error,
+            error: r.error || undefined,
+            data: r.data,
+          }));
 
-        if (!res.error) {
-          toast.showSuccess(
-            t('extend.successTitle') || (locale === 'th' ? 'ขยายเวลาเข้าพักสำเร็จ' : 'Stay Extended'),
-            t('extend.successDesc') || (locale === 'th' ? `ขยายเวลาเข้าพักถึง ${newCheckOutDate} แล้ว` : `Extended stay until ${newCheckOutDate}`)
-          );
-          const updatedRes: ExtendedReservation = {
-            ...reservation,
-            ...((res.data as ExtendedReservation) || {}),
-            guest: (res.data as any)?.guest || reservation.guest,
-            guestName: (res.data as any)?.guestName || reservation.guestName,
-            roomNumber: (res.data as any)?.roomNumber || reservation.roomNumber,
-            checkOutDate: newCheckOutDate,
-            totalNights: String(Number(reservation.totalNights || 1) + extraNights),
-            status: 'extended',
-          };
-          onSuccess?.(updatedRes);
-          onClose();
-        } else {
-          setError(res.error || t('extend.errorGeneral'));
+      if (res.success) {
+        try {
+          await syncExtensionChargeToBill({
+            reservation,
+            extraNights,
+            nightlyRate,
+            prevNights,
+            guestDisplayName,
+            roomDisplayNumber,
+            roomTypeName,
+            locale,
+          });
+        } catch (billErr) {
+          console.warn('Failed to append extension item to bill:', billErr);
         }
+
+        toast.showSuccess(
+          t('extend.successTitle') || (locale === 'th' ? 'ขยายเวลาเข้าพักสำเร็จ' : 'Stay Extended'),
+          t('extend.successDesc') || (locale === 'th' ? `ขยายเวลาเข้าพักถึง ${newCheckOutDate} แล้ว` : `Extended stay until ${newCheckOutDate}`)
+        );
+        const nextTotalNights = (res.data as any)?.totalNights ?? String(prevNights + extraNights);
+        const nextNightlyRate = (res.data as any)?.nightlyRate ?? String(nightlyRate);
+        const nextTotalAmount = res.data?.totalAmount
+          ? String(res.data.totalAmount)
+          : String(
+              (Number(reservation.totalAmount) > 0
+                ? Number(reservation.totalAmount)
+                : prevNights * nightlyRate) + extraCharge
+            );
+        const updatedRes: ExtendedReservation = {
+          ...reservation,
+          ...((res.data as ExtendedReservation) || {}),
+          guest: (res.data as any)?.guest || reservation.guest,
+          guestName: (res.data as any)?.guestName || reservation.guestName,
+          roomNumber: (res.data as any)?.roomNumber || reservation.roomNumber,
+          checkOutDate: newCheckOutDate,
+          totalNights: String(nextTotalNights),
+          nightlyRate: nextNightlyRate,
+          totalAmount: nextTotalAmount,
+          status: 'extended',
+        };
+        onSuccess?.(updatedRes);
+        onClose();
+      } else {
+        setError(res.error || t('extend.errorGeneral'));
       }
     } catch (err: any) {
       setError(err?.message || t('extend.errorGeneral'));
@@ -195,7 +294,7 @@ export const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"

@@ -103,5 +103,5 @@ CREATE INDEX IF NOT EXISTS idx_amenity_req_res ON reservation_amenity_requests(r
 CREATE INDEX IF NOT EXISTS idx_reservations_channel ON reservations(booking_source);
 CREATE INDEX IF NOT EXISTS idx_reservations_payment_status ON reservations(payment_status);
 CREATE INDEX IF NOT EXISTS idx_room_booked_dates_res ON room_booked_dates(reservation_id);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_guests_phone_unique ON guests(phone) WHERE phone IS NOT NULL;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_guests_id_card_unique ON guests(id_card_number) WHERE id_card_number IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_guests_phone ON guests(phone) WHERE phone IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_guests_id_card ON guests(id_card_number) WHERE id_card_number IS NOT NULL;

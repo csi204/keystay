@@ -290,7 +290,7 @@ export const RequestAmenitiesModal: React.FC<RequestAmenitiesModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 overflow-y-auto">
+    <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 overflow-y-auto">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity duration-200"
@@ -430,7 +430,7 @@ export const RequestAmenitiesModal: React.FC<RequestAmenitiesModalProps> = ({
                   max={20}
                   value={quantity}
                   onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="w-16 h-9 text-center font-mono font-bold text-sm bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"
+                  className="w-16 h-9 text-center font-mono font-bold text-sm bg-white text-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900"
                 />
                 <button
                   type="button"
@@ -454,7 +454,7 @@ export const RequestAmenitiesModal: React.FC<RequestAmenitiesModalProps> = ({
                 placeholder={locale === 'th' ? 'เช่น ส่งด่วน, ขอนุ่มพิเศษ' : 'Special requests'}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="w-full h-9 px-3 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"
+                className="w-full h-9 px-3 text-xs bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900"
               />
             </div>
           </div>

@@ -7,7 +7,6 @@ import {
   LayoutGrid,
   UserCheck,
   CreditCard,
-  Moon,
   HelpCircle,
   X,
   LucideIcon,
@@ -57,57 +56,57 @@ const ROOM_STATUS_MAP: Record<
   available: {
     labelTh: 'ว่าง',
     labelEn: 'Available',
-    bg: 'bg-emerald-50 dark:bg-emerald-950/40',
-    text: 'text-emerald-700 dark:text-emerald-300',
-    border: 'border-emerald-200 dark:border-emerald-800',
+    bg: 'bg-emerald-50',
+    text: 'text-emerald-700',
+    border: 'border-emerald-200',
     dot: 'bg-emerald-500',
   },
   occupied: {
     labelTh: 'มีผู้พัก',
     labelEn: 'Occupied',
-    bg: 'bg-blue-50 dark:bg-blue-950/40',
-    text: 'text-blue-700 dark:text-blue-300',
-    border: 'border-blue-200 dark:border-blue-800',
+    bg: 'bg-blue-50',
+    text: 'text-blue-700',
+    border: 'border-blue-200',
     dot: 'bg-blue-500',
   },
   reserved: {
     labelTh: 'ติดจอง',
     labelEn: 'Reserved',
-    bg: 'bg-amber-100 dark:bg-amber-950/40',
-    text: 'text-amber-950 dark:text-amber-200 font-bold',
-    border: 'border-amber-400 dark:border-amber-800',
-    dot: 'bg-amber-500 ring-2 ring-amber-300 dark:ring-amber-900',
+    bg: 'bg-amber-100',
+    text: 'text-amber-950 font-bold',
+    border: 'border-amber-400',
+    dot: 'bg-amber-500 ring-2 ring-amber-300',
   },
   cleaning: {
     labelTh: 'รอทำความสะอาด',
     labelEn: 'Cleaning',
-    bg: 'bg-purple-50 dark:bg-purple-950/40',
-    text: 'text-purple-700 dark:text-purple-300',
-    border: 'border-purple-200 dark:border-purple-800',
+    bg: 'bg-purple-50',
+    text: 'text-purple-700',
+    border: 'border-purple-200',
     dot: 'bg-purple-500',
   },
   maintenance: {
     labelTh: 'ปิดปรับปรุง',
     labelEn: 'Maintenance',
-    bg: 'bg-rose-50 dark:bg-rose-950/40',
-    text: 'text-rose-700 dark:text-rose-300',
-    border: 'border-rose-200 dark:border-rose-800',
+    bg: 'bg-rose-50',
+    text: 'text-rose-700',
+    border: 'border-rose-200',
     dot: 'bg-rose-500',
   },
   checked_out: {
     labelTh: 'เช็คเอาต์แล้ว',
     labelEn: 'Checked Out',
-    bg: 'bg-slate-100 dark:bg-slate-800',
-    text: 'text-slate-600 dark:text-slate-400',
-    border: 'border-slate-200 dark:border-slate-700',
+    bg: 'bg-slate-100',
+    text: 'text-slate-600',
+    border: 'border-slate-200',
     dot: 'bg-slate-400',
   },
   out_of_order: {
     labelTh: 'ไม่พร้อมใช้งาน',
     labelEn: 'Out of Order',
-    bg: 'bg-rose-50 dark:bg-rose-950/40',
-    text: 'text-rose-700 dark:text-rose-300',
-    border: 'border-rose-200 dark:border-rose-800',
+    bg: 'bg-rose-50',
+    text: 'text-rose-700',
+    border: 'border-rose-200',
     dot: 'bg-rose-500',
   },
 };
@@ -119,51 +118,51 @@ const RESERVATION_STATUS_MAP: Record<
   checked_in: {
     labelTh: 'เช็คอินแล้ว',
     labelEn: 'Checked In',
-    bg: 'bg-blue-50 dark:bg-blue-950/40',
-    text: 'text-blue-700 dark:text-blue-300',
-    border: 'border-blue-200 dark:border-blue-800',
+    bg: 'bg-blue-50',
+    text: 'text-blue-700',
+    border: 'border-blue-200',
   },
   confirmed: {
     labelTh: 'ยืนยันแล้ว',
     labelEn: 'Confirmed',
-    bg: 'bg-emerald-50 dark:bg-emerald-950/40',
-    text: 'text-emerald-700 dark:text-emerald-300',
-    border: 'border-emerald-200 dark:border-emerald-800',
+    bg: 'bg-emerald-50',
+    text: 'text-emerald-700',
+    border: 'border-emerald-200',
   },
   extended: {
     labelTh: 'ขยายเวลา',
     labelEn: 'Extended',
-    bg: 'bg-indigo-50 dark:bg-indigo-950/40',
-    text: 'text-indigo-700 dark:text-indigo-300',
-    border: 'border-indigo-200 dark:border-indigo-800',
+    bg: 'bg-indigo-50',
+    text: 'text-indigo-700',
+    border: 'border-indigo-200',
   },
   checked_out: {
     labelTh: 'เช็คเอาต์แล้ว',
     labelEn: 'Checked Out',
-    bg: 'bg-slate-100 dark:bg-slate-800',
-    text: 'text-slate-600 dark:text-slate-400',
-    border: 'border-slate-200 dark:border-slate-700',
+    bg: 'bg-slate-100',
+    text: 'text-slate-600',
+    border: 'border-slate-200',
   },
   cancelled: {
     labelTh: 'ยกเลิก',
     labelEn: 'Cancelled',
-    bg: 'bg-rose-50 dark:bg-rose-950/40',
-    text: 'text-rose-700 dark:text-rose-300',
-    border: 'border-rose-200 dark:border-rose-800',
+    bg: 'bg-rose-50',
+    text: 'text-rose-700',
+    border: 'border-rose-200',
   },
   pending: {
     labelTh: 'รอดำเนินการ',
     labelEn: 'Pending',
-    bg: 'bg-slate-100 dark:bg-slate-800',
-    text: 'text-slate-600 dark:text-slate-400',
-    border: 'border-slate-200 dark:border-slate-700',
+    bg: 'bg-slate-100',
+    text: 'text-slate-600',
+    border: 'border-slate-200',
   },
   no_show: {
     labelTh: 'ไม่มาแสดงตน',
     labelEn: 'No Show',
-    bg: 'bg-amber-50 dark:bg-amber-950/40',
-    text: 'text-amber-700 dark:text-amber-300',
-    border: 'border-amber-200 dark:border-amber-800',
+    bg: 'bg-amber-50',
+    text: 'text-amber-700',
+    border: 'border-amber-200',
   },
 };
 
@@ -228,30 +227,6 @@ export function filterPaletteItems(options: FilterPaletteItemsOptions): PaletteI
       keywords: ['cashier', 'billing', 'folio', 'แคชเชียร์', 'บิล', 'การเงิน'],
       action: () => {
         if (navigate) navigate('/front-desk/cashier');
-        onClose?.();
-      },
-    },
-    {
-      id: 'cmd-dark-mode',
-      title: isThai ? 'สลับโหมดกะดึก (Dark Mode)' : 'Toggle Night Audit (Dark Mode)',
-      subtitle: isThai
-        ? 'สลับโหมดมืดสำหรับงานกะดึก ถนอมสายตา'
-        : 'Switch between light and night audit dark theme',
-      icon: Moon,
-      keywords: ['dark', 'mode', 'night', 'audit', 'theme', 'กะดึก', 'โหมดมืด'],
-      action: () => {
-        if (onToggleTheme) {
-          onToggleTheme();
-        } else if (typeof document !== 'undefined') {
-          const isDark = document.documentElement.classList.contains('dark');
-          if (isDark) {
-            document.documentElement.classList.remove('dark');
-            localStorage.setItem('keystay_theme', 'light');
-          } else {
-            document.documentElement.classList.add('dark');
-            localStorage.setItem('keystay_theme', 'dark');
-          }
-        }
         onClose?.();
       },
     },
@@ -550,14 +525,14 @@ export const GlobalCommandPalette: React.FC<GlobalCommandPaletteProps> = ({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-xl bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col max-h-[75vh] animate-in fade-in zoom-in-95 duration-150"
+        className="w-full max-w-xl bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[75vh] animate-in fade-in zoom-in-95 duration-150"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
         {/* Search Input Bar */}
-        <div className="relative flex items-center px-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
+        <div className="relative flex items-center px-4 border-b border-slate-200 bg-white shrink-0">
           <Search
-            className="w-5 h-5 text-slate-400 dark:text-slate-500 shrink-0"
+            className="w-5 h-5 text-slate-400 shrink-0"
             strokeWidth={1.75}
             aria-hidden="true"
           />
@@ -571,7 +546,7 @@ export const GlobalCommandPalette: React.FC<GlobalCommandPaletteProps> = ({
                 ? 'ค้นหาห้อง, แขก, หรือพิมพ์คำสั่ง... (Esc เพื่อปิด)'
                 : 'Search rooms, guests, or type a command... (Esc to close)'
             }
-            className="w-full px-3 py-3.5 text-sm bg-transparent text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none font-sans"
+            className="w-full px-3 py-3.5 text-sm bg-transparent text-slate-900 placeholder:text-slate-400 focus:outline-none font-sans"
             autoComplete="off"
             spellCheck="false"
           />
@@ -579,13 +554,13 @@ export const GlobalCommandPalette: React.FC<GlobalCommandPaletteProps> = ({
             <button
               type="button"
               onClick={() => setQuery('')}
-              className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded transition-colors"
+              className="p-1 text-slate-400 hover:text-slate-600 rounded transition-colors"
               aria-label="Clear query"
             >
               <X className="w-4 h-4" strokeWidth={1.75} />
             </button>
           ) : (
-            <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded">
+            <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono text-slate-400 bg-slate-100 border border-slate-200 rounded">
               Esc
             </kbd>
           )}
@@ -594,16 +569,16 @@ export const GlobalCommandPalette: React.FC<GlobalCommandPaletteProps> = ({
         {/* Results List */}
         <div
           ref={listRef}
-          className="flex-1 overflow-y-auto py-2 divide-y divide-slate-100 dark:divide-slate-800/60 focus:outline-none"
+          className="flex-1 overflow-y-auto py-2 divide-y divide-slate-100 focus:outline-none"
         >
           {items.length === 0 ? (
             <div className="py-10 px-4 text-center">
-              <p className="text-sm text-slate-500 dark:text-slate-400">
+              <p className="text-sm text-slate-500">
                 {isThai
                   ? `ไม่พบห้องพัก แขก หรือคำสั่งที่ตรงกับ "${query}"`
                   : `No rooms, guests, or commands matching "${query}"`}
               </p>
-              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+              <p className="text-xs text-slate-400 mt-1">
                 {isThai
                   ? 'ลองค้นหาด้วยหมายเลขห้อง (101), ชื่อแขก, หรือ "แคชเชียร์"'
                   : 'Try searching by room number (101), guest name, or "cashier"'}
@@ -614,7 +589,7 @@ export const GlobalCommandPalette: React.FC<GlobalCommandPaletteProps> = ({
               const categoryItems = items.filter((it) => it.category === category);
               return (
                 <div key={category} className="py-1">
-                  <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                     {categoryTitles[category]}
                   </div>
                   <div className="space-y-0.5 px-1.5">
@@ -633,16 +608,16 @@ export const GlobalCommandPalette: React.FC<GlobalCommandPaletteProps> = ({
                           onClick={() => item.onSelect()}
                           className={`flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors text-xs font-medium ${
                             isSelected
-                              ? 'bg-orange-50 text-orange-950 dark:bg-orange-950/40 dark:text-orange-200 border-l-2 border-[#F97316]'
-                              : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                              ? 'bg-orange-50 text-orange-950 border-l-2 border-[#F97316]'
+                              : 'text-slate-700 hover:bg-slate-50'
                           }`}
                         >
                           <div className="flex items-center gap-3 min-w-0">
                             <div
                               className={`p-1.5 rounded-md ${
                                 isSelected
-                                  ? 'bg-orange-100 text-[#F97316] dark:bg-orange-900/40'
-                                  : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                                  ? 'bg-orange-100 text-[#F97316]'
+                                  : 'bg-slate-100 text-slate-500'
                               }`}
                             >
                               <Icon className="w-4 h-4 shrink-0" strokeWidth={1.75} />
@@ -651,14 +626,14 @@ export const GlobalCommandPalette: React.FC<GlobalCommandPaletteProps> = ({
                               <p
                                 className={`text-xs truncate ${
                                   isSelected
-                                    ? 'font-bold text-orange-950 dark:text-orange-100'
-                                    : 'font-medium text-slate-900 dark:text-slate-100'
+                                    ? 'font-bold text-orange-950'
+                                    : 'font-medium text-slate-900'
                                 }`}
                               >
                                 {item.title}
                               </p>
                               {item.subtitle && (
-                                <p className="text-[11px] text-slate-400 dark:text-slate-400 truncate">
+                                <p className="text-[11px] text-slate-400 truncate">
                                   {item.subtitle}
                                 </p>
                               )}
@@ -688,16 +663,16 @@ export const GlobalCommandPalette: React.FC<GlobalCommandPaletteProps> = ({
         </div>
 
         {/* Keyboard Navigation Footer */}
-        <div className="px-4 py-2 bg-slate-50 dark:bg-slate-800/60 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-sans shrink-0">
+        <div className="px-4 py-2 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-500 font-sans shrink-0">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1.5">
-              <kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-[10px] font-mono text-slate-600 dark:text-slate-300">
+              <kbd className="px-1.5 py-0.5 rounded bg-white border border-slate-300 text-[10px] font-mono text-slate-600">
                 ↑↓
               </kbd>
               <span>{isThai ? 'นำทาง' : 'Navigate'}</span>
             </span>
             <span className="flex items-center gap-1.5">
-              <kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-[10px] font-mono text-slate-600 dark:text-slate-300">
+              <kbd className="px-1.5 py-0.5 rounded bg-white border border-slate-300 text-[10px] font-mono text-slate-600">
                 Enter
               </kbd>
               <span>{isThai ? 'เลือก' : 'Select'}</span>
@@ -705,7 +680,7 @@ export const GlobalCommandPalette: React.FC<GlobalCommandPaletteProps> = ({
           </div>
 
           <span className="flex items-center gap-1.5">
-            <kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-[10px] font-mono text-slate-600 dark:text-slate-300">
+            <kbd className="px-1.5 py-0.5 rounded bg-white border border-slate-300 text-[10px] font-mono text-slate-600">
               Esc
             </kbd>
             <span>{isThai ? 'ปิด' : 'Close'}</span>

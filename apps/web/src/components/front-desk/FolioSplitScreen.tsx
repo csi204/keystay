@@ -25,10 +25,12 @@ export interface FolioItemLike {
   billId?: string;
   description?: string;
   category?: string;
+  itemType?: string;
   quantity?: number;
   unitPrice?: string | number;
   totalAmount?: string | number;
   totalPrice?: string | number;
+  isPaid?: boolean;
   createdAt?: string;
   [key: string]: any;
 }
@@ -39,6 +41,50 @@ export interface FolioSummary {
   totalWithVat: number;
   depositDeduction: number;
   netDue: number;
+  paidTotalWithVat: number;
+  unpaidSubtotal: number;
+  unpaidVat: number;
+  unpaidTotalWithVat: number;
+  refundAmount: number;
+  hasUnpaidCharges: boolean;
+}
+
+function round2(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+export function isExtensionChargeDescription(description?: string): boolean {
+  if (!description) return false;
+  const lower = description.toLowerCase();
+  return (
+    description.includes('ขยายเวลา') ||
+    lower.includes('extended stay') ||
+    lower.includes('extend stay') ||
+    lower.includes('extension')
+  );
+}
+
+export function isFolioItemPaid(
+  item: FolioItemLike,
+  options?: { reservationPaymentStatus?: string }
+): boolean {
+  if (item.isPaid === true) return true;
+  if (item.isPaid === false) return false;
+  if (item.is_paid !== undefined && item.is_paid !== null) {
+    return Boolean(item.is_paid);
+  }
+  const isRoomCategory =
+    item.category === 'room' ||
+    item.itemType === 'room_charge' ||
+    item.item_type === 'room_charge';
+  if (
+    options?.reservationPaymentStatus === 'paid' &&
+    isRoomCategory &&
+    !isExtensionChargeDescription(item.description)
+  ) {
+    return true;
+  }
+  return false;
 }
 
 /**
@@ -79,38 +125,77 @@ export function calculateItemTotal(item?: FolioItemLike | null): number {
 }
 
 /**
- * Calculates folio subtotal, VAT 7%, total with VAT, and net due after deposit deduction.
+ * Calculates folio subtotal, VAT 7%, total with VAT, paid vs unpaid splits,
+ * deposit refund, and net due after deposit deduction.
  * Guaranteed to never return NaN.
  */
 export function calculateFolioSummary(
   items?: FolioItemLike[] | null,
   deposit: number | string = 0,
-  fallbackSubtotal: number | string = 0
+  fallbackSubtotal: number | string = 0,
+  options?: { reservationPaymentStatus?: string }
 ): FolioSummary {
   let subtotal = 0;
+  let paidSubtotal = 0;
+  let unpaidSubtotal = 0;
+  let hasUnpaidCharges = false;
 
   if (items && items.length > 0) {
-    subtotal = items.reduce((acc, it) => acc + calculateItemTotal(it), 0);
+    for (const it of items) {
+      const itemTotal = calculateItemTotal(it);
+      if (isFolioItemPaid(it, options)) {
+        paidSubtotal += itemTotal;
+      } else {
+        unpaidSubtotal += itemTotal;
+        hasUnpaidCharges = true;
+      }
+    }
+    paidSubtotal = round2(paidSubtotal);
+    unpaidSubtotal = round2(unpaidSubtotal);
+    subtotal = round2(paidSubtotal + unpaidSubtotal);
   } else {
     const parsedFallback = typeof fallbackSubtotal === 'number'
       ? fallbackSubtotal
       : parseFloat(String(fallbackSubtotal));
-    subtotal = Number.isFinite(parsedFallback) && parsedFallback > 0 ? parsedFallback : 0;
+    const safeFallback = Number.isFinite(parsedFallback) && parsedFallback > 0 ? parsedFallback : 0;
+    subtotal = safeFallback;
+    if (options?.reservationPaymentStatus === 'paid') {
+      paidSubtotal = safeFallback;
+      unpaidSubtotal = 0;
+      hasUnpaidCharges = false;
+    } else {
+      paidSubtotal = 0;
+      unpaidSubtotal = safeFallback;
+      hasUnpaidCharges = safeFallback > 0;
+    }
   }
 
   if (!Number.isFinite(subtotal) || subtotal < 0) {
     subtotal = 0;
   }
+  if (!Number.isFinite(paidSubtotal) || paidSubtotal < 0) {
+    paidSubtotal = 0;
+  }
+  if (!Number.isFinite(unpaidSubtotal) || unpaidSubtotal < 0) {
+    unpaidSubtotal = 0;
+  }
 
-  const vat = Math.round(subtotal * 0.07 * 100) / 100;
-  const totalWithVat = Math.round((subtotal + vat) * 100) / 100;
+  const vat = round2(subtotal * 0.07);
+  const totalWithVat = round2(subtotal + vat);
+
+  const paidVat = round2(paidSubtotal * 0.07);
+  const paidTotalWithVat = round2(paidSubtotal + paidVat);
+
+  const unpaidVat = round2(unpaidSubtotal * 0.07);
+  const unpaidTotalWithVat = round2(unpaidSubtotal + unpaidVat);
 
   const parsedDeposit = typeof deposit === 'number'
     ? deposit
     : parseFloat(String(deposit));
   const depositDeduction = Number.isFinite(parsedDeposit) && parsedDeposit > 0 ? parsedDeposit : 0;
 
-  const netDue = Math.max(0, Math.round((totalWithVat - depositDeduction) * 100) / 100);
+  const netDue = Math.max(0, round2(unpaidTotalWithVat - depositDeduction));
+  const refundAmount = Math.max(0, round2(depositDeduction - unpaidTotalWithVat));
 
   return {
     subtotal: Number.isFinite(subtotal) ? subtotal : 0,
@@ -118,12 +203,19 @@ export function calculateFolioSummary(
     totalWithVat: Number.isFinite(totalWithVat) ? totalWithVat : 0,
     depositDeduction: Number.isFinite(depositDeduction) ? depositDeduction : 0,
     netDue: Number.isFinite(netDue) ? netDue : 0,
+    paidTotalWithVat: Number.isFinite(paidTotalWithVat) ? paidTotalWithVat : 0,
+    unpaidSubtotal: Number.isFinite(unpaidSubtotal) ? unpaidSubtotal : 0,
+    unpaidVat: Number.isFinite(unpaidVat) ? unpaidVat : 0,
+    unpaidTotalWithVat: Number.isFinite(unpaidTotalWithVat) ? unpaidTotalWithVat : 0,
+    refundAmount: Number.isFinite(refundAmount) ? refundAmount : 0,
+    hasUnpaidCharges,
   };
 }
 
 export interface FolioSplitScreenProps {
   bill: DetailedBill | null;
   depositAmount?: string;
+  reservationPaymentStatus?: string;
   onAddCharge: () => void;
   onRequestAmenities?: () => void;
   onDeleteItem: (itemId: string) => void;
@@ -135,6 +227,7 @@ export interface FolioSplitScreenProps {
 export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
   bill,
   depositAmount = '500',
+  reservationPaymentStatus,
   onAddCharge,
   onRequestAmenities,
   onDeleteItem,
@@ -161,7 +254,11 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
   }
 
   const items = bill.items || [];
-  const summary = calculateFolioSummary(items, depositAmount, bill.subtotal);
+  const effectivePaymentStatus = reservationPaymentStatus || (bill.status === 'paid' ? 'paid' : undefined);
+  const summary = calculateFolioSummary(items, depositAmount, bill.subtotal, {
+    reservationPaymentStatus: effectivePaymentStatus,
+  });
+  const depositAmountNum = Number(depositAmount || 0);
   const isPaid = bill.status === 'paid' || paymentSuccess;
 
   const handleSettlePayment = async () => {
@@ -232,11 +329,11 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
           )}
         </div>
 
-        {/* Line Items Table: Expands to Full Width */}
-        <div className="overflow-x-auto w-full flex-1">
+        {/* Line Items Table: Bounded Internal Vertical Scroll with Sticky Header */}
+        <div className="overflow-x-auto overflow-y-auto max-h-[340px] w-full flex-1">
           <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50/80 border-b border-slate-200 text-xs font-bold text-slate-700 uppercase tracking-wider py-3">
+            <thead className="sticky top-0 z-10 bg-slate-50 shadow-[0_1px_0_0_rgb(226,232,240)]">
+              <tr className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-700 uppercase tracking-wider py-3">
                 <th className="py-3 px-4">{t('folio.category')}</th>
                 <th className="py-3 px-4">{t('folio.item')}</th>
                 <th className="py-3 px-4 text-center font-mono tracking-tight tabular-nums">{t('folio.qty')}</th>
@@ -253,13 +350,29 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
                   </td>
                 </tr>
               ) : (
-                items.map((it) => (
+                items.map((it) => {
+                  const itemPaid = isPaid || isFolioItemPaid(it, { reservationPaymentStatus: effectivePaymentStatus });
+                  const isRoomCharge = it.category === 'room' || (it as any).itemType === 'room_charge' || (it as any).item_type === 'room_charge';
+                  const isLocked = itemPaid || (isRoomCharge && !isExtensionChargeDescription(it.description));
+
+                  return (
                   <tr key={it.id} className="hover:bg-slate-50/70 transition-colors">
                     <td className="text-sm py-3.5 px-4 text-slate-800">
                       <FolioCategoryBadge item={it} />
                     </td>
                     <td className="text-sm py-3.5 px-4 font-medium text-slate-900">
-                      {localizeFolioDescription(it.description, locale)}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span>{localizeFolioDescription(it.description, locale)}</span>
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border ${
+                            itemPaid
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              : 'bg-amber-50 text-amber-800 border-amber-200'
+                          }`}
+                        >
+                          {itemPaid ? (locale === 'th' ? 'ชำระแล้ว' : 'Paid') : (locale === 'th' ? 'ค้างชำระ' : 'Unpaid')}
+                        </span>
+                      </div>
                     </td>
                     <td className="text-sm py-3.5 px-4 text-center font-mono tracking-tight tabular-nums text-slate-800">
                       {it.quantity}
@@ -272,7 +385,7 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
                     </td>
                     {!isPaid && (
                       <td className="text-sm py-3.5 px-4 text-center">
-                        {it.category === 'room' || (it as any).itemType === 'room_charge' || (it as any).item_type === 'room_charge' ? (
+                        {isLocked ? (
                           <div
                             className="inline-flex items-center justify-center p-2 rounded text-slate-400 bg-slate-100/80 cursor-not-allowed"
                             title={
@@ -296,7 +409,8 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
                       </td>
                     )}
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -307,22 +421,36 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
           <div className="p-4 sm:p-5 bg-slate-50 border-t border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
             {/* Money Breakdown Row */}
             <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1.5 text-xs text-slate-600">
+              {summary.paidTotalWithVat > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-emerald-700 font-medium">
+                    {locale === 'th' ? 'ชำระแล้ว (ห้องพัก+VAT):' : 'Paid Initial Stay:'}
+                  </span>
+                  <span className="font-mono font-semibold text-emerald-700 tabular-nums">
+                    {formatCurrency(summary.paidTotalWithVat)}
+                  </span>
+                </div>
+              )}
               <div className="flex items-center gap-1.5">
-                <span className="text-slate-500">{t('folio.subtotal')}:</span>
+                <span className="text-slate-500">
+                  {locale === 'th' ? 'ยอดรายการค้างชำระ (ก่อน VAT):' : `${t('folio.subtotal')}:`}
+                </span>
                 <span className="font-mono font-semibold text-slate-800 tabular-nums">
-                  {formatCurrency(summary.subtotal)}
+                  {formatCurrency(summary.unpaidSubtotal)}
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="text-slate-500">{t('folio.vat')}:</span>
                 <span className="font-mono font-semibold text-slate-800 tabular-nums">
-                  {formatCurrency(summary.vat)}
+                  {formatCurrency(summary.unpaidVat)}
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-slate-500">{t('folio.totalAmount')}:</span>
+                <span className="text-slate-500">
+                  {locale === 'th' ? 'รวมค่าใช้จ่ายใหม่สุทธิ:' : `${t('folio.totalAmount')}:`}
+                </span>
                 <span className="font-mono font-semibold text-slate-900 tabular-nums">
-                  {formatCurrency(summary.totalWithVat)}
+                  {formatCurrency(summary.unpaidTotalWithVat)}
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
@@ -333,14 +461,26 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
               </div>
             </div>
 
-            {/* Net Total Due & Print Invoice Button */}
+            {/* Net Total Due / Deposit Refund & Print Invoice Button */}
             <div className="flex items-center justify-between md:justify-end gap-5 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-200/60">
               <div className="text-left md:text-right">
                 <div className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">
-                  {locale === 'th' ? 'ยอดสุทธิ' : t('folio.netDue')}
+                  {summary.netDue > 0
+                    ? (locale === 'th' ? 'ยอดค้างชำระสุทธิ' : t('folio.netDue'))
+                    : summary.refundAmount > 0
+                      ? summary.refundAmount === depositAmountNum && depositAmountNum > 0
+                        ? (locale === 'th' ? 'คืนเงินมัดจำเต็มจำนวน' : 'Full Deposit Refund')
+                        : (locale === 'th' ? 'คืนเงินมัดจำคงเหลือ' : 'Remaining Deposit Refund')
+                      : (locale === 'th' ? 'ยอดสุทธิ' : t('folio.netDue'))}
                 </div>
-                <div className="text-2xl sm:text-3xl font-mono font-bold text-slate-950 tracking-tight tabular-nums">
-                  {formatCurrency(summary.netDue)}
+                <div
+                  className={
+                    summary.netDue === 0 && summary.refundAmount > 0
+                      ? 'text-2xl sm:text-3xl font-mono font-bold text-emerald-700 tracking-tight tabular-nums'
+                      : 'text-2xl sm:text-3xl font-mono font-bold text-slate-950 tracking-tight tabular-nums'
+                  }
+                >
+                  {formatCurrency(summary.netDue > 0 ? summary.netDue : summary.refundAmount)}
                 </div>
               </div>
 
@@ -383,30 +523,55 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
 
             {/* Money Breakdown */}
             <div className="space-y-2.5 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+              {summary.paidTotalWithVat > 0 && (
+                <div className="flex justify-between items-center text-sm font-medium text-emerald-700 font-mono tracking-tight tabular-nums pb-2 border-b border-slate-100">
+                  <span className="font-sans flex items-center gap-1.5">
+                    <span>{locale === 'th' ? 'ค่าห้องพักเบื้องต้น (รวม VAT 7%)' : 'Initial Stay (incl. VAT)'}</span>
+                    <span className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      {locale === 'th' ? 'ชำระแล้ว' : 'Paid'}
+                    </span>
+                  </span>
+                  <span>{formatCurrency(summary.paidTotalWithVat)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm font-medium text-slate-700 font-mono tracking-tight tabular-nums">
-                <span>{t('folio.subtotal')}:</span>
-                <span>{formatCurrency(summary.subtotal)}</span>
+                <span className="font-sans">{locale === 'th' ? 'ยอดรายการค้างชำระ (ก่อน VAT):' : `${t('folio.subtotal')}:`}</span>
+                <span>{formatCurrency(summary.unpaidSubtotal)}</span>
               </div>
               <div className="flex justify-between text-sm font-medium text-slate-700 font-mono tracking-tight tabular-nums">
-                <span>{t('folio.vat')}:</span>
-                <span>{formatCurrency(summary.vat)}</span>
+                <span className="font-sans">{t('folio.vat')}:</span>
+                <span>{formatCurrency(summary.unpaidVat)}</span>
               </div>
               <div className="flex justify-between text-sm font-medium text-slate-700 font-mono tracking-tight tabular-nums">
-                <span>{t('folio.totalAmount')}:</span>
-                <span className="font-semibold text-slate-900">{formatCurrency(summary.totalWithVat)}</span>
+                <span className="font-sans">{locale === 'th' ? 'รวมค่าใช้จ่ายใหม่สุทธิ:' : `${t('folio.totalAmount')}:`}</span>
+                <span className="font-semibold text-slate-900">{formatCurrency(summary.unpaidTotalWithVat)}</span>
               </div>
               <div className="flex justify-between text-sm font-medium text-slate-700 font-mono tracking-tight tabular-nums pt-1.5 border-t border-slate-100">
-                <span>{t('folio.depositDeducted')}:</span>
+                <span className="font-sans">{t('folio.depositDeducted')}:</span>
                 <span className="text-emerald-700">-{formatCurrency(summary.depositDeduction)}</span>
               </div>
               <div className="flex justify-between items-baseline pt-3 border-t border-slate-200">
-                <span className="text-base font-bold text-slate-900">{t('folio.netDue')}:</span>
-                <span className="text-2xl sm:text-3xl font-mono font-bold text-slate-950 tracking-tight tabular-nums">{formatCurrency(summary.netDue)}</span>
+                <span className="text-base font-bold text-slate-900">
+                  {summary.netDue > 0
+                    ? (locale === 'th' ? 'ยอดค้างชำระสุทธิ:' : `${t('folio.netDue')}:`)
+                    : summary.refundAmount > 0
+                      ? summary.refundAmount === depositAmountNum && depositAmountNum > 0
+                        ? (locale === 'th' ? 'คืนเงินมัดจำเต็มจำนวน:' : 'Full Deposit Refund:')
+                        : (locale === 'th' ? 'คืนเงินมัดจำคงเหลือ:' : 'Remaining Deposit Refund:')
+                      : (locale === 'th' ? 'ยอดค้างชำระสุทธิ:' : `${t('folio.netDue')}:`)}
+                </span>
+                <span
+                  className={`text-2xl sm:text-3xl font-mono font-bold tracking-tight tabular-nums ${
+                    summary.netDue === 0 && summary.refundAmount > 0 ? 'text-emerald-700' : 'text-slate-950'
+                  }`}
+                >
+                  {formatCurrency(summary.netDue > 0 ? summary.netDue : summary.refundAmount)}
+                </span>
               </div>
             </div>
 
-            {/* Payment Method Selector */}
-            {!isPaid && (
+            {/* Payment Method Selector (Only when Net Due > 0) */}
+            {!isPaid && summary.netDue > 0 && (
               <div className="space-y-2">
                 <label className="block text-xs font-medium text-slate-700">
                   {t('payment.method')}:
@@ -528,29 +693,45 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
               label: locale === 'th' ? 'ชื่อผู้เข้าพัก' : 'Guest',
               value: bill.guestName || t('common.guest'),
             },
-            {
-              label: locale === 'th' ? 'วิธีชำระเงิน' : 'Payment Method',
-              value:
-                paymentMethod === 'cash'
-                  ? locale === 'th'
-                    ? 'เงินสด'
-                    : 'Cash'
-                  : paymentMethod === 'credit_card'
-                  ? locale === 'th'
-                    ? 'บัตรเครดิต'
-                    : 'Credit Card'
-                  : paymentMethod === 'qr_promptpay'
-                  ? locale === 'th'
-                    ? 'QR พร้อมเพย์'
-                    : 'QR PromptPay'
-                  : locale === 'th'
-                  ? 'โอนเงินธนาคาร'
-                  : 'Bank Transfer',
-            },
-            {
-              label: locale === 'th' ? 'ยอดรับชำระสุทธิ' : 'Net Amount Due',
-              value: formatCurrency(summary.netDue),
-            },
+            ...(summary.netDue > 0
+              ? [
+                  {
+                    label: locale === 'th' ? 'วิธีชำระเงิน' : 'Payment Method',
+                    value:
+                      paymentMethod === 'cash'
+                        ? locale === 'th'
+                          ? 'เงินสด'
+                          : 'Cash'
+                        : paymentMethod === 'credit_card'
+                        ? locale === 'th'
+                          ? 'บัตรเครดิต'
+                          : 'Credit Card'
+                        : paymentMethod === 'qr_promptpay'
+                        ? locale === 'th'
+                          ? 'QR พร้อมเพย์'
+                          : 'QR PromptPay'
+                        : locale === 'th'
+                        ? 'โอนเงินธนาคาร'
+                        : 'Bank Transfer',
+                  },
+                  {
+                    label: locale === 'th' ? 'ยอดรับชำระสุทธิ' : 'Net Amount Due',
+                    value: formatCurrency(summary.netDue),
+                  },
+                ]
+              : [
+                  {
+                    label:
+                      summary.refundAmount === depositAmountNum && depositAmountNum > 0
+                        ? locale === 'th'
+                          ? 'คืนเงินมัดจำเต็มจำนวน'
+                          : 'Full Deposit Refund'
+                        : locale === 'th'
+                        ? 'คืนเงินมัดจำคงเหลือ'
+                        : 'Remaining Deposit Refund',
+                    value: formatCurrency(summary.refundAmount),
+                  },
+                ]),
           ]}
         />
       )}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { apiFetch } from '@/lib/api';
 import { Bill } from '@keystay/types';
 import type { ExtendedReservation } from './useReservations';
@@ -14,9 +14,11 @@ export interface BillItem {
   billId: string;
   description: string;
   category: 'room' | 'minibar' | 'laundry' | 'damage' | 'service' | 'other';
+  itemType?: string;
   quantity: number;
   unitPrice: string;
   totalAmount: string;
+  isPaid?: boolean;
   createdAt: string;
 }
 
@@ -48,6 +50,7 @@ export function useBilling(reservations?: ExtendedReservation[]) {
   const [error, setError] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState<boolean>(false);
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+  const hasLoadedOnceRef = useRef<boolean>(false);
 
   const synchronizedBills = useMemo(() => {
     if (!reservations || reservations.length === 0) return bills;
@@ -60,8 +63,12 @@ export function useBilling(reservations?: ExtendedReservation[]) {
     return syncBillWithReservation(selectedBill, reservations);
   }, [selectedBill, reservations]);
 
-  const fetchBills = useCallback(async () => {
-    setLoading(true);
+  const fetchBills = useCallback(async (options?: boolean | { forceLoading?: boolean }) => {
+    const forceLoading =
+      options === true || (typeof options === 'object' && options !== null && options.forceLoading === true);
+    if (!hasLoadedOnceRef.current || forceLoading) {
+      setLoading(true);
+    }
     setError(null);
 
     const res = await apiFetch<DetailedBill[]>('/api/bills');
@@ -81,6 +88,7 @@ export function useBilling(reservations?: ExtendedReservation[]) {
       setBills(sorted);
     }
 
+    hasLoadedOnceRef.current = true;
     setLastRefreshed(new Date());
     setLoading(false);
   }, []);

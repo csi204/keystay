@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Room, RoomType, Reservation } from '@keystay/types';
 import type { ExtendedReservation } from '@/hooks/useReservations';
 import { getAvailableRoomsForDates } from '@/lib/roomAvailability';
@@ -75,6 +75,7 @@ export interface WalkInModalProps {
     checkInDate: string;
     checkOutDate: string;
     depositAmount: string;
+    nightlyRate?: number;
     paymentMethod?: string;
     bookingSource?: 'walk_in' | 'phone' | 'facebook';
     paymentSlipUrl?: string;
@@ -118,15 +119,50 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
   const [isCompressingSlip, setIsCompressingSlip] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const prevOpenRef = useRef<boolean>(false);
+  const prevPreselectedRoomIdRef = useRef<string | undefined>(preselectedRoomId);
+
+  const poolOfRooms =
+    (Array.isArray(allRooms) && allRooms.length > 0 ? allRooms : null) ||
+    (Array.isArray(rooms) && rooms.length > 0 ? rooms : null) ||
+    (Array.isArray(availableRooms) ? availableRooms : []);
+
+  const safeReservations = Array.isArray(reservations) ? reservations : [];
+
+  const availableRoomsForDates = useMemo(() => {
+    return getAvailableRoomsForDates(
+      poolOfRooms,
+      safeReservations,
+      checkInDate,
+      checkOutDate,
+      { isWalkInToday: checkInDate === todayStr }
+    );
+  }, [poolOfRooms, safeReservations, checkInDate, checkOutDate, todayStr]);
 
   useEffect(() => {
-    if (isOpen) {
+    const wasOpen = prevOpenRef.current;
+    prevOpenRef.current = isOpen;
+
+    if (!wasOpen && isOpen) {
+      setGuestName('');
+      setPhone('');
+      setIdCardNumber('');
+      setEmail('');
+      setGuestsCount(2);
+      setCheckInDate(todayStr);
+      setCheckOutDate(tomorrowStr);
+      setDepositAmount('500');
+      setPaymentMethod('cash');
       setPaymentSlipRef('');
       setPaymentSlipUrl('');
       setSlipPreview(null);
       setIsCompressingSlip(false);
+      setError(null);
+      if (preselectedRoomId) {
+        setRoomId(preselectedRoomId);
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, preselectedRoomId, todayStr, tomorrowStr]);
 
   const handleSlipFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -154,18 +190,6 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
     setPaymentSlipUrl('');
   };
 
-  const poolOfRooms = allRooms || rooms || availableRooms || [];
-
-  const availableRoomsForDates = useMemo(() => {
-    return getAvailableRoomsForDates(
-      allRooms || rooms || availableRooms,
-      reservations,
-      checkInDate,
-      checkOutDate,
-      { isWalkInToday: checkInDate === todayStr }
-    );
-  }, [allRooms, rooms, availableRooms, reservations, checkInDate, checkOutDate, todayStr]);
-
   const handleCheckInDateChange = (date: string) => {
     setCheckInDate(date);
     if (checkOutDate && date > checkOutDate) {
@@ -174,13 +198,24 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
   };
 
   useEffect(() => {
-    if (preselectedRoomId && availableRoomsForDates.some((r) => r.id === preselectedRoomId)) {
+    const preselectedChanged = prevPreselectedRoomIdRef.current !== preselectedRoomId;
+    prevPreselectedRoomIdRef.current = preselectedRoomId;
+
+    if (
+      preselectedChanged &&
+      preselectedRoomId &&
+      availableRoomsForDates.some((r) => r.id === preselectedRoomId)
+    ) {
       setRoomId(preselectedRoomId);
     } else if (
       availableRoomsForDates.length > 0 &&
       (!roomId || !availableRoomsForDates.some((r) => r.id === roomId))
     ) {
-      setRoomId(availableRoomsForDates[0].id);
+      setRoomId(
+        preselectedRoomId && availableRoomsForDates.some((r) => r.id === preselectedRoomId)
+          ? preselectedRoomId
+          : availableRoomsForDates[0].id
+      );
     } else if (availableRoomsForDates.length === 0) {
       setRoomId('');
     }
@@ -212,21 +247,26 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
     const start = new Date(inDate);
     const end = new Date(outDate);
     const diffTime = end.getTime() - start.getTime();
+    if (!Number.isFinite(diffTime)) return 1;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays > 0 ? diffDays : 1;
   };
 
   const nights = calculateNights(checkInDate, checkOutDate);
   const isDateRangeInvalid = Boolean(checkInDate && checkOutDate && checkOutDate <= checkInDate);
-  const nightlyRate = selectedRoomType ? parseFloat(selectedRoomType.basePrice || '1200') : 1200;
+  const parsedRate = selectedRoomType ? parseFloat(String(selectedRoomType.basePrice ?? '1200')) : 1200;
+  const nightlyRate = Number.isFinite(parsedRate) ? parsedRate : 1200;
   const parsedDeposit = parseFloat(depositAmount) || 0;
   const roomSubtotal = nights * nightlyRate;
   const totalDue = roomSubtotal + parsedDeposit;
 
   // Room specification chips
+  const amenitiesList = Array.isArray(selectedRoomType?.amenities)
+    ? selectedRoomType.amenities.filter((a): a is string => typeof a === 'string')
+    : [];
   const bedRaw =
     (selectedRoomType as any)?.bedType ||
-    selectedRoomType?.amenities?.find((a) => a.toLowerCase().includes('bed')) ||
+    amenitiesList.find((a) => a.toLowerCase().includes('bed')) ||
     'King Bed';
   const bedLabel = localizeAmenity(bedRaw, locale) || bedRaw;
 
@@ -234,7 +274,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
     ? t('drawer.capacityCount', { count: selectedRoomType.capacity })
     : (locale === 'th' ? '2 ท่าน' : '2 Guests');
 
-  const hasBathtub = selectedRoomType?.amenities?.find((a) => a.toLowerCase().includes('bath'));
+  const hasBathtub = amenitiesList.find((a) => a.toLowerCase().includes('bath'));
   const bathLabel = hasBathtub
     ? localizeAmenity(hasBathtub, locale)
     : (locale === 'th' ? '1 ห้องน้ำ' : '1 Bath');
@@ -292,6 +332,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
       checkInDate: checkInDate || todayStr,
       checkOutDate,
       depositAmount: depositAmount.trim() || '0',
+      nightlyRate,
       paymentMethod,
       bookingSource: 'walk_in',
       paymentSlipUrl: paymentSlipUrl || undefined,
@@ -307,7 +348,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
@@ -315,18 +356,18 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
       />
 
       {/* Split-Pane Studio Container */}
-      <div className="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xl max-w-4xl w-full overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[92vh]">
+      <div className="relative bg-white rounded-2xl border border-slate-200/80 shadow-2xl max-w-4xl w-full overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[92vh]">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between bg-slate-50/60 dark:bg-slate-800/60 shrink-0">
+        <div className="px-6 py-4 border-b border-slate-200/80 flex items-center justify-between bg-slate-50/60 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200/70 dark:border-slate-700">
-              <UserCheck className="w-5 h-5 text-slate-900 dark:text-slate-100" strokeWidth={1.75} />
+            <div className="p-2 bg-slate-100 rounded-xl border border-slate-200/70">
+              <UserCheck className="w-5 h-5 text-slate-900" strokeWidth={1.75} />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
                 <span>เปิดห้องด่วน (Walk-In Check-In)</span>
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="text-xs text-slate-500">
                 {t('res.rapidWalkIn')}
               </p>
             </div>
@@ -334,7 +375,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="min-h-[44px] min-w-[44px] p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors flex items-center justify-center"
+            className="min-h-[44px] min-w-[44px] p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors flex items-center justify-center"
             aria-label={t('common.cancel')}
           >
             <X className="w-5 h-5" />
@@ -378,13 +419,13 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
                       <select
                         value={roomId}
                         onChange={(e) => setRoomId(e.target.value)}
-                        className="w-full text-sm py-2 px-3 pr-9 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-sans shadow-2xs appearance-none"
+                        className="w-full text-sm py-2 px-3 pr-9 bg-white text-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-sans shadow-2xs appearance-none"
                       >
                         {availableRoomsForDates.map((r) => {
                           const type = (roomTypes || []).find((t) => t.id === r.roomTypeId);
                           const typeName = localizeRoomType(type?.name, locale) || type?.name || 'Standard';
                           return (
-                            <option key={r.id} value={r.id} className="text-slate-900 bg-white dark:text-slate-100 dark:bg-slate-800">
+                            <option key={r.id} value={r.id} className="text-slate-900 bg-white">
                               {t('common.room')} {r.roomNumber} ({typeName} · {formatCurrency(type?.basePrice || '1200')}{t('common.pricePerNight')})
                             </option>
                           );
@@ -486,7 +527,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
               <div className="md:col-span-7 space-y-4">
                 {/* Guest Name */}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1">
+                  <label className="block text-sm font-semibold text-slate-800 mb-1">
                     {t('common.guestName')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
                   </label>
                   <div className="relative">
@@ -497,7 +538,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
                       placeholder={t('res.guestName')}
                       value={guestName}
                       onChange={(e) => setGuestName(e.target.value)}
-                      className="w-full text-sm py-2 px-3 pl-9 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-sans shadow-2xs"
+                      className="w-full text-sm py-2 px-3 pl-9 bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-sans shadow-2xs"
                     />
                   </div>
                 </div>
@@ -520,7 +561,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
 
                 {/* Optional Email */}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1">
+                  <label className="block text-sm font-semibold text-slate-800 mb-1">
                     {locale === 'th' ? 'อีเมล (ไม่บังคับ)' : 'Email (Optional)'}
                   </label>
                   <div className="relative">
@@ -530,14 +571,14 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
                       placeholder="guest@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full min-h-[44px] text-sm py-2 px-3 pl-9 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-sans shadow-2xs"
+                      className="w-full min-h-[44px] text-sm py-2 px-3 pl-9 bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-sans shadow-2xs"
                     />
                   </div>
                 </div>
 
                 {/* Guest Capacity Selector */}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1">
+                  <label className="block text-sm font-semibold text-slate-800 mb-1">
                     {locale === 'th' ? 'จำนวนผู้เข้าพัก' : 'Number of Guests'}
                     <span className="text-xs text-slate-400 font-normal ml-1">
                       ({locale === 'th' ? `สูงสุด ${maxCapacity} ท่าน` : `Max ${maxCapacity} guests`})
@@ -548,10 +589,10 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
                     <select
                       value={guestsCount}
                       onChange={(e) => setGuestsCount(Math.min(parseInt(e.target.value) || 1, maxCapacity))}
-                      className="w-full min-h-[44px] text-sm py-2 px-3 pl-9 pr-9 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-sans shadow-2xs appearance-none"
+                      className="w-full min-h-[44px] text-sm py-2 px-3 pl-9 pr-9 bg-white text-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-sans shadow-2xs appearance-none"
                     >
                       {Array.from({ length: maxCapacity }, (_, i) => i + 1).map((num) => (
-                        <option key={num} value={num} className="text-slate-900 bg-white dark:text-slate-100 dark:bg-slate-800">
+                        <option key={num} value={num} className="text-slate-900 bg-white">
                           {num} {locale === 'th' ? 'ท่าน' : (num > 1 ? 'guests' : 'guest')} {num === maxCapacity ? `(${locale === 'th' ? 'เต็มจำนวน' : 'Max'})` : ''}
                         </option>
                       ))}
@@ -571,7 +612,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
                       min={todayStr}
                       value={checkInDate}
                       onChange={handleCheckInDateChange}
-                      className="w-full text-sm py-2 px-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono tabular-nums shadow-2xs"
+                      className="w-full text-sm py-2 px-3 bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono tabular-nums shadow-2xs"
                     />
                   </div>
 
@@ -590,12 +631,12 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
                       placement="top"
                       value={checkOutDate}
                       onChange={setCheckOutDate}
-                      className={`w-full text-sm py-2 px-3 bg-slate-50 border rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono tabular-nums shadow-2xs ${
-                        isDateRangeInvalid ? 'border-rose-400 dark:border-rose-500 ring-1 ring-rose-500/20' : 'border-slate-200'
+                      className={`w-full text-sm py-2 px-3 bg-white text-slate-900 placeholder:text-slate-400 border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono tabular-nums shadow-2xs ${
+                        isDateRangeInvalid ? 'border-rose-400 ring-1 ring-rose-500/20' : 'border-slate-300'
                       }`}
                     />
                     {isDateRangeInvalid && (
-                      <p className="text-xs text-rose-600 dark:text-rose-400 flex items-center gap-1 mt-1 font-medium">
+                      <p className="text-xs text-rose-600 flex items-center gap-1 mt-1 font-medium">
                         <AlertCircle className="w-3 h-3 text-rose-500 shrink-0" />
                         <span>วันเช็คเอาต์ต้องหลังจากวันเช็คอินอย่างน้อย 1 คืน</span>
                       </p>
@@ -605,7 +646,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
 
                 {/* Keycard Deposit */}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1">
+                  <label className="block text-sm font-semibold text-slate-800 mb-1">
                     {t('res.keycardDeposit')}
                   </label>
                   <div className="relative">
@@ -617,7 +658,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
                       placeholder="500"
                       value={depositAmount}
                       onChange={(e) => setDepositAmount(e.target.value)}
-                      className="w-full text-sm py-2 px-3 pl-9 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono tabular-nums shadow-2xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      className="w-full text-sm py-2 px-3 pl-9 bg-white text-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono tabular-nums shadow-2xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                   </div>
                 </div>
@@ -651,15 +692,15 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
                 </div>
 
                 {/* Payment Slip Attachment */}
-                <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                <div className="space-y-2 pt-2 border-t border-slate-100">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
                     <FileCheck2 className="w-3.5 h-3.5 text-slate-500" />
                     <span>{locale === 'th' ? 'หลักฐานการโอนเงิน (Payment Slip)' : 'Payment Slip Details'}</span>
                   </h3>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      <label className="block text-xs font-medium text-slate-700 mb-1">
                         {locale === 'th' ? 'เลขอ้างอิงธุรกรรมธนาคาร' : 'Bank Reference No.'}
                       </label>
                       <input
@@ -667,15 +708,15 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
                         placeholder="e.g. BBL-20261111-987654"
                         value={paymentSlipRef}
                         onChange={(e) => setPaymentSlipRef(e.target.value)}
-                        className="w-full min-h-[38px] px-3 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono text-slate-900 dark:text-slate-100"
+                        className="w-full min-h-[38px] px-3 text-xs bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      <label className="block text-xs font-medium text-slate-700 mb-1">
                         {locale === 'th' ? 'แนบรูปภาพสลิป' : 'Upload Slip Image'}
                       </label>
-                      <label className="flex items-center justify-center gap-2 w-full min-h-[38px] px-3 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 border-dashed rounded-lg cursor-pointer transition-colors text-slate-600 dark:text-slate-300 text-xs">
+                      <label className="flex items-center justify-center gap-2 w-full min-h-[38px] px-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 border-dashed rounded-lg cursor-pointer transition-colors text-slate-600 text-xs">
                         <UploadCloud className="w-4 h-4 text-slate-500 shrink-0" />
                         <span className="truncate">
                           {isCompressingSlip
@@ -697,7 +738,7 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
 
                   {/* Slip Thumbnail Preview */}
                   {slipPreview && (
-                    <div className="relative inline-block mt-1.5 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden bg-slate-50 dark:bg-slate-800 p-1">
+                    <div className="relative inline-block mt-1.5 border border-slate-200 rounded-lg overflow-hidden bg-slate-50 p-1">
                       <img src={slipPreview} alt="Slip preview" className="h-16 w-auto object-cover rounded" />
                       <button
                         type="button"

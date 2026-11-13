@@ -733,4 +733,357 @@ describe('Billing Service (Dear - @allmusgus)', () => {
       expect(Number(json.data.subtotal)).to.equal(3000.0);
     });
   });
+
+  describe('Task 2: Pre-paid vs Unpaid Line Items (is_paid), Payment Method Resolution & serviceChargeRate=0', () => {
+    it('SUCCESS: resolves paymentMethod aliases on POST /bills (cash/transfer/upfront_checkin) and preserves serviceChargeRate=0', async () => {
+      const methodsToTest = ['cash', 'transfer', 'credit_card', 'qr_promptpay', 'upfront_checkin'];
+
+      for (const method of methodsToTest) {
+        const res = await app.request(
+          '/bills',
+          {
+            method: 'POST',
+            headers: HEADERS,
+            body: JSON.stringify({
+              reservationId: `res-upfront-${method}`,
+              guestName: 'Upfront Guest',
+              roomNumber: '101',
+              serviceChargeRate: 0,
+              taxRate: 0.07,
+              status: 'paid',
+              paymentMethod: method,
+              items: [
+                {
+                  itemType: 'room_charge',
+                  description: 'Room Charge (1 night)',
+                  quantity: 1,
+                  unitPrice: 2000,
+                },
+              ],
+            }),
+          },
+          env
+        );
+
+        expect(res.status).to.equal(201);
+        const json = await res.json();
+        expect(json.success).to.be.true;
+        expect(json.data.status).to.equal('paid');
+        expect(Number(json.data.serviceCharge)).to.equal(0);
+        expect(Number(json.data.taxAmount)).to.equal(140);
+        expect(Number(json.data.totalAmount)).to.equal(2140);
+        expect(Number(json.data.amountPaid)).to.equal(2140);
+        expect(Number(json.data.amountDue)).to.equal(0);
+        expect(json.data.items[0].isPaid).to.equal(true);
+      }
+    });
+
+    it('SUCCESS: tracks pre-paid room item separately from unpaid extension/minibar, preserves serviceCharge=0, and allows deleting unpaid items', async () => {
+      // 1. Create pre-paid room bill (2000 + 140 VAT = 2140) with serviceChargeRate = 0
+      const createRes = await app.request(
+        '/bills',
+        {
+          method: 'POST',
+          headers: HEADERS,
+          body: JSON.stringify({
+            reservationId: 'res-pms-split-001',
+            guestName: 'Somchai Jaidee',
+            roomNumber: '201',
+            serviceChargeRate: 0,
+            taxRate: 0.07,
+            depositDeducted: 500,
+            status: 'paid',
+            paymentMethod: 'cash',
+            items: [
+              {
+                itemType: 'room_charge',
+                description: 'ค่าห้องพักเบื้องต้น (1 คืน)',
+                quantity: 1,
+                unitPrice: 2000,
+                isPaid: true,
+              },
+            ],
+          }),
+        },
+        env
+      );
+      expect(createRes.status).to.equal(201);
+      const created = (await createRes.json()).data;
+      const billId = created.id;
+      const roomItemId = created.items[0].id;
+      expect(created.items[0].isPaid).to.equal(true);
+
+      // 2. Add unpaid stay extension (2 x 2200 = 4400, + 308 VAT = 4708)
+      const extRes = await app.request(
+        `/bills/${billId}/items`,
+        {
+          method: 'POST',
+          headers: HEADERS,
+          body: JSON.stringify({
+            category: 'room',
+            itemType: 'room_charge',
+            description: 'ขยายเวลาเข้าพัก (+2 คืน)',
+            quantity: 2,
+            unitPrice: 2200,
+          }),
+        },
+        env
+      );
+      expect(extRes.status).to.equal(201);
+      const extData = (await extRes.json()).data;
+      const extItemId = extData.item.id;
+      expect(extData.item.isPaid).to.equal(false);
+      expect(extData.bill.status).to.equal('unpaid');
+      expect(Number(extData.bill.serviceCharge)).to.equal(0);
+      expect(Number(extData.bill.subtotal)).to.equal(6400);
+      expect(Number(extData.bill.taxAmount)).to.equal(448);
+      expect(Number(extData.bill.totalAmount)).to.equal(6848);
+      expect(Number(extData.bill.amountPaid)).to.equal(2140);
+      // 4708 unpaid - 500 deposit = 4208
+      expect(Number(extData.bill.amountDue)).to.equal(4208);
+
+      // 3. Cannot delete already-paid room item
+      const delPaidRes = await app.request(
+        `/bills/${billId}/items/${roomItemId}`,
+        { method: 'DELETE', headers: HEADERS },
+        env
+      );
+      expect(delPaidRes.status).to.equal(400);
+
+      // 4. Can delete unpaid extension item; bill reverts cleanly to paid
+      const delExtRes = await app.request(
+        `/bills/${billId}/items/${extItemId}`,
+        { method: 'DELETE', headers: HEADERS },
+        env
+      );
+      expect(delExtRes.status).to.equal(200);
+      const afterDel = (await delExtRes.json()).data;
+      expect(afterDel.status).to.equal('paid');
+      expect(Number(afterDel.subtotal)).to.equal(2000);
+      expect(Number(afterDel.totalAmount)).to.equal(2140);
+      expect(Number(afterDel.amountDue)).to.equal(0);
+    });
+
+    it('SUCCESS: minibar (107) covered by deposit (500) stays unpaid until checkout /pay, then marks all items paid', async () => {
+      const createRes = await app.request(
+        '/bills',
+        {
+          method: 'POST',
+          headers: HEADERS,
+          body: JSON.stringify({
+            reservationId: 'res-minibar-refund-001',
+            guestName: 'Wipawee S.',
+            roomNumber: '204',
+            serviceChargeRate: 0,
+            taxRate: 0.07,
+            depositDeducted: 500,
+            status: 'paid',
+            paymentMethod: 'transfer',
+            items: [
+              {
+                itemType: 'room_charge',
+                description: 'Room Charge (1 night)',
+                quantity: 1,
+                unitPrice: 2000,
+                isPaid: true,
+              },
+            ],
+          }),
+        },
+        env
+      );
+      const billId = (await createRes.json()).data.id;
+
+      const addMinibar = await app.request(
+        `/bills/${billId}/items`,
+        {
+          method: 'POST',
+          headers: HEADERS,
+          body: JSON.stringify({
+            category: 'minibar',
+            description: 'Snacks',
+            quantity: 1,
+            unitPrice: 100,
+          }),
+        },
+        env
+      );
+      expect(addMinibar.status).to.equal(201);
+      const afterMinibar = (await addMinibar.json()).data;
+      expect(afterMinibar.bill.status).to.equal('unpaid');
+      expect(Number(afterMinibar.bill.amountDue)).to.equal(0);
+      expect(Number(afterMinibar.bill.totalAmount)).to.equal(2247);
+
+      // Settle at checkout with 0 due
+      const payRes = await app.request(
+        `/bills/${billId}/pay`,
+        {
+          method: 'POST',
+          headers: HEADERS,
+          body: JSON.stringify({ paymentMethod: 'cash', amount: 0, depositDeducted: 500 }),
+        },
+        env
+      );
+      expect(payRes.status).to.equal(200);
+      const getBill = await app.request(`/bills/${billId}`, { method: 'GET', headers: HEADERS }, env);
+      const finalBill = (await getBill.json()).data;
+      expect(finalBill.status).to.equal('paid');
+      expect(finalBill.items.every((i: any) => i.isPaid === true)).to.equal(true);
+    });
+
+    it('SUCCESS: ensureBillItemsIsPaidColumn idempotently migrates legacy DB lacking is_paid column', async () => {
+      const legacySqlite = new DatabaseSync(':memory:');
+      legacySqlite.exec(`
+        CREATE TABLE payment_methods (id TEXT PRIMARY KEY, name TEXT UNIQUE NOT NULL, code TEXT UNIQUE NOT NULL, is_active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL);
+        CREATE TABLE bills (id TEXT PRIMARY KEY, bill_number TEXT UNIQUE NOT NULL, reservation_id TEXT NOT NULL, guest_name TEXT NOT NULL, room_number TEXT NOT NULL, subtotal REAL NOT NULL DEFAULT 0, discount_amount REAL NOT NULL DEFAULT 0, tax_rate REAL NOT NULL DEFAULT 0.07, tax_amount REAL NOT NULL DEFAULT 0, service_charge REAL NOT NULL DEFAULT 0.10, total_amount REAL NOT NULL DEFAULT 0, deposit_deducted REAL NOT NULL DEFAULT 0, amount_paid REAL NOT NULL DEFAULT 0, amount_due REAL NOT NULL DEFAULT 0, status TEXT NOT NULL DEFAULT 'pending', created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
+        CREATE TABLE bill_items (id TEXT PRIMARY KEY, bill_id TEXT NOT NULL, item_type TEXT NOT NULL, description TEXT NOT NULL, quantity INTEGER NOT NULL DEFAULT 1, unit_price REAL NOT NULL, total_price REAL NOT NULL, item_date TEXT NOT NULL, created_at TEXT NOT NULL);
+        CREATE TABLE payments (id TEXT PRIMARY KEY, bill_id TEXT NOT NULL, payment_method_id TEXT NOT NULL, amount REAL NOT NULL, reference_number TEXT, status TEXT NOT NULL DEFAULT 'completed', paid_at TEXT NOT NULL, created_at TEXT NOT NULL);
+        CREATE TABLE invoices (id TEXT PRIMARY KEY, invoice_number TEXT UNIQUE NOT NULL, bill_id TEXT NOT NULL, issued_to_name TEXT NOT NULL, issued_to_email TEXT, total_amount REAL NOT NULL, status TEXT NOT NULL DEFAULT 'issued', sent_at TEXT, created_at TEXT NOT NULL);
+        CREATE TABLE refunds (id TEXT PRIMARY KEY, bill_id TEXT NOT NULL, payment_id TEXT, amount REAL NOT NULL, reason TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'completed', refunded_by TEXT, created_at TEXT NOT NULL);
+        CREATE TABLE outbox_events (id TEXT PRIMARY KEY, event_type TEXT NOT NULL, aggregate_id TEXT NOT NULL, aggregate_type TEXT NOT NULL, payload TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', published_at TEXT, created_at TEXT NOT NULL);
+        INSERT INTO payment_methods (id, name, code, is_active, created_at) VALUES ('pm-cash', 'Cash (THB)', 'CASH', 1, '2026-09-01T08:00:00Z');
+      `);
+      const legacyEnv: Env = { DB: createMockD1(legacySqlite), ENVIRONMENT: 'test' };
+
+      const res1 = await app.request(
+        '/bills',
+        {
+          method: 'POST',
+          headers: HEADERS,
+          body: JSON.stringify({
+            reservationId: 'res-legacy-mig',
+            guestName: 'Legacy DB Guest',
+            roomNumber: '102',
+            serviceChargeRate: 0,
+            status: 'paid',
+            paymentMethod: 'cash',
+            items: [{ itemType: 'room_charge', description: 'Room', quantity: 1, unitPrice: 1000 }],
+          }),
+        },
+        legacyEnv
+      );
+      expect(res1.status).to.equal(201);
+      const res2 = await app.request('/bills', { method: 'GET', headers: HEADERS }, legacyEnv);
+      expect(res2.status).to.equal(200);
+    });
+
+    it('SUCCESS: preserves serviceChargeRate (both default 0.10 and explicit 0) when initial subtotal is 0 and items are added later', async () => {
+      // Case 1: Default 10% service charge when subtotal=0 and serviceChargeRate omitted
+      const defaultBillRes = await app.request(
+        '/bills',
+        {
+          method: 'POST',
+          headers: HEADERS,
+          body: JSON.stringify({
+            reservationId: 'res-zero-sub-default-sc',
+            guestName: 'Zero Subtotal Default SC',
+            roomNumber: '301',
+            subtotal: 0,
+          }),
+        },
+        env
+      );
+      expect(defaultBillRes.status).to.equal(201);
+      const defaultBillId = (await defaultBillRes.json()).data.id;
+
+      const addToDefaultRes = await app.request(
+        `/bills/${defaultBillId}/items`,
+        {
+          method: 'POST',
+          headers: HEADERS,
+          body: JSON.stringify({
+            itemType: 'room_charge',
+            description: 'Room Charge',
+            quantity: 1,
+            unitPrice: 1000,
+          }),
+        },
+        env
+      );
+      expect(addToDefaultRes.status).to.equal(201);
+      const updatedDefault = (await addToDefaultRes.json()).data.bill;
+      expect(Number(updatedDefault.subtotal)).to.equal(1000);
+      expect(Number(updatedDefault.serviceCharge)).to.equal(100);
+      expect(Number(updatedDefault.taxAmount)).to.equal(70);
+      expect(Number(updatedDefault.totalAmount)).to.equal(1170);
+
+      // Case 2: Explicit 0% service charge when subtotal=0 and serviceChargeRate=0
+      const zeroScBillRes = await app.request(
+        '/bills',
+        {
+          method: 'POST',
+          headers: HEADERS,
+          body: JSON.stringify({
+            reservationId: 'res-zero-sub-zero-sc',
+            guestName: 'Zero Subtotal Zero SC',
+            roomNumber: '302',
+            subtotal: 0,
+            serviceChargeRate: 0,
+          }),
+        },
+        env
+      );
+      expect(zeroScBillRes.status).to.equal(201);
+      const zeroScBillId = (await zeroScBillRes.json()).data.id;
+
+      const addToZeroScRes = await app.request(
+        `/bills/${zeroScBillId}/items`,
+        {
+          method: 'POST',
+          headers: HEADERS,
+          body: JSON.stringify({
+            itemType: 'room_charge',
+            description: 'Room Charge',
+            quantity: 1,
+            unitPrice: 1000,
+          }),
+        },
+        env
+      );
+      expect(addToZeroScRes.status).to.equal(201);
+      const updatedZeroSc = (await addToZeroScRes.json()).data.bill;
+      expect(Number(updatedZeroSc.subtotal)).to.equal(1000);
+      expect(Number(updatedZeroSc.serviceCharge)).to.equal(0);
+      expect(Number(updatedZeroSc.taxAmount)).to.equal(70);
+      expect(Number(updatedZeroSc.totalAmount)).to.equal(1070);
+
+      // Case 3: Small subtotal (subtotal=5 with 10% => service_charge=0.50) and custom 5% rate
+      const smallBillRes = await app.request(
+        '/bills',
+        {
+          method: 'POST',
+          headers: HEADERS,
+          body: JSON.stringify({
+            reservationId: 'res-small-sub-rate',
+            guestName: 'Small Subtotal Guest',
+            roomNumber: '303',
+            serviceChargeRate: 0.05,
+            items: [{ itemType: 'minibar', description: 'Water', quantity: 1, unitPrice: 5 }],
+          }),
+        },
+        env
+      );
+      expect(smallBillRes.status).to.equal(201);
+      const smallBillId = (await smallBillRes.json()).data.id;
+
+      const addToSmallRes = await app.request(
+        `/bills/${smallBillId}/items`,
+        {
+          method: 'POST',
+          headers: HEADERS,
+          body: JSON.stringify({
+            itemType: 'minibar',
+            description: 'Snack',
+            quantity: 1,
+            unitPrice: 95,
+          }),
+        },
+        env
+      );
+      expect(addToSmallRes.status).to.equal(201);
+      const updatedSmall = (await addToSmallRes.json()).data.bill;
+      expect(Number(updatedSmall.subtotal)).to.equal(100);
+      expect(Number(updatedSmall.serviceCharge)).to.equal(5);
+    });
+  });
 });

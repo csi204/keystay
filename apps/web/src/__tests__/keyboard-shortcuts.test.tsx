@@ -64,11 +64,11 @@ describe('Task 6: Keyboard Shortcuts Engine & Cheatsheet Modal (?)', () => {
       'Must include Ctrl + Enter shortcut'
     );
 
-    // Category 3: System & Themes
+    // Category 3: System & Preferences (Light Mode locked, language switcher remains)
     assert.match(sysCategory.titleTh, /ระบบ & มุมมอง/);
     assert.ok(
-      sysCategory.shortcuts.some((s) => s.descriptionTh.includes('สลับโหมดกะดึก') || s.descriptionTh.includes('Dark Mode')),
-      'Must include dark mode toggle'
+      !sysCategory.shortcuts.some((s) => s.id === 'dark-mode' || s.descriptionTh.includes('สลับโหมดกะดึก')),
+      'Night Audit dark mode shortcut should be removed'
     );
     assert.ok(
       sysCategory.shortcuts.some((s) => s.descriptionTh.includes('สลับภาษา')),

@@ -42,6 +42,134 @@ function getDateRangeArray(startDate: string, endDate: string): string[] {
   return dates;
 }
 
+interface GuestResolutionInput {
+  guestId?: string;
+  guestName?: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string | null;
+  email?: string | null;
+  idCardNumber?: string | null;
+  nationality?: string | null;
+  initialTotalStays: number;
+}
+
+interface GuestResolutionResult {
+  guestId: string;
+  guestRecord: any | null;
+  stmtInsertGuest: any | null;
+  guestFullName: string;
+  guestEmail: string | null;
+  guestPhone: string | null;
+  notFoundError?: boolean;
+}
+
+function normalizeGuestName(name: string): string {
+  return name.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+/**
+ * Resolves an existing guest by explicit ID, or matches by ID card / phone / email
+ * ONLY when no typed name was provided or the existing guest's normalized full name
+ * matches the typed name; otherwise prepares a new guest INSERT statement.
+ */
+async function resolveOrCreateGuest(
+  db: D1Database,
+  input: GuestResolutionInput,
+  now: string
+): Promise<GuestResolutionResult> {
+  if (input.guestId) {
+    const guestRecord = await db.prepare('SELECT * FROM guests WHERE id = ?').bind(input.guestId).first<any>();
+    if (!guestRecord) {
+      return {
+        guestId: input.guestId,
+        guestRecord: null,
+        stmtInsertGuest: null,
+        guestFullName: '',
+        guestEmail: null,
+        guestPhone: null,
+        notFoundError: true,
+      };
+    }
+    return {
+      guestId: guestRecord.id,
+      guestRecord,
+      stmtInsertGuest: null,
+      guestFullName: `${guestRecord.first_name || ''} ${guestRecord.last_name || ''}`.trim() || 'Guest',
+      guestEmail: guestRecord.email || null,
+      guestPhone: guestRecord.phone || null,
+    };
+  }
+
+  const rawTypedName = (input.guestName?.trim() || `${input.firstName || ''} ${input.lastName || ''}`.trim());
+  const normalizedTypedName = rawTypedName ? normalizeGuestName(rawTypedName) : '';
+
+  const trimmedIdCard = input.idCardNumber?.trim() || null;
+  const trimmedPhone = input.phone?.trim() || null;
+  const trimmedEmail = input.email?.trim() || null;
+
+  const findMatchingCandidate = async (column: 'id_card_number' | 'phone' | 'email', value: string | null) => {
+    if (!value) return null;
+    const res = await db.prepare(`SELECT * FROM guests WHERE ${column} = ?`).bind(value).all<any>();
+    const rows = res.results || [];
+    if (rows.length === 0) return null;
+    if (!normalizedTypedName) return rows[0];
+    return (
+      rows.find((row) => normalizeGuestName(`${row.first_name || ''} ${row.last_name || ''}`) === normalizedTypedName) ||
+      null
+    );
+  };
+
+  const guestRecord =
+    (await findMatchingCandidate('id_card_number', trimmedIdCard)) ||
+    (await findMatchingCandidate('phone', trimmedPhone)) ||
+    (await findMatchingCandidate('email', trimmedEmail));
+
+  if (guestRecord) {
+    return {
+      guestId: guestRecord.id,
+      guestRecord,
+      stmtInsertGuest: null,
+      guestFullName: `${guestRecord.first_name || ''} ${guestRecord.last_name || ''}`.trim() || 'Guest',
+      guestEmail: guestRecord.email || null,
+      guestPhone: guestRecord.phone || null,
+    };
+  }
+
+  const guestId = `gst-${crypto.randomUUID()}`;
+  const nameParts = (input.guestName || '').trim().split(/\s+/).filter(Boolean);
+  const firstName = input.firstName?.trim() || nameParts[0] || 'Guest';
+  const lastName = input.lastName?.trim() || (nameParts.length > 1 ? nameParts.slice(1).join(' ') : '');
+  const guestFullName = `${firstName} ${lastName}`.trim();
+
+  const stmtInsertGuest = db
+    .prepare(
+      `INSERT INTO guests (id, first_name, last_name, email, phone, id_card_number, nationality, total_stays, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    .bind(
+      guestId,
+      firstName,
+      lastName,
+      trimmedEmail,
+      trimmedPhone,
+      trimmedIdCard,
+      input.nationality?.trim() || 'Thai',
+      input.initialTotalStays,
+      now,
+      now
+    );
+
+  return {
+    guestId,
+    guestRecord: null,
+    stmtInsertGuest,
+    guestFullName,
+    guestEmail: trimmedEmail,
+    guestPhone: trimmedPhone,
+  };
+}
+
 // ==========================================
 // 42. GET /reservations/today-checkins — แขกที่ต้องเช็คอินวันนี้
 // ==========================================
@@ -330,52 +458,30 @@ reservations.post('/walk-in', async (c) => {
     const checkOutDate = data.checkOutDate;
 
     // 1. Resolve or Insert Guest Atomically
-    let guestId: string = data.guestId || '';
-    let guestRecord: any = null;
-    let stmtInsertGuest: any = null;
+    const resolvedGuest = await resolveOrCreateGuest(
+      c.env.DB,
+      {
+        guestId: data.guestId,
+        guestName: data.guestName,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phone: data.guestPhone || data.phone,
+        email: data.guestEmail,
+        idCardNumber: data.idCardNumber || data.nationalIdOrPassport,
+        nationality: data.nationality,
+        initialTotalStays: 1,
+      },
+      now
+    );
 
-    if (guestId) {
-      guestRecord = await c.env.DB.prepare('SELECT * FROM guests WHERE id = ?').bind(guestId).first();
-      if (!guestRecord) {
-        return c.json({ success: false, error: { code: 'GUEST_NOT_FOUND', message: `Guest with ID ${guestId} not found` } }, 404);
-      }
-    } else {
-      const resolvedPhone = data.guestPhone || data.phone;
-      if (resolvedPhone) {
-        guestRecord = await c.env.DB.prepare('SELECT * FROM guests WHERE phone = ?').bind(resolvedPhone.trim()).first();
-      }
-      if (!guestRecord && data.idCardNumber) {
-        guestRecord = await c.env.DB.prepare('SELECT * FROM guests WHERE id_card_number = ?').bind(data.idCardNumber.trim()).first();
-      }
-      if (!guestRecord && data.guestEmail) {
-        guestRecord = await c.env.DB.prepare('SELECT * FROM guests WHERE email = ?').bind(data.guestEmail.trim()).first();
-      }
-
-      if (guestRecord) {
-        guestId = guestRecord.id;
-      } else {
-        guestId = `gst-${crypto.randomUUID()}`;
-        const nameParts = (data.guestName || '').trim().split(/\s+/);
-        const firstName = data.firstName || nameParts[0] || 'Guest';
-        const lastName = data.lastName || (nameParts.length > 1 ? nameParts.slice(1).join(' ') : '');
-        const guestFullName = `${firstName} ${lastName}`.trim();
-
-        stmtInsertGuest = c.env.DB.prepare(
-          `INSERT INTO guests (id, first_name, last_name, email, phone, id_card_number, nationality, total_stays, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`
-        ).bind(
-          guestId,
-          firstName,
-          lastName,
-          data.guestEmail?.trim() || null,
-          resolvedPhone?.trim() || null,
-          data.idCardNumber?.trim() || null,
-          data.nationality?.trim() || 'Thai',
-          now,
-          now
-        );
-      }
+    if (resolvedGuest.notFoundError) {
+      return c.json(
+        { success: false, error: { code: 'GUEST_NOT_FOUND', message: `Guest with ID ${resolvedGuest.guestId} not found` } },
+        404
+      );
     }
+
+    const { guestId, guestRecord, stmtInsertGuest, guestFullName } = resolvedGuest;
 
     // 2. Overlap Check for Walk-in Room Availability
     const overlapQuery = `
@@ -514,7 +620,7 @@ reservations.post('/walk-in', async (c) => {
       roomId: data.roomId,
       roomNumber,
       guestId,
-      guestName: data.guestName.trim(),
+      guestName: guestFullName,
       checkInTime: now,
       expectedCheckOutDate: checkOutDate,
       performedBy: callerId.includes('-') && callerId.length === 36 ? callerId : crypto.randomUUID(),
@@ -630,50 +736,36 @@ reservations.post('/', async (c) => {
     const callerId = c.req.header('x-user-id') || 'system';
 
     // 1. Resolve or Prepare Guest Creation Statement (Atomic 3.2: No Orphaned Guest)
-    let guestId = data.guestId;
-    let guestRecord: any = null;
-    let stmtInsertGuest: any = null;
-    let guestNameForOutbox = data.guestName;
-    let guestEmailForOutbox = data.guestEmail;
-    let guestPhoneForOutbox = data.guestPhone;
+    const resolvedGuest = await resolveOrCreateGuest(
+      c.env.DB,
+      {
+        guestId: data.guestId,
+        guestName: data.guestName,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phone: data.guestPhone || data.phone,
+        email: data.guestEmail,
+        idCardNumber: data.idCardNumber || data.nationalIdOrPassport,
+        nationality: data.nationality,
+        initialTotalStays: 0,
+      },
+      now
+    );
 
-    if (guestId) {
-      guestRecord = await c.env.DB.prepare('SELECT * FROM guests WHERE id = ?').bind(guestId).first();
-      if (!guestRecord) {
-        return c.json({ success: false, error: { code: 'GUEST_NOT_FOUND', message: `Guest with ID ${guestId} not found` } }, 404);
-      }
-      guestNameForOutbox = `${guestRecord.first_name} ${guestRecord.last_name}`.trim();
-      guestEmailForOutbox = guestRecord.email;
-      guestPhoneForOutbox = guestRecord.phone;
-    } else {
-      // Find existing by phone or email
-      if (data.guestPhone) {
-        guestRecord = await c.env.DB.prepare('SELECT * FROM guests WHERE phone = ?').bind(data.guestPhone.trim()).first();
-      }
-      if (!guestRecord && data.guestEmail) {
-        guestRecord = await c.env.DB.prepare('SELECT * FROM guests WHERE email = ?').bind(data.guestEmail.trim()).first();
-      }
-
-      if (guestRecord) {
-        guestId = guestRecord.id;
-        guestNameForOutbox = `${guestRecord.first_name} ${guestRecord.last_name}`.trim();
-        guestEmailForOutbox = guestRecord.email;
-        guestPhoneForOutbox = guestRecord.phone;
-      } else {
-        // Prepare atomic guest insertion statement (will execute in batch, no orphans on error)
-        guestId = `gst-${crypto.randomUUID()}`;
-        const nameParts = (data.guestName || '').trim().split(/\s+/);
-        const firstName = data.firstName || nameParts[0] || 'Guest';
-        const lastName = data.lastName || (nameParts.length > 1 ? nameParts.slice(1).join(' ') : '');
-        const guestFullName = `${firstName} ${lastName}`.trim();
-        guestNameForOutbox = guestFullName;
-
-        stmtInsertGuest = c.env.DB.prepare(
-          `INSERT INTO guests (id, first_name, last_name, email, phone, nationality, total_stays, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, 'Thai', 0, ?, ?)`
-        ).bind(guestId, firstName, lastName, data.guestEmail?.trim() || null, data.guestPhone?.trim() || null, now, now);
-      }
+    if (resolvedGuest.notFoundError) {
+      return c.json(
+        { success: false, error: { code: 'GUEST_NOT_FOUND', message: `Guest with ID ${resolvedGuest.guestId} not found` } },
+        404
+      );
     }
+
+    const {
+      guestId,
+      stmtInsertGuest,
+      guestFullName: guestNameForOutbox,
+      guestEmail: guestEmailForOutbox,
+      guestPhone: guestPhoneForOutbox,
+    } = resolvedGuest;
 
     // 2. Fast Overlap Check (First-line defense)
     const overlapQuery = `
@@ -1901,8 +1993,13 @@ const handleExtendStay = async (c: Context<{ Bindings: Env }>) => {
     const checkInTime = new Date(existing.check_in_date).getTime();
     const newCheckOutTime = new Date(newCheckOutDate).getTime();
     const newTotalNights = Math.max(1, Math.round((newCheckOutTime - checkInTime) / (1000 * 3600 * 24)));
+    const extraNights = Math.max(
+      1,
+      Math.round((newCheckOutTime - new Date(existing.check_out_date).getTime()) / (1000 * 3600 * 24))
+    );
 
     const nightlyRate = Number(existing.nightly_rate);
+    const extensionSubtotal = Number((nightlyRate * extraNights).toFixed(2));
     const subtotal = Number((nightlyRate * newTotalNights).toFixed(2));
     const discountAmount = Number(existing.discount_amount || 0);
     const taxableAmount = Math.max(0, subtotal - discountAmount);
@@ -1951,7 +2048,13 @@ const handleExtendStay = async (c: Context<{ Bindings: Env }>) => {
     return c.json({
       success: true,
       message: 'Stay extended successfully',
-      data: mapReservation(updated),
+      data: {
+        ...mapReservation(updated),
+        previousCheckOutDate: existing.check_out_date,
+        extraNights,
+        extensionSubtotal,
+        nightlyRate,
+      },
     });
   } catch (error: any) {
     return c.json({ success: false, error: { message: error.message || 'Failed to extend stay' } }, 500);
