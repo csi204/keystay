@@ -45,7 +45,7 @@ export interface Room {
   roomTypeId: string;
   floor: string;
   status: RoomStatus;
-  notes?: string;
+  notes?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -67,6 +67,7 @@ export const ReservationStatusSchema = z.enum([
   'pending',
   'confirmed',
   'checked_in',
+  'extended',
   'checked_out',
   'cancelled',
   'no_show',
@@ -154,7 +155,7 @@ export interface OutsourceContact {
 // ==========================================
 // 5. Billing & Cashier Types
 // ==========================================
-export const BillStatusSchema = z.enum(['pending', 'partially_paid', 'paid', 'refunded', 'void']);
+export const BillStatusSchema = z.enum(['pending', 'partially_paid', 'paid', 'unpaid', 'refunded', 'void']);
 export type BillStatus = z.infer<typeof BillStatusSchema>;
 
 export interface Bill {

@@ -46,7 +46,11 @@ roomsRoute.get('/', async (c) => {
       : db.select().from(rooms);
 
   const allRooms = await query.all();
-  return c.json({ success: true, data: allRooms });
+  const roomsWithFloor = allRooms.map((room) => ({
+    ...room,
+    floor: room.floorId ? room.floorId.replace(/^fl-/, '') : room.roomNumber.charAt(0),
+  }));
+  return c.json({ success: true, data: roomsWithFloor });
 });
 
 // API #14: GET /rooms/:id - ข้อมูลห้องพักรายห้อง พร้อม amenities และ room_type
@@ -69,8 +73,9 @@ roomsRoute.get('/:id', async (c) => {
     success: true,
     data: {
       ...room,
+      floor: room.floorId ? room.floorId.replace(/^fl-/, '') : room.roomNumber.charAt(0),
+      floorDetails: floor ?? null,
       roomType: roomType ?? null,
-      floor: floor ?? null,
       amenities,
     },
   });
@@ -218,6 +223,30 @@ roomsRoute.put('/:id', async (c) => {
   return c.json({ success: true, data: updated });
 });
 
+// API: PATCH /rooms/:id/notes - อัปเดตบันทึกเพิ่มเติมของห้องพัก (Room Notes)
+roomsRoute.patch('/:id/notes', async (c) => {
+  const id = c.req.param('id');
+  const body = await c.req.json().catch(() => ({}));
+  const db = getDb(c.env.DB);
+
+  const existing = await db.select().from(rooms).where(eq(rooms.id, id)).get();
+  if (!existing) {
+    return c.json({ success: false, error: 'NOT_FOUND', message: 'Room not found' }, 404);
+  }
+
+  const rawNotes = body.notes;
+  const newNotes =
+    rawNotes === null || rawNotes === undefined || String(rawNotes).trim() === ''
+      ? null
+      : String(rawNotes).trim();
+
+  const now = new Date().toISOString();
+  await db.update(rooms).set({ notes: newNotes, updatedAt: now }).where(eq(rooms.id, id));
+  const updated = await db.select().from(rooms).where(eq(rooms.id, id)).get();
+
+  return c.json({ success: true, data: updated });
+});
+
 // API #17: DELETE /rooms/:id - ปิดการใช้งานห้องพัก (Soft delete)
 roomsRoute.delete('/:id', async (c) => {
   const id = c.req.param('id');
@@ -304,6 +333,24 @@ const updateRoomStatusHandler = async (c: any) => {
   const previousStatus = room.status;
   const newStatus = parsed.data.status;
 
+  // Strict PMS Prevention Invariant:
+  // Transitioning to 'occupied' requires either a reservationId or eventSource === 'hotel.reservation.checkin'
+  if (newStatus === 'occupied') {
+    const hasReservationContext = Boolean(
+      parsed.data.reservationId || parsed.data.eventSource === 'hotel.reservation.checkin'
+    );
+    if (!hasReservationContext) {
+      return c.json(
+        {
+          success: false,
+          error: 'INVALID_ORPHAN_STATUS',
+          message: 'Cannot mark room as occupied without an active reservation',
+        },
+        400,
+      );
+    }
+  }
+
   // Enforce State Machine Transition Matrix
   if (previousStatus !== newStatus) {
     const allowed = ALLOWED_TRANSITIONS[previousStatus] ?? [];
@@ -328,6 +375,8 @@ const updateRoomStatusHandler = async (c: any) => {
     roomNumber: room.roomNumber,
     previousStatus,
     newStatus,
+    reservationId: parsed.data.reservationId ?? null,
+    eventSource: parsed.data.eventSource ?? 'manual',
     changedBy: parsed.data.changedBy ?? 'system',
     timestamp: now,
   });
@@ -342,7 +391,7 @@ const updateRoomStatusHandler = async (c: any) => {
       newStatus,
       changedBy: parsed.data.changedBy ?? null,
       changeReason: parsed.data.changeReason ?? 'Manual status update',
-      eventSource: 'manual',
+      eventSource: parsed.data.eventSource ?? 'manual',
       createdAt: now,
     }),
     db.insert(outboxEvents).values({

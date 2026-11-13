@@ -1,15 +1,24 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { apiFetch } from '@/lib/api';
 import { Bill } from '@keystay/types';
+import type { ExtendedReservation } from './useReservations';
+import {
+  syncBillWithReservation,
+  reconcileBillsWithReservations,
+} from '../lib/folioReconciliation';
+
+export { syncBillWithReservation, reconcileBillsWithReservations };
 
 export interface BillItem {
   id: string;
   billId: string;
   description: string;
   category: 'room' | 'minibar' | 'laundry' | 'damage' | 'service' | 'other';
+  itemType?: string;
   quantity: number;
   unitPrice: string;
   totalAmount: string;
+  isPaid?: boolean;
   createdAt: string;
 }
 
@@ -23,22 +32,43 @@ export interface BillPayment {
 }
 
 export interface DetailedBill extends Bill {
+  billNumber?: string;
+  totalAmount?: string | number;
+  depositDeducted?: string | number;
+  amountDue?: string | number;
   guestName?: string;
   roomNumber?: string;
+  roomId?: string;
   items?: BillItem[];
   payments?: BillPayment[];
 }
 
-export function useBilling() {
+export function useBilling(reservations?: ExtendedReservation[]) {
   const [bills, setBills] = useState<DetailedBill[]>([]);
   const [selectedBill, setSelectedBill] = useState<DetailedBill | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState<boolean>(false);
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+  const hasLoadedOnceRef = useRef<boolean>(false);
 
-  const fetchBills = useCallback(async () => {
-    setLoading(true);
+  const synchronizedBills = useMemo(() => {
+    if (!reservations || reservations.length === 0) return bills;
+    return reconcileBillsWithReservations(bills, reservations);
+  }, [bills, reservations]);
+
+  const synchronizedSelectedBill = useMemo(() => {
+    if (!selectedBill) return null;
+    if (!reservations || reservations.length === 0) return selectedBill;
+    return syncBillWithReservation(selectedBill, reservations);
+  }, [selectedBill, reservations]);
+
+  const fetchBills = useCallback(async (options?: boolean | { forceLoading?: boolean }) => {
+    const forceLoading =
+      options === true || (typeof options === 'object' && options !== null && options.forceLoading === true);
+    if (!hasLoadedOnceRef.current || forceLoading) {
+      setLoading(true);
+    }
     setError(null);
 
     const res = await apiFetch<DetailedBill[]>('/api/bills');
@@ -58,6 +88,7 @@ export function useBilling() {
       setBills(sorted);
     }
 
+    hasLoadedOnceRef.current = true;
     setLastRefreshed(new Date());
     setLoading(false);
   }, []);
@@ -93,11 +124,32 @@ export function useBilling() {
       unitPrice: string;
     }
   ) => {
+    const rawCategory = data.category || 'other';
+    let itemType: string = 'other';
+    if (rawCategory === 'service') itemType = 'room_service';
+    else if (rawCategory === 'room') itemType = 'room_charge';
+    else if (['minibar', 'laundry', 'damage', 'other'].includes(rawCategory)) itemType = rawCategory;
+
     const res = await apiFetch(`/api/bills/${billId}/items`, {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        description: data.description,
+        category: rawCategory,
+        itemType,
+        unitPrice: Number(data.unitPrice),
+        quantity: Number(data.quantity) || 1,
+      }),
     });
     if (!res.error) {
+      // When an extra charge is added to an active bill, update bill.status = 'unpaid'
+      setBills((prevBills) =>
+        prevBills.map((b) =>
+          b.id === billId ? { ...b, status: 'unpaid' as any } : b
+        )
+      );
+      if (selectedBill && selectedBill.id === billId) {
+        setSelectedBill((prev) => (prev ? { ...prev, status: 'unpaid' as any } : null));
+      }
       await loadBillDetails(billId);
       await fetchBills();
       return { success: true };
@@ -140,8 +192,10 @@ export function useBilling() {
   };
 
   return {
-    bills,
-    selectedBill,
+    bills: synchronizedBills,
+    selectedBill: synchronizedSelectedBill,
+    rawBills: bills,
+    rawSelectedBill: selectedBill,
     setSelectedBill,
     loading,
     error,

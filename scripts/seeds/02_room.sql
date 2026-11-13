@@ -20,7 +20,7 @@ INSERT OR REPLACE INTO floors (id, floor_number, name, total_rooms, created_at) 
 INSERT OR REPLACE INTO rooms (id, room_number, room_type_id, floor_id, status, is_active, notes, created_at, updated_at) VALUES
 ('rm-101', '101', 'rt-std', 'fl-1', 'available', 1, 'Near garden pathway', '2026-09-01T08:00:00Z', '2026-09-26T10:00:00Z'),
 ('rm-102', '102', 'rt-std', 'fl-1', 'reserved', 1, 'Late check-in guest', '2026-09-01T08:00:00Z', '2026-09-26T10:00:00Z'),
-('rm-103', '103', 'rt-std', 'fl-1', 'occupied', 1, 'Family with infant', '2026-09-01T08:00:00Z', '2026-09-26T10:00:00Z'),
+('rm-103', '103', 'rt-std', 'fl-1', 'available', 1, NULL, '2026-09-01T08:00:00Z', '2026-09-26T10:00:00Z'),
 ('rm-104', '104', 'rt-std', 'fl-1', 'cleaning', 1, 'Priority checkout clean', '2026-09-01T08:00:00Z', '2026-09-26T10:00:00Z'),
 ('rm-105', '105', 'rt-std', 'fl-1', 'available', 1, 'Accessible room', '2026-09-01T08:00:00Z', '2026-09-26T10:00:00Z'),
 
@@ -31,13 +31,13 @@ INSERT OR REPLACE INTO rooms (id, room_number, room_type_id, floor_id, status, i
 ('rm-205', '205', 'rt-dlx', 'fl-2', 'maintenance', 1, 'AC fan replacement', '2026-09-01T08:00:00Z', '2026-09-26T10:00:00Z'),
 
 ('rm-301', '301', 'rt-dlx', 'fl-3', 'available', 1, 'Quiet zone', '2026-09-01T08:00:00Z', '2026-09-26T10:00:00Z'),
-('rm-302', '302', 'rt-ste', 'fl-3', 'occupied', 1, 'Guest Kenji Sato', '2026-09-01T08:00:00Z', '2026-09-26T10:00:00Z'),
+('rm-302', '302', 'rt-ste', 'fl-3', 'available', 1, NULL, '2026-09-01T08:00:00Z', '2026-09-26T10:00:00Z'),
 ('rm-303', '303', 'rt-dlx', 'fl-3', 'available', 1, 'Sunset view', '2026-09-01T08:00:00Z', '2026-09-26T10:00:00Z'),
 ('rm-304', '304', 'rt-ste', 'fl-3', 'reserved', 1, 'VIP David Tan arriving tomorrow', '2026-09-01T08:00:00Z', '2026-09-26T10:00:00Z'),
 ('rm-305', '305', 'rt-dlx', 'fl-3', 'cleaning', 1, 'Deep cleaning routine', '2026-09-01T08:00:00Z', '2026-09-26T10:00:00Z'),
 
 ('rm-401', '401', 'rt-ste', 'fl-4', 'available', 1, 'Corner executive', '2026-09-01T08:00:00Z', '2026-09-26T10:00:00Z'),
-('rm-402', '402', 'rt-ste', 'fl-4', 'occupied', 1, 'Long stay corporate', '2026-09-01T08:00:00Z', '2026-09-26T10:00:00Z'),
+('rm-402', '402', 'rt-ste', 'fl-4', 'available', 1, NULL, '2026-09-01T08:00:00Z', '2026-09-26T10:00:00Z'),
 ('rm-403', '403', 'rt-ste', 'fl-4', 'available', 1, 'Executive lounge access', '2026-09-01T08:00:00Z', '2026-09-26T10:00:00Z'),
 ('rm-404', '404', 'rt-ste', 'fl-4', 'out_of_order', 1, 'Plumbing maintenance', '2026-09-01T08:00:00Z', '2026-09-26T10:00:00Z'),
 ('rm-405', '405', 'rt-ste', 'fl-4', 'available', 1, 'High floor panoramic', '2026-09-01T08:00:00Z', '2026-09-26T10:00:00Z'),
@@ -88,5 +88,5 @@ INSERT OR REPLACE INTO amenities_catalog (id, name_th, name_en, category, is_cha
 ('am-extra-bed', 'เตียงเสริม', 'Extra Bed', 'bedding', 1, 300.0, 'หลัง', 'unit', 5, 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z'),
 ('am-extra-pillow', 'หมอนหนุนเสริม', 'Extra Pillow', 'bedding', 0, 0.0, 'ใบ', 'piece', 30, 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z'),
 ('am-hair-dryer', 'ไดร์เป่าผมพลังไอออน', 'Ionic Hair Dryer', 'appliance', 0, 0.0, 'เครื่อง', 'unit', 15, 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z'),
-('am-premium-dental', 'เซ็ตแปรงสีฟันพรีเมียม', 'Premium Dental Kit', 'bath', 0, 0.0, 'ชุด', 'kit', 50, 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z');
+('am-premium-dental', 'เซ็ตแปรงสีฟันพรีเมียม', 'Premium Dental Kit', 'bath', 1, 50.0, 'ชุด', 'set', 50, 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z');
 

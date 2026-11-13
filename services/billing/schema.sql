@@ -19,12 +19,13 @@ CREATE TABLE IF NOT EXISTS bills (
     discount_amount REAL NOT NULL DEFAULT 0,
     tax_rate REAL NOT NULL DEFAULT 0.07,
     tax_amount REAL NOT NULL DEFAULT 0,
+    service_charge_rate REAL NOT NULL DEFAULT 0.10,
     service_charge REAL NOT NULL DEFAULT 0.10,
     total_amount REAL NOT NULL DEFAULT 0,
     deposit_deducted REAL NOT NULL DEFAULT 0,
     amount_paid REAL NOT NULL DEFAULT 0,
     amount_due REAL NOT NULL DEFAULT 0,
-    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'partially_paid', 'paid', 'refunded', 'void')),
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'partially_paid', 'paid', 'unpaid', 'refunded', 'void')),
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
@@ -38,6 +39,7 @@ CREATE TABLE IF NOT EXISTS bill_items (
     unit_price REAL NOT NULL,
     total_price REAL NOT NULL,
     item_date TEXT NOT NULL,
+    is_paid INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL
 );
 

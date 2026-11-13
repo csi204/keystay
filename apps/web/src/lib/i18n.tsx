@@ -126,13 +126,20 @@ const translations: Record<Language, Translations> = {
     'unit.rooms': 'ห้อง',
 
     // Statuses
-    'status.available': 'ว่าง',
-    'status.reserved': 'จองแล้ว',
-    'status.occupied': 'มีผู้เข้าพัก',
-    'status.checked_out': 'เช็คเอาท์แล้ว',
+    'status.all': 'ทั้งหมด',
+    'status.available': 'ว่างพร้อมใช้',
+    'status.reserved': 'ติดจอง',
+    'status.occupied': 'มีแขกพัก',
+    'status.checked_out': 'เช็คเอาต์แล้ว',
     'status.cleaning': 'กำลังทำความสะอาด',
-    'status.maintenance': 'ซ่อมบำรุง',
+    'status.maintenance': 'ปิดปรับปรุง',
     'status.out_of_order': 'ปิดใช้งาน',
+    'status.pending': 'รอยืนยัน',
+    'status.confirmed': 'ยืนยันแล้ว',
+    'status.checked_in': 'เข้าพักอยู่',
+    'status.extended': 'ขยายเวลาเข้าพัก',
+    'status.cancelled': 'ยกเลิกแล้ว',
+    'status.no_show': 'ไม่มาแสดงตัว',
 
     // Modals & Validation
     'modal.createType.title': 'เพิ่มประเภทห้องพักใหม่',
@@ -148,7 +155,7 @@ const translations: Record<Language, Translations> = {
     'modal.changeStatus.changeTo': 'เปลี่ยนเป็น:',
     'modal.deleteRoom.title': 'ปิดใช้งานห้องพัก',
     'modal.deleteRoom.confirm': 'ห้อง {roomNumber} จะถูกปิดใช้งาน และไม่สามารถจองได้จนกว่าจะเปิดใหม่ ยืนยันดำเนินการต่อหรือไม่?',
-    'modal.occupiedWarning': 'ไม่สามารถเปลี่ยนสถานะหรือปิดห้องที่มีผู้เข้าพักอยู่ได้ ต้องรอเช็คเอาท์ก่อน',
+    'modal.occupiedWarning': 'ไม่สามารถเปลี่ยนสถานะหรือปิดห้องที่มีผู้เข้าพักอยู่ได้ ต้องรอเช็คเอาต์ก่อน',
     'modal.reservedWarning': 'ไม่สามารถเปลี่ยนสถานะหรือปิดห้องที่มีผู้จองล่วงหน้าได้',
 
     // Form Validation Errors
@@ -273,6 +280,7 @@ const translations: Record<Language, Translations> = {
     'unit.rooms': 'rooms',
 
     // Statuses
+    'status.all': 'All',
     'status.available': 'Available',
     'status.reserved': 'Reserved',
     'status.occupied': 'Occupied',
@@ -280,6 +288,12 @@ const translations: Record<Language, Translations> = {
     'status.cleaning': 'Cleaning',
     'status.maintenance': 'Maintenance',
     'status.out_of_order': 'Out of Order',
+    'status.pending': 'Pending',
+    'status.confirmed': 'Confirmed',
+    'status.checked_in': 'Checked In',
+    'status.extended': 'Stay Extended',
+    'status.cancelled': 'Cancelled',
+    'status.no_show': 'No Show',
 
     // Modals & Validation
     'modal.createType.title': 'Create New Room Type',

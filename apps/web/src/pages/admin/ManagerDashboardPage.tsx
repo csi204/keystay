@@ -442,7 +442,7 @@ export const ManagerDashboardPage: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-sm font-bold text-slate-900 font-mono block">
-                    {isEn ? 'Check-outs Today' : 'เช็คเอาท์วันนี้'}
+                    {isEn ? 'Check-outs Today' : 'เช็คเอาต์วันนี้'}
                   </span>
                   <span className="text-xs text-slate-500">
                     {data.kpi.checkouts_today} {isEn ? 'guests' : 'รายการ'}

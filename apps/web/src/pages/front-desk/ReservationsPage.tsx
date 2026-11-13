@@ -23,6 +23,7 @@ const RESERVATION_STATUS_STYLES: Record<
   pending: { bg: 'bg-slate-100', text: 'text-slate-700', border: 'border-slate-300' },
   confirmed: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
   checked_in: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
+  extended: { bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-200' },
   checked_out: { bg: 'bg-slate-100', text: 'text-slate-600', border: 'border-slate-200' },
   cancelled: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' },
   no_show: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
@@ -263,6 +264,7 @@ export const ReservationsPage: React.FC = () => {
       <NewBookingModal
         isOpen={isNewModalOpen}
         rooms={rooms}
+        reservations={reservations}
         roomTypes={roomTypes}
         onClose={() => setIsNewModalOpen(false)}
         onSubmit={createReservation}

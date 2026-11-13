@@ -23,7 +23,7 @@ export const EXTRA_CHARGE_PRESETS: ExtraChargePreset[] = [
   // Service
   { id: 'sv-bed', category: 'service', en: 'Extra Bed with Breakfast', th: 'เตียงเสริมพร้อมอาหารเช้า', price: '500' },
   { id: 'sv-airport', category: 'service', en: 'Airport Shuttle Transfer', th: 'รถรับส่งสนามบิน', price: '300' },
-  { id: 'sv-lateco', category: 'service', en: 'Late Check-out Hourly Fee', th: 'ค่าธรรมเนียมเช็คเอาท์เกินเวลา (รายชั่วโมง)', price: '200' },
+  { id: 'sv-lateco', category: 'service', en: 'Late Check-out Hourly Fee', th: 'ค่าธรรมเนียมเช็คเอาต์เกินเวลา (รายชั่วโมง)', price: '200' },
   // Damage
   { id: 'dm-key', category: 'damage', en: 'Lost Key Card Replacement', th: 'ค่าปรับคีย์การ์ดสูญหาย', price: '200' },
   { id: 'dm-linen', category: 'damage', en: 'Stained Bed Linen', th: 'ค่าซักทำความสะอาดผ้าปูที่นอนเปื้อน', price: '300' },
@@ -123,14 +123,14 @@ export const AddExtraChargeModal: React.FC<AddExtraChargeModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
         className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
 
       <div className="relative bg-white rounded-xl border border-slate-200 shadow-xl max-w-md w-full overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-150">
-        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
+        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
           <div className="flex items-center gap-2">
             <ShoppingBag className="w-5 h-5 text-slate-900" />
             <h2 className="text-xl font-bold text-slate-900">
@@ -139,7 +139,7 @@ export const AddExtraChargeModal: React.FC<AddExtraChargeModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1 text-slate-400 hover:text-slate-600 rounded transition-colors"
+            className="p-1 text-slate-500 hover:text-slate-800 rounded transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -155,9 +155,10 @@ export const AddExtraChargeModal: React.FC<AddExtraChargeModalProps> = ({
 
           <div>
             <label className="block text-sm font-semibold text-slate-800 mb-1">
-              {t('folio.chargeCategory')} *
+              {t('folio.chargeCategory')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
             </label>
             <select
+              className="w-full px-3 py-2 text-sm text-slate-900 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900"
               value={category}
               onChange={(e) => {
                 const newCat = e.target.value as 'minibar' | 'laundry' | 'damage' | 'service' | 'other';
@@ -169,20 +170,19 @@ export const AddExtraChargeModal: React.FC<AddExtraChargeModalProps> = ({
                   setUnitPrice(firstPreset.price);
                 }
               }}
-              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"
             >
-              <option value="minibar">{t('category.minibar')}</option>
-              <option value="laundry">{t('category.laundry')}</option>
-              <option value="service">{t('category.service')}</option>
-              <option value="damage">{t('category.damage')}</option>
-              <option value="other">{t('category.other')}</option>
+              <option value="minibar" className="text-slate-900 bg-white">{t('category.minibar')}</option>
+              <option value="laundry" className="text-slate-900 bg-white">{t('category.laundry')}</option>
+              <option value="service" className="text-slate-900 bg-white">{t('category.service')}</option>
+              <option value="damage" className="text-slate-900 bg-white">{t('category.damage')}</option>
+              <option value="other" className="text-slate-900 bg-white">{t('category.other')}</option>
             </select>
           </div>
 
           {/* Quick presets for selected category */}
           {categoryPresets.length > 0 && (
             <div>
-              <label className="block text-xs sm:text-sm font-medium text-slate-600 mb-1.5 flex items-center gap-1.5">
+              <label className="block text-xs sm:text-sm font-semibold text-slate-800 mb-1.5 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                 <span>{locale === 'th' ? 'เลือกรายการด่วนยอดนิยม' : 'Quick Presets'}</span>
               </label>
@@ -201,11 +201,11 @@ export const AddExtraChargeModal: React.FC<AddExtraChargeModalProps> = ({
                       className={`px-3 py-1.5 rounded text-xs sm:text-sm font-medium border transition-colors flex items-center gap-1.5 ${
                         isSelected
                           ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
-                          : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                          : 'bg-white hover:bg-slate-100 text-slate-800 border-slate-300'
                       }`}
                     >
                       <span>{label}</span>
-                      <span className="opacity-70 font-mono tabular-nums tracking-tight">
+                      <span className={`${isSelected ? 'text-slate-200' : 'text-slate-600'} font-mono tabular-nums tracking-tight`}>
                         ฿{preset.price}
                       </span>
                     </button>
@@ -217,7 +217,7 @@ export const AddExtraChargeModal: React.FC<AddExtraChargeModalProps> = ({
 
           <div>
             <label className="block text-sm font-semibold text-slate-800 mb-1">
-              {t('folio.chargeDescription')} *
+              {t('folio.chargeDescription')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
             </label>
             <input
               type="text"
@@ -225,14 +225,14 @@ export const AddExtraChargeModal: React.FC<AddExtraChargeModalProps> = ({
               placeholder={t('folio.chargeDescriptionPlaceholder')}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full text-sm py-2 px-3 bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"
+              className="w-full text-sm py-2 px-3 bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-semibold text-slate-800 mb-1">
-                {t('folio.chargeQuantity')} *
+                {t('folio.chargeQuantity')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
               </label>
               <input
                 type="number"
@@ -240,13 +240,13 @@ export const AddExtraChargeModal: React.FC<AddExtraChargeModalProps> = ({
                 required
                 value={quantity}
                 onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
-                className="w-full text-sm py-2 px-3 bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono tabular-nums tracking-tight"
+                className="w-full text-sm py-2 px-3 bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono tabular-nums tracking-tight"
               />
             </div>
 
             <div>
               <label className="block text-sm font-semibold text-slate-800 mb-1">
-                {t('folio.chargeUnitPrice')} *
+                {t('folio.chargeUnitPrice')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
               </label>
               <input
                 type="number"
@@ -255,13 +255,13 @@ export const AddExtraChargeModal: React.FC<AddExtraChargeModalProps> = ({
                 required
                 value={unitPrice}
                 onChange={(e) => setUnitPrice(e.target.value)}
-                className="w-full text-sm py-2 px-3 bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono tabular-nums tracking-tight"
+                className="w-full text-sm py-2 px-3 bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono tabular-nums tracking-tight"
               />
             </div>
           </div>
 
           <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between text-sm font-mono tabular-nums tracking-tight">
-            <span className="text-slate-600 font-medium">{t('folio.chargeTotal')}:</span>
+            <span className="text-slate-700 font-medium">{t('folio.chargeTotal')}:</span>
             <span className="text-base font-bold font-mono text-slate-900">{formatCurrency(total)}</span>
           </div>
 
@@ -269,14 +269,14 @@ export const AddExtraChargeModal: React.FC<AddExtraChargeModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-3.5 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-md transition-colors"
+              className="px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-md transition-colors min-h-[44px]"
             >
               {t('common.cancel')}
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-4 py-2 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-md shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"
+              className="px-4 py-2 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-md shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-50 min-h-[44px]"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>{isSubmitting ? t('res.submitting') : t('folio.addChargeSubmit')}</span>

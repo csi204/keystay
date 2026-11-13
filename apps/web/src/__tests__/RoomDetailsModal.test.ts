@@ -3,9 +3,17 @@ import assert from 'node:assert';
 import fs from 'node:fs';
 import path from 'node:path';
 
+const getFilePath = (subpath: string) => {
+  const p1 = path.resolve(process.cwd(), subpath);
+  if (fs.existsSync(p1)) return p1;
+  const p2 = path.resolve(process.cwd(), subpath.replace(/^apps\/web\//, ''));
+  if (fs.existsSync(p2)) return p2;
+  return p1;
+};
+
 describe('RoomDetailsModal — Centered Dialog & Split-Pane Fast Booking Modal', () => {
-  const modalPath = path.resolve(process.cwd(), 'apps/web/src/components/front-desk/RoomDetailsModal.tsx');
-  const pagePath = path.resolve(process.cwd(), 'apps/web/src/pages/front-desk/RoomMatrixPage.tsx');
+  const modalPath = getFilePath('apps/web/src/components/front-desk/RoomDetailsModal.tsx');
+  const pagePath = getFilePath('apps/web/src/pages/front-desk/RoomMatrixPage.tsx');
 
   it('modal component exists and uses centered dialog with backdrop blur', () => {
     assert.ok(fs.existsSync(modalPath), 'RoomDetailsModal.tsx should exist');
@@ -105,5 +113,32 @@ describe('RoomDetailsModal — Centered Dialog & Split-Pane Fast Booking Modal',
     // Hover quick walk-in triggers modal in booking mode
     assert.match(pageCode, /onQuickBook/);
     assert.match(pageCode, /setModalMode\(['"]booking['"]\)|mode=['"]booking['"]|initialMode/);
+  });
+
+  it('RoomMatrixPage passes currentReservation to RoomDetailsModal and navigates to billing with full state', () => {
+    const pageCode = fs.readFileSync(pagePath, 'utf-8');
+    // Computes activeReservation from confirmed, checked_in, or extended
+    assert.match(pageCode, /activeReservation/);
+    assert.match(pageCode, /selectedRoom\.id/);
+    assert.match(pageCode, /checked_in/);
+
+    // Passes currentReservation to RoomDetailsModal
+    assert.match(pageCode, /currentReservation=\{activeReservation \|\| null\}/);
+
+    // Navigates to billing with complete state
+    assert.match(pageCode, /\/front-desk\/billing/);
+    assert.match(pageCode, /roomId:\s*room\.id/);
+    assert.match(pageCode, /roomNumber:\s*room\.roomNumber/);
+    assert.match(pageCode, /reservationId:/);
+    assert.match(pageCode, /billId:/);
+  });
+
+  it('RoomDetailsModal reliably renders RequestAmenitiesModal when currentReservation exists OR room is occupied', () => {
+    const modalCode = fs.readFileSync(modalPath, 'utf-8');
+    assert.match(modalCode, /currentReservation\s*\|\|\s*room\?\.status\s*===\s*['"]occupied['"]/);
+    assert.match(modalCode, /reservationId=\{currentReservation\?\.id\s*\|\|\s*['"]res-in-house-['"]\s*\+\s*room\?\.id\}/);
+    assert.match(modalCode, /billId=\{\(currentReservation as any\)\?\.billId\}/);
+    assert.match(modalCode, /roomId=\{room\?\.id\s*\|\|\s*['"]['"]\}/);
+    assert.match(modalCode, /roomNumber=\{room\?\.roomNumber\s*\|\|\s*['"]['"]\}/);
   });
 });

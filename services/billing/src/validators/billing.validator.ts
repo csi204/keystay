@@ -8,15 +8,27 @@ export const createBillSchema = z.object({
   depositDeducted: z.coerce.number().min(0).default(0),
   serviceChargeRate: z.coerce.number().min(0).max(1).optional(),
   taxRate: z.coerce.number().min(0).max(1).optional(),
+  amountPaid: z.coerce.number().min(0).optional(),
+  paymentMethod: z.string().optional(),
+  paymentMethodId: z.string().optional(),
+  referenceNumber: z.string().optional(),
+  status: z.enum(['pending', 'partially_paid', 'paid', 'unpaid', 'refunded', 'void']).optional(),
   items: z
     .array(
-      z.object({
-        itemType: z.enum(['room_charge', 'minibar', 'laundry', 'room_service', 'damage', 'other']),
-        description: z.string().min(1, 'Description is required'),
-        quantity: z.coerce.number().int().min(1).default(1),
-        unitPrice: z.coerce.number().min(0, 'Unit price must be non-negative'),
-        itemDate: z.string().optional(),
-      })
+      z
+        .object({
+          itemType: z.enum(['room_charge', 'minibar', 'laundry', 'room_service', 'damage', 'other']).optional(),
+          category: z.string().optional(),
+          description: z.string().min(1, 'Description is required'),
+          quantity: z.coerce.number().int().min(1).default(1),
+          unitPrice: z.coerce.number().min(0, 'Unit price must be non-negative'),
+          itemDate: z.string().optional(),
+          isPaid: z.boolean().optional(),
+        })
+        .refine((data) => Boolean(data.itemType || data.category), {
+          message: 'Either itemType or category must be specified',
+          path: ['itemType'],
+        })
     )
     .optional(),
 });
@@ -24,22 +36,29 @@ export const createBillSchema = z.object({
 export const updateBillSchema = z.object({
   guestName: z.string().optional(),
   roomNumber: z.string().optional(),
-  status: z.enum(['pending', 'partially_paid', 'paid', 'refunded', 'void']).optional(),
+  status: z.enum(['pending', 'partially_paid', 'paid', 'unpaid', 'refunded', 'void']).optional(),
   depositDeducted: z.coerce.number().min(0).optional(),
 });
 
-export const addBillItemSchema = z.object({
-  itemType: z.enum(['room_charge', 'minibar', 'laundry', 'room_service', 'damage', 'other']),
-  description: z.string().min(1, 'Description is required'),
-  quantity: z.coerce.number().int().min(1).default(1),
-  unitPrice: z.coerce.number().min(0, 'Unit price must be non-negative'),
-  itemDate: z.string().optional(),
-});
+export const addBillItemSchema = z
+  .object({
+    itemType: z.enum(['room_charge', 'minibar', 'laundry', 'room_service', 'damage', 'other']).optional(),
+    category: z.string().optional(),
+    description: z.string().min(1, 'Description is required'),
+    quantity: z.coerce.number().int().min(1).default(1),
+    unitPrice: z.coerce.number().min(0, 'Unit price must be non-negative'),
+    itemDate: z.string().optional(),
+    isPaid: z.boolean().optional(),
+  })
+  .refine((data) => Boolean(data.itemType || data.category), {
+    message: 'Either itemType or category must be specified',
+    path: ['itemType'],
+  });
 
 export const payBillSchema = z.object({
   paymentMethodId: z.string().optional(),
   paymentMethod: z.string().optional(),
-  amount: z.coerce.number().min(0.01, 'Payment amount must be greater than 0').optional(),
+  amount: z.coerce.number().min(0, 'Payment amount must be non-negative').optional(),
   referenceNumber: z.string().optional(),
   depositDeducted: z.coerce.number().min(0).optional(),
 });

@@ -18,12 +18,13 @@ export interface BillRecord {
   discount_amount: number;
   tax_rate: number;
   tax_amount: number;
+  service_charge_rate?: number;
   service_charge: number;
   total_amount: number;
   deposit_deducted: number;
   amount_paid: number;
   amount_due: number;
-  status: 'pending' | 'partially_paid' | 'paid' | 'refunded' | 'void';
+  status: 'pending' | 'partially_paid' | 'paid' | 'unpaid' | 'refunded' | 'void';
   created_at: string;
   updated_at: string;
 }
@@ -37,6 +38,7 @@ export interface BillItemRecord {
   unit_price: number;
   total_price: number;
   item_date: string;
+  is_paid?: number;
   created_at: string;
 }
 
@@ -92,6 +94,7 @@ export function mapBill(row: any) {
   const discountAmount = Number(row.discount_amount || 0).toFixed(2);
   const taxRate = Number(row.tax_rate ?? 0.07).toFixed(2);
   const taxAmount = Number(row.tax_amount || 0).toFixed(2);
+  const serviceChargeRate = Number(row.service_charge_rate ?? 0.10).toFixed(2);
   const serviceCharge = Number(row.service_charge || 0).toFixed(2);
   const totalAmount = Number(row.total_amount || 0).toFixed(2);
   const depositDeducted = Number(row.deposit_deducted || 0).toFixed(2);
@@ -108,6 +111,7 @@ export function mapBill(row: any) {
     discountAmount,
     taxRate,
     taxAmount,
+    serviceChargeRate,
     serviceCharge,
     totalAmount,
     depositDeducted,
@@ -130,6 +134,7 @@ export function mapBillItem(row: any) {
     unitPrice: Number(row.unit_price || 0).toFixed(2),
     totalPrice: Number(row.total_price || 0).toFixed(2),
     itemDate: row.item_date,
+    isPaid: Boolean(row.is_paid ?? 0),
     createdAt: row.created_at,
   };
 }

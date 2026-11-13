@@ -7,6 +7,8 @@
     "dev": "vite --port 3000",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "test": "node --import tsx --import ./src/setup-env.ts --test src/__tests__/*.test.ts src/__tests__/*.test.tsx",
+    "test:run": "node --import tsx --import ./src/setup-env.ts --test",
     "typecheck": "tsc --noEmit",
     "lint": "echo 'apps/web lint ok'",
     "deploy": "pnpm dlx wrangler deploy"

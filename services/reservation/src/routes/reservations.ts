@@ -1,5 +1,5 @@
-import { Hono } from 'hono';
-import { type Env, mapReservation } from '../types';
+import { Hono, type Context } from 'hono';
+import { type Env, mapReservation, mapAmenityRequest } from '../types';
 import {
   createReservationSchema,
   updateReservationSchema,
@@ -11,6 +11,8 @@ import {
   upgradeRoomSchema,
   walkInSchema,
   applyDiscountSchema,
+  updatePaymentSchema,
+  createAmenityRequestSchema,
 } from '../validators/reservation.validator';
 import { publishToQStash } from '../events/publisher';
 import { runNightAudit } from '../cron/night-audit';
@@ -38,6 +40,134 @@ function getDateRangeArray(startDate: string, endDate: string): string[] {
     current.setUTCDate(current.getUTCDate() + 1);
   }
   return dates;
+}
+
+interface GuestResolutionInput {
+  guestId?: string;
+  guestName?: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string | null;
+  email?: string | null;
+  idCardNumber?: string | null;
+  nationality?: string | null;
+  initialTotalStays: number;
+}
+
+interface GuestResolutionResult {
+  guestId: string;
+  guestRecord: any | null;
+  stmtInsertGuest: any | null;
+  guestFullName: string;
+  guestEmail: string | null;
+  guestPhone: string | null;
+  notFoundError?: boolean;
+}
+
+function normalizeGuestName(name: string): string {
+  return name.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+/**
+ * Resolves an existing guest by explicit ID, or matches by ID card / phone / email
+ * ONLY when no typed name was provided or the existing guest's normalized full name
+ * matches the typed name; otherwise prepares a new guest INSERT statement.
+ */
+async function resolveOrCreateGuest(
+  db: D1Database,
+  input: GuestResolutionInput,
+  now: string
+): Promise<GuestResolutionResult> {
+  if (input.guestId) {
+    const guestRecord = await db.prepare('SELECT * FROM guests WHERE id = ?').bind(input.guestId).first<any>();
+    if (!guestRecord) {
+      return {
+        guestId: input.guestId,
+        guestRecord: null,
+        stmtInsertGuest: null,
+        guestFullName: '',
+        guestEmail: null,
+        guestPhone: null,
+        notFoundError: true,
+      };
+    }
+    return {
+      guestId: guestRecord.id,
+      guestRecord,
+      stmtInsertGuest: null,
+      guestFullName: `${guestRecord.first_name || ''} ${guestRecord.last_name || ''}`.trim() || 'Guest',
+      guestEmail: guestRecord.email || null,
+      guestPhone: guestRecord.phone || null,
+    };
+  }
+
+  const rawTypedName = (input.guestName?.trim() || `${input.firstName || ''} ${input.lastName || ''}`.trim());
+  const normalizedTypedName = rawTypedName ? normalizeGuestName(rawTypedName) : '';
+
+  const trimmedIdCard = input.idCardNumber?.trim() || null;
+  const trimmedPhone = input.phone?.trim() || null;
+  const trimmedEmail = input.email?.trim() || null;
+
+  const findMatchingCandidate = async (column: 'id_card_number' | 'phone' | 'email', value: string | null) => {
+    if (!value) return null;
+    const res = await db.prepare(`SELECT * FROM guests WHERE ${column} = ?`).bind(value).all<any>();
+    const rows = res.results || [];
+    if (rows.length === 0) return null;
+    if (!normalizedTypedName) return rows[0];
+    return (
+      rows.find((row) => normalizeGuestName(`${row.first_name || ''} ${row.last_name || ''}`) === normalizedTypedName) ||
+      null
+    );
+  };
+
+  const guestRecord =
+    (await findMatchingCandidate('id_card_number', trimmedIdCard)) ||
+    (await findMatchingCandidate('phone', trimmedPhone)) ||
+    (await findMatchingCandidate('email', trimmedEmail));
+
+  if (guestRecord) {
+    return {
+      guestId: guestRecord.id,
+      guestRecord,
+      stmtInsertGuest: null,
+      guestFullName: `${guestRecord.first_name || ''} ${guestRecord.last_name || ''}`.trim() || 'Guest',
+      guestEmail: guestRecord.email || null,
+      guestPhone: guestRecord.phone || null,
+    };
+  }
+
+  const guestId = `gst-${crypto.randomUUID()}`;
+  const nameParts = (input.guestName || '').trim().split(/\s+/).filter(Boolean);
+  const firstName = input.firstName?.trim() || nameParts[0] || 'Guest';
+  const lastName = input.lastName?.trim() || (nameParts.length > 1 ? nameParts.slice(1).join(' ') : '');
+  const guestFullName = `${firstName} ${lastName}`.trim();
+
+  const stmtInsertGuest = db
+    .prepare(
+      `INSERT INTO guests (id, first_name, last_name, email, phone, id_card_number, nationality, total_stays, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    .bind(
+      guestId,
+      firstName,
+      lastName,
+      trimmedEmail,
+      trimmedPhone,
+      trimmedIdCard,
+      input.nationality?.trim() || 'Thai',
+      input.initialTotalStays,
+      now,
+      now
+    );
+
+  return {
+    guestId,
+    guestRecord: null,
+    stmtInsertGuest,
+    guestFullName,
+    guestEmail: trimmedEmail,
+    guestPhone: trimmedPhone,
+  };
 }
 
 // ==========================================
@@ -69,7 +199,7 @@ reservations.get('/today-checkins', async (c) => {
 });
 
 // ==========================================
-// 43. GET /reservations/today-checkouts — แขกที่ต้องเช็คเอาท์วันนี้
+// 43. GET /reservations/today-checkouts — แขกที่ต้องเช็คเอาต์วันนี้
 // ==========================================
 reservations.get('/today-checkouts', async (c) => {
   try {
@@ -328,50 +458,30 @@ reservations.post('/walk-in', async (c) => {
     const checkOutDate = data.checkOutDate;
 
     // 1. Resolve or Insert Guest Atomically
-    let guestId: string = data.guestId || '';
-    let guestRecord: any = null;
-    let stmtInsertGuest: any = null;
+    const resolvedGuest = await resolveOrCreateGuest(
+      c.env.DB,
+      {
+        guestId: data.guestId,
+        guestName: data.guestName,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phone: data.guestPhone || data.phone,
+        email: data.guestEmail,
+        idCardNumber: data.idCardNumber || data.nationalIdOrPassport,
+        nationality: data.nationality,
+        initialTotalStays: 1,
+      },
+      now
+    );
 
-    if (guestId) {
-      guestRecord = await c.env.DB.prepare('SELECT * FROM guests WHERE id = ?').bind(guestId).first();
-      if (!guestRecord) {
-        return c.json({ success: false, error: { code: 'GUEST_NOT_FOUND', message: `Guest with ID ${guestId} not found` } }, 404);
-      }
-    } else {
-      if (data.guestPhone) {
-        guestRecord = await c.env.DB.prepare('SELECT * FROM guests WHERE phone = ?').bind(data.guestPhone.trim()).first();
-      }
-      if (!guestRecord && data.idCardNumber) {
-        guestRecord = await c.env.DB.prepare('SELECT * FROM guests WHERE id_card_number = ?').bind(data.idCardNumber.trim()).first();
-      }
-      if (!guestRecord && data.guestEmail) {
-        guestRecord = await c.env.DB.prepare('SELECT * FROM guests WHERE email = ?').bind(data.guestEmail.trim()).first();
-      }
-
-      if (guestRecord) {
-        guestId = guestRecord.id;
-      } else {
-        guestId = `gst-${crypto.randomUUID()}`;
-        const nameParts = data.guestName.trim().split(' ');
-        const firstName = nameParts[0] || 'Walk-in';
-        const lastName = nameParts.slice(1).join(' ') || 'Guest';
-
-        stmtInsertGuest = c.env.DB.prepare(
-          `INSERT INTO guests (id, first_name, last_name, email, phone, id_card_number, nationality, total_stays, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`
-        ).bind(
-          guestId,
-          firstName,
-          lastName,
-          data.guestEmail?.trim() || null,
-          data.guestPhone?.trim() || null,
-          data.idCardNumber?.trim() || null,
-          data.nationality?.trim() || 'Thai',
-          now,
-          now
-        );
-      }
+    if (resolvedGuest.notFoundError) {
+      return c.json(
+        { success: false, error: { code: 'GUEST_NOT_FOUND', message: `Guest with ID ${resolvedGuest.guestId} not found` } },
+        404
+      );
     }
+
+    const { guestId, guestRecord, stmtInsertGuest, guestFullName } = resolvedGuest;
 
     // 2. Overlap Check for Walk-in Room Availability
     const overlapQuery = `
@@ -409,8 +519,9 @@ reservations.post('/walk-in', async (c) => {
     const discountAmount = Number(data.discountAmount || 0);
     const taxableAmount = Math.max(0, subtotal - discountAmount);
     const taxAmount = Number((taxableAmount * 0.07).toFixed(2));
-    const totalAmount = Number((taxableAmount + taxAmount).toFixed(2));
     const depositAmount = Number(data.depositAmount || 0);
+    // Upfront Check-in calculation: Total Paid = Room Rate * Nights + Deposit
+    const totalAmount = Number((nightlyRate * totalNights + depositAmount).toFixed(2));
 
     const reservationId = `res-${crypto.randomUUID()}`;
     const codeSuffix = crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase();
@@ -429,15 +540,23 @@ reservations.post('/walk-in', async (c) => {
     }
 
     // Insert Reservation
+    const bookingSource = data.bookingSource || 'walk_in';
+    const paymentStatus = data.paymentStatus || 'paid';
+    const paymentSlipUrl = data.paymentSlipUrl || null;
+    const paymentSlipRef = data.paymentSlipRef || null;
+    const paymentVerifiedAt = paymentStatus === 'paid' ? now : null;
+    const paymentVerifiedBy = paymentStatus === 'paid' ? callerId : null;
+
     stmts.push(
       c.env.DB.prepare(
         `INSERT INTO reservations (
           id, reservation_code, guest_id, room_id, room_number, room_type_name,
           status, booking_type, check_in_date, check_out_date, actual_check_in,
           num_guests, nightly_rate, total_nights, subtotal, discount_amount,
-          tax_amount, deposit_amount, total_amount, special_requests, created_by,
-          created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, 'checked_in', 'walk_in', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          tax_amount, deposit_amount, total_amount, special_requests,
+          booking_source, payment_status, payment_slip_url, payment_slip_ref, payment_verified_at, payment_verified_by,
+          created_by, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, 'checked_in', 'walk_in', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).bind(
         reservationId,
         reservationCode,
@@ -456,7 +575,13 @@ reservations.post('/walk-in', async (c) => {
         taxAmount,
         depositAmount,
         totalAmount,
-        data.specialRequests || 'Walk-in guest',
+        data.specialRequests || (bookingSource === 'walk_in' ? 'Walk-in guest' : `${bookingSource} reservation`),
+        bookingSource,
+        paymentStatus,
+        paymentSlipUrl,
+        paymentSlipRef,
+        paymentVerifiedAt,
+        paymentVerifiedBy,
         callerId,
         now,
         now
@@ -495,7 +620,7 @@ reservations.post('/walk-in', async (c) => {
       roomId: data.roomId,
       roomNumber,
       guestId,
-      guestName: data.guestName.trim(),
+      guestName: guestFullName,
       checkInTime: now,
       expectedCheckOutDate: checkOutDate,
       performedBy: callerId.includes('-') && callerId.length === 36 ? callerId : crypto.randomUUID(),
@@ -512,6 +637,13 @@ reservations.post('/walk-in', async (c) => {
 
     // 5. Fire Event to QStash
     await publishToQStash(c.env, 'hotel.reservation.checkin', checkinEvent, outboxId);
+    if (!c.env.QSTASH_URL) {
+      fetch('http://127.0.0.1:8789/webhooks/checkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(checkinEvent),
+      }).catch((err) => console.warn('[Local Checkin Webhook] Failed to notify room-inventory:', err.message));
+    }
 
     // 6. Return mapped result
     const createdRow = await c.env.DB.prepare(`
@@ -604,49 +736,36 @@ reservations.post('/', async (c) => {
     const callerId = c.req.header('x-user-id') || 'system';
 
     // 1. Resolve or Prepare Guest Creation Statement (Atomic 3.2: No Orphaned Guest)
-    let guestId = data.guestId;
-    let guestRecord: any = null;
-    let stmtInsertGuest: any = null;
-    let guestNameForOutbox = data.guestName;
-    let guestEmailForOutbox = data.guestEmail;
-    let guestPhoneForOutbox = data.guestPhone;
+    const resolvedGuest = await resolveOrCreateGuest(
+      c.env.DB,
+      {
+        guestId: data.guestId,
+        guestName: data.guestName,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phone: data.guestPhone || data.phone,
+        email: data.guestEmail,
+        idCardNumber: data.idCardNumber || data.nationalIdOrPassport,
+        nationality: data.nationality,
+        initialTotalStays: 0,
+      },
+      now
+    );
 
-    if (guestId) {
-      guestRecord = await c.env.DB.prepare('SELECT * FROM guests WHERE id = ?').bind(guestId).first();
-      if (!guestRecord) {
-        return c.json({ success: false, error: { code: 'GUEST_NOT_FOUND', message: `Guest with ID ${guestId} not found` } }, 404);
-      }
-      guestNameForOutbox = `${guestRecord.first_name} ${guestRecord.last_name}`.trim();
-      guestEmailForOutbox = guestRecord.email;
-      guestPhoneForOutbox = guestRecord.phone;
-    } else {
-      // Find existing by phone or email
-      if (data.guestPhone) {
-        guestRecord = await c.env.DB.prepare('SELECT * FROM guests WHERE phone = ?').bind(data.guestPhone.trim()).first();
-      }
-      if (!guestRecord && data.guestEmail) {
-        guestRecord = await c.env.DB.prepare('SELECT * FROM guests WHERE email = ?').bind(data.guestEmail.trim()).first();
-      }
-
-      if (guestRecord) {
-        guestId = guestRecord.id;
-        guestNameForOutbox = `${guestRecord.first_name} ${guestRecord.last_name}`.trim();
-        guestEmailForOutbox = guestRecord.email;
-        guestPhoneForOutbox = guestRecord.phone;
-      } else {
-        // Prepare atomic guest insertion statement (will execute in batch, no orphans on error)
-        guestId = `gst-${crypto.randomUUID()}`;
-        const nameParts = (data.guestName || '').trim().split(' ');
-        const firstName = (data.firstName || nameParts[0] || 'Guest').trim();
-        const lastName = (data.lastName || nameParts.slice(1).join(' ') || 'Customer').trim();
-        guestNameForOutbox = `${firstName} ${lastName}`.trim();
-
-        stmtInsertGuest = c.env.DB.prepare(
-          `INSERT INTO guests (id, first_name, last_name, email, phone, nationality, total_stays, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, 'Thai', 0, ?, ?)`
-        ).bind(guestId, firstName, lastName, data.guestEmail?.trim() || null, data.guestPhone?.trim() || null, now, now);
-      }
+    if (resolvedGuest.notFoundError) {
+      return c.json(
+        { success: false, error: { code: 'GUEST_NOT_FOUND', message: `Guest with ID ${resolvedGuest.guestId} not found` } },
+        404
+      );
     }
+
+    const {
+      guestId,
+      stmtInsertGuest,
+      guestFullName: guestNameForOutbox,
+      guestEmail: guestEmailForOutbox,
+      guestPhone: guestPhoneForOutbox,
+    } = resolvedGuest;
 
     // 2. Fast Overlap Check (First-line defense)
     const overlapQuery = `
@@ -737,14 +856,23 @@ reservations.post('/', async (c) => {
     }
 
     // Insert reservation
+    const bookingSource = (data as any).bookingSource || 'walk_in';
+    const paymentStatus = (data as any).paymentStatus || (data.bookingType === 'walk_in' ? 'paid' : 'unpaid');
+    const paymentSlipUrl = (data as any).paymentSlipUrl || null;
+    const paymentSlipRef = (data as any).paymentSlipRef || null;
+    const paymentVerifiedAt = paymentStatus === 'paid' ? now : null;
+    const paymentVerifiedBy = paymentStatus === 'paid' ? callerId : null;
+
     batchStatements.push(
       c.env.DB.prepare(
         `INSERT INTO reservations (
           id, reservation_code, guest_id, room_id, room_number, room_type_name,
           status, booking_type, check_in_date, check_out_date, actual_check_in,
           num_guests, nightly_rate, total_nights, subtotal, discount_amount, tax_amount, deposit_amount,
-          total_amount, special_requests, created_by, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          total_amount, special_requests,
+          booking_source, payment_status, payment_slip_url, payment_slip_ref, payment_verified_at, payment_verified_by,
+          created_by, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).bind(
         reservationId,
         reservationCode,
@@ -766,6 +894,12 @@ reservations.post('/', async (c) => {
         depositAmount,
         totalAmount,
         data.specialRequests || null,
+        bookingSource,
+        paymentStatus,
+        paymentSlipUrl,
+        paymentSlipRef,
+        paymentVerifiedAt,
+        paymentVerifiedBy,
         callerId,
         now,
         now
@@ -1232,9 +1366,9 @@ reservations.delete('/:id', async (c) => {
 });
 
 // ==========================================
-// 36. POST /reservations/:id/check-in — เช็คอินเข้าพัก
+// 36. POST & PUT /reservations/:id/check-in — เช็คอินเข้าพัก
 // ==========================================
-reservations.post('/:id/check-in', async (c) => {
+const handleCheckIn = async (c: Context<{ Bindings: Env }>) => {
   try {
     const id = c.req.param('id');
     const body = await c.req.json().catch(() => ({}));
@@ -1282,19 +1416,22 @@ reservations.post('/:id/check-in', async (c) => {
 
     const stmts: any[] = [];
 
-    // 1. Update reservation status to checked_in
+    // 1. Update reservation status to checked_in, paymentStatus to paid, and include deposit in total_amount
+    const subtotal = Number(existing.subtotal || 0);
+    const newTotalAmount = subtotal > 0 ? Number((subtotal + depositAmount).toFixed(2)) : existing.total_amount;
     stmts.push(
       c.env.DB.prepare(
         `UPDATE reservations
-         SET status = 'checked_in', actual_check_in = ?, deposit_amount = ?, updated_at = ?
+         SET status = 'checked_in', actual_check_in = ?, deposit_amount = ?, payment_status = 'paid', total_amount = ?, updated_at = ?
          WHERE id = ?`
-      ).bind(actualCheckIn, depositAmount, now, existing.id)
+      ).bind(actualCheckIn, depositAmount, newTotalAmount, now, existing.id)
     );
 
     // 2. Update guest idCardNumber if provided
-    if (data.idCardNumber && !existing.id_card_number) {
+    const idCard = (data.idCardNumber || (data as any).nationalIdOrPassport || (body as any)?.nationalIdOrPassport)?.trim();
+    if (idCard && !existing.id_card_number) {
       stmts.push(
-        c.env.DB.prepare('UPDATE guests SET id_card_number = ?, updated_at = ? WHERE id = ?').bind(data.idCardNumber.trim(), now, existing.guest_id)
+        c.env.DB.prepare('UPDATE guests SET id_card_number = ?, updated_at = ? WHERE id = ?').bind(idCard, now, existing.guest_id)
       );
     }
 
@@ -1341,6 +1478,13 @@ reservations.post('/:id/check-in', async (c) => {
 
     // 5. Fire event to Upstash Topic: hotel.reservation.checkin
     await publishToQStash(c.env, 'hotel.reservation.checkin', checkinEvent, outboxId);
+    if (!c.env.QSTASH_URL) {
+      fetch('http://127.0.0.1:8789/webhooks/checkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(checkinEvent),
+      }).catch((err) => console.warn('[Local Checkin Webhook] Failed to notify room-inventory:', err.message));
+    }
 
     // 6. Return response
     const updated = await c.env.DB.prepare(query).bind(existing.id, existing.id).first();
@@ -1353,10 +1497,13 @@ reservations.post('/:id/check-in', async (c) => {
   } catch (error: any) {
     return c.json({ success: false, error: { message: error.message || 'Failed to process check-in' } }, 500);
   }
-});
+};
+
+reservations.post('/:id/check-in', handleCheckIn);
+reservations.put('/:id/check-in', handleCheckIn);
 
 // ==========================================
-// 37. POST /reservations/:id/check-out — เช็คเอาท์และกระจาย Event Fan-out 1:4
+// 37. POST /reservations/:id/check-out — เช็คเอาต์และกระจาย Event Fan-out 1:4
 // ==========================================
 reservations.post('/:id/check-out', async (c) => {
   try {
@@ -1403,7 +1550,7 @@ reservations.post('/:id/check-out', async (c) => {
     // 1. Update reservation
     const stmtUpdate = c.env.DB.prepare(
       `UPDATE reservations
-       SET status = 'checked_out', actual_check_out = ?, updated_at = ?
+       SET status = 'checked_out', actual_check_out = ?, payment_status = 'paid', updated_at = ?
        WHERE id = ?`
     ).bind(actualCheckOut, now, existing.id);
 
@@ -1475,6 +1622,13 @@ reservations.post('/:id/check-out', async (c) => {
 
     // 4. Fire QStash Fan-out to Upstash Topic: hotel.reservation.checkout
     await publishToQStash(c.env, 'hotel.reservation.checkout', checkoutEvent, outboxId);
+    if (!c.env.QSTASH_URL) {
+      fetch('http://127.0.0.1:8789/webhooks/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(checkoutEvent),
+      }).catch((err) => console.warn('[Local Checkout Webhook] Failed to notify room-inventory:', err.message));
+    }
 
     const updated = await c.env.DB.prepare(query).bind(existing.id, existing.id).first();
 
@@ -1491,7 +1645,7 @@ reservations.post('/:id/check-out', async (c) => {
 // ==========================================
 // 38. POST /reservations/:id/cancel — ขอยกเลิกการจอง
 // ==========================================
-reservations.post('/:id/cancel', async (c) => {
+const handleCancelReservation = async (c: any) => {
   try {
     const id = c.req.param('id');
     const body = await c.req.json().catch(() => ({}));
@@ -1550,6 +1704,8 @@ reservations.post('/:id/cancel', async (c) => {
 
     const now = new Date().toISOString();
     const callerId = c.req.header('x-user-id') || 'system';
+    const cancelReason = parsed.data.reason || null;
+    const cancelNote = parsed.data.note || parsed.data.notes || null;
 
     const stmtCancel = c.env.DB.prepare(
       `UPDATE reservations SET status = 'cancelled', updated_at = ? WHERE id = ?`
@@ -1566,7 +1722,12 @@ reservations.post('/:id/cancel', async (c) => {
       `rh-${crypto.randomUUID()}`,
       existing.id,
       JSON.stringify({ status: existing.status }),
-      JSON.stringify({ status: 'cancelled', reason: parsed.data.reason || null }),
+      JSON.stringify({
+        status: 'cancelled',
+        reason: cancelReason,
+        note: cancelNote,
+        notes: cancelNote,
+      }),
       callerId,
       now
     );
@@ -1578,9 +1739,12 @@ reservations.post('/:id/cancel', async (c) => {
       reservationId: existing.id,
       reservationCode: existing.reservation_code,
       roomId: existing.room_id,
+      roomNumber: existing.room_number,
       timestamp: now,
       performedBy: callerId,
-      reason: parsed.data.reason || null,
+      reason: cancelReason,
+      note: cancelNote,
+      notes: cancelNote,
     };
 
     const stmtOutbox = c.env.DB.prepare(
@@ -1590,7 +1754,21 @@ reservations.post('/:id/cancel', async (c) => {
 
     await c.env.DB.batch([stmtCancel, stmtFreeBookedDates, stmtHistory, stmtOutbox]);
 
-    await publishToQStash(c.env, 'hotel.reservation.checkin', cancelPayload, outboxId);
+    // Immediately free room if rooms table exists in this DB
+    await c.env.DB.prepare("UPDATE rooms SET status = 'available' WHERE id = ? OR room_number = ?")
+      .bind(existing.room_id, existing.room_number)
+      .run()
+      .catch(() => {});
+
+    // Publish event to QStash / webhook
+    await publishToQStash(c.env, 'hotel.reservation.cancel', cancelPayload, outboxId);
+    if (!c.env.QSTASH_URL) {
+      fetch('http://127.0.0.1:8789/webhooks/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cancelPayload),
+      }).catch((err) => console.warn('[Local Cancel Webhook] Failed to notify room-inventory:', err.message));
+    }
 
     return c.json({
       success: true,
@@ -1600,7 +1778,10 @@ reservations.post('/:id/cancel', async (c) => {
   } catch (error: any) {
     return c.json({ success: false, error: { message: error.message || 'Failed to cancel reservation' } }, 500);
   }
-});
+};
+
+reservations.post('/:id/cancel', handleCancelReservation);
+reservations.post('/api/reservations/:id/cancel', handleCancelReservation);
 
 // ==========================================
 // 39. PUT /reservations/:id/modify-dates — เปลี่ยนแปลงวันเข้าพัก/ออก
@@ -1731,12 +1912,12 @@ reservations.put('/:id/modify-dates', async (c) => {
 });
 
 // ==========================================
-// 49. POST /reservations/:id/extend-stay — ขยายเวลาการเข้าพัก
+// 49. POST & PUT /reservations/:id/extend-stay & /extend — ขยายเวลาการเข้าพัก
 // ==========================================
-reservations.post('/:id/extend-stay', async (c) => {
+const handleExtendStay = async (c: Context<{ Bindings: Env }>) => {
   try {
     const id = c.req.param('id');
-    const body = await c.req.json();
+    const body = await c.req.json().catch(() => ({}));
     const parsed = extendStaySchema.safeParse(body);
 
     if (!parsed.success) {
@@ -1753,13 +1934,13 @@ reservations.post('/:id/extend-stay', async (c) => {
       return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Reservation not found' } }, 404);
     }
 
-    if (existing.status !== 'checked_in' && existing.status !== 'extended') {
+    if (existing.status !== 'checked_in' && existing.status !== 'extended' && existing.status !== 'confirmed') {
       return c.json(
         {
           success: false,
           error: {
             code: 'INVALID_STATUS',
-            message: 'Stay extension is only available for active in-house guests (checked_in or extended).',
+            message: 'Stay extension is only available for active in-house or confirmed reservations (confirmed, checked_in, or extended).',
           },
         },
         400
@@ -1812,8 +1993,13 @@ reservations.post('/:id/extend-stay', async (c) => {
     const checkInTime = new Date(existing.check_in_date).getTime();
     const newCheckOutTime = new Date(newCheckOutDate).getTime();
     const newTotalNights = Math.max(1, Math.round((newCheckOutTime - checkInTime) / (1000 * 3600 * 24)));
+    const extraNights = Math.max(
+      1,
+      Math.round((newCheckOutTime - new Date(existing.check_out_date).getTime()) / (1000 * 3600 * 24))
+    );
 
     const nightlyRate = Number(existing.nightly_rate);
+    const extensionSubtotal = Number((nightlyRate * extraNights).toFixed(2));
     const subtotal = Number((nightlyRate * newTotalNights).toFixed(2));
     const discountAmount = Number(existing.discount_amount || 0);
     const taxableAmount = Math.max(0, subtotal - discountAmount);
@@ -1862,12 +2048,23 @@ reservations.post('/:id/extend-stay', async (c) => {
     return c.json({
       success: true,
       message: 'Stay extended successfully',
-      data: mapReservation(updated),
+      data: {
+        ...mapReservation(updated),
+        previousCheckOutDate: existing.check_out_date,
+        extraNights,
+        extensionSubtotal,
+        nightlyRate,
+      },
     });
   } catch (error: any) {
     return c.json({ success: false, error: { message: error.message || 'Failed to extend stay' } }, 500);
   }
-});
+};
+
+reservations.post('/:id/extend-stay', handleExtendStay);
+reservations.put('/:id/extend-stay', handleExtendStay);
+reservations.post('/:id/extend', handleExtendStay);
+reservations.put('/:id/extend', handleExtendStay);
 
 // ==========================================
 // 50. POST /reservations/:id/upgrade-room — ขออัปเกรดประเภทห้องพัก
@@ -2182,6 +2379,174 @@ reservations.post('/:id/apply-discount', async (c) => {
     });
   } catch (error: any) {
     return c.json({ success: false, error: { message: error.message || 'Failed to apply discount' } }, 500);
+  }
+});
+
+// ============================================================================
+// Payment Slip Verification & Status Update (PATCH /:id/payment & POST /:id/slip)
+// ============================================================================
+reservations.patch('/:id/payment', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const body = await c.req.json();
+    const parsed = updatePaymentSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json({ success: false, error: { message: 'Validation failed', details: parsed.error.format() } }, 400);
+    }
+
+    const existing = await c.env.DB.prepare('SELECT * FROM reservations WHERE id = ?').bind(id).first<any>();
+    if (!existing) {
+      return c.json({ success: false, error: { code: 'RESERVATION_NOT_FOUND', message: `Reservation with ID ${id} not found` } }, 404);
+    }
+
+    const callerId = c.req.header('x-user-id') || 'system';
+    const now = new Date().toISOString();
+    const paymentStatus = parsed.data.paymentStatus;
+    const paymentSlipUrl = parsed.data.paymentSlipUrl !== undefined ? parsed.data.paymentSlipUrl : existing.payment_slip_url;
+    const paymentSlipRef = parsed.data.paymentSlipRef !== undefined ? parsed.data.paymentSlipRef : existing.payment_slip_ref;
+    const paymentVerifiedAt = paymentStatus === 'paid' ? now : null;
+    const paymentVerifiedBy = paymentStatus === 'paid' ? callerId : null;
+
+    await c.env.DB.prepare(
+      `UPDATE reservations
+       SET payment_status = ?, payment_slip_url = ?, payment_slip_ref = ?,
+           payment_verified_at = ?, payment_verified_by = ?, updated_at = ?
+       WHERE id = ?`
+    ).bind(paymentStatus, paymentSlipUrl, paymentSlipRef, paymentVerifiedAt, paymentVerifiedBy, now, id).run();
+
+    const updated = await c.env.DB.prepare('SELECT * FROM reservations WHERE id = ?').bind(id).first();
+    const mapped = mapReservation(updated);
+
+    return c.json({
+      success: true,
+      message: 'Payment verification updated successfully',
+      data: mapped,
+    });
+  } catch (error: any) {
+    return c.json({ success: false, error: { message: error.message || 'Failed to update payment status' } }, 500);
+  }
+});
+
+reservations.post('/:id/slip', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const body = await c.req.json();
+    const parsed = updatePaymentSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json({ success: false, error: { message: 'Validation failed', details: parsed.error.format() } }, 400);
+    }
+
+    const existing = await c.env.DB.prepare('SELECT * FROM reservations WHERE id = ?').bind(id).first<any>();
+    if (!existing) {
+      return c.json({ success: false, error: { code: 'RESERVATION_NOT_FOUND', message: `Reservation with ID ${id} not found` } }, 404);
+    }
+
+    const callerId = c.req.header('x-user-id') || 'system';
+    const now = new Date().toISOString();
+    const paymentStatus = 'paid';
+    const paymentSlipUrl = parsed.data.paymentSlipUrl || existing.payment_slip_url;
+    const paymentSlipRef = parsed.data.paymentSlipRef || existing.payment_slip_ref;
+
+    await c.env.DB.prepare(
+      `UPDATE reservations
+       SET payment_status = ?, payment_slip_url = ?, payment_slip_ref = ?,
+           payment_verified_at = ?, payment_verified_by = ?, updated_at = ?
+       WHERE id = ?`
+    ).bind(paymentStatus, paymentSlipUrl, paymentSlipRef, now, callerId, now, id).run();
+
+    const updated = await c.env.DB.prepare('SELECT * FROM reservations WHERE id = ?').bind(id).first();
+    const mapped = mapReservation(updated);
+
+    return c.json({
+      success: true,
+      message: 'Payment slip attached and verified successfully',
+      data: mapped,
+    });
+  } catch (error: any) {
+    return c.json({ success: false, error: { message: error.message || 'Failed to attach slip' } }, 500);
+  }
+});
+
+// ============================================================================
+// Extra Amenity Requests (POST & GET /:id/amenities)
+// ============================================================================
+reservations.post('/:id/amenities', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const body = await c.req.json();
+    const parsed = createAmenityRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json({ success: false, error: { message: 'Validation failed', details: parsed.error.format() } }, 400);
+    }
+
+    const existing = await c.env.DB.prepare('SELECT * FROM reservations WHERE id = ?').bind(id).first<any>();
+    if (!existing) {
+      return c.json({ success: false, error: { code: 'RESERVATION_NOT_FOUND', message: `Reservation with ID ${id} not found` } }, 404);
+    }
+
+    const now = new Date().toISOString();
+    const reqId = `amr-${crypto.randomUUID()}`;
+    const qty = parsed.data.quantity || 1;
+    const unitPrice = parsed.data.unitPrice || 0;
+    const totalPrice = Number((qty * unitPrice).toFixed(2));
+    const isChargeable = parsed.data.isChargeable ? 1 : 0;
+
+    await c.env.DB.prepare(
+      `INSERT INTO reservation_amenity_requests (
+        id, reservation_id, amenity_id, amenity_name, quantity, unit_price,
+        total_price, is_chargeable, status, billed_to_folio, notes, requested_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'requested', 0, ?, ?)`
+    ).bind(
+      reqId,
+      id,
+      parsed.data.amenityId,
+      parsed.data.amenityName,
+      qty,
+      unitPrice,
+      totalPrice,
+      isChargeable,
+      parsed.data.notes || null,
+      now
+    ).run();
+
+    const created = await c.env.DB.prepare('SELECT * FROM reservation_amenity_requests WHERE id = ?').bind(reqId).first();
+    const mapped = mapAmenityRequest(created);
+
+    return c.json(
+      {
+        success: true,
+        message: isChargeable
+          ? 'Amenity requested successfully (Chargeable - ready for folio billing)'
+          : 'Amenity requested successfully (Free - housekeeping notified)',
+        data: mapped,
+      },
+      201
+    );
+  } catch (error: any) {
+    return c.json({ success: false, error: { message: error.message || 'Failed to request amenity' } }, 500);
+  }
+});
+
+reservations.get('/:id/amenities', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const existing = await c.env.DB.prepare('SELECT * FROM reservations WHERE id = ?').bind(id).first<any>();
+    if (!existing) {
+      return c.json({ success: false, error: { code: 'RESERVATION_NOT_FOUND', message: `Reservation with ID ${id} not found` } }, 404);
+    }
+
+    const { results } = await c.env.DB.prepare(
+      'SELECT * FROM reservation_amenity_requests WHERE reservation_id = ? ORDER BY requested_at DESC'
+    ).bind(id).all();
+
+    const mapped = (results || []).map((row) => mapAmenityRequest(row));
+    return c.json({
+      success: true,
+      data: mapped,
+      totalCount: mapped.length,
+    });
+  } catch (error: any) {
+    return c.json({ success: false, error: { message: error.message || 'Failed to fetch amenity requests' } }, 500);
   }
 });
 

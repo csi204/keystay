@@ -39,7 +39,7 @@ describe('Swiss Numerals & Selective Refresh Micro-UX', () => {
     assert.match(code, /font-mono font-medium tracking-tight/);
   });
 
-  it('displays relative refresh timestamp across all 4 portal pages', () => {
+  it('displays relative refresh timestamp or unified auto-refresh badge across front desk portal pages', () => {
     const matrixCode = fs.readFileSync(
       path.resolve(process.cwd(), 'apps/web/src/pages/front-desk/RoomMatrixPage.tsx'),
       'utf-8'
@@ -57,9 +57,9 @@ describe('Swiss Numerals & Selective Refresh Micro-UX', () => {
       'utf-8'
     );
 
-    assert.match(matrixCode, /formatRelativeTime/);
+    assert.match(matrixCode, /refreshTimeStr/);
     assert.match(reservationsCode, /formatRelativeTime/);
-    assert.match(operationsCode, /formatRelativeTime/);
+    assert.match(operationsCode, /refreshTimeStr/);
     assert.match(cashierCode, /formatRelativeTime/);
   });
 });

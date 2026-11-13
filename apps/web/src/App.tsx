@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
 import { I18nProvider } from './lib/i18n';
+import { ToastProvider } from './context/ToastContext';
+import { ThemeProvider } from '@/context/ThemeContext';
+import { ToastContainer } from './components/common/ToastContainer';
 import { LoginPage } from './pages/auth/LoginPage';
 import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
@@ -170,24 +173,27 @@ export const App: React.FC = () => {
   };
 
   return (
-    <I18nProvider>
-      {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
+    <ToastProvider>
+      <I18nProvider>
+        <ThemeProvider>
+          {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
+          <ToastContainer />
 
-      <BrowserRouter
-        future={{
-          v7_startTransition: true,
-          v7_relativeSplatPath: true,
-        }}
-      >
-        <React.Suspense
-          fallback={
-            <div className="min-h-screen bg-[#F7F9FB] flex flex-col items-center justify-center p-8 text-slate-500">
-              <div className="w-9 h-9 rounded-full border-2 border-[#F97316] border-t-transparent animate-spin mb-3" />
-              <span className="text-xs font-medium">กำลังโหลดโมดูลระบบ...</span>
-            </div>
-          }
+          <BrowserRouter
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true,
+          }}
         >
-          <Routes>
+          <React.Suspense
+            fallback={
+              <div className="min-h-screen bg-[#F7F9FB] flex flex-col items-center justify-center p-8 text-slate-500">
+                <div className="w-9 h-9 rounded-full border-2 border-[#F97316] border-t-transparent animate-spin mb-3" />
+                <span className="text-xs font-medium">กำลังโหลดโมดูลระบบ...</span>
+              </div>
+            }
+          >
+            <Routes>
           {/* หน้าแรก: ถ้ามี token ให้ส่งต่อไปยังหน้าตามบทบาท ถ้าไม่มี token ส่งไป /login ตั้งแต่เริ่มโหลดเพจทันที */}
           <Route
             path="/"
@@ -230,6 +236,14 @@ export const App: React.FC = () => {
           />
           <Route
             path="/front-desk/billing"
+            element={
+              <RequireAuth>
+                <CashierFolioPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/front-desk/cashier"
             element={
               <RequireAuth>
                 <CashierFolioPage />
@@ -346,9 +360,11 @@ export const App: React.FC = () => {
           {/* URL อื่นๆ ทั้งหมดที่ไม่มีในระบบ: แสดง 404 พร้อมปุ่มย้อนกลับ */}
           <Route path="*" element={<NotFound404Page />} />
         </Routes>
-        </React.Suspense>
-      </BrowserRouter>
-    </I18nProvider>
+          </React.Suspense>
+        </BrowserRouter>
+        </ThemeProvider>
+      </I18nProvider>
+    </ToastProvider>
   );
 };
 

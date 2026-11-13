@@ -3,6 +3,7 @@ import { DetailedBill } from '../../hooks/useBilling';
 import { useI18n } from '../../lib/i18n';
 import { th } from '../../locales/th';
 import { en } from '../../locales/en';
+import { getAuthUser } from '../../lib/api';
 import { calculateItemTotal, calculateFolioSummary, localizeFolioDescription } from './FolioSplitScreen';
 import { X, Printer } from 'lucide-react';
 
@@ -10,12 +11,16 @@ export interface ReceiptTaxInvoiceModalProps {
   bill: DetailedBill | null;
   isOpen: boolean;
   onClose: () => void;
+  cashierName?: string;
+  paymentMethod?: string;
 }
 
 export const ReceiptTaxInvoiceModal: React.FC<ReceiptTaxInvoiceModalProps> = ({
   bill,
   isOpen,
   onClose,
+  cashierName,
+  paymentMethod: paymentMethodProp,
 }) => {
   const { locale, formatCurrency, formatDate } = useI18n();
   const [invoiceLocale, setInvoiceLocale] = useState<'th' | 'en'>(locale);
@@ -36,6 +41,20 @@ export const ReceiptTaxInvoiceModal: React.FC<ReceiptTaxInvoiceModalProps> = ({
 
   if (!isOpen || !bill) return null;
 
+  const authUser = getAuthUser();
+  const resolvedCashier = cashierName || (
+    authUser?.fullName ||
+    (authUser?.firstName && authUser?.lastName
+      ? `${authUser.firstName} ${authUser.lastName}`
+      : authUser?.firstName || authUser?.username || 'เดียร์ (ธีรภัทร)')
+  );
+  const cashierRoleTitle = authUser?.role === 'owner'
+    ? 'Hotel Owner'
+    : authUser?.role === 'housekeeping'
+    ? 'Housekeeping'
+    : 'Front Desk';
+  const cashierDisplay = `${resolvedCashier} · ${cashierRoleTitle}`;
+
   const invT = (key: string): string => {
     if (invoiceLocale === 'th') return th[key] || en[key] || key;
     return en[key] || th[key] || key;
@@ -46,52 +65,124 @@ export const ReceiptTaxInvoiceModal: React.FC<ReceiptTaxInvoiceModalProps> = ({
   };
 
   const invoiceNumber = `INV-${bill.id.slice(0, 8).toUpperCase()}`;
+
+  // Date format: DD/MM/YYYY HH:mm
+  const invoiceDateObj = bill.createdAt ? new Date(bill.createdAt) : new Date();
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const formattedDate = !isNaN(invoiceDateObj.getTime())
+    ? `${pad(invoiceDateObj.getDate())}/${pad(invoiceDateObj.getMonth() + 1)}/${invoiceDateObj.getFullYear()} ${pad(invoiceDateObj.getHours())}:${pad(invoiceDateObj.getMinutes())}`
+    : `${pad(new Date().getDate())}/${pad(new Date().getMonth() + 1)}/${new Date().getFullYear()} ${pad(new Date().getHours())}:${pad(new Date().getMinutes())}`;
   const currentDate = formatDate(new Date().toISOString(), 'medium');
 
   const summary = calculateFolioSummary(bill.items, 0, bill.subtotal);
   const paidAmount = parseFloat(bill.paidAmount || '0') || (bill.status === 'paid' ? summary.totalWithVat : 0);
+  const changeAmount = Math.max(0, paidAmount - summary.totalWithVat);
+
+  const primaryPayment = bill.payments && bill.payments.length > 0 ? bill.payments[0] : null;
+  const rawPaymentMethod = paymentMethodProp || primaryPayment?.paymentMethod || (bill as any).paymentMethod || 'cash';
+
+  const formatPaymentMethod = (method?: string) => {
+    switch (method) {
+      case 'credit_card':
+        return invoiceLocale === 'th' ? 'บัตรเครดิต (Credit Card)' : 'Credit Card';
+      case 'qr_promptpay':
+        return invoiceLocale === 'th' ? 'QR พร้อมเพย์ (QR PromptPay)' : 'QR PromptPay';
+      case 'transfer':
+        return invoiceLocale === 'th' ? 'โอนเงิน (Transfer)' : 'Transfer';
+      case 'cash':
+      default:
+        return invoiceLocale === 'th' ? 'เงินสด (Cash)' : 'Cash';
+    }
+  };
+
+  const formatAmount = (val: number | string) => {
+    const num = typeof val === 'number' ? val : parseFloat(String(val) || '0');
+    return isNaN(num)
+      ? '0.00'
+      : num.toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto print:static print:p-0 print:m-0 print:bg-white print:overflow-visible">
       <style>{`
         @media print {
           @page {
-            size: A4 portrait;
-            margin: 12mm;
+            size: 80mm auto;
+            margin: 0mm;
           }
-          body {
+          html, body {
             background: white !important;
-            color: black !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 80mm !important;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
+          }
+          body * {
+            visibility: hidden !important;
+          }
+          .receipt-80mm-paper, .receipt-80mm-paper * {
+            visibility: visible !important;
+          }
+          .receipt-80mm-paper {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 80mm !important;
+            max-width: 80mm !important;
+            min-width: 80mm !important;
+            margin: 0 !important;
+            padding: 4mm 3mm !important;
+            box-shadow: none !important;
+            border: none !important;
+            border-radius: 0 !important;
+            background: white !important;
+            color: black !important;
+            display: block !important;
+          }
+          .print\\:hidden {
+            display: none !important;
           }
         }
       `}</style>
 
-      {/* Backdrop */}
+      {/* Screen Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity print:hidden"
+        className="fixed inset-0 print:hidden"
         onClick={onClose}
+        aria-hidden="true"
       />
 
-      {/* Modal Dialog */}
-      <div className="relative bg-white rounded-xl border border-slate-200 shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto z-10 p-8 print:p-0 print:border-none print:shadow-none print:max-w-none print:w-full animate-in fade-in zoom-in-95 duration-150">
-        {/* Top Control Bar (Hidden on print) */}
-        <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-200 print:hidden">
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              {invT('invoice.preview')}
-            </span>
+      <div className="relative z-10 flex flex-col items-center my-auto py-4 print:static print:p-0 print:m-0 print:py-0 print:my-0">
+        {/* Top Action Toolbar (hidden during print) */}
+        <div className="w-[360px] max-w-[360px] mb-3 bg-slate-800 text-white rounded-lg p-3 shadow-xl border border-slate-700/60 print:hidden">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-700/80">
+            <h2 className="text-xs font-semibold text-slate-200">
+              ตัวอย่างสลิปใบเสร็จรับเงิน (80mm Thermal POS Slip)
+            </h2>
+            <button
+              type="button"
+              onClick={onClose}
+              className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center text-slate-400 hover:text-white rounded-lg transition-colors active:scale-[0.98]"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
 
-            {/* Bilingual preview/print toggle */}
-            <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
+          <div className="flex items-center justify-between pt-2.5 gap-2">
+            {/* Language toggle: TH / EN */}
+            <div className="flex items-center bg-slate-900/90 p-0.5 rounded-lg border border-slate-700 text-xs">
               <button
                 type="button"
                 onClick={() => setInvoiceLocale('th')}
-                className={`px-2.5 py-0.5 rounded font-semibold transition-colors ${
+                className={`px-3 py-1.5 rounded-md font-semibold transition-colors ${
                   invoiceLocale === 'th'
-                    ? 'bg-white text-slate-900 shadow-xs'
-                    : 'text-slate-500 hover:text-slate-800'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-slate-400 hover:text-white'
                 }`}
               >
                 TH
@@ -99,155 +190,252 @@ export const ReceiptTaxInvoiceModal: React.FC<ReceiptTaxInvoiceModalProps> = ({
               <button
                 type="button"
                 onClick={() => setInvoiceLocale('en')}
-                className={`px-2.5 py-0.5 rounded font-semibold transition-colors ${
+                className={`px-3 py-1.5 rounded-md font-semibold transition-colors ${
                   invoiceLocale === 'en'
-                    ? 'bg-white text-slate-900 shadow-xs'
-                    : 'text-slate-500 hover:text-slate-800'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-slate-400 hover:text-white'
                 }`}
               >
                 EN
               </button>
             </div>
-          </div>
 
-          <div className="flex items-center gap-2">
+            {/* Print button */}
             <button
+              type="button"
               onClick={handlePrint}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-md transition-colors shadow-sm"
+              className="inline-flex items-center justify-center px-3.5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg shadow-sm transition-all active:scale-[0.98] min-h-[44px]"
             >
-              <Printer className="w-3.5 h-3.5" />
-              <span>{invT('invoice.print')}</span>
-            </button>
-            <button
-              onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-slate-600 rounded transition-colors"
-            >
-              <X className="w-4 h-4" />
+              <Printer className="w-4 h-4 mr-1.5" strokeWidth={1.75} aria-hidden="true" />
+              <span>พิมพ์สลิปใบเสร็จ (80mm)</span>
             </button>
           </div>
         </div>
 
-        {/* Printable Invoice Sheet */}
-        <div className="space-y-6 text-slate-900 font-sans print:text-black">
+        {/* 80mm Thermal Receipt Paper */}
+        <div className="receipt-80mm-paper w-[360px] max-w-[360px] print:w-[80mm] print:max-w-[80mm] bg-white text-slate-900 print:text-black shadow-2xl rounded-sm p-5 print:p-0 font-mono tabular-nums text-xs leading-relaxed animate-in fade-in zoom-in-95 duration-150">
           {/* Header */}
-          <div className="flex justify-between items-start pb-4 border-b-2 border-slate-900">
-            <div>
-              <h1 className="text-xl font-bold tracking-tight text-slate-900">{invT('invoice.hotelName')}</h1>
-              <p className="text-xs text-slate-500 print:text-slate-700 mt-0.5">
-                {invT('invoice.hotelAddress')}
-              </p>
-              <p className="text-xs text-slate-500 print:text-slate-700 font-mono tabular-nums tracking-tight mt-0.5">
-                {invT('invoice.taxId')}
-              </p>
+          <div className="text-center space-y-0.5">
+            <div className="font-bold text-sm text-slate-950 print:text-black">
+              *** โรงแรม คีย์สเตย์ (KEYSTAY HOTEL) ***
             </div>
-            <div className="text-right">
-              <span className="text-base font-bold tracking-tight block text-slate-900">
-                {invoiceLocale === 'th' ? 'ใบเสร็จรับเงิน/ใบกำกับภาษีอย่างย่อ' : invT('invoice.title')}
+            <div className="text-[11px] text-slate-600 print:text-black">
+              999 ถ.พหลโยธิน แขวงลาดยาว เขตจตุจักร กรุงเทพฯ 10900
+            </div>
+            <div className="text-[11px] text-slate-600 print:text-black">
+              เลขประจำตัวผู้เสียภาษี (TAX ID): 0-1055-67091-23-4
+            </div>
+            <div className="text-[11px] text-slate-600 print:text-black font-medium">
+              เครื่อง POS: POS-01 (Front Desk)
+            </div>
+          </div>
+
+          {/* Dashed divider */}
+          <div className="border-t border-dashed border-slate-300 print:border-black my-2.5" />
+
+          {/* Title: Tax Invoice (ABB) / Receipt */}
+          <div className="text-center font-bold">
+            <div className="text-sm tracking-tight text-slate-950 print:text-black">
+              {/* ใบเสร็จรับเงิน/ใบกำกับภาษีอย่างย่อ */}
+              ใบเสร็จรับเงิน / ใบกำกับภาษีอย่างย่อ
+            </div>
+            <div className="text-xs tracking-wider text-slate-800 print:text-black">
+              TAX INVOICE (ABB) / RECEIPT
+            </div>
+          </div>
+
+          {/* Dashed divider */}
+          <div className="border-t border-dashed border-slate-300 print:border-black my-2.5" />
+
+          {/* Metadata block */}
+          <div className="space-y-1 text-xs">
+            <div className="flex justify-between gap-1">
+              <span className="text-slate-600 print:text-black shrink-0">เลขที่ / NO :</span>
+              <span className="font-bold text-slate-900 print:text-black text-right truncate">
+                {invoiceNumber}
               </span>
-              <span className="text-[10px] text-slate-500 font-mono tracking-tight block uppercase">
-                {invoiceLocale === 'th' ? 'TAX INVOICE (ABB)' : 'ORIGINAL'}
+            </div>
+            <div className="flex justify-between gap-1">
+              <span className="text-slate-600 print:text-black shrink-0">วันที่ / DATE:</span>
+              <span className="text-right truncate">{formattedDate}</span>
+            </div>
+            <div className="flex justify-between gap-1">
+              <span className="text-slate-600 print:text-black shrink-0">ห้อง / ROOM :</span>
+              <span className="font-semibold text-slate-900 print:text-black text-right truncate">
+                {bill.roomNumber || '—'}
               </span>
-              <span className="text-xs text-slate-600 font-mono tabular-nums tracking-tight block mt-1">
-                {invT('invoice.number')} {invoiceNumber}
+            </div>
+            <div className="flex justify-between gap-1">
+              <span className="text-slate-600 print:text-black shrink-0">ลูกค้า / GUEST:</span>
+              <span className="text-right truncate">
+                {bill.guestName || (invoiceLocale === 'th' ? 'ลูกค้าทั่วไป (Walk-in)' : 'Walk-in Guest')}
               </span>
-              <span className="text-xs text-slate-600 font-mono tabular-nums tracking-tight block">
-                {invT('invoice.date')} {currentDate}
+            </div>
+            <div className="flex justify-between gap-1">
+              <span className="text-slate-600 print:text-black shrink-0">แคชเชียร์ / CASHIER:</span>
+              <span className="font-medium text-slate-900 print:text-black text-right truncate">
+                {resolvedCashier} ({cashierRoleTitle})
+              </span>
+            </div>
+            <div className="sr-only print:hidden">{cashierDisplay}</div>
+          </div>
+
+          {/* Dashed divider */}
+          <div className="border-t border-dashed border-slate-300 print:border-black my-2.5" />
+
+          {/* Items section */}
+          <div className="space-y-2">
+            {bill.items && bill.items.length > 0 ? (
+              bill.items.map((item, idx) => {
+                const itemTotal = calculateItemTotal(item);
+                return (
+                  <div key={item.id || idx} className="space-y-0.5">
+                    {/* Line 1: [Index]. [Description] */}
+                    <div className="font-medium text-slate-900 print:text-black truncate">
+                      {idx + 1}. {localizeFolioDescription(item.description, invoiceLocale)}
+                    </div>
+                    {/* Line 2:    [Qty] x [UnitPrice]               [TotalAmount] */}
+                    <div className="flex justify-between pl-3 text-slate-600 print:text-black">
+                      <span>
+                        {item.quantity} x {formatAmount(item.unitPrice || 0)}
+                      </span>
+                      <span className="font-medium text-slate-900 print:text-black">
+                        {formatAmount(itemTotal)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="space-y-0.5">
+                <div className="font-medium text-slate-900 print:text-black truncate">
+                  1. {invT('invoice.roomAndService')}
+                </div>
+                <div className="flex justify-between pl-3 text-slate-600 print:text-black">
+                  <span>1 x {formatAmount(summary.subtotal)}</span>
+                  <span className="font-medium text-slate-900 print:text-black">
+                    {formatAmount(summary.subtotal)}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Dashed divider */}
+          <div className="border-t border-dashed border-slate-300 print:border-black my-2.5" />
+
+          {/* Calculations section */}
+          <div className="space-y-1 text-xs">
+            <div className="flex justify-between">
+              <span className="text-slate-600 print:text-black">ยอดรวมก่อนภาษี (SUBTOTAL) :</span>
+              <span className="font-medium text-slate-900 print:text-black">
+                {formatAmount(summary.subtotal)}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-600 print:text-black">ภาษีมูลค่าเพิ่ม 7% (VAT 7%) :</span>
+              <span className="font-medium text-slate-900 print:text-black">
+                {formatAmount(summary.vat)}
+              </span>
+            </div>
+            <div className="flex justify-between font-bold text-slate-950 print:text-black pt-0.5 text-sm">
+              <span>ยอดรวมสุทธิ (TOTAL NET) :</span>
+              <span>{formatAmount(summary.totalWithVat)}</span>
+            </div>
+
+            {/* Dashed divider */}
+            <div className="border-t border-dashed border-slate-300 print:border-black my-2" />
+
+            <div className="flex justify-between">
+              <span className="text-slate-600 print:text-black">ชำระโดย (PAID BY) :</span>
+              <span className="font-medium text-slate-900 print:text-black">
+                {formatPaymentMethod(rawPaymentMethod)}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-600 print:text-black">รับเงินมา (AMOUNT PAID) :</span>
+              <span className="font-medium text-slate-900 print:text-black">
+                {formatAmount(paidAmount)}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-600 print:text-black">เงินทอน (CHANGE) :</span>
+              <span className="font-medium text-slate-900 print:text-black">
+                {formatAmount(changeAmount)}
               </span>
             </div>
           </div>
 
-          {/* Guest / Bill Details */}
-          <div className="grid grid-cols-2 gap-4 text-xs bg-slate-50 p-4 rounded-lg border border-slate-200 print:bg-transparent print:p-0 print:border-none">
-            <div>
-              <span className="text-slate-500 print:text-slate-700 block mb-0.5">{invT('invoice.guestName')}</span>
-              <span className="font-semibold text-slate-900 print:text-black text-sm">
-                {bill.guestName || invT('invoice.walkInGuest')}
-              </span>
-              <span className="text-slate-600 print:text-slate-800 block text-[11px] mt-0.5">
-                {invT('invoice.room')} {invT('common.room')} <span className="font-mono font-medium tabular-nums tracking-tight">{bill.roomNumber || '—'}</span>
-              </span>
+          {/* Dashed divider */}
+          <div className="border-t border-dashed border-slate-300 print:border-black my-2.5" />
+
+          {/* Footer section */}
+          <div className="text-center space-y-2 pt-1">
+            <div className="text-[11px] text-slate-600 print:text-black font-medium">
+              (ราคารวมภาษีมูลค่าเพิ่ม 7% แล้ว / VAT 7% INCLUDED)
             </div>
 
-            <div className="text-right">
-              <span className="text-slate-500 print:text-slate-700 block mb-0.5">{invT('invoice.cashier')}</span>
-              <span className="font-semibold text-slate-900 print:text-black">{invT('invoice.cashierName')}</span>
-              <span className="text-slate-600 print:text-slate-800 font-mono tabular-nums tracking-tight block text-[11px] mt-0.5">
-                {invT('common.status')}: {bill.status === 'paid' ? invT('payment.success') : invT('folio.pending')}
-              </span>
-            </div>
-          </div>
-
-          {/* Itemized Table */}
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-slate-300 print:border-slate-900 font-semibold text-xs text-slate-700 print:text-black">
-                <th className="py-2.5 px-3 font-mono tabular-nums tracking-tight">{invT('invoice.seq')}</th>
-                <th className="py-2.5 px-3">{invT('folio.item')}</th>
-                <th className="py-2.5 px-3 text-center font-mono tabular-nums tracking-tight">{invT('folio.qty')}</th>
-                <th className="py-2.5 px-3 text-right font-mono tabular-nums tracking-tight">{invT('folio.unitPrice')}</th>
-                <th className="py-2.5 px-3 text-right font-mono tabular-nums tracking-tight">{invT('folio.amount')}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 print:divide-slate-300">
-              {bill.items && bill.items.length > 0 ? (
-                bill.items.map((item, idx) => (
-                  <tr key={item.id || idx}>
-                    <td className="text-sm py-2 px-3 font-mono tabular-nums tracking-tight text-slate-500 print:text-black">{idx + 1}</td>
-                    <td className="text-sm py-2 px-3 font-medium text-slate-900 print:text-black">
-                      {localizeFolioDescription(item.description, invoiceLocale)}
-                    </td>
-                    <td className="text-sm py-2 px-3 text-center font-mono tabular-nums tracking-tight text-slate-900 print:text-black">{item.quantity}</td>
-                    <td className="text-sm py-2 px-3 text-right font-mono tabular-nums tracking-tight text-slate-900 print:text-black">
-                      {formatCurrency(item.unitPrice || 0)}
-                    </td>
-                    <td className="text-sm py-2 px-3 text-right font-mono tabular-nums tracking-tight font-medium text-slate-900 print:text-black">
-                      {formatCurrency(calculateItemTotal(item))}
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td className="text-sm py-2 px-3 font-mono tabular-nums tracking-tight text-slate-500 print:text-black">1</td>
-                  <td className="text-sm py-2 px-3 font-medium text-slate-900 print:text-black">{invT('invoice.roomAndService')}</td>
-                  <td className="text-sm py-2 px-3 text-center font-mono tabular-nums tracking-tight text-slate-900 print:text-black">1</td>
-                  <td className="text-sm py-2 px-3 text-right font-mono tabular-nums tracking-tight text-slate-900 print:text-black">{formatCurrency(summary.subtotal)}</td>
-                  <td className="text-sm py-2 px-3 text-right font-mono tabular-nums tracking-tight font-medium text-slate-900 print:text-black">{formatCurrency(summary.subtotal)}</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-
-          {/* Calculation Box */}
-          <div className="pt-4 border-t border-slate-300 print:border-slate-900 flex justify-end">
-            <div className="w-72 space-y-2 text-sm font-mono tabular-nums tracking-tight">
-              <div className="flex justify-between text-slate-600 print:text-black">
-                <span>{invT('folio.subtotal')}:</span>
-                <span>{formatCurrency(summary.subtotal)}</span>
-              </div>
-              <div className="flex justify-between text-slate-600 print:text-black">
-                <span>{invT('folio.vat')}:</span>
-                <span>{formatCurrency(summary.vat)}</span>
-              </div>
-              <div className="flex justify-between items-baseline pt-2 border-t border-slate-200 print:border-slate-800">
-                <span className="font-bold text-slate-900 print:text-black">{invT('invoice.netTotal')}</span>
-                <span className="text-base sm:text-lg font-bold font-mono text-slate-950 print:text-black">{formatCurrency(summary.totalWithVat)}</span>
-              </div>
-              <div className="flex justify-between text-emerald-700 print:text-black font-semibold pt-1">
-                <span>{invT('invoice.paidAmount')}</span>
-                <span>{formatCurrency(paidAmount)}</span>
+            {/* Authentic SVG Barcode & Simulation */}
+            <div className="py-1 flex flex-col items-center justify-center">
+              <svg
+                viewBox="0 0 200 40"
+                className="w-48 h-9 print:w-44 print:h-8"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <rect x="0" y="0" width="3" height="30" />
+                <rect x="5" y="0" width="1.5" height="30" />
+                <rect x="9" y="0" width="4.5" height="30" />
+                <rect x="16" y="0" width="1.5" height="30" />
+                <rect x="20" y="0" width="3" height="30" />
+                <rect x="25" y="0" width="6" height="30" />
+                <rect x="33" y="0" width="1.5" height="30" />
+                <rect x="37" y="0" width="3" height="30" />
+                <rect x="42" y="0" width="4.5" height="30" />
+                <rect x="49" y="0" width="1.5" height="30" />
+                <rect x="53" y="0" width="6" height="30" />
+                <rect x="61" y="0" width="3" height="30" />
+                <rect x="66" y="0" width="1.5" height="30" />
+                <rect x="70" y="0" width="4.5" height="30" />
+                <rect x="77" y="0" width="3" height="30" />
+                <rect x="82" y="0" width="1.5" height="30" />
+                <rect x="86" y="0" width="6" height="30" />
+                <rect x="94" y="0" width="3" height="30" />
+                <rect x="99" y="0" width="1.5" height="30" />
+                <rect x="103" y="0" width="4.5" height="30" />
+                <rect x="110" y="0" width="3" height="30" />
+                <rect x="115" y="0" width="1.5" height="30" />
+                <rect x="119" y="0" width="6" height="30" />
+                <rect x="127" y="0" width="1.5" height="30" />
+                <rect x="131" y="0" width="3" height="30" />
+                <rect x="136" y="0" width="4.5" height="30" />
+                <rect x="143" y="0" width="3" height="30" />
+                <rect x="148" y="0" width="1.5" height="30" />
+                <rect x="152" y="0" width="6" height="30" />
+                <rect x="160" y="0" width="3" height="30" />
+                <rect x="165" y="0" width="1.5" height="30" />
+                <rect x="169" y="0" width="4.5" height="30" />
+                <rect x="176" y="0" width="1.5" height="30" />
+                <rect x="180" y="0" width="3" height="30" />
+                <rect x="185" y="0" width="6" height="30" />
+                <rect x="193" y="0" width="3" height="30" />
+                <rect x="198" y="0" width="2" height="30" />
+                <text x="100" y="38" textAnchor="middle" fontSize="9" fontFamily="monospace" letterSpacing="1.5">
+                  {invoiceNumber}
+                </text>
+              </svg>
+              <div className="text-[10px] tracking-widest text-slate-400 print:text-black font-mono select-none">
+                |||| | ||||| || |||||||| ||||
               </div>
             </div>
-          </div>
 
-          {/* Footer Signature */}
-          <div className="pt-12 grid grid-cols-2 gap-8 text-center text-xs text-slate-600 print:text-black">
-            <div>
-              <div className="border-b border-slate-400 print:border-black w-48 mx-auto mb-1.5" />
-              <span>{invT('invoice.guestSignature')}</span>
+            <div className="font-bold text-xs tracking-tight text-slate-900 print:text-black">
+              *** ขอบคุณที่ใช้บริการ / THANK YOU ***
             </div>
-            <div>
-              <div className="border-b border-slate-400 print:border-black w-48 mx-auto mb-1.5" />
-              <span>{invT('invoice.cashierSignature')}</span>
+
+            {/* Cashier signature note */}
+            <div className="text-[10px] text-slate-500 print:text-black pt-1">
+              <span>{invT('invoice.cashierSignature')}: {resolvedCashier}</span>
             </div>
           </div>
         </div>

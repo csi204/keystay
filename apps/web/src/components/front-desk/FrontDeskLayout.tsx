@@ -4,6 +4,7 @@ import { Logo } from '@/components/common/Logo';
 import {
   LayoutGrid,
   UserCheck,
+  CreditCard,
   ShieldCheck,
   Clock,
   Globe,
@@ -13,20 +14,27 @@ import {
   PanelLeft,
   Menu,
   X,
+  ReceiptText,
+  Search,
+  Keyboard,
 } from 'lucide-react';
 import { getAuthUser, clearAuthSession } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { QuickEmergencyDrawer } from './QuickEmergencyDrawer';
+import { GlobalCommandPalette } from './GlobalCommandPalette';
+import { KeyboardShortcutsModal } from '@/components/common/KeyboardShortcutsModal';
 
 // Backward compatibility references for existing layout tests:
 // t('nav.roomMatrix')
 // t('nav.reservations')
 // t('nav.dailyOperations')
 // t('nav.billing')
+// t('nav.matrixAndReservations')
+// t('nav.operationsAndCashier')
 
 interface FrontDeskLayoutProps {
   children: React.ReactNode;
-  activeTab?: 'matrix' | 'reservations' | 'operations' | 'billing';
+  activeTab?: 'matrix' | 'reservations' | 'operations' | 'billing' | 'cashier';
 }
 
 export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
@@ -38,6 +46,68 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
   const { locale, setLocale, t } = useI18n();
   const [isEmergencyOpen, setIsEmergencyOpen] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState<boolean>(false);
+
+  // Global Shortcuts Engine (Ctrl+K, Cmd+K, /, ?, Esc)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isInput =
+        target?.tagName === 'INPUT' ||
+        target?.tagName === 'TEXTAREA' ||
+        target?.tagName === 'SELECT' ||
+        Boolean(target?.isContentEditable);
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+        return;
+      }
+
+      if (e.key === '/' && !isInput) {
+        e.preventDefault();
+        setIsCommandPaletteOpen(true);
+        return;
+      }
+
+      if (e.key === '?' && !isInput) {
+        e.preventDefault();
+        setIsShortcutsOpen((prev) => !prev);
+        return;
+      }
+
+      if (e.key === 'Escape') {
+        if (isShortcutsOpen) {
+          setIsShortcutsOpen(false);
+          return;
+        }
+        if (isCommandPaletteOpen) {
+          setIsCommandPaletteOpen(false);
+          return;
+        }
+        if (isMobileMenuOpen) {
+          setIsMobileMenuOpen(false);
+          return;
+        }
+        if (isEmergencyOpen) {
+          setIsEmergencyOpen(false);
+          return;
+        }
+      }
+    };
+
+    const handleOpenShortcuts = () => {
+      setIsShortcutsOpen(true);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('open-keyboard-shortcuts', handleOpenShortcuts);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('open-keyboard-shortcuts', handleOpenShortcuts);
+    };
+  }, [isShortcutsOpen, isCommandPaletteOpen, isMobileMenuOpen, isEmergencyOpen]);
 
   // Sidebar Collapsible state (remember in localStorage)
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
@@ -89,11 +159,11 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
     navigate('/login');
   };
 
-  // 2 Primary Consolidated Nav Workflows
+  // Primary Consolidated Nav Workflows
   const navTabs = [
     {
       key: 'matrix',
-      title: t('nav.matrixAndReservations'),
+      title: locale === 'th' ? 'ผังห้องพัก' : 'Room Matrix',
       path: '/front-desk/room-matrix',
       icon: LayoutGrid,
       isActive:
@@ -104,13 +174,22 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
     },
     {
       key: 'operations',
-      title: t('nav.operationsAndCashier'),
+      title: locale === 'th' ? 'เช็คอิน & เช็คเอาต์' : 'Check-In & Out',
       path: '/front-desk/daily-operations',
       icon: UserCheck,
       isActive:
         activeTab === 'operations' ||
+        location.pathname === '/front-desk/daily-operations',
+    },
+    {
+      key: 'cashier',
+      title: locale === 'th' ? 'แคชเชียร์ & บิล' : 'Cashier & Folios',
+      path: '/front-desk/cashier',
+      icon: CreditCard,
+      isActive:
+        activeTab === 'cashier' ||
         activeTab === 'billing' ||
-        location.pathname === '/front-desk/daily-operations' ||
+        location.pathname === '/front-desk/cashier' ||
         location.pathname === '/front-desk/billing',
     },
   ];
@@ -135,6 +214,17 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Mobile Quick Search / Omnibar Button */}
+          <button
+            type="button"
+            onClick={() => setIsCommandPaletteOpen(true)}
+            className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
+            title="ค้นหาด่วนหรือพิมพ์คำสั่ง (Ctrl+K)"
+            aria-label="ค้นหาด่วนหรือพิมพ์คำสั่ง (Ctrl+K)"
+          >
+            <Search className="w-5 h-5 text-slate-600" strokeWidth={1.75} aria-hidden="true" />
+          </button>
+
           {/* Mobile Quick Emergency Contact */}
           <button
             type="button"
@@ -181,16 +271,21 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
       {/* 2. MOBILE DRAWER OVERLAY (< 768px)                                       */}
       {/* ========================================================================= */}
       {isMobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-50 flex">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Navigation menu"
+          className="md:hidden fixed inset-0 z-50 flex"
+        >
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity"
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
             onClick={() => setIsMobileMenuOpen(false)}
             aria-hidden="true"
           />
 
           {/* Slide-over panel */}
-          <div className="relative w-72 max-w-[85vw] bg-white h-full shadow-2xl flex flex-col justify-between z-10 animate-in slide-in-from-left duration-200">
+          <div className="relative w-72 max-w-[85vw] bg-white h-full shadow-2xl flex flex-col justify-between z-10 animate-in slide-in-from-left duration-200 border-r border-slate-200">
             {/* Drawer Header */}
             <div>
               <div className="h-16 px-4 border-b border-slate-200 flex items-center justify-between">
@@ -259,10 +354,29 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
               {/* Monospace Clock */}
               {currentTime && (
                 <div className="flex items-center justify-center gap-2 text-xs font-mono tabular-nums text-slate-600 bg-white py-2 px-3 rounded-lg border border-slate-200">
-                  <Clock className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />
+                  <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" aria-hidden="true" />
                   <span>{currentTime}</span>
                 </div>
               )}
+
+              {/* Keyboard Shortcuts trigger */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  setIsShortcutsOpen(true);
+                }}
+                className="w-full py-2 px-3 text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 rounded-lg border border-slate-200 transition-colors flex items-center justify-between min-h-[40px]"
+                title={locale === 'th' ? 'ดูคีย์ลัดทั้งหมด (?)' : 'Keyboard shortcuts (?)'}
+              >
+                <div className="flex items-center gap-2">
+                  <Keyboard className="w-4 h-4 text-slate-500" strokeWidth={1.75} aria-hidden="true" />
+                  <span>{locale === 'th' ? 'คีย์ลัดระบบ' : 'Keyboard Shortcuts'}</span>
+                </div>
+                <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-slate-100 text-slate-500 rounded border border-slate-200">
+                  ?
+                </kbd>
+              </button>
 
               {/* User profile & logout */}
               <div className="flex items-center justify-between pt-2 border-t border-slate-200/80">
@@ -340,6 +454,36 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
                 <PanelLeftClose className="w-4 h-4" aria-hidden="true" />
               )}
             </button>
+          </div>
+
+          {/* Omnibar Search Trigger Button */}
+          <div className={isCollapsed ? 'p-2 flex justify-center' : 'px-3 pt-3 pb-1'}>
+            {isCollapsed ? (
+              <button
+                type="button"
+                onClick={() => setIsCommandPaletteOpen(true)}
+                title="ค้นหาด่วนหรือพิมพ์คำสั่ง... (Ctrl+K)"
+                aria-label="ค้นหาด่วนหรือพิมพ์คำสั่ง... (Ctrl+K)"
+                className="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors"
+              >
+                <Search className="w-4 h-4 text-slate-400" strokeWidth={1.75} />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsCommandPaletteOpen(true)}
+                className="w-full flex items-center justify-between px-3 py-2 text-xs text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-lg border border-slate-200 transition-colors shadow-2xs"
+                aria-label="ค้นหาด่วนหรือพิมพ์คำสั่ง (Ctrl+K)"
+              >
+                <div className="flex items-center gap-2 truncate">
+                  <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" strokeWidth={1.75} />
+                  <span className="truncate">ค้นหาด่วนหรือพิมพ์คำสั่ง...</span>
+                </div>
+                <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-white border border-slate-300 rounded text-slate-600 shrink-0">
+                  Ctrl K
+                </kbd>
+              </button>
+            )}
           </div>
 
           {/* Navigation Menu Links */}
@@ -462,6 +606,34 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
             </div>
           )}
 
+          {/* Keyboard Shortcuts Trigger Button */}
+          {isCollapsed ? (
+            <button
+              type="button"
+              onClick={() => setIsShortcutsOpen(true)}
+              title={locale === 'th' ? 'ดูคีย์ลัดทั้งหมด (?)' : 'Keyboard shortcuts (?)'}
+              aria-label="Keyboard shortcuts"
+              className="w-full flex items-center justify-center p-1.5 text-xs font-bold text-slate-700 bg-white hover:bg-slate-100 rounded-md border border-slate-200 shadow-2xs transition-colors"
+            >
+              <Keyboard className="w-3.5 h-3.5 text-slate-500" strokeWidth={1.75} aria-hidden="true" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsShortcutsOpen(true)}
+              className="w-full flex items-center justify-between px-2.5 py-1.5 text-xs font-medium text-slate-600 bg-white hover:bg-slate-50 hover:text-slate-900 rounded-md border border-slate-200 shadow-2xs transition-colors"
+              title={locale === 'th' ? 'ดูคีย์ลัดทั้งหมด (?)' : 'Keyboard shortcuts (?)'}
+            >
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Keyboard className="w-3.5 h-3.5 text-slate-400 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+                <span className="truncate">{locale === 'th' ? 'คีย์ลัดระบบ' : 'Shortcuts'}</span>
+              </div>
+              <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-slate-100 text-slate-500 rounded border border-slate-200">
+                ?
+              </kbd>
+            </button>
+          )}
+
           {/* User Profile Info & Logout */}
           <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
             {isCollapsed ? (
@@ -537,6 +709,22 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
       <QuickEmergencyDrawer
         isOpen={isEmergencyOpen}
         onClose={() => setIsEmergencyOpen(false)}
+      />
+
+      {/* ========================================================================= */}
+      {/* 6. GLOBAL COMMAND PALETTE (Ctrl+K / / Omnibar)                             */}
+      {/* ========================================================================= */}
+      <GlobalCommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+      />
+
+      {/* ========================================================================= */}
+      {/* 7. KEYBOARD SHORTCUTS CHEATSHEET MODAL (?)                                */}
+      {/* ========================================================================= */}
+      <KeyboardShortcutsModal
+        isOpen={isShortcutsOpen}
+        onClose={() => setIsShortcutsOpen(false)}
       />
     </div>
   );

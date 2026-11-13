@@ -13,29 +13,189 @@ import { BillPaidEvent } from '@keystay/events';
 
 const bills = new Hono<{ Bindings: Env }>();
 
+const migratedBillingSchemaDbs = new WeakSet<D1Database>();
+
+/**
+ * Idempotent defensive migration for local Wrangler/Miniflare D1 SQLite databases
+ * created before `bill_items.is_paid` and `bills.service_charge_rate` were added to schema.sql.
+ */
+export async function ensureBillItemsIsPaidColumn(db: D1Database): Promise<void> {
+  if (migratedBillingSchemaDbs.has(db)) return;
+  const statements = [
+    'ALTER TABLE bill_items ADD COLUMN is_paid INTEGER NOT NULL DEFAULT 0',
+    'ALTER TABLE bills ADD COLUMN service_charge_rate REAL NOT NULL DEFAULT 0.10',
+  ];
+  for (const sql of statements) {
+    try {
+      await db.prepare(sql).run();
+    } catch (err: any) {
+      const msg = String(err?.message || err || '').toLowerCase();
+      if (!msg.includes('duplicate column') && !msg.includes('already exists')) {
+        throw err;
+      }
+    }
+  }
+
+  // Upgrade legacy `bills` table CHECK(status IN ...) if it was created before 'unpaid' was added
+  try {
+    const tableRow: any = await db
+      .prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'bills'")
+      .first();
+    const ddl = String(tableRow?.sql || '');
+    if (ddl && !ddl.includes("'unpaid'")) {
+      await db.batch([
+        db.prepare('PRAGMA defer_foreign_keys = ON'),
+        db.prepare(`CREATE TABLE bills_migrated (
+          id TEXT PRIMARY KEY,
+          bill_number TEXT UNIQUE NOT NULL,
+          reservation_id TEXT NOT NULL,
+          guest_name TEXT NOT NULL,
+          room_number TEXT NOT NULL,
+          subtotal REAL NOT NULL DEFAULT 0,
+          discount_amount REAL NOT NULL DEFAULT 0,
+          tax_rate REAL NOT NULL DEFAULT 0.07,
+          tax_amount REAL NOT NULL DEFAULT 0,
+          service_charge_rate REAL NOT NULL DEFAULT 0.10,
+          service_charge REAL NOT NULL DEFAULT 0.10,
+          total_amount REAL NOT NULL DEFAULT 0,
+          deposit_deducted REAL NOT NULL DEFAULT 0,
+          amount_paid REAL NOT NULL DEFAULT 0,
+          amount_due REAL NOT NULL DEFAULT 0,
+          status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'partially_paid', 'paid', 'unpaid', 'refunded', 'void')),
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        )`),
+        db.prepare(`INSERT INTO bills_migrated (
+          id, bill_number, reservation_id, guest_name, room_number,
+          subtotal, discount_amount, tax_rate, tax_amount, service_charge_rate, service_charge,
+          total_amount, deposit_deducted, amount_paid, amount_due, status, created_at, updated_at
+        ) SELECT
+          id, bill_number, reservation_id, guest_name, room_number,
+          subtotal, discount_amount, tax_rate, tax_amount, COALESCE(service_charge_rate, 0.10), service_charge,
+          total_amount, deposit_deducted, amount_paid, amount_due, status, created_at, updated_at
+        FROM bills`),
+        db.prepare('DROP TABLE bills'),
+        db.prepare('ALTER TABLE bills_migrated RENAME TO bills'),
+        db.prepare('CREATE INDEX IF NOT EXISTS idx_bills_reservation ON bills(reservation_id)'),
+        db.prepare('CREATE INDEX IF NOT EXISTS idx_bills_status ON bills(status)'),
+        db.prepare('CREATE INDEX IF NOT EXISTS idx_bills_room ON bills(room_number)'),
+        db.prepare('PRAGMA defer_foreign_keys = OFF'),
+      ]);
+    }
+  } catch {
+    // Ignore if sqlite_master inspection is unsupported in a mock DB
+  }
+
+  migratedBillingSchemaDbs.add(db);
+}
+
+bills.use('*', async (c, next) => {
+  await ensureBillItemsIsPaidColumn(c.env.DB);
+  await next();
+});
+
+/**
+ * Resolves a payment method from raw alias/code/name or ID into a valid `payment_methods` row
+ * so D1 foreign keys never fail on `'cash'`, `'transfer'`, or `'upfront_checkin'`.
+ */
+export async function resolvePaymentMethod(
+  db: D1Database,
+  rawMethod?: string,
+  rawMethodId?: string
+): Promise<{ id: string; name: string }> {
+  const rawInput = (rawMethodId || rawMethod || '').trim();
+  const normalizedMethod = rawInput.toLowerCase().replace(/[-_]/g, '');
+  let mappedCodeOrId: string | null = null;
+  if (normalizedMethod.includes('cash')) {
+    mappedCodeOrId = 'pm-cash';
+  } else if (normalizedMethod.includes('card') || normalizedMethod.includes('credit')) {
+    mappedCodeOrId = 'pm-card';
+  } else if (normalizedMethod.includes('qr') || normalizedMethod.includes('promptpay')) {
+    mappedCodeOrId = 'pm-qr';
+  } else if (normalizedMethod.includes('transfer') || normalizedMethod.includes('bank')) {
+    mappedCodeOrId = 'pm-transfer';
+  }
+
+  let paymentMethodRecord: any = null;
+  if (rawMethodId) {
+    paymentMethodRecord = await db
+      .prepare('SELECT * FROM payment_methods WHERE LOWER(id) = LOWER(?) OR id = ?')
+      .bind(rawMethodId, rawMethodId)
+      .first();
+  }
+
+  if (!paymentMethodRecord && (rawMethod || mappedCodeOrId)) {
+    const searchTarget = mappedCodeOrId || rawMethod;
+    paymentMethodRecord = await db
+      .prepare(
+        'SELECT * FROM payment_methods WHERE LOWER(id) = LOWER(?) OR LOWER(code) = LOWER(?) OR LOWER(name) LIKE LOWER(?)'
+      )
+      .bind(searchTarget, searchTarget, `%${searchTarget}%`)
+      .first();
+  }
+
+  if (!paymentMethodRecord && mappedCodeOrId) {
+    paymentMethodRecord = await db
+      .prepare('SELECT * FROM payment_methods WHERE id = ?')
+      .bind(mappedCodeOrId)
+      .first();
+  }
+
+  if (!paymentMethodRecord) {
+    paymentMethodRecord = await db
+      .prepare('SELECT * FROM payment_methods WHERE is_active = 1 LIMIT 1')
+      .first();
+  }
+
+  return {
+    id: paymentMethodRecord?.id || mappedCodeOrId || 'pm-card',
+    name: paymentMethodRecord?.name || 'Credit / Debit Card',
+  };
+}
+
 /**
  * Helper to recalculate a bill's financial totals based on items, payments, and discounts.
  */
 export async function recalculateBill(db: D1Database, billId: string) {
+  await ensureBillItemsIsPaidColumn(db);
   const bill: any = await db.prepare('SELECT * FROM bills WHERE id = ?').bind(billId).first();
   if (!bill) return null;
 
-  // 1. Sum up bill_items
-  const itemsSum: any = await db
-    .prepare('SELECT SUM(total_price) as sum_items FROM bill_items WHERE bill_id = ?')
+  // 1. Sum up paid vs unpaid bill_items
+  const itemsAgg: any = await db
+    .prepare(
+      `SELECT
+         COUNT(*) as total_count,
+         COALESCE(SUM(total_price), 0) as sum_all,
+         COALESCE(SUM(CASE WHEN COALESCE(is_paid, 0) = 1 THEN total_price ELSE 0 END), 0) as sum_paid_items,
+         COALESCE(SUM(CASE WHEN COALESCE(is_paid, 0) = 0 THEN total_price ELSE 0 END), 0) as sum_unpaid_items,
+         COALESCE(SUM(CASE WHEN COALESCE(is_paid, 0) = 1 THEN 1 ELSE 0 END), 0) as paid_count,
+         COALESCE(SUM(CASE WHEN COALESCE(is_paid, 0) = 0 THEN 1 ELSE 0 END), 0) as unpaid_count
+       FROM bill_items
+       WHERE bill_id = ?`
+    )
     .bind(billId)
     .first();
-  
-  const hasItems = itemsSum?.sum_items !== null && itemsSum?.sum_items !== undefined;
-  const subtotal = hasItems ? Number(itemsSum.sum_items) : Number(bill.subtotal || 0);
+
+  const totalCount = Number(itemsAgg?.total_count || 0);
+  const hasItems = totalCount > 0;
+  const paidItemsSum = Number(itemsAgg?.sum_paid_items || 0);
+  const unpaidItemsSum = Number(itemsAgg?.sum_unpaid_items || 0);
+  const paidCount = Number(itemsAgg?.paid_count || 0);
+  const unpaidCount = Number(itemsAgg?.unpaid_count || 0);
+
+  const subtotal = hasItems ? Number(itemsAgg.sum_all) : Number(bill.subtotal || 0);
 
   const discountAmount = Number(bill.discount_amount || 0);
   const taxable = Math.max(0, subtotal - discountAmount);
   const taxRate = Number(bill.tax_rate ?? 0.07);
   const taxAmount = Number((taxable * taxRate).toFixed(2));
-  
-  // Service charge 10%
-  const serviceChargeRate = Number(bill.service_charge ? (bill.service_charge > 1 ? 0.10 : bill.service_charge) : 0.10);
+
+  // Read persisted service_charge_rate cleanly (0 stays 0, 0.10 stays 0.10 even when initial subtotal was 0)
+  const serviceChargeRate =
+    bill.service_charge_rate !== null && bill.service_charge_rate !== undefined
+      ? Number(bill.service_charge_rate)
+      : 0.10;
   const serviceChargeAmount = Number((subtotal * serviceChargeRate).toFixed(2));
 
   const totalAmount = Number((taxable + taxAmount + serviceChargeAmount).toFixed(2));
@@ -46,18 +206,34 @@ export async function recalculateBill(db: D1Database, billId: string) {
     .prepare("SELECT SUM(amount) as sum_paid FROM payments WHERE bill_id = ? AND status = 'completed'")
     .bind(billId)
     .first();
-  const amountPaid = Number(paymentsSum?.sum_paid || 0);
+  const recordedPayments = paymentsSum?.sum_paid !== null && paymentsSum?.sum_paid !== undefined ? Number(paymentsSum.sum_paid) : 0;
+  const amountPaid = Math.max(recordedPayments, Number(bill.amount_paid || 0));
 
-  const amountDue = Math.max(0, Number((totalAmount - depositDeducted - amountPaid).toFixed(2)));
+  let amountDue = 0;
+  if (paidCount > 0) {
+    const unpaidTaxable = Math.max(0, taxable - paidItemsSum);
+    const unpaidTax = Number((unpaidTaxable * taxRate).toFixed(2));
+    const unpaidServiceCharge = Number((unpaidItemsSum * serviceChargeRate).toFixed(2));
+    const unpaidTotalWithVat = Number((unpaidTaxable + unpaidTax + unpaidServiceCharge).toFixed(2));
+    const paidTotalWithVat = Number((totalAmount - unpaidTotalWithVat).toFixed(2));
+    const extraPaidBeyondPrepaid = Math.max(0, Number((amountPaid - paidTotalWithVat).toFixed(2)));
+    amountDue = Math.max(0, Number((unpaidTotalWithVat - depositDeducted - extraPaidBeyondPrepaid).toFixed(2)));
+  } else {
+    amountDue = Math.max(0, Number((totalAmount - depositDeducted - amountPaid).toFixed(2)));
+  }
 
   let status = bill.status;
   if (status !== 'void' && status !== 'refunded') {
-    if (amountDue === 0 && (amountPaid > 0 || depositDeducted >= totalAmount)) {
+    if (paidCount > 0) {
+      if (unpaidItemsSum === 0 && unpaidCount === 0 && (amountPaid > 0 || amountDue === 0)) {
+        status = 'paid';
+      } else {
+        status = 'unpaid';
+      }
+    } else if (amountDue === 0 && (amountPaid > 0 || (depositDeducted > 0 && depositDeducted >= totalAmount))) {
       status = 'paid';
-    } else if (amountPaid > 0) {
-      status = 'partially_paid';
     } else {
-      status = 'pending';
+      status = 'unpaid';
     }
   }
 
@@ -253,6 +429,8 @@ bills.post('/', async (c) => {
 
     const items = data.items || [];
     let itemsSubtotal = 0;
+    let paidItemsSubtotal = 0;
+    let unpaidItemsSubtotal = 0;
     const billItemStmts: any[] = [];
 
     for (const item of items) {
@@ -262,11 +440,24 @@ bills.post('/', async (c) => {
       const total = Number((qty * unit).toFixed(2));
       itemsSubtotal += total;
 
+      const itemIsPaid = item.isPaid ?? (data.status === 'paid');
+      if (itemIsPaid) {
+        paidItemsSubtotal += total;
+      } else {
+        unpaidItemsSubtotal += total;
+      }
+
+      const rawType = item.itemType || item.category;
+      let itemType = 'other';
+      if (rawType === 'service' || rawType === 'room_service') itemType = 'room_service';
+      else if (rawType === 'room' || rawType === 'room_charge') itemType = 'room_charge';
+      else if (['minibar', 'laundry', 'damage', 'other'].includes(String(rawType))) itemType = String(rawType);
+
       billItemStmts.push(
         c.env.DB.prepare(
-          `INSERT INTO bill_items (id, bill_id, item_type, description, quantity, unit_price, total_price, item_date, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-        ).bind(itemId, billId, item.itemType, item.description, qty, unit, total, item.itemDate || now.slice(0, 10), now)
+          `INSERT INTO bill_items (id, bill_id, item_type, description, quantity, unit_price, total_price, item_date, is_paid, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ).bind(itemId, billId, itemType, item.description, qty, unit, total, item.itemDate || now.slice(0, 10), itemIsPaid ? 1 : 0, now)
       );
     }
 
@@ -277,13 +468,28 @@ bills.post('/', async (c) => {
     const serviceChargeAmount = Number((subtotal * serviceChargeRate).toFixed(2));
     const totalAmount = Number((subtotal + taxAmount + serviceChargeAmount).toFixed(2));
     const depositDeducted = Number(data.depositDeducted || 0);
-    const amountPaid = 0;
-    const amountDue = Math.max(0, Number((totalAmount - depositDeducted).toFixed(2)));
-    const status = amountDue === 0 && depositDeducted >= totalAmount ? 'paid' : 'pending';
+
+    let amountPaid = Number((data as any).amountPaid ?? (data.status === 'paid' && unpaidItemsSubtotal === 0 ? totalAmount : 0));
+    let amountDue = Math.max(0, Number((totalAmount - depositDeducted - amountPaid).toFixed(2)));
+    let status: string;
+
+    if (paidItemsSubtotal > 0 && unpaidItemsSubtotal > 0) {
+      const paidTax = Number((paidItemsSubtotal * taxRate).toFixed(2));
+      const paidService = Number((paidItemsSubtotal * serviceChargeRate).toFixed(2));
+      const paidTotal = Number((paidItemsSubtotal + paidTax + paidService).toFixed(2));
+      amountPaid = Number((data as any).amountPaid ?? paidTotal);
+      const unpaidTotal = Number((totalAmount - paidTotal).toFixed(2));
+      amountDue = Math.max(0, Number((unpaidTotal - depositDeducted).toFixed(2)));
+      status = 'unpaid';
+    } else {
+      status = data.status === 'paid'
+        ? 'paid'
+        : items.length > 0 && totalAmount > 0 && depositDeducted >= totalAmount ? 'paid' : 'pending';
+    }
 
     const insertBillStmt = c.env.DB.prepare(
-      `INSERT INTO bills (id, bill_number, reservation_id, guest_name, room_number, subtotal, discount_amount, tax_rate, tax_amount, service_charge, total_amount, deposit_deducted, amount_paid, amount_due, status, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO bills (id, bill_number, reservation_id, guest_name, room_number, subtotal, discount_amount, tax_rate, tax_amount, service_charge_rate, service_charge, total_amount, deposit_deducted, amount_paid, amount_due, status, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).bind(
       billId,
       billNumber,
@@ -293,6 +499,7 @@ bills.post('/', async (c) => {
       subtotal,
       taxRate,
       taxAmount,
+      serviceChargeRate,
       serviceChargeAmount,
       totalAmount,
       depositDeducted,
@@ -312,7 +519,24 @@ bills.post('/', async (c) => {
        VALUES (?, ?, ?, ?, ?, 'draft', ?)`
     ).bind(invoiceId, invoiceNumber, billId, data.guestName, totalAmount, now);
 
-    await c.env.DB.batch([insertBillStmt, ...billItemStmts, insertInvoiceStmt]);
+    const extraStmts: any[] = [];
+    if (status === 'paid' || data.status === 'paid' || amountPaid > 0) {
+      const paymentId = `pay-${crypto.randomUUID()}`;
+      const resolvedMethod = await resolvePaymentMethod(
+        c.env.DB,
+        (data as any).paymentMethod,
+        (data as any).paymentMethodId || (data as any).payment_method_id
+      );
+      const refNumber = (data as any).referenceNumber || (data as any).reference_number || 'REF-UPFRONT';
+      extraStmts.push(
+        c.env.DB.prepare(
+          `INSERT INTO payments (id, bill_id, payment_method_id, amount, reference_number, status, paid_at, created_at)
+           VALUES (?, ?, ?, ?, ?, 'completed', ?, ?)`
+        ).bind(paymentId, billId, resolvedMethod.id, amountPaid, refNumber, now, now)
+      );
+    }
+
+    await c.env.DB.batch([insertBillStmt, ...billItemStmts, insertInvoiceStmt, ...extraStmts]);
 
     const created: any = await c.env.DB.prepare('SELECT * FROM bills WHERE id = ?').bind(billId).first();
     const createdItems = await c.env.DB.prepare('SELECT * FROM bill_items WHERE bill_id = ?').bind(billId).all();
@@ -403,7 +627,7 @@ bills.post('/:id/items', async (c) => {
       return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Bill not found' } }, 404);
     }
 
-    if (existing.status === 'paid' || existing.status === 'void' || existing.status === 'refunded') {
+    if (existing.status === 'void' || existing.status === 'refunded') {
       return c.json(
         {
           success: false,
@@ -423,12 +647,35 @@ bills.post('/:id/items', async (c) => {
     const totalPrice = Number((qty * unit).toFixed(2));
     const itemDate = data.itemDate || now.slice(0, 10);
 
+    const rawType = parsed.data.itemType || parsed.data.category;
+    let itemType = 'other';
+    if (rawType === 'service' || rawType === 'room_service') itemType = 'room_service';
+    else if (rawType === 'room' || rawType === 'room_charge') itemType = 'room_charge';
+    else if (['minibar', 'laundry', 'damage', 'other'].includes(String(rawType))) itemType = String(rawType);
+
+    const itemIsPaid = data.isPaid ?? false;
+
+    // Backfill legacy pre-paid bills so previously settled items keep is_paid = 1
+    // when a new unpaid extension or extra charge is added.
+    if (!itemIsPaid && Number(existing.amount_paid || 0) > 0 && Number(existing.amount_due || 0) === 0) {
+      await c.env.DB.prepare('UPDATE bill_items SET is_paid = 1 WHERE bill_id = ? AND COALESCE(is_paid, 0) = 0')
+        .bind(existing.id)
+        .run();
+    }
+
     await c.env.DB.prepare(
-      `INSERT INTO bill_items (id, bill_id, item_type, description, quantity, unit_price, total_price, item_date, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO bill_items (id, bill_id, item_type, description, quantity, unit_price, total_price, item_date, is_paid, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
-      .bind(itemId, existing.id, data.itemType, data.description, qty, unit, totalPrice, itemDate, now)
+      .bind(itemId, existing.id, itemType, data.description, qty, unit, totalPrice, itemDate, itemIsPaid ? 1 : 0, now)
       .run();
+
+    // Adding unpaid extra charge switches folio status to unpaid
+    if (!itemIsPaid) {
+      await c.env.DB.prepare("UPDATE bills SET status = 'unpaid', updated_at = ? WHERE id = ?")
+        .bind(now, existing.id)
+        .run();
+    }
 
     const updatedBill = await recalculateBill(c.env.DB, existing.id);
     const item: any = await c.env.DB.prepare('SELECT * FROM bill_items WHERE id = ?').bind(itemId).first();
@@ -465,7 +712,7 @@ bills.delete('/:id/items/:itemId', async (c) => {
       return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Bill not found' } }, 404);
     }
 
-    if (existing.status === 'paid' || existing.status === 'void' || existing.status === 'refunded') {
+    if (existing.status === 'void' || existing.status === 'refunded') {
       return c.json(
         {
           success: false,
@@ -484,6 +731,19 @@ bills.delete('/:id/items/:itemId', async (c) => {
 
     if (!item) {
       return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Bill item not found' } }, 404);
+    }
+
+    if (Number(item.is_paid ?? 0) === 1) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: 'ITEM_ALREADY_PAID',
+            message: 'Cannot remove an already paid bill item',
+          },
+        },
+        400
+      );
     }
 
     await c.env.DB.prepare('DELETE FROM bill_items WHERE id = ?').bind(itemId).run();
@@ -522,30 +782,25 @@ bills.post('/:id/pay', async (c) => {
     }
 
     if (bill.status === 'paid') {
-      return c.json({ success: false, error: { code: 'ALREADY_PAID', message: 'Bill is already paid in full' } }, 400);
+      return c.json({
+        success: true,
+        message: 'Bill is already paid in full',
+        data: {
+          bill: mapBill(bill),
+          receiptNumber: `REC-${bill.bill_number.replace('BILL-', '')}`,
+        },
+      });
     }
     if (bill.status === 'void' || bill.status === 'refunded') {
       return c.json({ success: false, error: { code: 'INVALID_STATUS', message: `Cannot pay bill in status '${bill.status}'` } }, 400);
     }
 
-    // 1. Resolve Payment Method
-    let paymentMethodRecord: any = null;
-    if (data.paymentMethodId) {
-      paymentMethodRecord = await c.env.DB.prepare('SELECT * FROM payment_methods WHERE id = ?')
-        .bind(data.paymentMethodId)
-        .first();
-    } else if (data.paymentMethod) {
-      paymentMethodRecord = await c.env.DB.prepare('SELECT * FROM payment_methods WHERE code = ? OR name LIKE ? OR id = ?')
-        .bind(data.paymentMethod.toUpperCase(), `%${data.paymentMethod}%`, data.paymentMethod)
-        .first();
-    }
-
-    if (!paymentMethodRecord) {
-      paymentMethodRecord = await c.env.DB.prepare('SELECT * FROM payment_methods WHERE is_active = 1 LIMIT 1').first();
-    }
-
-    const paymentMethodId = paymentMethodRecord?.id || 'pm-card';
-    const paymentMethodName = paymentMethodRecord?.name || 'Credit / Debit Card';
+    // 1. Resolve Payment Method (case-insensitive & alias-aware)
+    const { id: paymentMethodId, name: paymentMethodName } = await resolvePaymentMethod(
+      c.env.DB,
+      data.paymentMethod,
+      data.paymentMethodId
+    );
 
     // 2. Determine Payment Amount & Deductions
     const currentDeposit = Number(bill.deposit_deducted || 0);
@@ -555,7 +810,8 @@ bills.post('/:id/pay', async (c) => {
     const netPayable = Math.max(0, Number((bill.total_amount - newDeposit - currentPaid).toFixed(2)));
     const paymentAmount = data.amount !== undefined ? Number(data.amount) : netPayable;
 
-    if (paymentAmount <= 0) {
+    // If netPayable is 0 (e.g. deposit covered all or total is 0), settle bill as paid without error
+    if (paymentAmount <= 0 && netPayable > 0) {
       return c.json({ success: false, error: { code: 'INVALID_AMOUNT', message: 'Payment amount must be greater than 0' } }, 400);
     }
 
@@ -564,19 +820,20 @@ bills.post('/:id/pay', async (c) => {
     const paymentId = `pay-${crypto.randomUUID()}`;
     const referenceNumber = data.referenceNumber || `REF-${Date.now().toString().slice(-6)}`;
 
-    const newAmountPaid = Number((currentPaid + paymentAmount).toFixed(2));
+    const effectivePaymentAmount = Math.max(0, paymentAmount);
+    const newAmountPaid = Number((currentPaid + effectivePaymentAmount).toFixed(2));
     const newAmountDue = Math.max(0, Number((bill.total_amount - newDeposit - newAmountPaid).toFixed(2)));
-    const newStatus = newAmountDue === 0 ? 'paid' : 'partially_paid';
+    const newStatus = (newAmountDue === 0 || netPayable === 0) ? 'paid' : 'partially_paid';
 
     // 3. Prepare Batch Statements
     const stmts: any[] = [];
 
-    // Insert payment
+    // Insert payment (even for 0 THB zero-due checkout settlement to maintain audit trail)
     stmts.push(
       c.env.DB.prepare(
         `INSERT INTO payments (id, bill_id, payment_method_id, amount, reference_number, status, paid_at, created_at)
          VALUES (?, ?, ?, ?, ?, 'completed', ?, ?)`
-      ).bind(paymentId, bill.id, paymentMethodId, paymentAmount, referenceNumber, now, now)
+      ).bind(paymentId, bill.id, paymentMethodId, effectivePaymentAmount, referenceNumber, now, now)
     );
 
     // Update bill
@@ -587,6 +844,12 @@ bills.post('/:id/pay', async (c) => {
          WHERE id = ?`
       ).bind(newDeposit, newAmountPaid, newAmountDue, newStatus, now, bill.id)
     );
+
+    if (newStatus === 'paid') {
+      stmts.push(
+        c.env.DB.prepare('UPDATE bill_items SET is_paid = 1 WHERE bill_id = ?').bind(bill.id)
+      );
+    }
 
     // Update Invoice status to 'issued'
     stmts.push(

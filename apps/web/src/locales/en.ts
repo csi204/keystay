@@ -25,6 +25,7 @@ export const en: Record<string, string> = {
   'status.pending': 'Pending',
   'status.refunded': 'Refunded',
   'status.checked_in': 'Checked In',
+  'status.extended': 'Extended',
   'status.no_show': 'No Show',
 
   // Table columns & Common
@@ -67,6 +68,7 @@ export const en: Record<string, string> = {
   'ops.checkIn': 'Check In',
   'ops.checkOut': 'Check Out',
   'ops.checkOutAndSettle': 'Check-out & Cashier',
+  'ops.openFolio': 'Open Folio / Bill',
   'ops.reprintAbb': 'Print Tax Receipt (ABB)',
   'ops.noBillingHistory': 'No billing or settlement history found',
   'ops.allPaidBills': 'All Settled Bills',
@@ -83,6 +85,7 @@ export const en: Record<string, string> = {
   'ops.arrivalsDescription': 'Guests scheduled to check in today',
   'ops.departuresDescription': 'Guests currently staying and scheduled to check out today',
   'ops.totalItems': 'Total {count} items',
+  'ops.netTotal': 'Net Total',
 
   // Check-in Modal
   'checkin.title': 'Record Check-in',
@@ -107,7 +110,7 @@ export const en: Record<string, string> = {
   // Cashier & Folio
   'folio.title': 'Bills & Cashier',
   'folio.subtitle': 'Manage folios, extra charges, and payment settlement',
-  'folio.itemizedTitle': 'Itemized Folio Charges',
+  'folio.itemizedTitle': 'Itemized Charges',
   'folio.settlementTitle': 'Cashier Settlement',
   'folio.subtotal': 'Subtotal',
   'folio.vat': 'VAT (7%)',
@@ -251,6 +254,10 @@ export const en: Record<string, string> = {
   'drawer.capacityCount': '{count} guests',
   'drawer.amenities': 'Amenities',
   'drawer.notes': 'Notes',
+  'notes.savedTitle': 'Saved Successfully',
+  'notes.savedDesc': 'Room notes updated successfully',
+  'notes.noNotes': 'No additional notes',
+  'notes.placeholder': 'Enter notes or remarks for this room...',
   'drawer.price': 'Price per night',
   'drawer.requestCleaning': 'Request Housekeeping',
   'drawer.newBooking': 'New Reservation for Room',
@@ -292,6 +299,8 @@ export const en: Record<string, string> = {
   'extend.errorInvalidDate': 'New check-out date must be at least 1 night after current check-out',
   'extend.errorGeneral': 'An error occurred while extending stay',
   'extend.success': 'Stay extended successfully',
+  'extend.successTitle': 'Stay Extended',
+  'extend.successDesc': 'Guest stay extension saved successfully',
 
   // Operational Workflows: Check-Out & Key Card Return (UAT-FD05)
   'checkout.title': 'Confirm Check-Out & Cashier Settlement',
@@ -299,7 +308,7 @@ export const en: Record<string, string> = {
   'checkout.guestName': 'Guest Name',
   'checkout.roomNumber': 'Room Number',
   'checkout.stayPeriod': 'Stay Period',
-  'checkout.folioSettlement': 'Folio Settlement & Cashier',
+  'checkout.folioSettlement': 'Settlement & Close',
   'checkout.roomCharges': 'Room Charges',
   'checkout.extraCharges': 'Extra Charges & Minibar',
   'checkout.addCharge': 'Add Charge',
@@ -308,6 +317,7 @@ export const en: Record<string, string> = {
   'checkout.paymentMethod': 'Payment Method',
   'checkout.settleAndCheckOut': 'Settle Payment & Check-Out',
   'checkout.settleSuccess': 'Payment settled and checked out successfully',
+  'checkout.settleSuccessDesc': 'Room {room} ({guest}) checkout and billing settlement completed.',
   'checkout.printReceiptAbb': 'Print Tax Receipt (ABB)',
   'checkout.reprintReceipt': 'Reprint Receipt',
   'checkout.closeSettled': 'Finish & Close',

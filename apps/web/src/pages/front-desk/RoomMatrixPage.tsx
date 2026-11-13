@@ -1,12 +1,23 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FrontDeskLayout } from '@/components/front-desk/FrontDeskLayout';
-import { RoomMatrixGrid } from '@/components/front-desk/RoomMatrixGrid';
+import { RoomMatrixGrid, getRoomFloor } from '@/components/front-desk/RoomMatrixGrid';
 import { RoomDetailsModal, FastBookingFormData } from '@/components/front-desk/RoomDetailsModal';
 import { NewBookingModal } from '@/components/front-desk/NewBookingModal';
 import { CheckInModal } from '@/components/front-desk/CheckInModal';
+import { CancelReservationModal } from '@/components/front-desk/CancelReservationModal';
+import {
+  TableDateFilter,
+  DateFilterValue,
+  EMPTY_DATE_FILTER,
+  isDateFilterActive,
+  matchesDateFilter,
+} from '@/components/common/TableDateFilter';
+import { PaginationBar, paginateItems } from '@/components/common/PaginationBar';
 import { useRooms } from '@/hooks/useRooms';
 import { useReservations, ExtendedReservation, resolveGuestName } from '@/hooks/useReservations';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
+import { reconcileLiveRooms, getRoomGuestMapping } from '@/lib/roomStatusReconciliation';
 import { useI18n } from '@/lib/i18n';
 import { localizeRoomType } from '@/lib/localizeMetadata';
 import { Room, ReservationStatus } from '@keystay/types';
@@ -22,6 +33,7 @@ import {
   X,
   ChevronDown,
   Check,
+  Ban,
 } from 'lucide-react';
 
 const RESERVATION_STATUS_STYLES: Record<
@@ -31,6 +43,7 @@ const RESERVATION_STATUS_STYLES: Record<
   pending: { bg: 'bg-slate-100', text: 'text-slate-700', border: 'border-slate-300' },
   confirmed: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
   checked_in: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
+  extended: { bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-200' },
   checked_out: { bg: 'bg-slate-100', text: 'text-slate-600', border: 'border-slate-200' },
   cancelled: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' },
   no_show: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
@@ -38,7 +51,9 @@ const RESERVATION_STATUS_STYLES: Record<
 
 export const RoomMatrixPage: React.FC = () => {
   const navigate = useNavigate();
-  const { t, locale, formatDateRange, formatCurrency, formatRelativeTime } = useI18n();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlRoomId = searchParams.get('roomId');
+  const { t, locale, formatDateRange, formatCurrency } = useI18n();
 
   const {
     rooms,
@@ -58,6 +73,9 @@ export const RoomMatrixPage: React.FC = () => {
     refresh: refreshReservations,
     createReservation,
     checkInReservation,
+    walkInCheckIn,
+    verifyPaymentSlip,
+    cancelReservation,
   } = useReservations();
 
   // Sub-tab: 'grid' = Matrix Grid, 'table' = Reservations Table
@@ -67,14 +85,19 @@ export const RoomMatrixPage: React.FC = () => {
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [modalMode, setModalMode] = useState<'details' | 'booking'>('details');
+  const [modalBookingMode, setModalBookingMode] = useState<'walkin' | 'booking'>('walkin');
   const [isNewModalOpen, setIsNewModalOpen] = useState<boolean>(false);
   const [checkInReservationTarget, setCheckInReservationTarget] =
+    useState<ExtendedReservation | null>(null);
+  const [cancelReservationTarget, setCancelReservationTarget] =
     useState<ExtendedReservation | null>(null);
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterFloor, setFilterFloor] = useState<string>('all');
+  const [dateFilter, setDateFilter] = useState<DateFilterValue>(EMPTY_DATE_FILTER);
+  const [reservationPage, setReservationPage] = useState<number>(1);
   const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
   const filterPopoverRef = useRef<HTMLDivElement>(null);
 
@@ -83,27 +106,34 @@ export const RoomMatrixPage: React.FC = () => {
   const error = roomsError || reservationsError;
   const loading = roomsLoading && reservationsLoading;
 
-  // Silent 30s background auto-refresh & immediate refetch on tab focus
+  // Deep navigation: Auto-open RoomDetailsModal when ?roomId=... is present in URL
   useEffect(() => {
-    const interval = setInterval(() => {
+    if (urlRoomId && rooms.length > 0) {
+      const matched = rooms.find((r) => r.id === urlRoomId || r.roomNumber === urlRoomId);
+      if (matched) {
+        setSelectedRoom(matched);
+        setModalMode('details');
+        setModalBookingMode('walkin');
+        setIsModalOpen(true);
+      }
+    }
+  }, [urlRoomId, rooms]);
+
+  const isAnyModalOpen =
+    isModalOpen ||
+    isNewModalOpen ||
+    Boolean(checkInReservationTarget) ||
+    Boolean(cancelReservationTarget);
+
+  // Silent 1-minute background auto-refresh & visibilitychange refetch (paused while editing or any modal is open)
+  useAutoRefresh({
+    onRefresh: () => {
       refreshRooms();
       refreshReservations();
-    }, 30000);
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        refreshRooms();
-        refreshReservations();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      clearInterval(interval);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [refreshRooms, refreshReservations]);
+    },
+    intervalMs: 60000,
+    paused: isAnyModalOpen,
+  });
 
   // Click-outside listener for filter popover
   useEffect(() => {
@@ -120,24 +150,41 @@ export const RoomMatrixPage: React.FC = () => {
   }, []);
 
   // Map active guest names and checkouts by roomId
+  // Includes active in-house guests and confirmed booking guests:
+  // (r.status === 'checked_in' || r.status === 'confirmed' || (r.status as string) === 'extended')
   const { roomGuests, roomCheckouts } = useMemo(() => {
-    const guests: Record<string, string> = {};
-    const checkouts: Record<string, string> = {};
-    reservations.forEach((r) => {
-      if (r.roomId && (r.status === 'checked_in' || r.status === 'confirmed')) {
-        const name = r.guestName || resolveGuestName(r);
-        if (name) guests[r.roomId] = name;
-        if (r.checkOutDate) checkouts[r.roomId] = r.checkOutDate;
-      }
-    });
-    return { roomGuests: guests, roomCheckouts: checkouts };
+    return getRoomGuestMapping(reservations);
   }, [reservations]);
+
+  // Live rooms with dynamic room status reconciliation:
+  // - checked_in | extended -> occupied (r.status === 'checked_in' || (r.status as string) === 'extended' -> status: 'occupied' as const)
+  // - confirmed -> reserved
+  // - checked_out (today) -> cleaning
+  // - Stale DB reserved -> available
+  const liveRooms = useMemo(() => {
+    return reconcileLiveRooms(rooms, reservations);
+  }, [rooms, reservations]);
+
+  // Active reservation for currently selected room
+  const activeReservation = useMemo(() => {
+    if (!selectedRoom) return null;
+    return (
+      reservations.find(
+        (r) =>
+          r.roomId === selectedRoom.id &&
+          (r.status === 'confirmed' ||
+            r.status === 'checked_in' ||
+            (r.status as string) === 'extended')
+      ) || null
+    );
+  }, [reservations, selectedRoom]);
 
   // Unique floors list for room matrix
   const floors = useMemo(() => {
     const set = new Set<string>();
     rooms.forEach((r) => {
-      if (r.floor) set.add(r.floor);
+      const fl = getRoomFloor(r);
+      if (fl) set.add(fl);
     });
     return Array.from(set).sort();
   }, [rooms]);
@@ -161,60 +208,194 @@ export const RoomMatrixPage: React.FC = () => {
         const matchesBooking =
           r.bookingNumber?.toLowerCase().includes(q) || r.id.toLowerCase().includes(q);
         const matchesRoom = r.roomNumber?.toLowerCase().includes(q) || false;
-        return matchesGuest || matchesBooking || matchesRoom;
+        if (!matchesGuest && !matchesBooking && !matchesRoom) return false;
+      }
+      if (isDateFilterActive(dateFilter)) {
+        const matchesStay = matchesDateFilter(r.checkInDate, dateFilter, r.checkOutDate);
+        if (!matchesStay) return false;
       }
       return true;
     });
-  }, [reservations, filterStatus, searchQuery]);
+  }, [reservations, filterStatus, searchQuery, dateFilter]);
+
+  useEffect(() => {
+    setReservationPage(1);
+  }, [searchQuery, filterStatus, dateFilter]);
+
+  const paginatedReservations = useMemo(
+    () => paginateItems(filteredReservations, reservationPage, 10),
+    [filteredReservations, reservationPage]
+  );
+
+  const reservationDates = useMemo(
+    () => reservations.flatMap((r) => [r.checkInDate, r.createdAt]),
+    [reservations]
+  );
 
   const handleSelectRoom = (room: Room) => {
     setSelectedRoom(room);
     setModalMode('details');
+    setModalBookingMode('walkin');
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
+    if (urlRoomId) {
+      searchParams.delete('roomId');
+      setSearchParams(searchParams, { replace: true });
+    }
   };
 
   const handleQuickBook = (room: Room) => {
     setSelectedRoom(room);
     setModalMode('booking');
+    setModalBookingMode('walkin');
     setIsModalOpen(true);
   };
 
-  const handleModalAction = (
-    action: 'checkin' | 'checkout' | 'charge' | 'walkin' | 'clean' | 'extend',
+  const handleQuickAction = (action: string, room: Room) => {
+    if (action === 'walkin') {
+      setSelectedRoom(room);
+      setModalMode('booking');
+      setModalBookingMode('walkin');
+      setIsModalOpen(true);
+    } else if (action === 'booking') {
+      setSelectedRoom(room);
+      setModalMode('booking');
+      setModalBookingMode('booking');
+      setIsModalOpen(true);
+    } else if (action === 'cashier') {
+      navigate(`/front-desk/cashier?roomId=${room.id}`, {
+        state: { roomId: room.id, roomNumber: room.roomNumber },
+      });
+    } else if (action === 'checkout') {
+      navigate('/front-desk/daily-operations', {
+        state: { roomId: room.id, action: 'checkout' },
+      });
+    } else if (action === 'extend') {
+      setSelectedRoom(room);
+      setModalMode('details');
+      setIsModalOpen(true);
+    } else if (action === 'extra_charge') {
+      handleRoomAction('charge', room);
+    } else if (action === 'checkin') {
+      const res = reservations.find(
+        (r) =>
+          (r.roomId === room.id || (room.roomNumber && r.roomNumber === room.roomNumber)) &&
+          (r.status === 'confirmed' || r.status === 'pending')
+      );
+      if (res) {
+        setCheckInReservationTarget(res);
+      } else {
+        navigate('/front-desk/daily-operations', {
+          state: { roomId: room.id, action: 'checkin' },
+        });
+      }
+    } else if (action === 'view') {
+      handleSelectRoom(room);
+    }
+  };
+
+  const handleRoomAction = (
+    action: 'checkin' | 'checkout' | 'charge' | 'walkin' | 'clean' | 'extend' | 'refresh' | string,
     room: Room
   ) => {
-    setIsModalOpen(false);
-    if (action === 'checkin' || action === 'walkin') {
+    if (action === 'refresh') {
+      refreshReservations();
+      refreshRooms();
+      return;
+    }
+    if (action === 'cancel') {
+      const res = reservations.find(
+        (r) =>
+          (r.roomId === room.id || (room.roomNumber && r.roomNumber === room.roomNumber)) &&
+          (r.status === 'confirmed' || r.status === 'pending')
+      );
+      if (res) {
+        setCancelReservationTarget(res);
+      }
+      return;
+    }
+    if (action !== 'extend') {
+      setIsModalOpen(false);
+    }
+    if (action === 'checkin' || action === 'walkin' || action === 'checkout') {
       navigate('/front-desk/daily-operations', { state: { roomId: room.id, action } });
-    } else if (action === 'checkout' || action === 'charge') {
-      navigate('/front-desk/billing', { state: { roomId: room.id, action } });
+    } else if (
+      action === 'charge' ||
+      action === 'minibar' ||
+      action === 'folio' ||
+      action === 'add-charge' ||
+      action === 'amenities'
+    ) {
+      const roomRes =
+        reservations.find(
+          (r) =>
+            (r.roomId === room.id || (room.roomNumber && r.roomNumber === room.roomNumber)) &&
+            (r.status === 'checked_in' || (r.status as string) === 'extended')
+        ) ||
+        (activeReservation &&
+        (activeReservation.roomId === room.id ||
+          (room.roomNumber && activeReservation.roomNumber === room.roomNumber))
+          ? activeReservation
+          : reservations.find(
+              (r) =>
+                (r.roomId === room.id || (room.roomNumber && r.roomNumber === room.roomNumber)) &&
+                (r.status === 'confirmed' ||
+                  r.status === 'checked_in' ||
+                  (r.status as string) === 'extended')
+            ));
+
+      navigate('/front-desk/billing', {
+        state: {
+          roomId: room.id,
+          roomNumber: room.roomNumber,
+          reservationId: roomRes?.id,
+          guestName:
+            roomRes?.guestName ||
+            roomRes?.guest?.fullName ||
+            roomGuests[room.id] ||
+            '',
+          billId: (roomRes as any)?.billId || (activeReservation as any)?.billId,
+          action,
+        },
+      });
     } else if (action === 'clean') {
       refreshRooms();
     }
   };
 
+  const handleModalAction = handleRoomAction;
+
+  const selectedRoomType = selectedRoom
+    ? roomTypes.find((t) => t.id === selectedRoom.roomTypeId)
+    : undefined;
+
   const handleFastBookingSubmit = async (data: FastBookingFormData) => {
     const res = await createReservation({
       guestName: data.guestName,
       phone: data.phone,
+      email: data.email,
+      idCardNumber: data.idCardNumber,
+      nationalIdOrPassport: data.nationalIdOrPassport || data.idCardNumber,
       roomId: data.roomId,
       checkInDate: data.checkInDate,
       checkOutDate: data.checkOutDate,
       depositAmount: data.depositAmount,
+      nightlyRate: Number(selectedRoomType?.basePrice || 1000),
+      numGuests: (data as any).guestsCount || 1,
+      paymentMethod: data.paymentMethod,
+      bookingSource: data.bookingSource,
+      paymentStatus: data.paymentStatus,
+      paymentSlipUrl: data.paymentSlipUrl,
+      paymentSlipRef: data.paymentSlipRef,
     });
     if (res.success) {
       await Promise.all([refreshRooms(), refreshReservations()]);
     }
     return res;
   };
-
-  const selectedRoomType = selectedRoom
-    ? roomTypes.find((t) => t.id === selectedRoom.roomTypeId)
-    : undefined;
 
   const refreshTimeStr = lastRefreshed.toLocaleTimeString(
     locale === 'th' ? 'th-TH' : 'en-US',
@@ -224,8 +405,6 @@ export const RoomMatrixPage: React.FC = () => {
       second: '2-digit',
     }
   );
-  // Micro-UX relative refresh tracker: formatRelativeTime
-  const _relativeRefresh = formatRelativeTime ? formatRelativeTime(lastRefreshed, locale) : refreshTimeStr;
 
   return (
     <FrontDeskLayout activeTab="matrix">
@@ -301,7 +480,7 @@ export const RoomMatrixPage: React.FC = () => {
                 }
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full sm:w-72 lg:w-80 h-9 text-xs pl-8 pr-8 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors font-sans"
+                className="w-full sm:w-72 lg:w-80 h-9 text-xs pl-8 pr-8 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors font-sans"
               />
               {searchQuery && (
                 <button
@@ -499,8 +678,8 @@ export const RoomMatrixPage: React.FC = () => {
                 className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"
                 aria-hidden="true"
               />
-              <span className="font-mono tabular-nums text-xs text-slate-500">
-                {t('matrix.autoRefresh', { time: refreshTimeStr })}
+              <span className="font-mono tabular-nums text-xs text-slate-500 font-medium">
+                {locale === 'th' ? `อัปเดตอัตโนมัติ: ${refreshTimeStr}` : `Auto-refresh: ${refreshTimeStr}`}
               </span>
             </div>
           </div>
@@ -544,11 +723,12 @@ export const RoomMatrixPage: React.FC = () => {
               </div>
             ) : (
               <RoomMatrixGrid
-                rooms={rooms}
+                rooms={liveRooms}
                 roomTypes={roomTypes}
                 selectedRoom={selectedRoom}
                 onSelectRoom={handleSelectRoom}
                 onQuickBook={handleQuickBook}
+                onQuickAction={handleQuickAction}
                 roomGuests={roomGuests}
                 roomCheckouts={roomCheckouts}
                 filterStatus={filterStatus}
@@ -562,6 +742,18 @@ export const RoomMatrixPage: React.FC = () => {
         {/* Sub-Tab 2: Embedded Reservations Table */}
         {activeSubTab === 'table' && (
           <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-slate-200 bg-slate-50/50 flex flex-wrap items-center justify-between gap-3">
+              <TableDateFilter
+                value={dateFilter}
+                onChange={setDateFilter}
+                dates={reservationDates}
+              />
+              <span className="text-xs text-slate-600 font-medium font-sans">
+                {locale === 'th'
+                  ? `ทั้งหมด ${filteredReservations.length} รายการ`
+                  : `${filteredReservations.length} reservations`}
+              </span>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-sm">
                 <thead>
@@ -624,7 +816,7 @@ export const RoomMatrixPage: React.FC = () => {
                       </td>
                     </tr>
                   ) : (
-                    filteredReservations.map((res) => {
+                    paginatedReservations.pageItems.map((res) => {
                       const stCfg = RESERVATION_STATUS_STYLES[res.status] || {
                         bg: 'bg-slate-100',
                         text: 'text-slate-700',
@@ -674,13 +866,24 @@ export const RoomMatrixPage: React.FC = () => {
                           </td>
                           <td className="text-sm py-3.5 px-4 text-right">
                             {res.status === 'confirmed' ? (
-                              <button
-                                onClick={() => setCheckInReservationTarget(res)}
-                                className="inline-flex items-center gap-1.5 text-xs font-semibold py-1.5 px-3 text-white bg-emerald-600 hover:bg-emerald-700 rounded shadow-sm transition-colors"
-                              >
-                                <LogIn className="w-3.5 h-3.5" aria-hidden="true" />
-                                <span>{t('ops.checkIn')}</span>
-                              </button>
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  onClick={() => setCheckInReservationTarget(res)}
+                                  className="inline-flex items-center gap-1.5 text-xs font-semibold py-1.5 px-2.5 text-white bg-emerald-600 hover:bg-emerald-700 rounded shadow-sm transition-colors"
+                                  title={t('ops.checkIn')}
+                                >
+                                  <LogIn className="w-3.5 h-3.5" aria-hidden="true" />
+                                  <span>{t('ops.checkIn')}</span>
+                                </button>
+                                <button
+                                  onClick={() => setCancelReservationTarget(res)}
+                                  className="inline-flex items-center gap-1 text-xs font-medium py-1.5 px-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded transition-colors"
+                                  title={locale === 'th' ? 'ยกเลิกการจอง' : 'Cancel'}
+                                >
+                                  <Ban className="w-3.5 h-3.5" aria-hidden="true" />
+                                  <span>{locale === 'th' ? 'ยกเลิก' : 'Cancel'}</span>
+                                </button>
+                              </div>
                             ) : (
                               <span className="text-slate-400 text-sm">—</span>
                             )}
@@ -692,6 +895,14 @@ export const RoomMatrixPage: React.FC = () => {
                 </tbody>
               </table>
             </div>
+            <PaginationBar
+              currentPage={paginatedReservations.currentPage}
+              totalPages={paginatedReservations.totalPages}
+              totalItems={paginatedReservations.totalItems}
+              startIndex={paginatedReservations.startIndex}
+              endIndex={paginatedReservations.endIndex}
+              onPageChange={setReservationPage}
+            />
           </div>
         )}
       </div>
@@ -702,15 +913,33 @@ export const RoomMatrixPage: React.FC = () => {
         roomType={selectedRoomType}
         isOpen={isModalOpen}
         initialMode={modalMode}
+        bookingMode={modalBookingMode}
+        currentReservation={activeReservation || null}
         onClose={handleCloseModal}
         onAction={handleModalAction}
         onSubmitBooking={handleFastBookingSubmit}
+        onCancelReservation={async (id, reason, note) => {
+          const res = await cancelReservation(id, reason, note);
+          if (res.success) {
+            await Promise.all([refreshRooms(), refreshReservations()]);
+          }
+          return res;
+        }}
+        onWalkInCheckIn={async (data) => {
+          const res = await walkInCheckIn(data);
+          if (res.success) {
+            await Promise.all([refreshRooms(), refreshReservations()]);
+          }
+          return res;
+        }}
+        onVerifySlip={verifyPaymentSlip}
       />
 
       {/* New Booking Modal for embedded reservations */}
       <NewBookingModal
         isOpen={isNewModalOpen}
         rooms={rooms}
+        reservations={reservations}
         roomTypes={roomTypes}
         onClose={() => setIsNewModalOpen(false)}
         onSubmit={createReservation}
@@ -723,8 +952,25 @@ export const RoomMatrixPage: React.FC = () => {
         onClose={() => setCheckInReservationTarget(null)}
         onConfirm={checkInReservation}
       />
+
+      {/* Cancel Reservation Modal */}
+      <CancelReservationModal
+        reservation={cancelReservationTarget}
+        isOpen={!!cancelReservationTarget}
+        onClose={() => setCancelReservationTarget(null)}
+        onConfirm={async (id, reason, note) => {
+          const res = await cancelReservation(id, reason, note);
+          if (res.success) {
+            await Promise.all([refreshRooms(), refreshReservations()]);
+            setCancelReservationTarget(null);
+          }
+          return res;
+        }}
+      />
     </FrontDeskLayout>
   );
 };
 
 export default RoomMatrixPage;
+export { reconcileLiveRooms, getRoomGuestMapping };
+

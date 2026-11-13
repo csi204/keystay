@@ -43,6 +43,12 @@ export interface ReservationRecord {
   deposit_amount: number;
   total_amount: number;
   special_requests: string | null;
+  booking_source?: 'walk_in' | 'phone' | 'facebook';
+  payment_status?: 'unpaid' | 'paid';
+  payment_slip_url?: string | null;
+  payment_slip_ref?: string | null;
+  payment_verified_at?: string | null;
+  payment_verified_by?: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -82,6 +88,7 @@ export function mapReservation(row: any) {
     id: row.id,
     reservationCode: row.reservation_code,
     guestId: row.guest_id,
+    guestName: `${row.first_name || ''} ${row.last_name || ''}`.trim() || row.guest_name || 'Guest',
     roomId: row.room_id,
     roomNumber: row.room_number,
     roomTypeName: row.room_type_name,
@@ -100,6 +107,12 @@ export function mapReservation(row: any) {
     depositAmount,
     totalAmount,
     specialRequests: row.special_requests || null,
+    bookingSource: row.booking_source || 'walk_in',
+    paymentStatus: row.payment_status || 'unpaid',
+    paymentSlipUrl: row.payment_slip_url || null,
+    paymentSlipRef: row.payment_slip_ref || null,
+    paymentVerifiedAt: row.payment_verified_at || null,
+    paymentVerifiedBy: row.payment_verified_by || null,
     createdBy: row.created_by || null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -107,13 +120,33 @@ export function mapReservation(row: any) {
       guest: {
         id: row.guest_id,
         firstName: row.first_name || (row.guest_name ? row.guest_name.split(' ')[0] : ''),
-        lastName: row.last_name || (row.guest_name ? row.guest_name.split(' ').slice(1).join(' ') : ''),
-        fullName: row.guest_name || `${row.first_name || ''} ${row.last_name || ''}`.trim(),
+        lastName: row.last_name || (row.guest_name ? (row.guest_name.split(' ').length > 1 ? row.guest_name.split(' ').slice(1).join(' ') : '') : ''),
+        fullName: `${row.first_name || ''} ${row.last_name || ''}`.trim() || row.guest_name || 'Guest',
         email: row.guest_email || row.email || null,
         phone: row.guest_phone || row.phone || null,
         idCardNumber: row.id_card_number || null,
         nationality: row.nationality || null,
       }
     } : {}),
+  };
+}
+
+export function mapAmenityRequest(row: any) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    reservationId: row.reservation_id,
+    amenityId: row.amenity_id,
+    amenityName: row.amenity_name,
+    quantity: Number(row.quantity || 1),
+    unitPrice: Number(row.unit_price || 0),
+    totalPrice: Number(row.total_price || 0),
+    isChargeable: Number(row.is_chargeable || 0),
+    status: row.status || 'requested',
+    billedToFolio: Number(row.billed_to_folio || 0),
+    billItemId: row.bill_item_id || null,
+    notes: row.notes || null,
+    requestedAt: row.requested_at,
+    deliveredAt: row.delivered_at || null,
   };
 }

@@ -581,7 +581,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                   : r.status === 'cleaning'
                   ? 'กำลังทำความสะอาด'
                   : r.status === 'checked_out'
-                  ? 'เช็คเอาท์แล้ว (รอทำความสะอาด)'
+                  ? 'เช็คเอาต์แล้ว (รอทำความสะอาด)'
                   : r.status === 'available'
                   ? 'ห้องว่างพร้อมเปิดขาย'
                   : 'รอตรวจสอบ',
@@ -856,7 +856,7 @@ export const HousekeepingPortalPage: React.FC = () => {
     setCapturedAfterPhoto(null);
     setIsTimerRunning(false);
     setIsFocusModeOpen(false);
-    showToast(`✨ บันทึกภาพหลังทำห้อง ${task.roomNumber} เรียบร้อย! ปล่อยห้องพร้อมขายทันที`);
+    showToast(`บันทึกภาพหลังทำห้อง ${task.roomNumber} เรียบร้อย! ปล่อยห้องพร้อมขายทันที`);
 
     // เชื่อมต่อ Backend API สด (Service #4: complete task with afterPhotoUrl & Service #2: room status available)
     try {
@@ -945,7 +945,7 @@ export const HousekeepingPortalPage: React.FC = () => {
     setTimerSeconds(30 * 60);
     setIsTimerRunning(true);
     setIsFocusModeOpen(true);
-    showToast(`📸 บันทึกภาพก่อนทำห้อง ${targetTask.roomNumber} เรียบร้อย เข้าสู่โหมดเช็คลิสต์`);
+    showToast(`บันทึกภาพก่อนทำห้อง ${targetTask.roomNumber} เรียบร้อย เข้าสู่โหมดเช็คลิสต์`);
 
     // เชื่อมต่อ Backend API สด (Service #4: update task with beforePhotoUrl & Service #2: room status cleaning)
     const token = getAuthToken();
@@ -1254,13 +1254,13 @@ export const HousekeepingPortalPage: React.FC = () => {
   // Smart Sorting Weights (Business Priority & Hotel SOP Rules)
   const PRIORITY_WEIGHT: Record<string, number> = {
     urgent: 1, // VIP / แขกขอห้องด่วน
-    high: 2,   // เช็คเอาท์มีแขกใหม่รอเข้าพัก
+    high: 2,   // เช็คเอาต์มีแขกใหม่รอเข้าพัก
     normal: 3, // แขกพักต่อเนื่อง หรือห้องตรวจรอบสุดท้าย
     low: 4,
   };
 
   const TASK_TYPE_WEIGHT: Record<string, number> = {
-    checkout_clean: 1, // ห้องเช็คเอาท์ (ต้องรีบทำเปิดขาย)
+    checkout_clean: 1, // ห้องเช็คเอาต์ (ต้องรีบทำเปิดขาย)
     daily_clean: 2,    // ห้องพักต่อเนื่อง
     stayover_clean: 2, // ห้องพักต่อเนื่อง (เปลี่ยนผ้า/ขยะ)
     deep_clean: 3,     // ทำความสะอาดลึก
@@ -1274,7 +1274,7 @@ export const HousekeepingPortalPage: React.FC = () => {
       if (t.status === 'in_progress') return false; // Rendered in Active section
       if (taskFilter === 'urgent') return t.priority === 'urgent';
       if (taskFilter === 'checkout') {
-        return t.taskType === 'checkout_clean' || (t.notes && t.notes.includes('เช็คเอาท์'));
+        return t.taskType === 'checkout_clean' || (t.notes && (t.notes.includes('เช็คเอาต์') || t.notes.includes('เช็คเอาท์')));
       }
       if (taskFilter === 'incoming') {
         return t.notes && (t.notes.includes('เข้า') || t.notes.includes('แขกใหม่'));
@@ -1287,9 +1287,9 @@ export const HousekeepingPortalPage: React.FC = () => {
       return true;
     })
     .sort((a, b) => {
-      // 0. เคสด่วนเช็คเอาท์ที่ยังไม่ได้ตรวจมินิบาร์ ดันขึ้นบนสุดทันที (Front Desk รอมัดจำ)
-      const aNeedsMinibar = (a.taskType === 'checkout_clean' || (a.notes && a.notes.includes('เช็คเอาท์'))) && !minibarCheckedStatus[a.roomNumber];
-      const bNeedsMinibar = (b.taskType === 'checkout_clean' || (b.notes && b.notes.includes('เช็คเอาท์'))) && !minibarCheckedStatus[b.roomNumber];
+      // 0. เคสด่วนเช็คเอาต์ที่ยังไม่ได้ตรวจมินิบาร์ ดันขึ้นบนสุดทันที (Front Desk รอมัดจำ)
+      const aNeedsMinibar = (a.taskType === 'checkout_clean' || (a.notes && (a.notes.includes('เช็คเอาต์') || a.notes.includes('เช็คเอาท์')))) && !minibarCheckedStatus[a.roomNumber];
+      const bNeedsMinibar = (b.taskType === 'checkout_clean' || (b.notes && (b.notes.includes('เช็คเอาต์') || b.notes.includes('เช็คเอาท์')))) && !minibarCheckedStatus[b.roomNumber];
       if (aNeedsMinibar && !bNeedsMinibar) return -1;
       if (!aNeedsMinibar && bNeedsMinibar) return 1;
 
@@ -1336,7 +1336,7 @@ export const HousekeepingPortalPage: React.FC = () => {
 
   // Dynamic filter pill counts
   const checkoutCount = tasks.filter(
-    (t) => t.status !== 'in_progress' && (t.taskType === 'checkout_clean' || (t.notes && t.notes.includes('เช็คเอาท์')))
+    (t) => t.status !== 'in_progress' && (t.taskType === 'checkout_clean' || (t.notes && (t.notes.includes('เช็คเอาต์') || t.notes.includes('เช็คเอาท์'))))
   ).length;
   const incomingCount = tasks.filter(
     (t) => t.status !== 'in_progress' && t.notes && (t.notes.includes('เข้า') || t.notes.includes('แขกใหม่'))
@@ -1417,7 +1417,7 @@ export const HousekeepingPortalPage: React.FC = () => {
             {(() => {
               const isCheckout =
                 activeTask.taskType === 'checkout_clean' ||
-                (activeTask.notes && activeTask.notes.includes('เช็คเอาท์'));
+                (activeTask.notes && (activeTask.notes.includes('เช็คเอาต์') || activeTask.notes.includes('เช็คเอาท์')));
               const isIncoming =
                 activeTask.notes &&
                 (activeTask.notes.includes('เข้า') || activeTask.notes.includes('แขกใหม่'));
@@ -1454,7 +1454,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                     <div className="shrink-0">
                       {needsUrgentMinibar ? (
                         <span className="px-3.5 py-1.5 rounded-full bg-[#FFEDD5] text-[#9A3412] text-xs font-bold shadow-2xs inline-block">
-                          เพิ่งเช็คเอาท์ • รอมินิบาร์
+                          เพิ่งเช็คเอาต์ • รอมินิบาร์
                         </span>
                       ) : isCheckout && isMinibarDone ? (
                         <span className="px-3.5 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold shadow-2xs inline-flex items-center gap-1">
@@ -1971,7 +1971,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                     : 'bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100'
                 }`}
               >
-                <span> เช็คเอาท์/มินิบาร์ ({checkoutCount})</span>
+                <span> เช็คเอาต์/มินิบาร์ ({checkoutCount})</span>
               </button>
               <button
                 type="button"
@@ -2052,7 +2052,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                 {(() => {
                   const isCheckout =
                     activeTask.taskType === 'checkout_clean' ||
-                    (activeTask.notes && activeTask.notes.includes('เช็คเอาท์'));
+                    (activeTask.notes && (activeTask.notes.includes('เช็คเอาต์') || activeTask.notes.includes('เช็คเอาท์')));
                   const isIncoming =
                     activeTask.notes &&
                     (activeTask.notes.includes('เข้า') || activeTask.notes.includes('แขกใหม่'));
@@ -2253,7 +2253,7 @@ export const HousekeepingPortalPage: React.FC = () => {
 
               <div className="flex flex-col gap-2.5">
                 {filteredTasks.map((t) => {
-                  const isCheckout = t.taskType === 'checkout_clean' || (t.notes && t.notes.includes('เช็คเอาท์'));
+                  const isCheckout = t.taskType === 'checkout_clean' || (t.notes && (t.notes.includes('เช็คเอาต์') || t.notes.includes('เช็คเอาท์')));
                   const isIncoming = t.notes && (t.notes.includes('เข้า') || t.notes.includes('แขกใหม่'));
                   const isStayover = t.taskType === 'daily_clean' || (t as any).taskType === 'stayover_clean' || (t.notes && t.notes.includes('พักต่อเนื่อง'));
                   const isInspect = t.taskType === 'inspect' || (t as any).taskType === 'inspection' || (t.notes && t.notes.includes('รอตรวจ'));
@@ -2294,7 +2294,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                         <div className="shrink-0">
                           {needsUrgentMinibar ? (
                             <span className="px-3.5 py-1.5 rounded-full bg-[#FFEDD5] text-[#9A3412] text-xs font-bold shadow-2xs inline-block">
-                              เพิ่งเช็คเอาท์ • รอมินิบาร์
+                              เพิ่งเช็คเอาต์ • รอมินิบาร์
                             </span>
                           ) : isCheckout && isMinibarDone ? (
                             <span className="px-3.5 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold shadow-2xs inline-flex items-center gap-1">
@@ -3926,7 +3926,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                     </div>
                     <div>
                       <p className="text-xs font-bold text-slate-900">โทรหาเคาน์เตอร์ฟร้อนท์ (Front Desk)</p>
-                      <p className="text-[10px] text-slate-500">ประสานงานแขกเช็คอิน/เช็คเอาท์ด่วน</p>
+                      <p className="text-[10px] text-slate-500">ประสานงานแขกเช็คอิน/เช็คเอาต์ด่วน</p>
                     </div>
                   </div>
                   <span className="px-2 py-1 rounded bg-white text-emerald-700 border border-emerald-200 text-[11px] font-mono font-bold shadow-2xs">
@@ -3982,7 +3982,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                     <Bell className="w-4 h-4 text-slate-600" />
                     <div>
                       <p className="text-xs font-bold text-slate-900">เสียงแจ้งเตือนงานด่วน</p>
-                      <p className="text-[10px] text-slate-500">ส่งเสียงเตือนเมื่อมีห้องเช็คเอาท์เร่งด่วน</p>
+                      <p className="text-[10px] text-slate-500">ส่งเสียงเตือนเมื่อมีห้องเช็คเอาต์เร่งด่วน</p>
                     </div>
                   </div>
                   <button
@@ -5120,14 +5120,17 @@ export const HousekeepingPortalPage: React.FC = () => {
 
               <div className="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200 text-xs text-emerald-900 space-y-1">
                 <span className="font-bold block">เกณฑ์การตรวจรับห้อง 100%:</span>
-                <p className="text-[11px] text-emerald-800 leading-relaxed">
-                  ✓ เตียงนอนดึงตึงเปรี๊ยะ ไม่มีรอยยับหรือเส้นผม
+                <p className="text-[11px] text-emerald-800 leading-relaxed flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>เตียงนอนดึงตึงเปรี๊ยะ ไม่มีรอยยับหรือเส้นผม</span>
                 </p>
-                <p className="text-[11px] text-emerald-800 leading-relaxed">
-                  ✓ พื้นและห้องน้ำแห้งสนิท ไร้คราบน้ำและกลิ่นอับ
+                <p className="text-[11px] text-emerald-800 leading-relaxed flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>พื้นและห้องน้ำแห้งสนิท ไร้คราบน้ำและกลิ่นอับ</span>
                 </p>
-                <p className="text-[11px] text-emerald-800 leading-relaxed">
-                  ✓ ของใช้และมินิบาร์จัดวางตามตำแหน่งมาตรฐานครบถ้วน
+                <p className="text-[11px] text-emerald-800 leading-relaxed flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>ของใช้และมินิบาร์จัดวางตามตำแหน่งมาตรฐานครบถ้วน</span>
                 </p>
               </div>
             </div>

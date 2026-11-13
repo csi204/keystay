@@ -54,9 +54,12 @@ describe('RoomMatrixPage — Unified Toolbar, Popover Filter, Auto-Refresh & Sub
     // Emerald pulse dot
     assert.match(pageCode, /w-2\s+h-2\s+rounded-full\s+bg-emerald-500\s+animate-pulse/);
 
+    // Live auto-refresh pulse badge
+    assert.match(pageCode, /อัปเดตอัตโนมัติ|Auto-refresh/);
+
     // Tabular numbers and font-mono timestamp
     assert.match(pageCode, /font-mono\s+tabular-nums\s+text-xs\s+text-slate-500/);
-    assert.match(pageCode, /matrix\.autoRefresh/);
+    assert.match(pageCode, /refreshTimeStr/);
   });
 
   it('provides sub-tabs switching between Matrix Grid and Reservations Table with zero data loss', () => {
@@ -78,16 +81,20 @@ describe('RoomMatrixPage — Unified Toolbar, Popover Filter, Auto-Refresh & Sub
     assert.match(pageCode, /res\.newReservation/);
   });
 
-  it('implements silent 30s background auto-refresh and immediate visibilitychange refetch', () => {
-    // 30-second interval
-    assert.match(pageCode, /30000|30\s*\*\s*1000/);
-    assert.match(pageCode, /setInterval/);
-    assert.match(pageCode, /clearInterval/);
+  it('implements silent 1-minute background auto-refresh and immediate visibilitychange refetch via useAutoRefresh', () => {
+    const autoRefreshPath = path.resolve(process.cwd(), 'apps/web/src/hooks/useAutoRefresh.ts');
+    const hookCode = fs.readFileSync(autoRefreshPath, 'utf-8');
 
-    // visibilitychange listener
-    assert.match(pageCode, /document\.addEventListener\(['"]visibilitychange['"]/);
-    assert.match(pageCode, /document\.visibilityState\s*===\s*['"]visible['"]/);
-    assert.match(pageCode, /document\.removeEventListener\(['"]visibilitychange['"]/);
+    // RoomMatrixPage wires useAutoRefresh with 60s interval and paused flag
+    assert.match(pageCode, /useAutoRefresh/);
+    assert.match(pageCode, /60000|60\s*\*\s*1000/);
+
+    // useAutoRefresh implements interval & visibilitychange listener
+    assert.match(hookCode, /setInterval/);
+    assert.match(hookCode, /clearInterval/);
+    assert.match(hookCode, /document\.addEventListener\(['"]visibilitychange['"]/);
+    assert.match(hookCode, /document\.visibilityState\s*===\s*['"]visible['"]/);
+    assert.match(hookCode, /document\.removeEventListener\(['"]visibilitychange['"]/);
   });
 
   it('provides 1:1 translation parity for new matrix sub-tabs and auto-refresh across TH and EN', () => {

@@ -5,8 +5,8 @@ import type { Locale } from './i18n';
 // Pre-computed bidirectional lookup dictionaries
 const ROOM_TYPES_TH: Record<string, string> = {};
 const ROOM_TYPES_EN: Record<string, string> = {};
-const ROOM_NOTES_TH: Record<string, string> = {};
-const ROOM_NOTES_EN: Record<string, string> = {};
+export const ROOM_NOTES_TH: Record<string, string> = {};
+export const ROOM_NOTES_EN: Record<string, string> = {};
 const AMENITIES_TH: Record<string, string> = {};
 const AMENITIES_EN: Record<string, string> = {};
 const ROOM_DESCRIPTIONS_TH: Record<string, string> = {};
@@ -35,7 +35,7 @@ const FOLIO_ITEMS_TH: Record<string, string> = {
   'Extra Bed with Breakfast': 'เตียงเสริมพร้อมอาหารเช้า',
   'Extra Bed': 'เตียงเสริม',
   'Airport Shuttle Transfer': 'รถรับส่งสนามบิน',
-  'Late Check-out Hourly Fee': 'ค่าธรรมเนียมเช็คเอาท์เกินเวลา (รายชั่วโมง)',
+  'Late Check-out Hourly Fee': 'ค่าธรรมเนียมเช็คเอาต์เกินเวลา (รายชั่วโมง)',
   'Room Service: American Breakfast': 'รูมเซอร์วิส: อาหารเช้าอเมริกัน',
   'Miscellaneous Charge': 'ค่าบริการเบ็ดเตล็ด',
 };
@@ -62,7 +62,7 @@ for (const [key, thVal] of Object.entries(th)) {
     ROOM_NOTES_TH[rawNote] = thVal;
     ROOM_NOTES_TH[thVal] = thVal;
     ROOM_NOTES_EN[rawNote] = enVal;
-    ROOM_NOTES_EN[thVal] = enVal;
+    ROOM_NOTES_EN[thVal] = rawNote;
   } else if (key.startsWith('amenities.')) {
     const rawAmenity = key.replace('amenities.', '');
     const enVal = en[key] || rawAmenity;
@@ -160,6 +160,28 @@ export function localizeFolioDescription(desc: string | undefined | null, locale
       const target = locale === 'en' ? (ROOM_TYPES_EN[rtTh] || rtEn) : rtTh;
       return trimmed.replace(rtTh, target);
     }
+  }
+
+  // 4. Dynamic Room Charge pattern match: "Room Charge (X nights)" / "ค่าห้องพัก (X คืน)"
+  const roomChargeRegex = /^Room Charge\s*\(\s*(\d+)\s*nights?\s*\)$/i;
+  const rcMatch = trimmed.match(roomChargeRegex);
+  if (rcMatch) {
+    const nights = rcMatch[1];
+    return locale === 'th'
+      ? `ค่าห้องพัก (${nights} คืน)`
+      : `Room Charge (${nights} ${Number(nights) > 1 ? 'nights' : 'night'})`;
+  }
+
+  const thRoomChargeRegex = /^ค่าห้องพัก(?:\s*([^()]+))?\s*\(\s*(\d+)\s*คืน\s*\)$/;
+  const thMatch = trimmed.match(thRoomChargeRegex);
+  if (thMatch) {
+    const typePart = thMatch[1]?.trim();
+    const nights = thMatch[2];
+    if (locale === 'en') {
+      const enType = typePart ? (ROOM_TYPES_EN[typePart] || typePart) : '';
+      return `${enType ? enType : 'Room Charge'} (${nights} ${Number(nights) > 1 ? 'nights' : 'night'})`;
+    }
+    return trimmed;
   }
 
   return trimmed;

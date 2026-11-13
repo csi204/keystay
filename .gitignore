@@ -36,6 +36,7 @@ tail.log
 # D1 local databases
 .wrangler/state/v3/d1/
 dev-dbs/
+*.sqlite
 
 # Test & coverage
 coverage/
