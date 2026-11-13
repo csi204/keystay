@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { eq, and, desc, asc } from 'drizzle-orm';
+import { eq, and, desc, asc, sql } from 'drizzle-orm';
 import { getDb } from '../db/client';
 import { outsourceContacts, type OutsourceContact } from '../db/schema';
 import {
@@ -69,6 +69,22 @@ async function requireAdminGuard(c: any, next: any) {
   await next();
 }
 
+// Safe column migration for local SQLite/D1 instances that were created before the new columns
+let hasEnsuredColumns = false;
+async function ensureColumns(db: any) {
+  if (hasEnsuredColumns) return;
+  try {
+    await db.run(sql`ALTER TABLE outsource_contacts ADD COLUMN categories TEXT`);
+  } catch {}
+  try {
+    await db.run(sql`ALTER TABLE outsource_contacts ADD COLUMN open_time TEXT`);
+  } catch {}
+  try {
+    await db.run(sql`ALTER TABLE outsource_contacts ADD COLUMN close_time TEXT`);
+  } catch {}
+  hasEnsuredColumns = true;
+}
+
 // ==========================================
 // API #101: GET /housekeeping/outsource-contacts
 // ดึงรายชื่อช่าง/คู่ค้าภายนอกทั้งหมด (รองรับ filter: category, is_emergency, is_active)
@@ -76,6 +92,7 @@ async function requireAdminGuard(c: any, next: any) {
 // ==========================================
 outsourceRoute.get('/', async (c) => {
   const db = getDb(c.env.DB);
+  await ensureColumns(db);
   const category = c.req.query('category');
   const isEmergencyQuery = c.req.query('is_emergency') ?? c.req.query('isEmergency');
   const isActiveQuery = c.req.query('is_active') ?? c.req.query('isActive');
@@ -113,10 +130,29 @@ outsourceRoute.get('/', async (c) => {
         asc(outsourceContacts.name)
       ).all();
 
+  const formatted = results.map((row: any) => {
+    let categories: string[] = [];
+    if (row.categories) {
+      try {
+        categories = typeof row.categories === 'string' ? JSON.parse(row.categories) : row.categories;
+      } catch {
+        categories = [row.category];
+      }
+    } else if (row.category) {
+      categories = [row.category];
+    }
+    return {
+      ...row,
+      categories,
+      openTime: row.openTime ?? row.open_time ?? null,
+      closeTime: row.closeTime ?? row.close_time ?? null,
+    };
+  });
+
   return c.json({
     success: true,
-    count: results.length,
-    data: results,
+    count: formatted.length,
+    data: formatted,
   });
 });
 
@@ -126,6 +162,7 @@ outsourceRoute.get('/', async (c) => {
 // ==========================================
 outsourceRoute.get('/:id', async (c) => {
   const db = getDb(c.env.DB);
+  await ensureColumns(db);
   const id = c.req.param('id');
 
   const contact = await db
@@ -145,9 +182,26 @@ outsourceRoute.get('/:id', async (c) => {
     );
   }
 
+  let categories: string[] = [];
+  const rawContact: any = contact;
+  if (rawContact.categories) {
+    try {
+      categories = typeof rawContact.categories === 'string' ? JSON.parse(rawContact.categories) : rawContact.categories;
+    } catch {
+      categories = [rawContact.category];
+    }
+  } else if (rawContact.category) {
+    categories = [rawContact.category];
+  }
+
   return c.json({
     success: true,
-    data: contact,
+    data: {
+      ...rawContact,
+      categories,
+      openTime: rawContact.openTime ?? rawContact.open_time ?? null,
+      closeTime: rawContact.closeTime ?? rawContact.close_time ?? null,
+    },
   });
 });
 
@@ -157,6 +211,7 @@ outsourceRoute.get('/:id', async (c) => {
 // ==========================================
 outsourceRoute.post('/', requireAdminGuard, async (c) => {
   const db = getDb(c.env.DB);
+  await ensureColumns(db);
   const { userId } = await getCallerRole(c);
 
   let body: any;
@@ -189,18 +244,26 @@ outsourceRoute.post('/', requireAdminGuard, async (c) => {
   const now = new Date().toISOString();
   const id = body.id || `out-${crypto.randomUUID().slice(0, 8)}`;
 
+  const primaryCategory = parsed.data.category || (parsed.data.categories && parsed.data.categories[0]) || 'general_maintenance';
+  const categoriesList = parsed.data.categories && parsed.data.categories.length > 0
+    ? parsed.data.categories
+    : [primaryCategory];
+
   const newContact = {
     id,
     name: parsed.data.name,
-    category: parsed.data.category,
+    category: primaryCategory,
+    categories: JSON.stringify(categoriesList),
     serviceType: parsed.data.serviceType,
     phonePrimary: parsed.data.phonePrimary,
     phoneSecondary: parsed.data.phoneSecondary ?? null,
     lineId: parsed.data.lineId ?? null,
     isEmergency: parsed.data.isEmergency,
     availableHours: parsed.data.availableHours ?? '24 ชั่วโมง',
+    openTime: parsed.data.openTime ?? null,
+    closeTime: parsed.data.closeTime ?? null,
     priceRateNote: parsed.data.priceRateNote ?? null,
-    rating: parsed.data.rating,
+    rating: parsed.data.rating ?? 5.0,
     address: parsed.data.address ?? null,
     notes: parsed.data.notes ?? null,
     isActive: parsed.data.isActive,
@@ -215,7 +278,10 @@ outsourceRoute.post('/', requireAdminGuard, async (c) => {
     {
       success: true,
       message: 'Outsource contact created successfully',
-      data: newContact,
+      data: {
+        ...newContact,
+        categories: categoriesList,
+      },
     },
     201
   );
@@ -227,6 +293,7 @@ outsourceRoute.post('/', requireAdminGuard, async (c) => {
 // ==========================================
 outsourceRoute.put('/:id', requireAdminGuard, async (c) => {
   const db = getDb(c.env.DB);
+  await ensureColumns(db);
   const id = c.req.param('id');
 
   const existing = await db
@@ -274,10 +341,17 @@ outsourceRoute.put('/:id', requireAdminGuard, async (c) => {
   }
 
   const now = new Date().toISOString();
-  const updateData: Partial<OutsourceContact> = {
+  const updateData: any = {
     ...parsed.data,
     updatedAt: now,
   };
+
+  if (parsed.data.categories && parsed.data.categories.length > 0) {
+    updateData.categories = JSON.stringify(parsed.data.categories);
+    if (!parsed.data.category) {
+      updateData.category = parsed.data.categories[0];
+    }
+  }
 
   await db
     .update(outsourceContacts)
@@ -285,16 +359,32 @@ outsourceRoute.put('/:id', requireAdminGuard, async (c) => {
     .where(eq(outsourceContacts.id, id))
     .run();
 
-  const updated = await db
+  const updated: any = await db
     .select()
     .from(outsourceContacts)
     .where(eq(outsourceContacts.id, id))
     .get();
 
+  let categories: string[] = [];
+  if (updated?.categories) {
+    try {
+      categories = typeof updated.categories === 'string' ? JSON.parse(updated.categories) : updated.categories;
+    } catch {
+      categories = [updated.category];
+    }
+  } else if (updated?.category) {
+    categories = [updated.category];
+  }
+
   return c.json({
     success: true,
     message: 'Outsource contact updated successfully',
-    data: updated,
+    data: {
+      ...updated,
+      categories,
+      openTime: updated?.openTime ?? updated?.open_time ?? null,
+      closeTime: updated?.closeTime ?? updated?.close_time ?? null,
+    },
   });
 });
 

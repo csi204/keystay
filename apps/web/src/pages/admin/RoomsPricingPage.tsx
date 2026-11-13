@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { apiFetch, getAuthRole } from '@/lib/api';
 import { useTranslation } from '@/lib/i18n';
+import { localizeRoomDescription, localizeRoomType, localizeAmenity } from '@/lib/localizeMetadata';
 import {
   BedDouble,
   Plus,
@@ -25,7 +26,14 @@ import {
   CheckCircle2,
   RotateCcw,
   RefreshCw,
+  TrendingUp,
+  Package,
+  ChevronLeft,
+  ChevronRight,
+  Layers,
 } from 'lucide-react';
+import { SeasonalPricingTab, type SeasonalPricingTabRef } from './SeasonalPricingTab';
+import { AmenitiesCatalogTab, type AmenitiesCatalogTabRef } from './AmenitiesCatalogTab';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -164,13 +172,17 @@ const MOCK_ROOMS: RoomUnit[] = [
 
 export const RoomsPricingPage: React.FC = () => {
   const isOwner = getAuthRole() === 'owner';
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
 
-  // Tab
-  const [activeTab, setActiveTab] = useState<'types' | 'units'>('types');
+  // Tab (Tab 1: Room Units, Tab 2: Room Types, Tab 3: Pricing Rules, Tab 4: Amenities)
+  const [activeTab, setActiveTab] = useState<'units' | 'types' | 'pricing_rules' | 'amenities'>('units');
   const [isOffline, setIsOffline] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [refreshSuccess, setRefreshSuccess] = useState<boolean>(false);
+
+  // Refs for Sub-Tabs
+  const seasonalTabRef = useRef<SeasonalPricingTabRef>(null);
+  const amenitiesTabRef = useRef<AmenitiesCatalogTabRef>(null);
 
   // ══════════════════════════════════════════════
   //  TAB 1 — Room Types
@@ -310,6 +322,20 @@ export const RoomsPricingPage: React.FC = () => {
     const matchOcc = occupancyFilter === 'all' || tItem.maxOccupancy.toString() === occupancyFilter;
     return matchSearch && matchBed && matchOcc;
   });
+
+  // Pagination for Room Types (Max 9 cards per page)
+  const TYPE_ITEMS_PER_PAGE = 9;
+  const [typePage, setTypePage] = useState<number>(1);
+
+  useEffect(() => {
+    setTypePage(1);
+  }, [searchQuery, bedTypeFilter, occupancyFilter]);
+
+  const totalTypePages = Math.ceil(filteredTypes.length / TYPE_ITEMS_PER_PAGE) || 1;
+  const paginatedTypes = filteredTypes.slice(
+    (typePage - 1) * TYPE_ITEMS_PER_PAGE,
+    typePage * TYPE_ITEMS_PER_PAGE
+  );
 
   // ══════════════════════════════════════════════
   //  TAB 2 — Room Units
@@ -543,21 +569,31 @@ export const RoomsPricingPage: React.FC = () => {
   return (
     <AdminLayout activePath="/admin/rooms" isBackendOffline={isOffline}>
       {/* ── Page Header ── */}
-      <div className="bg-white border-b border-slate-200/80 px-4 py-3.5 mb-4 shadow-2xs">
+      <div className="bg-white px-4 py-3.5 mb-4 shadow-2xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
               <span>{t('nav.home')}</span>
               <span>/</span>
-              <span>{t('nav.management')}</span>
-              <span>/</span>
               <span className="font-semibold text-slate-800">{t('nav.roomsPricing')}</span>
             </div>
             <h1 className="text-xl font-bold tracking-tight text-slate-900">
-              {activeTab === 'types' ? t('header.roomTypes.title') : t('header.roomUnits.title')}
+              {activeTab === 'types'
+                ? t('header.roomTypes.title')
+                : activeTab === 'units'
+                ? t('header.roomUnits.title')
+                : activeTab === 'pricing_rules'
+                ? t('header.pricingRules.title')
+                : t('header.amenities.title')}
             </h1>
             <p className="text-xs text-slate-500 mt-1">
-              {activeTab === 'types' ? t('header.roomTypes.desc') : t('header.roomUnits.desc')}
+              {activeTab === 'types'
+                ? t('header.roomTypes.desc')
+                : activeTab === 'units'
+                ? t('header.roomUnits.desc')
+                : activeTab === 'pricing_rules'
+                ? t('header.pricingRules.desc')
+                : t('header.amenities.desc')}
             </p>
           </div>
 
@@ -577,28 +613,44 @@ export const RoomsPricingPage: React.FC = () => {
               <Button
                 size="sm"
                 disabled={isOffline}
-                onClick={() => activeTab === 'types' ? setIsCreateOpen(true) : setIsCreateRoomOpen(true)}
+                onClick={() => {
+                  if (activeTab === 'units') setIsCreateRoomOpen(true);
+                  else if (activeTab === 'types') setIsCreateOpen(true);
+                  else if (activeTab === 'pricing_rules') seasonalTabRef.current?.openCreate();
+                  else if (activeTab === 'amenities') amenitiesTabRef.current?.openCreate();
+                }}
                 className="text-xs font-semibold gap-1.5 h-9 bg-[#F97316] hover:bg-[#ea580c] text-white"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>{activeTab === 'types' ? t('action.addRoomType') : t('action.addRoomUnit')}</span>
+                <span>
+                  {activeTab === 'units'
+                    ? t('action.addRoomUnit')
+                    : activeTab === 'types'
+                    ? t('action.addRoomType')
+                    : activeTab === 'pricing_rules'
+                    ? (locale === 'en' ? 'Add Price Rule' : 'เพิ่มกฎราคาใหม่')
+                    : (locale === 'en' ? 'Add Amenity' : 'เพิ่มของใช้/บริการ')}
+                </span>
               </Button>
             )}
           </div>
         </div>
 
-        {/* ── Tabs ── */}
-        <div className="flex gap-1 mt-4 border-b border-slate-200 -mb-3.5">
+        {/* ── Tabs (Tab 1: Room Units First, Tab 2: Room Types) ── */}
+        <div className="flex gap-1 mt-4  -mb-3.5 overflow-x-auto">
           {(
             [
-              { key: 'types', label: t('tab.roomTypes'), icon: <BedDouble className="w-3.5 h-3.5" /> },
               { key: 'units', label: t('tab.roomUnits'), icon: <Building2 className="w-3.5 h-3.5" /> },
+              { key: 'types', label: t('tab.roomTypes'), icon: <BedDouble className="w-3.5 h-3.5" /> },
+              { key: 'pricing_rules', label: t('tab.pricingRules'), icon: <TrendingUp className="w-3.5 h-3.5" /> },
+              { key: 'amenities', label: t('tab.amenities'), icon: <Package className="w-3.5 h-3.5" /> },
             ] as const
           ).map((tab) => (
             <button
               key={tab.key}
+              data-tab={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-1.5 px-4 py-2 text-xs font-semibold border-b-2 transition-colors ${
+              className={`flex items-center gap-1.5 px-4 py-2 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === tab.key
                   ? 'border-[#F97316] text-[#F97316]'
                   : 'border-transparent text-slate-500 hover:text-slate-700'
@@ -671,12 +723,12 @@ export const RoomsPricingPage: React.FC = () => {
 
           {/* Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {filteredTypes.map((tItem) => (
+            {paginatedTypes.map((tItem) => (
               <Card key={tItem.id} className="border-slate-200 bg-white shadow-sm hover:border-slate-300 transition-all">
                 <CardHeader className="py-3 px-4 flex flex-row items-center justify-between border-b border-slate-100">
                   <div className="flex items-center gap-2">
                     <BedDouble className="w-4 h-4 text-[#F97316]" />
-                    <span className="text-xs font-bold text-slate-900">{tItem.name}</span>
+                    <span className="text-xs font-bold text-slate-900">{localizeRoomType(tItem.name, locale)}</span>
                   </div>
                   <span className="text-xs font-bold text-[#F97316] font-mono">
                     ฿{tItem.basePrice.toLocaleString()}
@@ -684,8 +736,8 @@ export const RoomsPricingPage: React.FC = () => {
                   </span>
                 </CardHeader>
                 <CardContent className="p-4 space-y-3">
-                  <p className="text-xs text-slate-500 min-h-[32px] line-clamp-2">
-                    {tItem.description || '—'}
+                  <p className="text-xs text-slate-600 min-h-[32px] line-clamp-2 leading-relaxed">
+                    {localizeRoomDescription(tItem.description, locale) || '—'}
                   </p>
                   <div className="grid grid-cols-4 gap-1.5 pt-2 border-t border-slate-100 text-[11px] text-slate-600">
                     <div className="flex items-center gap-1">
@@ -700,8 +752,8 @@ export const RoomsPricingPage: React.FC = () => {
                       <Bath className="w-3.5 h-3.5 text-slate-400" />
                       <span>{tItem.bathrooms || 1} {t('unit.rooms')}</span>
                     </div>
-                    <div className="truncate text-right text-slate-500 font-medium" title={tItem.bedType}>
-                      {tItem.bedType}
+                    <div className="truncate text-right text-slate-600 font-medium" title={localizeAmenity(tItem.bedType, locale)}>
+                      {localizeAmenity(tItem.bedType, locale)}
                     </div>
                   </div>
                   {isOwner && (
@@ -720,61 +772,56 @@ export const RoomsPricingPage: React.FC = () => {
             ))}
           </div>
 
-          {/* Detailed Table */}
-          <Card className="border-slate-200 shadow-sm bg-white overflow-hidden">
-            <CardHeader className="py-3 px-5 border-b border-slate-100">
-              <CardTitle className="text-sm font-bold text-slate-900">
-                {t('header.roomTypes.title')} (Master Data)
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 text-[11px] text-slate-500 font-semibold border-b border-slate-200 uppercase tracking-wider">
-                    <tr>
-                      <th className="py-3 px-4">{t('field.roomTypeName')}</th>
-                      <th className="py-3 px-3">{t('field.bedType')}</th>
-                      <th className="py-3 px-3 text-center">{t('field.sizeSqm')}</th>
-                      <th className="py-3 px-3 text-center">{t('field.bathrooms')}</th>
-                      <th className="py-3 px-3 text-center">{t('field.maxOccupancy')}</th>
-                      <th className="py-3 px-3 text-right">{t('field.basePrice')}</th>
-                      {isOwner && <th className="py-3 px-4 text-center">{t('field.actions')}</th>}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {filteredTypes.map((tItem) => (
-                      <tr key={tItem.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="py-3 px-4">
-                          <div className="font-semibold text-slate-900">{tItem.name}</div>
-                          <div className="text-[11px] text-slate-500 truncate max-w-xs">{tItem.description}</div>
-                        </td>
-                        <td className="py-3 px-3 text-slate-700">{tItem.bedType}</td>
-                        <td className="py-3 px-3 text-center font-mono text-slate-600">{tItem.sizeSqm}</td>
-                        <td className="py-3 px-3 text-center font-mono text-slate-600">{tItem.bathrooms || 1}</td>
-                        <td className="py-3 px-3 text-center font-mono text-slate-600">{tItem.maxOccupancy}</td>
-                        <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
-                          ฿{tItem.basePrice.toLocaleString()}
-                        </td>
-                        {isOwner && (
-                          <td className="py-3 px-4 text-center">
-                            <div className="flex items-center justify-center gap-1.5">
-                              <Button variant="outline" size="sm" disabled={isOffline} onClick={() => openEditModal(tItem)} className="h-7 text-xs px-2.5 border-slate-300 text-slate-700 gap-1 font-medium">
-                                <Pencil className="w-3 h-3 text-slate-500" />
-                                <span>{t('action.edit')}</span>
-                              </Button>
-                              <Button variant="outline" size="sm" disabled={isOffline} onClick={() => setDeletingType(tItem)} className="h-7 text-xs px-2 border-red-200 text-red-600 hover:bg-red-50">
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          </td>
-                        )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          {/* Pagination Controls for Room Types (When cards > 9) */}
+          {filteredTypes.length > TYPE_ITEMS_PER_PAGE && (
+            <div className="flex items-center justify-between bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-2xs mt-4">
+              <div className="text-xs text-slate-500 font-medium">
+                แสดง <span className="font-semibold text-slate-800">{(typePage - 1) * TYPE_ITEMS_PER_PAGE + 1}</span> -{' '}
+                <span className="font-semibold text-slate-800">
+                  {Math.min(typePage * TYPE_ITEMS_PER_PAGE, filteredTypes.length)}
+                </span>{' '}
+                จากทั้งหมด <span className="font-semibold text-slate-800">{filteredTypes.length}</span> ประเภทห้องพัก · 9 การ์ดต่อหน้า
               </div>
-            </CardContent>
-          </Card>
+
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={typePage === 1}
+                  onClick={() => setTypePage((p) => Math.max(1, p - 1))}
+                  className="h-8 px-2.5 text-xs text-slate-600 border-slate-200 hover:bg-slate-50 disabled:opacity-40"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5 mr-1" />
+                  ก่อนหน้า
+                </Button>
+
+                {Array.from({ length: totalTypePages }, (_, i) => i + 1).map((pageNum) => (
+                  <button
+                    key={pageNum}
+                    onClick={() => setTypePage(pageNum)}
+                    className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all ${
+                      typePage === pageNum
+                        ? 'bg-slate-900 text-white shadow-2xs'
+                        : 'text-slate-600 hover:bg-slate-100 border border-transparent'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                ))}
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={typePage === totalTypePages}
+                  onClick={() => setTypePage((p) => Math.min(totalTypePages, p + 1))}
+                  className="h-8 px-2.5 text-xs text-slate-600 border-slate-200 hover:bg-slate-50 disabled:opacity-40"
+                >
+                  ถัดไป
+                  <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -853,9 +900,9 @@ export const RoomsPricingPage: React.FC = () => {
           ) : (
             roomsByFloor.map(({ floor, rooms: floorRooms }) => (
               <Card key={floor.id} className="border-slate-200 shadow-sm bg-white overflow-hidden">
-                <CardHeader className="py-2.5 px-5 border-b border-slate-100 flex flex-row items-center gap-2">
-                  <Building2 className="w-4 h-4 text-slate-400" />
-                  <CardTitle className="text-sm font-bold text-slate-800">
+                <CardHeader className="py-2.5 px-5 border-b border-slate-100 flex flex-row items-center gap-2 bg-white">
+                  <Building2 className="w-4 h-4 text-[#F97316]" />
+                  <CardTitle className="text-sm font-bold text-slate-900">
                     {floor.name}
                   </CardTitle>
                   <span className="text-[11px] text-slate-400 font-normal">
@@ -865,14 +912,14 @@ export const RoomsPricingPage: React.FC = () => {
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-50 text-[11px] text-slate-500 font-semibold border-b border-slate-200 uppercase tracking-wider">
+                      <thead className="bg-white text-[11px] text-slate-500 font-semibold border-b border-slate-100 uppercase tracking-wider">
                         <tr>
                           <th className="py-2.5 px-4 w-28">{t('field.roomNumber')}</th>
-                          <th className="py-2.5 px-3">{t('field.roomType')}</th>
-                          <th className="py-2.5 px-3 text-right">{t('field.basePrice')}</th>
-                          <th className="py-2.5 px-3 text-center">{t('field.status')}</th>
-                          <th className="py-2.5 px-3 text-center">{t('field.isActive')}</th>
-                          {isOwner && <th className="py-2.5 px-4 text-center">{t('field.actions')}</th>}
+                          <th className="py-2.5 px-3 w-64">{t('field.roomType')}</th>
+                          <th className="py-2.5 px-3  w-36">{t('field.basePrice')}</th>
+                          <th className="py-2.5 px-3 text-center w-40">{t('field.status')}</th>
+                          <th className="py-2.5 px-3 text-center w-28">{t('field.isActive')}</th>
+                          {isOwner && <th className="py-2.5 px-4 text-center w-56">{t('field.actions')}</th>}
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
@@ -880,19 +927,16 @@ export const RoomsPricingPage: React.FC = () => {
                           const isOccupiedOrReserved = room.status === 'occupied' || room.status === 'reserved';
                           return (
                             <tr key={room.id} className={`hover:bg-slate-50/80 transition-colors ${room.isActive === 0 ? 'opacity-50' : ''}`}>
-                              <td className="py-3 px-4">
-                                <div className="flex items-center gap-1.5 font-bold text-slate-900 font-mono">
-                                  <Hash className="w-3 h-3 text-slate-400" />
-                                  {room.roomNumber}
-                                </div>
+                              <td className="py-3 px-4 font-mono text-slate-700 font-medium text-xs">
+                                {room.roomNumber}
                               </td>
-                              <td className="py-3 px-3 text-slate-700">{room.roomType?.name ?? '—'}</td>
-                              <td className="py-3 px-3 text-right font-mono text-slate-600">
+                              <td className="py-3 px-3 text-slate-700">{localizeRoomType(room.roomType?.name, locale) ?? '—'}</td>
+                              <td className="py-3 px-10  font-mono text-slate-700 font-medium text-xs">
                                 {room.roomType ? `฿${room.roomType.basePrice.toLocaleString()}` : '—'}
                               </td>
                               {/* Minimal Enterprise Status Dot (Zero AI Slop) */}
                               <td className="py-3 px-3 text-center">
-                                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-800">
+                                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
                                   <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[room.status]}`} />
                                   <span>{t(`status.${room.status}`)}</span>
                                 </span>
@@ -974,6 +1018,33 @@ export const RoomsPricingPage: React.FC = () => {
       )}
 
       {/* ══════════════════════════════════════════════════════════════
+          TAB 3 — SEASONAL PRICING RULES (SPEC MODULE 1)
+      ══════════════════════════════════════════════════════════════ */}
+      {activeTab === 'pricing_rules' && (
+        <div className="px-4 pb-6">
+          <SeasonalPricingTab
+            ref={seasonalTabRef}
+            isOwner={isOwner}
+            roomTypes={roomTypes}
+            isOffline={isOffline}
+          />
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════
+          TAB 4 — AMENITIES CATALOG (SPEC MODULE 3)
+      ══════════════════════════════════════════════════════════════ */}
+      {activeTab === 'amenities' && (
+        <div className="px-4 pb-6">
+          <AmenitiesCatalogTab
+            ref={amenitiesTabRef}
+            isOwner={isOwner}
+            isOffline={isOffline}
+          />
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════
           MODALS — Room Types
       ══════════════════════════════════════════════════════════════ */}
 
@@ -1000,7 +1071,9 @@ export const RoomsPricingPage: React.FC = () => {
 
             <form onSubmit={handleCreateSubmit} className="py-4 space-y-3.5">
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.roomTypeName')} *</label>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  {t('field.roomTypeName')} <span className="text-red-500">*</span>
+                </label>
                 <Input required placeholder="เช่น Premier Deluxe Room" value={createForm.name} onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })} className="text-xs h-9" />
               </div>
               <div>
@@ -1009,17 +1082,23 @@ export const RoomsPricingPage: React.FC = () => {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.basePrice')} (THB) *</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    {t('field.basePrice')} <span className="text-red-500">*</span>
+                  </label>
                   <Input required type="number" placeholder="1500" value={createForm.basePrice} onChange={(e) => setCreateForm({ ...createForm, basePrice: e.target.value })} className="text-xs font-mono h-9" />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.maxOccupancy')} ({t('unit.persons')}) *</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    {t('field.maxOccupancy')} <span className="text-red-500">*</span>
+                  </label>
                   <Input required type="number" min="1" max="10" value={createForm.maxOccupancy} onChange={(e) => setCreateForm({ ...createForm, maxOccupancy: e.target.value })} className="text-xs font-mono h-9" />
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.bedType')} *</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    {t('field.bedType')} <span className="text-red-500">*</span>
+                  </label>
                   <Select value={createForm.bedType} onChange={(e) => setCreateForm({ ...createForm, bedType: e.target.value })} className="text-xs h-9">
                     <option value="King Bed">King Bed</option>
                     <option value="Queen Bed">Queen Bed</option>
@@ -1028,11 +1107,15 @@ export const RoomsPricingPage: React.FC = () => {
                   </Select>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.sizeSqm')} *</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    {t('field.sizeSqm')} <span className="text-red-500">*</span>
+                  </label>
                   <Input required type="number" value={createForm.sizeSqm} onChange={(e) => setCreateForm({ ...createForm, sizeSqm: e.target.value })} className="text-xs font-mono h-9" />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.bathrooms')} *</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    {t('field.bathrooms')} <span className="text-red-500">*</span>
+                  </label>
                   <Input required type="number" min="1" max="10" value={createForm.bathrooms} onChange={(e) => setCreateForm({ ...createForm, bathrooms: e.target.value })} className="text-xs font-mono h-9" />
                 </div>
               </div>
@@ -1071,7 +1154,9 @@ export const RoomsPricingPage: React.FC = () => {
 
             <form onSubmit={handleEditSubmit} className="py-4 space-y-3.5">
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.roomTypeName')} *</label>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  {t('field.roomTypeName')} <span className="text-red-500">*</span>
+                </label>
                 <Input required value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="text-xs h-9" />
               </div>
               <div>
@@ -1080,17 +1165,23 @@ export const RoomsPricingPage: React.FC = () => {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.basePrice')} (THB) *</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    {t('field.basePrice')} <span className="text-red-500">*</span>
+                  </label>
                   <Input required type="number" value={editForm.basePrice} onChange={(e) => setEditForm({ ...editForm, basePrice: e.target.value })} className="text-xs font-mono h-9" />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.maxOccupancy')} ({t('unit.persons')}) *</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    {t('field.maxOccupancy')} <span className="text-red-500">*</span>
+                  </label>
                   <Input required type="number" min="1" max="10" value={editForm.maxOccupancy} onChange={(e) => setEditForm({ ...editForm, maxOccupancy: e.target.value })} className="text-xs font-mono h-9" />
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.bedType')} *</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    {t('field.bedType')} <span className="text-red-500">*</span>
+                  </label>
                   <Select value={editForm.bedType} onChange={(e) => setEditForm({ ...editForm, bedType: e.target.value })} className="text-xs h-9">
                     <option value="King Bed">King Bed</option>
                     <option value="Queen Bed">Queen Bed</option>
@@ -1099,11 +1190,15 @@ export const RoomsPricingPage: React.FC = () => {
                   </Select>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.sizeSqm')} *</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    {t('field.sizeSqm')} <span className="text-red-500">*</span>
+                  </label>
                   <Input required type="number" value={editForm.sizeSqm} onChange={(e) => setEditForm({ ...editForm, sizeSqm: e.target.value })} className="text-xs font-mono h-9" />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.bathrooms')} *</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    {t('field.bathrooms')} <span className="text-red-500">*</span>
+                  </label>
                   <Input required type="number" min="1" max="10" value={editForm.bathrooms} onChange={(e) => setEditForm({ ...editForm, bathrooms: e.target.value })} className="text-xs font-mono h-9" />
                 </div>
               </div>
@@ -1173,20 +1268,26 @@ export const RoomsPricingPage: React.FC = () => {
 
             <form onSubmit={handleCreateRoomSubmit} className="py-4 space-y-3.5">
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.roomNumber')} *</label>
+                <label className="text-xs font-semibold text-slate-700 block mb-1 leading-normal pt-0.5">
+                  {t('field.roomNumber')} <span className="text-red-500">*</span>
+                </label>
                 <Input required placeholder="เช่น 205, 301A" value={createRoomForm.roomNumber} onChange={(e) => setCreateRoomForm({ ...createRoomForm, roomNumber: e.target.value })} className="text-xs font-mono h-9" />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.floor')} *</label>
+                <label className="text-xs font-semibold text-slate-700 block mb-1 leading-normal pt-0.5">
+                  {t('field.floor')} <span className="text-red-500">*</span>
+                </label>
                 <Select value={createRoomForm.floorId} onChange={(e) => setCreateRoomForm({ ...createRoomForm, floorId: e.target.value })} className="text-xs h-9">
-                  <option value="">{t('modal.selectFloorPlaceholder')}</option>
+                  <option value="">{locale === 'en' ? 'Select Floor' : 'เลือกชั้น'}</option>
                   {floors.map((f) => (
                     <option key={f.id} value={f.id}>{f.name}</option>
                   ))}
                 </Select>
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.roomType')} *</label>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  {t('field.roomType')} <span className="text-red-500">*</span>
+                </label>
                 <Select value={createRoomForm.roomTypeId} onChange={(e) => setCreateRoomForm({ ...createRoomForm, roomTypeId: e.target.value })} className="text-xs h-9">
                   <option value="">{t('modal.selectTypePlaceholder')}</option>
                   {roomTypes.map((rt) => (
@@ -1229,11 +1330,15 @@ export const RoomsPricingPage: React.FC = () => {
 
             <form onSubmit={handleEditRoomSubmit} className="py-4 space-y-3.5">
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.roomNumber')} *</label>
+                <label className="text-xs font-semibold text-slate-700 block mb-1 leading-normal pt-0.5">
+                  {t('field.roomNumber')} <span className="text-red-500">*</span>
+                </label>
                 <Input required value={editRoomForm.roomNumber} onChange={(e) => setEditRoomForm({ ...editRoomForm, roomNumber: e.target.value })} className="text-xs font-mono h-9" />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.floor')} *</label>
+                <label className="text-xs font-semibold text-slate-700 block mb-1 leading-normal pt-0.5">
+                  {t('field.floor')} <span className="text-red-500">*</span>
+                </label>
                 <Select value={editRoomForm.floorId} onChange={(e) => setEditRoomForm({ ...editRoomForm, floorId: e.target.value })} className="text-xs h-9">
                   {floors.map((f) => (
                     <option key={f.id} value={f.id}>{f.name}</option>
@@ -1241,7 +1346,9 @@ export const RoomsPricingPage: React.FC = () => {
                 </Select>
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">{t('field.roomType')} *</label>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  {t('field.roomType')} <span className="text-red-500">*</span>
+                </label>
                 <Select value={editRoomForm.roomTypeId} onChange={(e) => setEditRoomForm({ ...editRoomForm, roomTypeId: e.target.value })} className="text-xs h-9">
                   {roomTypes.map((rt) => (
                     <option key={rt.id} value={rt.id}>{`${rt.name} · ฿${rt.basePrice.toLocaleString()}`}</option>
@@ -1291,7 +1398,9 @@ export const RoomsPricingPage: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-slate-700 block">{t('modal.changeStatus.changeTo')} *</label>
+                  <label className="text-xs font-semibold text-slate-700 block">
+                    {t('modal.changeStatus.changeTo')} <span className="text-red-500">*</span>
+                  </label>
                   {ALLOWED_OWNER_TRANSITIONS[statusRoom.status].map((s) => (
                     <label key={s} className={`flex items-center gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-colors ${newStatus === s ? 'border-[#F97316] bg-orange-50/50' : 'border-slate-200 hover:border-slate-300'}`}>
                       <input type="radio" name="newStatus" value={s} checked={newStatus === s} onChange={() => setNewStatus(s)} className="accent-[#F97316]" />

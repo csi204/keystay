@@ -82,7 +82,10 @@ CREATE TABLE IF NOT EXISTS outsource_contacts (
     phone_secondary TEXT,
     line_id TEXT,
     is_emergency INTEGER NOT NULL DEFAULT 0,
+    categories TEXT,
     available_hours TEXT DEFAULT '24 ชั่วโมง',
+    open_time TEXT,
+    close_time TEXT,
     price_rate_note TEXT,
     rating REAL DEFAULT 5.0,
     address TEXT,
@@ -101,6 +104,7 @@ CREATE TABLE IF NOT EXISTS task_templates (
     default_priority TEXT NOT NULL DEFAULT 'normal' CHECK(default_priority IN ('urgent', 'high', 'normal', 'low')),
     estimated_minutes INTEGER NOT NULL DEFAULT 30,
     description TEXT,
+    checklist_items TEXT,
     is_active INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL

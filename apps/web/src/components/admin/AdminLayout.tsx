@@ -19,6 +19,8 @@ import {
   ShoppingCart,
   ClipboardList,
   Globe,
+  Wrench,
+  KeyRound,
 } from 'lucide-react';
 
 import { getAuthRole, getAuthUser, clearAuthSession, getAuthToken, apiUrl } from '@/lib/api';
@@ -38,7 +40,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   const location = useLocation();
   const navigate = useNavigate();
   const currentPath = activePath || location.pathname;
-  const { t, language, toggleLanguage } = useTranslation();
+  const { t, language, setLanguage, toggleLanguage } = useTranslation();
 
   // Sidebar Collapsible state (remember in localStorage)
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
@@ -66,26 +68,25 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
     ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
     : 'AD';
 
-  // Live Clock for Header
+  // Live Clock (localized according to active language)
   const [currentTime, setCurrentTime] = useState<string>('');
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
-      const formatted = new Intl.DateTimeFormat('en-GB', {
+      const formatted = new Intl.DateTimeFormat(language === 'th' ? 'th-TH' : 'en-US', {
         weekday: 'short',
         day: '2-digit',
         month: 'short',
-        year: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
         hour12: false,
       }).format(now);
-      setCurrentTime(formatted.replace(',', ' ·'));
+      setCurrentTime(formatted);
     };
     updateTime();
     const timer = setInterval(updateTime, 30000);
     return () => clearInterval(timer);
-  }, []);
+  }, [language]);
 
   const handleLogout = async () => {
     try {
@@ -120,7 +121,12 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       icon: ShoppingCart,
     },
     {
-      title: 'งานแม่บ้าน (Task Templates)',
+      title: t('nav.technicians'),
+      path: '/admin/technicians',
+      icon: Wrench,
+    },
+    {
+      title: t('nav.housekeeping'),
       path: '/admin/tasks',
       icon: ClipboardList,
     },
@@ -226,49 +232,122 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
           </nav>
         </div>
 
-        {/* User Card at Bottom: Language Switcher & Logout button */}
+        {/* User Card at Bottom: Language Switcher (Orange), Clock & Logout button */}
         <div className="p-3 border-t border-slate-200/80 bg-white shrink-0 space-y-2">
-          {/* Global Language Switcher */}
+          {/* Global Language Switcher (Matching FrontDesk layout with orange theme) */}
           {isCollapsed ? (
             <button
+              type="button"
               onClick={toggleLanguage}
-              title={language === 'th' ? 'Switch to English' : 'เปลี่ยนเป็นภาษาไทย'}
-              className="w-full flex items-center justify-center p-2 text-slate-600 hover:text-[#F97316] hover:bg-orange-50 rounded-lg border border-slate-200 transition-colors"
+              title={`Switch language (${language.toUpperCase()})`}
+              className="w-full flex items-center justify-center p-1.5 text-xs font-bold text-slate-700 bg-white hover:bg-slate-100 rounded-md border border-slate-200 shadow-2xs transition-colors"
             >
-              <Globe className="w-4 h-4 text-[#F97316]" />
+              <Globe className="w-3.5 h-3.5 text-[#F97316] mr-1" aria-hidden="true" />
+              <span>{language.toUpperCase()}</span>
             </button>
           ) : (
-            <button
-              onClick={toggleLanguage}
-              className="w-full flex items-center justify-between py-1.5 px-2.5 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors shadow-2xs"
+            <div
+              role="group"
+              aria-label="Language Switcher"
+              className="flex items-center bg-white p-0.5 rounded-md border border-slate-200 text-xs font-medium shadow-2xs"
             >
-              <div className="flex items-center gap-2">
-                <Globe className="w-3.5 h-3.5 text-[#F97316]" />
-                <span>{t('nav.switchLang')}</span>
-              </div>
-              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-700 font-bold uppercase">
-                {language === 'th' ? 'EN' : 'TH'}
-              </span>
-            </button>
+              <button
+                type="button"
+                onClick={() => setLanguage('th')}
+                className={`flex-1 py-1 rounded text-center transition-colors font-semibold ${
+                  language === 'th'
+                    ? 'bg-[#F97316] text-white shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+                aria-pressed={language === 'th'}
+              >
+                TH
+              </button>
+              <button
+                type="button"
+                onClick={() => setLanguage('en')}
+                className={`flex-1 py-1 rounded text-center transition-colors font-semibold ${
+                  language === 'en'
+                    ? 'bg-[#F97316] text-white shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+                aria-pressed={language === 'en'}
+              >
+                EN
+              </button>
+            </div>
           )}
 
-          {isCollapsed ? (
-            <button
-              onClick={handleLogout}
-              title={t('nav.logout')}
-              className="w-full flex items-center justify-center p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg border border-slate-200 transition-colors"
+          {/* Live Monospace Clock (Situating underneath the Language Switcher) */}
+          {currentTime && (
+            <div
+              className={`flex items-center ${
+                isCollapsed ? 'justify-center p-1.5' : 'gap-1.5 px-2.5 py-1.5'
+              } text-xs font-mono font-medium text-slate-700 tabular-nums bg-white rounded-md border border-slate-200 shadow-2xs`}
+              title={currentTime}
             >
-              <LogOut className="w-4 h-4 text-red-500" />
-            </button>
-          ) : (
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold text-red-600 hover:text-red-700 bg-red-50/70 hover:bg-red-100/70 rounded-lg border border-red-200/80 transition-colors shadow-2xs"
-            >
-              <LogOut className="w-3.5 h-3.5 text-red-500" />
-              <span>{t('nav.logout')}</span>
-            </button>
+              <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" aria-hidden="true" />
+              {!isCollapsed && <span className="truncate">{currentTime}</span>}
+            </div>
           )}
+
+          {/* User Profile Info & Logout (Matches FrontDesk Layout) */}
+          <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
+            {isCollapsed ? (
+              <div className="w-full flex flex-col items-center gap-1.5">
+                <div
+                  className="w-7 h-7 rounded-full bg-orange-100 border border-orange-200 flex items-center justify-center text-xs font-bold text-orange-700"
+                  title={userName}
+                >
+                  {userName.charAt(0)}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  title={t('nav.logout')}
+                  aria-label={t('nav.logout')}
+                  className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-md border border-rose-200 transition-colors"
+                >
+                  <LogOut className="w-3.5 h-3.5" aria-hidden="true" />
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-2 min-w-0 pr-1">
+                  <div className="w-7 h-7 rounded-full bg-orange-100 border border-orange-200 flex items-center justify-center text-xs font-bold text-orange-700 shrink-0">
+                    {userName.charAt(0)}
+                  </div>
+                  <div className="truncate">
+                    <p className="text-sm font-semibold text-slate-900 truncate leading-tight">
+                      {userName}
+                    </p>
+                    <p className="text-[10px] text-slate-500 leading-tight">Owner</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1 shrink-0">
+                  <Link
+                    to="/change-password"
+                    title={t('nav.changePassword')}
+                    aria-label={t('nav.changePassword')}
+                    className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors"
+                  >
+                    <KeyRound className="w-3.5 h-3.5" aria-hidden="true" />
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    title={t('nav.logout')}
+                    aria-label={t('nav.logout')}
+                    className="p-1.5 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-md border border-rose-200 transition-colors"
+                  >
+                    <LogOut className="w-3.5 h-3.5" aria-hidden="true" />
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </aside>
 
