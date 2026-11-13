@@ -163,6 +163,31 @@ export const taskTemplates = sqliteTable('task_templates', {
   updatedAt: text('updated_at').notNull(),
 });
 
+// 8. Amenity Requests Table (รายการขอของใช้และบริการเสริมจากลูกค้า/ฟรอนต์)
+export const amenityRequests = sqliteTable('amenity_requests', {
+  id: text('id').primaryKey(),
+  roomNumber: text('room_number').notNull(),
+  reservationId: text('reservation_id'),
+  amenityId: text('amenity_id').notNull(),
+  amenityName: text('amenity_name').notNull(),
+  category: text('category').notNull().default('other'),
+  quantity: integer('quantity').notNull().default(1),
+  isChargeable: integer('is_chargeable').notNull().default(0), // 0 = ฟรี, 1 = มีค่าใช้จ่าย
+  unitPrice: real('unit_price').notNull().default(0.0),
+  totalPrice: real('total_price').notNull().default(0.0),
+  status: text('status', {
+    enum: ['pending', 'preparing', 'delivered', 'cancelled'],
+  })
+    .notNull()
+    .default('pending'),
+  requestedBy: text('requested_by').default('Front Desk'),
+  assignedTo: text('assigned_to').references(() => housekeepingStaff.id),
+  notes: text('notes'),
+  deliveredAt: text('delivered_at'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
+
 export type HousekeepingStaff = typeof housekeepingStaff.$inferSelect;
 export type NewHousekeepingStaff = typeof housekeepingStaff.$inferInsert;
 
@@ -183,3 +208,6 @@ export type NewOutsourceContact = typeof outsourceContacts.$inferInsert;
 
 export type TaskTemplate = typeof taskTemplates.$inferSelect;
 export type NewTaskTemplate = typeof taskTemplates.$inferInsert;
+
+export type AmenityRequest = typeof amenityRequests.$inferSelect;
+export type NewAmenityRequest = typeof amenityRequests.$inferInsert;
