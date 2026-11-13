@@ -187,19 +187,19 @@ export const ReportsAnalyticsPage: React.FC = () => {
 
       return {
         monthLabel,
-        totalRevenue: sumTotal || 1482000,
-        vat7: sumVat || 96953.27,
-        netSales: sumNet || 1385046.73,
+        totalRevenue: sumTotal,
+        vat7: sumVat,
+        netSales: sumNet,
         daysCount: monthRows.length,
       };
     }
 
     return {
-      monthLabel: 'พ.ย. 2026',
-      totalRevenue: 1482000,
-      vat7: 96953.27,
-      netSales: 1385046.73,
-      daysCount: 30,
+      monthLabel: '-',
+      totalRevenue: 0,
+      vat7: 0,
+      netSales: 0,
+      daysCount: 0,
     };
   }, [dailyStatsList]);
 

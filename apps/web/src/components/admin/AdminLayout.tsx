@@ -21,6 +21,7 @@ import {
   Globe,
   Wrench,
   KeyRound,
+  FileCheck2,
 } from 'lucide-react';
 
 import { getAuthRole, getAuthUser, clearAuthSession, getAuthToken, apiUrl } from '@/lib/api';
@@ -134,6 +135,11 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       title: t('nav.reports'),
       path: '/admin/reports',
       icon: BarChart3,
+    },
+    {
+      title: language === 'en' ? 'Stay Evidence' : 'หลักฐานการเข้าพัก',
+      path: '/admin/stay-evidence',
+      icon: FileCheck2,
     },
     {
       title: t('nav.usersRoles'),

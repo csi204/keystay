@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Logo } from '../../components/common/Logo';
 import { QuickContactModal } from '../../components/housekeeping/QuickContactModal';
 import { clearAuthSession, getAuthToken, getAuthUser, apiUrl } from '../../lib/api';
+import { reconcileLiveRooms } from '../../lib/roomStatusReconciliation';
 import {
   Sparkles,
   PhoneCall,
@@ -550,13 +551,16 @@ export const HousekeepingPortalPage: React.FC = () => {
     }
   };
 
-  // 2. Fetch live rooms from /api/rooms
+  // 2. Fetch live rooms from /api/rooms (+ /api/room-types & /api/reservations for exact reconciliation)
   const fetchLiveRooms = async () => {
     try {
       const token = getAuthToken();
-      const res = await fetch(apiUrl('/api/rooms'), {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
+      const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+      const [res, rtRes, rsvRes] = await Promise.all([
+        fetch(apiUrl('/api/rooms'), { headers }),
+        fetch(apiUrl('/api/room-types'), { headers }).catch(() => null),
+        fetch(apiUrl('/api/reservations'), { headers }).catch(() => null),
+      ]);
       if (res.status === 401) {
         console.warn('Session expired or invalid token (401). Redirecting to login...');
         clearAuthSession();
@@ -566,24 +570,63 @@ export const HousekeepingPortalPage: React.FC = () => {
       if (res.ok) {
         const json = await res.json();
         if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-          const mappedRooms: RoomStatusItem[] = json.data.map((r: any) => {
+          const roomTypeMap: Record<string, string> = {
+            'rt-std': 'ห้องสแตนดาร์ด',
+            'rt-dlx': 'ห้องดีลักซ์',
+            'rt-ste': 'ห้องเอ็กเซ็กคิวทีฟ สวีท',
+            'rt-vil': 'ห้องเพรสซิเดนเชียล วิลล่า',
+          };
+          if (rtRes && rtRes.ok) {
+            const rtJson = await rtRes.json().catch(() => null);
+            if (rtJson?.success && Array.isArray(rtJson.data)) {
+              rtJson.data.forEach((rt: any) => {
+                if (rt.id && rt.name) roomTypeMap[rt.id] = rt.name;
+              });
+            }
+          }
+
+          let reservationsList: any[] = [];
+          if (rsvRes && rsvRes.ok) {
+            const rsvJson = await rsvRes.json().catch(() => null);
+            if (rsvJson?.success && Array.isArray(rsvJson.data)) {
+              reservationsList = rsvJson.data;
+            }
+          }
+
+          const todayStr = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'Asia/Bangkok',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+          }).format(new Date());
+
+          const reconciledRooms =
+            reservationsList.length > 0
+              ? reconcileLiveRooms(json.data, reservationsList, todayStr)
+              : json.data;
+
+          const mappedRooms: RoomStatusItem[] = reconciledRooms.map((r: any) => {
             const num = r.roomNumber || r.id.replace('rm-', '');
             const fl = parseInt(r.floorId?.replace('fl-', '') || String(Math.floor(parseInt(num, 10) / 100)) || '1', 10);
             return {
               roomNumber: num,
               floor: fl,
-              type: r.roomTypeId === 'rt-dlx' ? 'ห้องดีลักซ์' : r.roomTypeId === 'rt-ste' ? 'ห้องเอ็กเซ็กคิวทีฟ สวีท' : 'ห้องสแตนดาร์ด',
+              type: roomTypeMap[r.roomTypeId] || 'ห้องสแตนดาร์ด',
               status: r.status,
               notes: r.notes || '',
               guestInfo:
                 r.status === 'occupied'
                   ? 'แขกกำลังเข้าพัก'
+                  : r.status === 'reserved'
+                  ? 'ติดจอง (รอแขกเข้าพัก)'
                   : r.status === 'cleaning'
                   ? 'กำลังทำความสะอาด'
                   : r.status === 'checked_out'
                   ? 'เช็คเอาต์แล้ว (รอทำความสะอาด)'
                   : r.status === 'available'
                   ? 'ห้องว่างพร้อมเปิดขาย'
+                  : r.status === 'maintenance' || r.status === 'out_of_order'
+                  ? 'ปิดปรับปรุง / งดใช้งาน'
                   : 'รอตรวจสอบ',
             };
           });
@@ -2042,7 +2085,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                       <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500" />
                     </span>
                     <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                      กำลังดำเนินการ (1 ห้อง)
+                      กำลังดำเนินการ ({inProgressCount} ห้อง)
                     </h3>
                   </div>
                   <span className="text-[11px] font-mono text-slate-500">เริ่ม 11:15 น.</span>
@@ -2528,7 +2571,18 @@ export const HousekeepingPortalPage: React.FC = () => {
         {/* ====================================================
             TAB 2: สถานะห้อง (Room Status Matrix View)
             ==================================================== */}
-        {activeTab === 'status' && (
+        {activeTab === 'status' && (() => {
+          const totalUnitsCount = roomStatusList.length;
+          const cleanReadyCount = roomStatusList.filter(
+            (r) => r.status === 'available' || r.status === 'occupied' || r.status === 'reserved'
+          ).length;
+          const needsCleaningCount = roomStatusList.filter(
+            (r) => r.status === 'cleaning' || r.status === 'checked_out'
+          ).length;
+          const maintenanceCount = roomStatusList.filter(
+            (r) => r.status === 'maintenance' || r.status === 'out_of_order'
+          ).length;
+          return (
           <div className="flex flex-col gap-4">
             {/* 2x2 Operational Pulse KPI Grid */}
             <section className="grid grid-cols-2 gap-2.5">
@@ -2541,7 +2595,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                   <Building className="w-4 h-4 text-slate-400" />
                 </div>
                 <div className="flex items-baseline gap-1 mt-2">
-                  <span className="text-2xl font-bold font-mono text-slate-900">22</span>
+                  <span className="text-2xl font-bold font-mono text-slate-900">{totalUnitsCount}</span>
                   <span className="text-xs text-slate-400">ยูนิต</span>
                 </div>
               </div>
@@ -2555,7 +2609,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 </div>
                 <div className="flex items-baseline gap-1 mt-2">
-                  <span className="text-2xl font-bold font-mono text-emerald-700">14</span>
+                  <span className="text-2xl font-bold font-mono text-emerald-700">{cleanReadyCount}</span>
                   <span className="text-xs text-emerald-600">ห้อง</span>
                 </div>
               </div>
@@ -2569,7 +2623,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                   <Sparkles className="w-4 h-4 text-amber-600" />
                 </div>
                 <div className="flex items-baseline gap-1 mt-2">
-                  <span className="text-2xl font-bold font-mono text-amber-700">5</span>
+                  <span className="text-2xl font-bold font-mono text-amber-700">{needsCleaningCount}</span>
                   <span className="text-xs text-amber-600">ห้อง</span>
                 </div>
               </div>
@@ -2583,7 +2637,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                   <Wrench className="w-4 h-4 text-rose-600" />
                 </div>
                 <div className="flex items-baseline gap-1 mt-2">
-                  <span className="text-2xl font-bold font-mono text-rose-700">3</span>
+                  <span className="text-2xl font-bold font-mono text-rose-700">{maintenanceCount}</span>
                   <span className="text-xs text-rose-600">ห้อง</span>
                 </div>
               </div>
@@ -2733,7 +2787,8 @@ export const HousekeepingPortalPage: React.FC = () => {
               })}
             </section>
           </div>
-        )}
+          );
+        })()}
 
         {/* ====================================================
             TAB 2: บอร์ดติดตามงาน (Swipeable Kanban Board View)

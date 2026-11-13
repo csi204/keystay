@@ -256,6 +256,8 @@ app.use('/api/*', async (c, next) => {
     const isAllowed =
       path.startsWith('/api/housekeeping') ||
       (path.startsWith('/api/rooms') && c.req.method === 'GET') ||
+      (path.startsWith('/api/room-types') && c.req.method === 'GET') ||
+      (path.startsWith('/api/reservations') && c.req.method === 'GET') ||
       (path.startsWith('/api/rooms/') && path.endsWith('/status') && (c.req.method === 'PATCH' || c.req.method === 'PUT')) ||
       path.startsWith('/api/auth/logout') ||
       path.startsWith('/api/auth/change-password') ||

@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/api';
+import { reconcileLiveRooms } from '@/lib/roomStatusReconciliation';
 import { useTranslation } from '@/lib/i18n';
 import {
   TrendingUp,
@@ -113,27 +114,38 @@ export const ManagerDashboardPage: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [dashRes, roomsRes, dailyRes] = await Promise.all([
-        apiFetch<DashboardSummaryData>('/api/dashboard/summary').catch(() => ({ data: null, isOffline: true })),
+      const [kpisRes, roomsRes, reservationsRes, dailyRes] = await Promise.all([
+        apiFetch<any>('/api/reports/kpis').catch(() => ({ data: null, isOffline: true })),
         apiFetch<any[]>('/api/rooms').catch(() => ({ data: null, isOffline: true })),
+        apiFetch<any[]>('/api/reservations').catch(() => ({ data: null, isOffline: true })),
         apiFetch<any>('/api/reports/daily-stats?limit=100').catch(() => ({ data: null, isOffline: true })),
       ]);
 
-      if (dashRes.data?.kpi) {
-        setIsOffline(false);
-        setData(dashRes.data);
-      } else {
-        setIsOffline(dashRes.isOffline || false);
-        setData(EMPTY_DASHBOARD_DATA);
-      }
+      const todayStr = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Bangkok',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).format(new Date());
 
-      // Compute exact room status counts if rooms API responded
-      if (roomsRes.data && Array.isArray(roomsRes.data) && roomsRes.data.length > 0) {
+      const reservationsList = Array.isArray(reservationsRes.data) ? reservationsRes.data : [];
+      const liveCheckinsToday = reservationsList.filter(
+        (r: any) => r.status === 'confirmed' && r.checkInDate && r.checkInDate <= todayStr
+      ).length;
+      const liveCheckoutsToday = reservationsList.filter(
+        (r: any) => r.status === 'checked_in' || r.status === 'extended'
+      ).length;
+
+      // Reconcile room statuses identically to Front Desk Room Matrix
+      const rawRooms = Array.isArray(roomsRes.data) ? roomsRes.data : [];
+      const reconciledRooms = rawRooms.length > 0 ? reconcileLiveRooms(rawRooms, reservationsList, todayStr) : [];
+
+      if (reconciledRooms.length > 0) {
         const counts: RoomStatusCounts = {
           ...EMPTY_ROOM_COUNTS,
-          total: roomsRes.data.length,
+          total: reconciledRooms.length,
         };
-        roomsRes.data.forEach((r: any) => {
+        reconciledRooms.forEach((r: any) => {
           const st = r.status;
           if (st === 'available') counts.available++;
           else if (st === 'occupied') counts.occupied++;
@@ -145,6 +157,39 @@ export const ManagerDashboardPage: React.FC = () => {
         setRoomCounts(counts);
       } else {
         setRoomCounts(EMPTY_ROOM_COUNTS);
+      }
+
+      if (kpisRes.data) {
+        setIsOffline(false);
+        const k = kpisRes.data;
+        const reportDate = k.date || todayStr;
+        setData({
+          date: reportDate,
+          last_updated: new Date().toISOString(),
+          kpi: {
+            occupancy_rate: Number(k.occupancy_rate ?? 0),
+            total_revenue_today: Number(k.total_revenue_today ?? 0),
+            room_revenue_today: Number(k.room_revenue_today ?? 0),
+            minibar_revenue_today: Number(k.minibar_revenue_today ?? 0),
+            rooms_occupied: Number(k.rooms_occupied ?? 0),
+            rooms_available: Number(k.rooms_available ?? 0),
+            rooms_reserved: 0,
+            rooms_maintenance: 0,
+            total_rooms: Number(k.total_rooms ?? reconciledRooms.length ?? 0),
+            checkins_today: liveCheckinsToday,
+            checkouts_today: liveCheckoutsToday,
+          },
+          monthly_mtd: {
+            month: reportDate.slice(0, 7),
+            total_revenue: Number(k.monthly_mtd_revenue ?? 0),
+            avg_occupancy_rate: Number(k.monthly_avg_occupancy ?? 0),
+            adr: Number(k.adr ?? 0),
+            revpar: Number(k.revpar ?? 0),
+          },
+        });
+      } else {
+        setIsOffline(kpisRes.isOffline || false);
+        setData(EMPTY_DASHBOARD_DATA);
       }
 
       // Handle daily stats rows for the statement table
@@ -290,8 +335,8 @@ export const ManagerDashboardPage: React.FC = () => {
                 {data.kpi.occupancy_rate.toFixed(1)}%
               </div>
               <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-2">
-                <span className="">{roomCounts.occupied}</span>
-                <span>{isEn ? `of ${roomCounts.total} rooms` : `จากทั้งหมด ${roomCounts.total} ห้อง`}</span>
+                <span className="">{data.kpi.rooms_occupied}</span>
+                <span>{isEn ? `of ${data.kpi.total_rooms} rooms` : `จากทั้งหมด ${data.kpi.total_rooms} ห้อง`}</span>
               </div>
             </div>
           </div>
