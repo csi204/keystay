@@ -31,6 +31,13 @@ describe('Task 5: Dedicated Request Amenities Modal & Folio Integration', () => 
     assert.match(code, /isChargeable/);
   });
 
+  it('RequestAmenitiesModal consumes /api/v1/amenities catalog and dispatches POST /api/v1/housekeeping/amenity-requests', () => {
+    const code = fs.readFileSync(modalPath, 'utf-8');
+
+    assert.match(code, /\/api\/v1\/amenities/);
+    assert.match(code, /\/api\/v1\/housekeeping\/amenity-requests/);
+  });
+
   it('RoomDetailsModal exposes Request Amenities button for occupied rooms', () => {
     assert.ok(fs.existsSync(roomDetailsModalPath), 'RoomDetailsModal.tsx should exist');
     const code = fs.readFileSync(roomDetailsModalPath, 'utf-8');

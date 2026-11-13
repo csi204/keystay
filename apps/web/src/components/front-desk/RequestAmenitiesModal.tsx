@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useI18n } from '@/lib/i18n';
+import { apiFetch } from '@/lib/api';
 import {
   X,
   Sparkles,
@@ -27,6 +28,7 @@ export interface AmenityPreset {
   unitNameEn: string;
   descriptionTh: string;
   descriptionEn: string;
+  stockQuantity?: number;
 }
 
 export const AMENITY_PRESETS: AmenityPreset[] = [
@@ -150,9 +152,10 @@ export interface RequestAmenitiesModalProps {
   roomNumber?: string;
   reservationId?: string;
   billId?: string;
-  onSubmitAmenity: (data: {
+  onSubmitAmenity?: (data: {
     amenityId: string;
     amenityName: string;
+    category?: string;
     quantity: number;
     unitPrice: number;
     isChargeable: boolean;
@@ -182,12 +185,23 @@ export const RequestAmenitiesModal: React.FC<RequestAmenitiesModalProps> = ({
   const { t, locale, formatCurrency } = useI18n();
 
   const [activeTab, setActiveTab] = useState<'free' | 'paid'>('free');
+  const [catalogItems, setCatalogItems] = useState<AmenityPreset[]>([]);
   const [selectedAmenityId, setSelectedAmenityId] = useState<string>('amenity-pillow');
   const [quantity, setQuantity] = useState<number>(1);
   const [notes, setNotes] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  const mergedAmenities = useMemo<AmenityPreset[]>(() => {
+    if (!catalogItems.length) return AMENITY_PRESETS;
+    const seenIds = new Set(catalogItems.map((it) => it.id));
+    const seenNames = new Set(catalogItems.map((it) => it.nameEn.toLowerCase()));
+    const remainingPresets = AMENITY_PRESETS.filter(
+      (p) => !seenIds.has(p.id) && !seenNames.has(p.nameEn.toLowerCase())
+    );
+    return [...catalogItems, ...remainingPresets];
+  }, [catalogItems]);
 
   useEffect(() => {
     if (isOpen) {
@@ -197,6 +211,51 @@ export const RequestAmenitiesModal: React.FC<RequestAmenitiesModalProps> = ({
       setNotes('');
       setError(null);
       setSuccessMsg(null);
+
+      let isMounted = true;
+      apiFetch<any[]>('/api/v1/amenities')
+        .then((res) => {
+          if (!isMounted || !res.data || !Array.isArray(res.data) || res.data.length === 0) return;
+          const mapped: AmenityPreset[] = res.data
+            .filter((item) => item.isActive !== false)
+            .map((item) => {
+              const isCh = Boolean(item.isChargeable);
+              const price = Number(item.unitPrice || 0);
+              const uTh = item.unitNameTh || 'ชิ้น';
+              const uEn = item.unitNameEn || 'unit';
+              return {
+                id: item.id,
+                nameTh: item.nameTh,
+                nameEn: item.nameEn || item.nameTh,
+                category: item.category || 'other',
+                isChargeable: isCh,
+                unitPrice: price,
+                unitNameTh: uTh,
+                unitNameEn: uEn,
+                stockQuantity: typeof item.stockQuantity === 'number' ? item.stockQuantity : undefined,
+                descriptionTh: isCh
+                  ? `${item.nameTh} (คิดเงิน ${price} ฿/${uTh}${typeof item.stockQuantity === 'number' ? ` • คงเหลือ ${item.stockQuantity} ${uTh}` : ''})`
+                  : `${item.nameTh} (บริการฟรี${typeof item.stockQuantity === 'number' ? ` • คงเหลือ ${item.stockQuantity} ${uTh}` : ''})`,
+                descriptionEn: isCh
+                  ? `${item.nameEn || item.nameTh} (${price} THB/${uEn})`
+                  : `${item.nameEn || item.nameTh} (Complimentary)`,
+              };
+            });
+          if (mapped.length > 0) {
+            setCatalogItems(mapped);
+            const firstFree = mapped.find((it) => !it.isChargeable);
+            if (firstFree) {
+              setSelectedAmenityId(firstFree.id);
+            }
+          }
+        })
+        .catch(() => {
+          // Fallback to static AMENITY_PRESETS
+        });
+
+      return () => {
+        isMounted = false;
+      };
     }
   }, [isOpen]);
 
@@ -210,16 +269,16 @@ export const RequestAmenitiesModal: React.FC<RequestAmenitiesModalProps> = ({
 
   if (!isOpen) return null;
 
-  const currentList = AMENITY_PRESETS.filter((item) =>
+  const currentList = mergedAmenities.filter((item) =>
     activeTab === 'free' ? !item.isChargeable : item.isChargeable
   );
 
   const selectedAmenity =
-    AMENITY_PRESETS.find((item) => item.id === selectedAmenityId) || currentList[0];
+    mergedAmenities.find((item) => item.id === selectedAmenityId) || currentList[0];
 
   const handleTabChange = (tab: 'free' | 'paid') => {
     setActiveTab(tab);
-    const firstOfTab = AMENITY_PRESETS.find((item) =>
+    const firstOfTab = mergedAmenities.find((item) =>
       tab === 'free' ? !item.isChargeable : item.isChargeable
     );
     if (firstOfTab) {
@@ -238,38 +297,121 @@ export const RequestAmenitiesModal: React.FC<RequestAmenitiesModalProps> = ({
     setIsSubmitting(true);
 
     try {
-      // 1. Submit amenity request to reservation service
-      const amenityResult = await onSubmitAmenity({
+      // 1. Dispatch guest amenity request to Housekeeping service (/api/v1/housekeeping/amenity-requests)
+      const hkPayload = {
+        roomNumber: String(roomNumber || roomId || '101'),
+        reservationId: reservationId || null,
         amenityId: selectedAmenity.id,
         amenityName: locale === 'th' ? selectedAmenity.nameTh : selectedAmenity.nameEn,
+        category: selectedAmenity.category || 'other',
         quantity: safeQuantity,
-        unitPrice: selectedAmenity.unitPrice,
-        isChargeable: selectedAmenity.isChargeable,
-        notes: notes.trim() || undefined,
+        isChargeable: selectedAmenity.isChargeable ? 1 : 0,
+        unitPrice: Number(selectedAmenity.unitPrice || 0),
+        requestedBy: 'Front Desk',
+        notes: notes.trim() || null,
+      };
+
+      const hkRes = await apiFetch('/api/v1/housekeeping/amenity-requests', {
+        method: 'POST',
+        body: JSON.stringify(hkPayload),
       });
 
-      if (!amenityResult.success) {
-        setError(amenityResult.error || (locale === 'th' ? 'เกิดข้อผิดพลาดในการบันทึกคำขอ' : 'Request failed'));
+      if (hkRes.error && !hkRes.isOffline) {
+        setError(hkRes.error);
         setIsSubmitting(false);
         return;
       }
 
-      // 2. If chargeable, automatically roll into Folio bill items
-      if (selectedAmenity.isChargeable && onAddFolioCharge && billId) {
-        const folioResult = await onAddFolioCharge(billId, {
-          description: `[Amenity] ${locale === 'th' ? selectedAmenity.nameTh : selectedAmenity.nameEn}`,
-          category: 'service',
+      // 2. Notify parent callback if provided
+      if (onSubmitAmenity) {
+        const amenityResult = await onSubmitAmenity({
+          amenityId: selectedAmenity.id,
+          amenityName: locale === 'th' ? selectedAmenity.nameTh : selectedAmenity.nameEn,
+          category: selectedAmenity.category,
           quantity: safeQuantity,
-          unitPrice: String(selectedAmenity.unitPrice),
+          unitPrice: selectedAmenity.unitPrice,
+          isChargeable: selectedAmenity.isChargeable,
+          notes: notes.trim() || undefined,
         });
 
-        if (!folioResult.success) {
-          setError(
-            folioResult.error ||
-              (locale === 'th' ? 'บันทึกคำขอแล้ว แต่เกิดข้อผิดพลาดในการลงบิล Folio' : 'Failed to roll into folio')
-          );
+        if (!amenityResult.success) {
+          setError(amenityResult.error || (locale === 'th' ? 'เกิดข้อผิดพลาดในการบันทึกคำขอ' : 'Request failed'));
           setIsSubmitting(false);
           return;
+        }
+      }
+
+      // 3. If chargeable, automatically roll into Folio bill items
+      if (selectedAmenity.isChargeable) {
+        const chargeDescription = `[Amenity] ${locale === 'th' ? selectedAmenity.nameTh : selectedAmenity.nameEn}`;
+        if (onAddFolioCharge && billId) {
+          const folioResult = await onAddFolioCharge(billId, {
+            description: chargeDescription,
+            category: 'service',
+            quantity: safeQuantity,
+            unitPrice: String(selectedAmenity.unitPrice),
+          });
+
+          if (!folioResult.success) {
+            setError(
+              folioResult.error ||
+                (locale === 'th' ? 'บันทึกคำขอแล้ว แต่เกิดข้อผิดพลาดในการลงบิล Folio' : 'Failed to roll into folio')
+            );
+            setIsSubmitting(false);
+            return;
+          }
+        } else {
+          // Resolve active bill when opened from Room Matrix / RoomDetailsModal
+          let targetBillId = billId;
+          if (!targetBillId && reservationId && !reservationId.startsWith('res-in-house-')) {
+            const byRes = await apiFetch<any>(`/api/bills/by-reservation/${reservationId}`);
+            if (byRes.data?.id) targetBillId = byRes.data.id;
+          }
+          if (!targetBillId && roomNumber) {
+            const allBills = await apiFetch<any[]>('/api/bills');
+            if (Array.isArray(allBills.data)) {
+              const found = allBills.data.find(
+                (b) =>
+                  (reservationId && b.reservationId === reservationId) ||
+                  (roomNumber && String(b.roomNumber) === String(roomNumber) && b.status !== 'cancelled')
+              );
+              if (found?.id) targetBillId = found.id;
+            }
+          }
+          if (targetBillId) {
+            if (onAddFolioCharge) {
+              const folioResult = await onAddFolioCharge(targetBillId, {
+                description: chargeDescription,
+                category: 'service',
+                quantity: safeQuantity,
+                unitPrice: String(selectedAmenity.unitPrice),
+              });
+              if (!folioResult.success) {
+                setError(
+                  folioResult.error ||
+                    (locale === 'th' ? 'บันทึกคำขอแล้ว แต่เกิดข้อผิดพลาดในการลงบิล Folio' : 'Failed to roll into folio')
+                );
+                setIsSubmitting(false);
+                return;
+              }
+            } else {
+              const billItemRes = await apiFetch(`/api/bills/${targetBillId}/items`, {
+                method: 'POST',
+                body: JSON.stringify({
+                  description: chargeDescription,
+                  category: 'service',
+                  itemType: 'room_service',
+                  unitPrice: Number(selectedAmenity.unitPrice),
+                  quantity: safeQuantity,
+                }),
+              });
+              if (billItemRes.error && !billItemRes.isOffline) {
+                setError(billItemRes.error);
+                setIsSubmitting(false);
+                return;
+              }
+            }
+          }
         }
       }
 

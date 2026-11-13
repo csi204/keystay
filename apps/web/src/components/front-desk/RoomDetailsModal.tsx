@@ -273,12 +273,32 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
   const [housekeepingTask, setHousekeepingTask] = useState<HousekeepingEvidenceTask | null>(null);
   const [loadingHousekeeping, setLoadingHousekeeping] = useState<boolean>(false);
   const [lightboxPhoto, setLightboxPhoto] = useState<{ url: string; title: string } | null>(null);
+  const [roomAmenityRequests, setRoomAmenityRequests] = useState<any[]>([]);
 
-  // Fetch Housekeeping Inspection Task
+  const fetchRoomAmenityRequests = async (rmNumber?: string) => {
+    const targetRoomNum = rmNumber || room?.roomNumber;
+    if (!targetRoomNum) {
+      setRoomAmenityRequests([]);
+      return;
+    }
+    try {
+      const res = await apiFetch<any[]>(
+        `/api/v1/housekeeping/amenity-requests?room_number=${encodeURIComponent(targetRoomNum)}`
+      );
+      if (Array.isArray(res.data)) {
+        setRoomAmenityRequests(res.data);
+      }
+    } catch {
+      // Non-blocking fallback
+    }
+  };
+
+  // Fetch Housekeeping Inspection Task & Room Amenity Requests
   useEffect(() => {
     if (!isOpen || !room?.roomNumber) {
       setHousekeepingTask(null);
       setLoadingHousekeeping(false);
+      setRoomAmenityRequests([]);
       return;
     }
 
@@ -317,6 +337,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
     };
 
     fetchHousekeeping();
+    fetchRoomAmenityRequests(room.roomNumber);
 
     return () => {
       isMounted = false;
@@ -912,6 +933,62 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                           <span>{t('ops.checkOut') || 'เช็คเอาต์'}</span>
                         </button>
                       </div>
+
+                      {roomAmenityRequests.length > 0 && (
+                        <div className="pt-2 space-y-1.5">
+                          <div className="flex items-center justify-between text-[11px] font-semibold text-slate-600">
+                            <span className="flex items-center gap-1.5">
+                              <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+                              <span>
+                                {locale === 'th'
+                                  ? `รายการขอของใช้เสริม (${roomAmenityRequests.length})`
+                                  : `Amenity Requests (${roomAmenityRequests.length})`}
+                              </span>
+                            </span>
+                          </div>
+                          <div className="space-y-1 max-h-28 overflow-y-auto pr-1">
+                            {roomAmenityRequests.map((req: any) => {
+                              const st = req.status || 'pending';
+                              const stBadge =
+                                st === 'delivered'
+                                  ? {
+                                      label: locale === 'th' ? 'จัดส่งแล้ว' : 'Delivered',
+                                      cls: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                    }
+                                  : st === 'preparing'
+                                  ? {
+                                      label: locale === 'th' ? 'กำลังนำส่ง' : 'Preparing',
+                                      cls: 'bg-amber-50 text-amber-800 border-amber-200',
+                                    }
+                                  : st === 'cancelled'
+                                  ? {
+                                      label: locale === 'th' ? 'ยกเลิก' : 'Cancelled',
+                                      cls: 'bg-slate-100 text-slate-500 border-slate-200',
+                                    }
+                                  : {
+                                      label: locale === 'th' ? 'รอแม่บ้าน' : 'Pending',
+                                      cls: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+                                    };
+                              return (
+                                <div
+                                  key={req.id}
+                                  className="flex items-center justify-between text-xs px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200/80"
+                                >
+                                  <div className="truncate pr-2">
+                                    <span className="font-medium text-slate-800">{req.amenityName}</span>
+                                    <span className="text-slate-500 font-mono ml-1.5">x{req.quantity}</span>
+                                  </div>
+                                  <span
+                                    className={`px-2 py-0.5 rounded text-[10px] font-semibold border shrink-0 ${stBadge.cls}`}
+                                  >
+                                    {stBadge.label}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -2053,6 +2130,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
           reservationId={currentReservation?.id || 'res-in-house-' + room?.id}
           billId={(currentReservation as any)?.billId}
           onSubmitAmenity={async (data) => {
+            await fetchRoomAmenityRequests(room?.roomNumber);
             if (onRequestAmenity) {
               return onRequestAmenity(data);
             }
