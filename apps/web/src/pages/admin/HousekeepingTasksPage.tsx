@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import { apiFetch, getAuthToken, apiUrl } from '@/lib/api';
+import { apiFetch, getAuthToken, apiUrl, assetUrl } from '@/lib/api';
 import { useTranslation } from '@/lib/i18n';
 import {
   ClipboardCheck,
@@ -1133,7 +1133,7 @@ export const HousekeepingTasksPage: React.FC = () => {
                                   <div className="relative w-12 h-12 rounded border border-slate-200 overflow-hidden bg-slate-100 shrink-0 shadow-2xs group-hover:border-orange-300 transition-colors">
                                     {t.beforePhotoUrl ? (
                                       <img
-                                        src={t.beforePhotoUrl}
+                                        src={assetUrl(t.beforePhotoUrl)}
                                         alt="Before clean"
                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                                       />
@@ -1151,7 +1151,7 @@ export const HousekeepingTasksPage: React.FC = () => {
                                   <div className="relative w-12 h-12 rounded border border-slate-200 overflow-hidden bg-slate-100 shrink-0 shadow-2xs group-hover:border-orange-300 transition-colors">
                                     {t.afterPhotoUrl ? (
                                       <img
-                                        src={t.afterPhotoUrl}
+                                        src={assetUrl(t.afterPhotoUrl)}
                                         alt="After clean"
                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                                       />
@@ -1405,7 +1405,7 @@ export const HousekeepingTasksPage: React.FC = () => {
                                   title={isEn ? 'Click to inspect photo' : 'คลิกเพื่อดูรูปภาพ'}
                                 >
                                   <img
-                                    src={iss.photoR2Key}
+                                    src={assetUrl(iss.photoR2Key)}
                                     alt="Issue evidence"
                                     className="w-full h-full object-cover"
                                   />
@@ -1744,7 +1744,7 @@ export const HousekeepingTasksPage: React.FC = () => {
                   <div className={`relative rounded-lg overflow-hidden border border-slate-200 bg-slate-950 flex items-center justify-center ${isEnlargedZoom ? 'min-h-[440px]' : 'h-72'}`}>
                     {selectedTaskForZoom.beforePhotoUrl ? (
                       <img
-                        src={selectedTaskForZoom.beforePhotoUrl}
+                        src={assetUrl(selectedTaskForZoom.beforePhotoUrl)}
                         alt="Before cleaning"
                         className={`w-full h-full ${isEnlargedZoom ? 'object-contain' : 'object-cover'}`}
                       />
@@ -1775,7 +1775,7 @@ export const HousekeepingTasksPage: React.FC = () => {
                   <div className={`relative rounded-lg overflow-hidden border border-slate-200 bg-slate-950 flex items-center justify-center ${isEnlargedZoom ? 'min-h-[440px]' : 'h-72'}`}>
                     {selectedTaskForZoom.afterPhotoUrl ? (
                       <img
-                        src={selectedTaskForZoom.afterPhotoUrl}
+                        src={assetUrl(selectedTaskForZoom.afterPhotoUrl)}
                         alt="After cleaning"
                         className={`w-full h-full ${isEnlargedZoom ? 'object-contain' : 'object-cover'}`}
                       />
@@ -1896,7 +1896,7 @@ export const HousekeepingTasksPage: React.FC = () => {
               {selectedIssueForZoom.photoR2Key ? (
                 <div className="rounded-lg overflow-hidden border border-slate-200 bg-slate-950 h-80 flex items-center justify-center">
                   <img
-                    src={selectedIssueForZoom.photoR2Key}
+                    src={assetUrl(selectedIssueForZoom.photoR2Key)}
                     alt="Issue photo"
                     className="w-full h-full object-contain"
                   />

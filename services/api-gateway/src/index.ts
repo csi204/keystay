@@ -10,6 +10,7 @@ export interface Env {
   BILLING_SERVICE: Fetcher;
   REPORT_ANALYTICS_SERVICE: Fetcher;
   KV: KVNamespace;
+  KEYSTAY_ASSETS?: R2Bucket;
   JWT_SECRET?: string;
   ENVIRONMENT?: string;
 }
@@ -158,8 +159,11 @@ const PUBLIC_PATHS = [
 app.use('/api/*', async (c, next) => {
   const path = c.req.path;
 
-  // Skip auth for public endpoints
-  if (PUBLIC_PATHS.some(p => path === p || path.startsWith('/api/auth/login') || path.startsWith('/api/auth/register') || path.startsWith('/api/auth/refresh-token') || path.startsWith('/api/auth/forgot-password') || path.startsWith('/api/auth/reset-password'))) {
+  // Skip auth for public endpoints (including read-only R2 image assets for <img> tags)
+  if (
+    (c.req.method === 'GET' && path.startsWith('/api/assets/')) ||
+    PUBLIC_PATHS.some(p => path === p || path.startsWith('/api/auth/login') || path.startsWith('/api/auth/register') || path.startsWith('/api/auth/refresh-token') || path.startsWith('/api/auth/forgot-password') || path.startsWith('/api/auth/reset-password'))
+  ) {
     return next();
   }
 
@@ -334,8 +338,37 @@ async function forwardRequest(
 }
 
 // ==========================================
-// 8. SERVICE ROUTING RULES
+// 8. SERVICE ROUTING RULES & R2 ASSET STREAMING
 // ==========================================
+
+app.get('/api/assets/*', async (c) => {
+  if (!c.env.KEYSTAY_ASSETS) {
+    return c.json({ success: false, error: { message: 'R2 bucket is not configured' } }, 503);
+  }
+  const rawKey = c.req.path.replace(/^\/api\/assets\//, '');
+  const key = decodeURIComponent(rawKey).replace(/^\/+/, '');
+  if (!key || key.includes('..')) {
+    return c.json({ success: false, error: { message: 'Invalid asset key' } }, 400);
+  }
+  const obj = await c.env.KEYSTAY_ASSETS.get(key);
+  if (!obj) {
+    return c.json({ success: false, error: { message: 'Asset not found' } }, 404);
+  }
+  const ext = key.split('.').pop()?.toLowerCase();
+  const fallbackType =
+    ext === 'svg'
+      ? 'image/svg+xml'
+      : ext === 'png'
+      ? 'image/png'
+      : ext === 'webp'
+      ? 'image/webp'
+      : 'image/jpeg';
+  const headers = new Headers();
+  headers.set('Content-Type', obj.httpMetadata?.contentType || fallbackType);
+  headers.set('Cache-Control', 'public, max-age=86400');
+  if (obj.httpEtag) headers.set('ETag', obj.httpEtag);
+  return new Response(obj.body, { headers });
+});
 
 // Service #1: Auth & User
 app.all('/api/auth/*', async (c) => {

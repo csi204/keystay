@@ -2444,8 +2444,23 @@ reservations.post('/:id/slip', async (c) => {
     const callerId = c.req.header('x-user-id') || 'system';
     const now = new Date().toISOString();
     const paymentStatus = 'paid';
-    const paymentSlipUrl = parsed.data.paymentSlipUrl || existing.payment_slip_url;
+    let paymentSlipUrl = parsed.data.paymentSlipUrl || existing.payment_slip_url;
     const paymentSlipRef = parsed.data.paymentSlipRef || existing.payment_slip_ref;
+
+    // Upload base64 data URI slip to Cloudflare R2 when KEYSTAY_ASSETS is bound
+    if (paymentSlipUrl && paymentSlipUrl.startsWith('data:image/') && c.env.KEYSTAY_ASSETS) {
+      const match = paymentSlipUrl.match(/^data:(image\/(png|jpeg|jpg|webp|svg\+xml));base64,(.+)$/i);
+      if (match) {
+        const contentType = match[1];
+        const ext = match[2] === 'jpeg' ? 'jpg' : match[2] === 'svg+xml' ? 'svg' : match[2];
+        const binary = Uint8Array.from(atob(match[3]), (ch) => ch.charCodeAt(0));
+        const r2Key = `photos/slips/${id}-${Date.now()}.${ext}`;
+        await c.env.KEYSTAY_ASSETS.put(r2Key, binary, {
+          httpMetadata: { contentType },
+        });
+        paymentSlipUrl = `/api/assets/${r2Key}`;
+      }
+    }
 
     await c.env.DB.prepare(
       `UPDATE reservations

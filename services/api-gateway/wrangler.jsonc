@@ -40,6 +40,12 @@
       "id": "cc1dbfa0b0f64bae9bbed3b90bdfebee"
     }
   ],
+  "r2_buckets": [
+    {
+      "binding": "KEYSTAY_ASSETS",
+      "bucket_name": "keystay"
+    }
+  ],
   "vars": {
     "ENVIRONMENT": "production"
   }

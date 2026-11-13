@@ -15,6 +15,12 @@
       "database_id": "9a44e64f-bf82-479b-b9f9-7d9eaa5aafdb"
     }
   ],
+  "r2_buckets": [
+    {
+      "binding": "KEYSTAY_ASSETS",
+      "bucket_name": "keystay"
+    }
+  ],
   "triggers": {
     "crons": ["0 19 * * *"]
   },

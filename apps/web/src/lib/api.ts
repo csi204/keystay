@@ -24,6 +24,23 @@ export const apiUrl = (path: string): string => {
   return `${API_BASE_URL}${cleanPath}`;
 };
 
+/**
+ * Resolves an image/asset URL from either an R2 key, relative /api/assets path,
+ * full HTTP(S) URL, or data: URI.
+ */
+export const assetUrl = (value?: string | null): string => {
+  if (!value) return '';
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) {
+    return trimmed;
+  }
+  if (trimmed.startsWith('/api/assets/')) {
+    return apiUrl(trimmed);
+  }
+  return apiUrl(`/api/assets/${trimmed.replace(/^\/+/, '')}`);
+};
+
 export interface ApiResponse<T = any> {
   data: T | null;
   error: string | null;

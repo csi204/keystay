@@ -3,7 +3,7 @@ import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, assetUrl } from '@/lib/api';
 import { useTranslation } from '@/lib/i18n';
 import { resolveGuestName, type ExtendedReservation } from '@/hooks/useReservations';
 import {
@@ -337,7 +337,7 @@ export const StayEvidencePage: React.FC = () => {
                             <div className="text-slate-700 font-medium">
                               {sourceCfg ? (isEn ? sourceCfg.en : sourceCfg.th) : '-'}
                             </div>
-                            <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                            <div className="text-[11px] text-slate-500 font-mono mt-0.5 whitespace-nowrap">
                               {item.checkInDate} → {item.checkOutDate}
                             </div>
                           </td>
@@ -377,7 +377,7 @@ export const StayEvidencePage: React.FC = () => {
                           </td>
 
                           <td className="py-3 px-4 align-top">
-                            <Badge variant="outline" className={`text-[11px] font-semibold ${statusCfg.cls}`}>
+                            <Badge variant="outline" className={`text-[11px] font-semibold whitespace-nowrap ${statusCfg.cls}`}>
                               {isEn ? statusCfg.en : statusCfg.th}
                             </Badge>
                           </td>
@@ -510,7 +510,7 @@ export const StayEvidencePage: React.FC = () => {
                 {selectedItem.paymentSlipUrl ? (
                   <div className="rounded-xl border border-slate-200 bg-slate-50 p-2 flex items-center justify-center min-h-[260px]">
                     <img
-                      src={selectedItem.paymentSlipUrl}
+                      src={assetUrl(selectedItem.paymentSlipUrl)}
                       alt={`Payment slip for ${selectedItem.roomNumber || selectedItem.id}`}
                       className="max-h-[380px] w-auto rounded-lg object-contain"
                     />

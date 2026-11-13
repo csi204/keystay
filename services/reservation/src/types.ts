@@ -1,5 +1,6 @@
 export interface Env {
   DB: D1Database;
+  KEYSTAY_ASSETS?: R2Bucket;
   ENVIRONMENT?: string;
   JWT_SECRET?: string;
   QSTASH_URL?: string;

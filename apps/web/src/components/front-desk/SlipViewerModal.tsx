@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useI18n } from '@/lib/i18n';
 import { compressImageToBase64 } from '@/lib/imageCompression';
+import { assetUrl } from '@/lib/api';
 import {
   X,
   CheckCircle2,
@@ -328,7 +329,7 @@ export const SlipViewerModal: React.FC<SlipViewerModalProps> = ({
                     className="inline-block"
                   >
                     <img
-                      src={currentSlipUrl}
+                      src={assetUrl(currentSlipUrl)}
                       alt="Payment Slip"
                       className="max-h-[300px] w-auto object-contain rounded-lg shadow-sm"
                     />
