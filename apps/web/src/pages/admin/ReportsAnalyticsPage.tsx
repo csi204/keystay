@@ -51,15 +51,17 @@ export const ReportsAnalyticsPage: React.FC = () => {
   const [dailyStatsList, setDailyStatsList] = useState<any[]>([]);
 
   // Main KPI stats
-  const [kpis, setKpis] = useState({
-    date: '2026-11-11',
-    totalRevenue: '฿49,400.00',
-    occupancyRate: '59.1%',
-    adr: '฿3,951.00',
-    revpar: '฿2,903.25',
-    roomsOccupied: 13,
-    totalRooms: 22,
-  });
+  const EMPTY_KPIS = {
+    date: '',
+    totalRevenue: '฿0.00',
+    occupancyRate: '0.0%',
+    adr: '฿0.00',
+    revpar: '฿0.00',
+    roomsOccupied: 0,
+    totalRooms: 0,
+  };
+
+  const [kpis, setKpis] = useState(EMPTY_KPIS);
 
   const loadKpiData = async () => {
     setLoading(true);
@@ -67,16 +69,17 @@ export const ReportsAnalyticsPage: React.FC = () => {
     if (res.data) {
       setIsOffline(false);
       setKpis({
-        date: res.data.date || '2026-11-11',
-        totalRevenue: `฿${Number(res.data.total_revenue_today || 49400).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
-        occupancyRate: `${Number(res.data.occupancy_rate || 59.1).toFixed(1)}%`,
-        adr: `฿${Number(res.data.adr || 3951).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
-        revpar: `฿${Number(res.data.revpar || 2903.25).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
-        roomsOccupied: res.data.rooms_occupied || 13,
-        totalRooms: 22,
+        date: res.data.date || '',
+        totalRevenue: `฿${Number(res.data.total_revenue_today ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+        occupancyRate: `${Number(res.data.occupancy_rate ?? 0).toFixed(1)}%`,
+        adr: `฿${Number(res.data.adr ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+        revpar: `฿${Number(res.data.revpar ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+        roomsOccupied: res.data.rooms_occupied ?? 0,
+        totalRooms: res.data.total_rooms ?? 0,
       });
     } else {
       setIsOffline(res.isOffline);
+      setKpis(EMPTY_KPIS);
     }
     setLoading(false);
   };
@@ -103,33 +106,7 @@ export const ReportsAnalyticsPage: React.FC = () => {
         if (isMounted) {
           setApiWarning((res as any)?.warning || res.data?.warning || null);
           const rawRows = Array.isArray(res.data) ? res.data : (res.data?.rows || []);
-
-          if (rawRows.length > 0) {
-            setDailyStatsList(rawRows);
-          } else {
-            // High-fidelity fallback / padded dataset matching actual November dates
-            const baseDate = new Date(2026, 10, 11);
-            const mock = Array.from({ length: 45 }).map((_, i) => {
-              const d = new Date(baseDate);
-              d.setDate(d.getDate() - i);
-              const dateStr = d.toISOString().split('T')[0];
-              const occ = Math.floor(12 + ((i * 3) % 9));
-              const roomRev = occ * 3800;
-              const minibarRev = 3200 + ((i * 150) % 1800);
-              const totalRev = roomRev + minibarRev;
-              return {
-                statDate: dateStr,
-                totalRooms: 22,
-                occupiedRooms: occ,
-                availableRooms: 22 - occ,
-                occupancyRate: ((occ / 22) * 100).toFixed(1),
-                roomRevenue: roomRev,
-                minibarRevenue: minibarRev,
-                totalRevenue: totalRev,
-              };
-            });
-            setDailyStatsList(mock);
-          }
+          setDailyStatsList(rawRows);
         }
       } finally {
         if (isMounted) setPreviewLoading(false);

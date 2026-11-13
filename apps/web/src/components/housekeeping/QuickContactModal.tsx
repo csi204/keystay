@@ -18,6 +18,7 @@ import {
   Key,
   ClipboardList,
 } from 'lucide-react';
+import { apiUrl } from '../../lib/api';
 
 export interface OutsourceContactDTO {
   id: string;
@@ -153,7 +154,7 @@ export const QuickContactModal: React.FC<QuickContactModalProps> = ({ isOpen, on
       setLoading(true);
       try {
         const token = localStorage.getItem('keystay_token') || sessionStorage.getItem('keystay_token');
-        const res = await fetch('/api/housekeeping/outsource-contacts', {
+        const res = await fetch(apiUrl('/api/housekeeping/outsource-contacts'), {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
         if (res.ok) {

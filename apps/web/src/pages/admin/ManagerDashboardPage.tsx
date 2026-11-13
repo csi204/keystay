@@ -58,6 +58,41 @@ interface RoomStatusCounts {
 
 const ROWS_TO_SHOW = 6;
 
+const EMPTY_DASHBOARD_DATA: DashboardSummaryData = {
+  date: '',
+  last_updated: '',
+  kpi: {
+    occupancy_rate: 0,
+    total_revenue_today: 0,
+    room_revenue_today: 0,
+    minibar_revenue_today: 0,
+    rooms_occupied: 0,
+    rooms_available: 0,
+    rooms_reserved: 0,
+    rooms_maintenance: 0,
+    total_rooms: 0,
+    checkins_today: 0,
+    checkouts_today: 0,
+  },
+  monthly_mtd: {
+    month: '',
+    total_revenue: 0,
+    avg_occupancy_rate: 0,
+    adr: 0,
+    revpar: 0,
+  },
+};
+
+const EMPTY_ROOM_COUNTS: RoomStatusCounts = {
+  available: 0,
+  occupied: 0,
+  reserved: 0,
+  cleaning: 0,
+  checked_out: 0,
+  maintenance: 0,
+  total: 0,
+};
+
 export const ManagerDashboardPage: React.FC = () => {
   const { t, locale } = useTranslation();
   const isEn = locale === 'en';
@@ -67,41 +102,10 @@ export const ManagerDashboardPage: React.FC = () => {
   const [isOffline, setIsOffline] = useState<boolean>(false);
 
   // Main KPI Data
-  const [data, setData] = useState<DashboardSummaryData>({
-    date: '2026-11-12',
-    last_updated: new Date().toISOString(),
-    kpi: {
-      occupancy_rate: 59.1,
-      total_revenue_today: 49400.0,
-      room_revenue_today: 46200.0,
-      minibar_revenue_today: 3200.0,
-      rooms_occupied: 13,
-      rooms_available: 5,
-      rooms_reserved: 1,
-      rooms_maintenance: 1,
-      total_rooms: 22,
-      checkins_today: 2,
-      checkouts_today: 3,
-    },
-    monthly_mtd: {
-      month: '2026-11',
-      total_revenue: 1684500.0,
-      avg_occupancy_rate: 70.7,
-      adr: 3951.0,
-      revpar: 2903.25,
-    },
-  });
+  const [data, setData] = useState<DashboardSummaryData>(EMPTY_DASHBOARD_DATA);
 
   // All Front Desk Room Status Counts
-  const [roomCounts, setRoomCounts] = useState<RoomStatusCounts>({
-    available: 5,
-    occupied: 13,
-    reserved: 1,
-    cleaning: 1,
-    checked_out: 1,
-    maintenance: 1,
-    total: 22,
-  });
+  const [roomCounts, setRoomCounts] = useState<RoomStatusCounts>(EMPTY_ROOM_COUNTS);
 
   // Daily Stats for Statement Table
   const [dailyStatsList, setDailyStatsList] = useState<any[]>([]);
@@ -120,17 +124,13 @@ export const ManagerDashboardPage: React.FC = () => {
         setData(dashRes.data);
       } else {
         setIsOffline(dashRes.isOffline || false);
+        setData(EMPTY_DASHBOARD_DATA);
       }
 
       // Compute exact room status counts if rooms API responded
       if (roomsRes.data && Array.isArray(roomsRes.data) && roomsRes.data.length > 0) {
         const counts: RoomStatusCounts = {
-          available: 0,
-          occupied: 0,
-          reserved: 0,
-          cleaning: 0,
-          checked_out: 0,
-          maintenance: 0,
+          ...EMPTY_ROOM_COUNTS,
           total: roomsRes.data.length,
         };
         roomsRes.data.forEach((r: any) => {
@@ -143,36 +143,13 @@ export const ManagerDashboardPage: React.FC = () => {
           else if (st === 'maintenance' || st === 'out_of_order') counts.maintenance++;
         });
         setRoomCounts(counts);
+      } else {
+        setRoomCounts(EMPTY_ROOM_COUNTS);
       }
 
       // Handle daily stats rows for the statement table
       const rawRows = Array.isArray(dailyRes.data) ? dailyRes.data : (dailyRes.data?.rows || []);
-      if (rawRows.length > 0) {
-        setDailyStatsList(rawRows);
-      } else {
-        // High-fidelity fallback dataset matching standard November dates
-        const baseDate = new Date(2026, 10, 11);
-        const mock = Array.from({ length: 45 }).map((_, i) => {
-          const d = new Date(baseDate);
-          d.setDate(d.getDate() - i);
-          const dateStr = d.toISOString().split('T')[0];
-          const occ = Math.floor(12 + ((i * 3) % 9));
-          const roomRev = occ * 3800;
-          const minibarRev = 3200 + ((i * 150) % 1800);
-          const totalRev = roomRev + minibarRev;
-          return {
-            statDate: dateStr,
-            totalRooms: 22,
-            occupiedRooms: occ,
-            availableRooms: 22 - occ,
-            occupancyRate: ((occ / 22) * 100).toFixed(1),
-            roomRevenue: roomRev,
-            minibarRevenue: minibarRev,
-            totalRevenue: totalRev,
-          };
-        });
-        setDailyStatsList(mock);
-      }
+      setDailyStatsList(rawRows);
     } finally {
       setLoading(false);
     }
@@ -198,13 +175,13 @@ export const ManagerDashboardPage: React.FC = () => {
         const minibarRev = Number(r.minibarRevenue || (total > roomRev ? total - roomRev : 0));
         const net = Math.round((total / 1.07) * 100) / 100;
         const vat = Math.round((total - net) * 100) / 100;
-        const dateStr = r.statDate || r.date || '2026-11-11';
+        const dateStr = r.statDate || r.date || '';
         return {
           no: i + 1,
           date: dateStr,
-          occ: Number(r.occupiedRooms ?? 13),
-          totalRooms: Number(r.totalRooms ?? 22),
-          rate: r.occupancyRate ? `${r.occupancyRate}%` : '59.1%',
+          occ: Number(r.occupiedRooms ?? 0),
+          totalRooms: Number(r.totalRooms ?? 0),
+          rate: r.occupancyRate != null ? `${r.occupancyRate}%` : '0.0%',
           roomRev,
           minibarRev,
           net,

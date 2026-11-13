@@ -4,7 +4,16 @@
  * - Local Development (.env / .env.development): empty string '' to leverage Vite proxy (/api -> localhost:8787)
  * - Production (.env.production): e.g. https://keystay-api-gateway.khetsophon-ain.workers.dev
  */
-export const API_BASE_URL: string = (import.meta?.env?.VITE_API_BASE_URL as string) || '';
+const resolveApiBaseUrl = (): string => {
+  try {
+    return (import.meta.env.VITE_API_BASE_URL as string) || '';
+  } catch {
+    // Safe fallback for Node test runner where import.meta.env may be undefined
+    return '';
+  }
+};
+
+export const API_BASE_URL: string = resolveApiBaseUrl();
 
 /**
  * Returns full URL for an API endpoint
