@@ -19,6 +19,7 @@ import {
   TableDateFilter,
   DateFilterValue,
   EMPTY_DATE_FILTER,
+  isDateFilterActive,
   matchesDateFilter,
 } from '@/components/common/TableDateFilter';
 import { PaginationBar, paginateItems } from '@/components/common/PaginationBar';
@@ -200,7 +201,7 @@ export const DailyOperationsPage: React.FC = () => {
         const matchesId = b.id.toLowerCase().includes(q);
         if (!matchesGuest && !matchesRoom && !matchesId) return false;
       }
-      if (billingDateFilter.day || billingDateFilter.month || billingDateFilter.year) {
+      if (isDateFilterActive(billingDateFilter)) {
         if (!matchesDateFilter(b.createdAt, billingDateFilter)) return false;
       }
       return true;

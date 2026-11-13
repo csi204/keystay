@@ -10,6 +10,7 @@ import {
   TableDateFilter,
   DateFilterValue,
   EMPTY_DATE_FILTER,
+  isDateFilterActive,
   matchesDateFilter,
 } from '@/components/common/TableDateFilter';
 import { PaginationBar, paginateItems } from '@/components/common/PaginationBar';
@@ -209,10 +210,9 @@ export const RoomMatrixPage: React.FC = () => {
         const matchesRoom = r.roomNumber?.toLowerCase().includes(q) || false;
         if (!matchesGuest && !matchesBooking && !matchesRoom) return false;
       }
-      if (dateFilter.day || dateFilter.month || dateFilter.year) {
-        const matchesCheckIn = matchesDateFilter(r.checkInDate, dateFilter);
-        const matchesCreated = matchesDateFilter(r.createdAt, dateFilter);
-        if (!matchesCheckIn && !matchesCreated) return false;
+      if (isDateFilterActive(dateFilter)) {
+        const matchesStay = matchesDateFilter(r.checkInDate, dateFilter, r.checkOutDate);
+        if (!matchesStay) return false;
       }
       return true;
     });

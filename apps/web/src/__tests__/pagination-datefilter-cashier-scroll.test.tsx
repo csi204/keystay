@@ -70,12 +70,48 @@ describe('Task 6: Cashier Bounded Scroll, TableDateFilter (วัน/เดื�
       true
     );
 
+    // Single-date calendar filter (`startDate` only)
+    assert.equal(
+      matchesDateFilter('2026-11-12', { ...EMPTY_DATE_FILTER, startDate: '2026-11-12', endDate: '' }),
+      true
+    );
+    assert.equal(
+      matchesDateFilter('2026-11-13', { ...EMPTY_DATE_FILTER, startDate: '2026-11-12', endDate: '' }),
+      false
+    );
+
+    // Date-range calendar filter (`startDate` and `endDate`)
+    assert.equal(
+      matchesDateFilter('2026-11-12', { ...EMPTY_DATE_FILTER, startDate: '2026-11-11', endDate: '2026-11-14' }),
+      true
+    );
+    assert.equal(
+      matchesDateFilter('2026-11-15', { ...EMPTY_DATE_FILTER, startDate: '2026-11-11', endDate: '2026-11-14' }),
+      false
+    );
+    assert.equal(
+      matchesDateFilter(
+        '2026-11-12',
+        { ...EMPTY_DATE_FILTER, startDate: '2026-11-12', endDate: '2026-11-14' },
+        '2026-11-14'
+      ),
+      true
+    );
+    assert.equal(
+      matchesDateFilter(
+        '2026-11-12',
+        { ...EMPTY_DATE_FILTER, startDate: '2026-11-12', endDate: '2026-11-13' },
+        '2026-11-14'
+      ),
+      false
+    );
+
     // Missing/invalid dates return false when a filter is active
     assert.equal(matchesDateFilter('', { day: '13', month: '', year: '' }), false);
     assert.equal(matchesDateFilter('not-a-date', { day: '', month: '11', year: '' }), false);
   });
 
-  it('2. TableDateFilter renders Day (1-31), Thai Months (ม.ค.-ธ.ค.), BE Years (2568/2569/2570 + dataset), and Clear button when active', () => {
+  it('2. TableDateFilter renders unified Calendar Range Picker trigger (single date & range display in BE) and Clear button when active', () => {
     const htmlInactive = renderThai(
       React.createElement(TableDateFilter, {
         value: EMPTY_DATE_FILTER,
@@ -84,23 +120,30 @@ describe('Task 6: Cashier Bounded Scroll, TableDateFilter (วัน/เดื�
       })
     );
 
-    assert.ok(htmlInactive.includes('วันทั้งหมด'), 'Should render All Days Thai option');
-    assert.ok(htmlInactive.includes('เดือนทั้งหมด'), 'Should render All Months Thai option');
-    assert.ok(htmlInactive.includes('ปีทั้งหมด'), 'Should render All Years Thai option');
-    assert.ok(htmlInactive.includes('ม.ค.') && htmlInactive.includes('ธ.ค.'), 'Should render Thai months');
-    assert.ok(htmlInactive.includes('2568'), 'Should render BE year 2568 (2025)');
-    assert.ok(htmlInactive.includes('2569'), 'Should render BE year 2569 (2026)');
-    assert.ok(htmlInactive.includes('2570'), 'Should render BE year 2570 (2027)');
-    assert.ok(htmlInactive.includes('2567'), 'Should include dataset year 2567 (2024)');
+    assert.ok(htmlInactive.includes('กรองวันที่:'), 'Should render Thai label');
+    assert.ok(htmlInactive.includes('เลือกวันที่ / ช่วงวันที่'), 'Should render unified calendar placeholder');
     assert.equal(htmlInactive.includes('ล้างตัวกรอง'), false, 'Clear button hidden when filter empty');
 
-    const htmlActive = renderThai(
+    const htmlSingleActive = renderThai(
       React.createElement(TableDateFilter, {
-        value: { day: '13', month: '11', year: '2026' },
+        value: { ...EMPTY_DATE_FILTER, startDate: '2026-11-13', endDate: '' },
         onChange: () => {},
       })
     );
-    assert.ok(htmlActive.includes('ล้างตัวกรอง'), 'Clear button visible when filter active');
+    assert.ok(htmlSingleActive.includes('13/11/2569'), 'Should display single BE date 13/11/2569');
+    assert.ok(htmlSingleActive.includes('ล้างตัวกรอง'), 'Clear button visible when single date active');
+
+    const htmlRangeActive = renderThai(
+      React.createElement(TableDateFilter, {
+        value: { ...EMPTY_DATE_FILTER, startDate: '2026-11-12', endDate: '2026-11-15' },
+        onChange: () => {},
+      })
+    );
+    assert.ok(
+      htmlRangeActive.includes('12/11/2569 - 15/11/2569'),
+      'Should display BE date range 12/11/2569 - 15/11/2569'
+    );
+    assert.ok(htmlRangeActive.includes('ล้างตัวกรอง'), 'Clear button visible when range active');
   });
 
   it('3. paginateItems slices 10 items per page and clamps out-of-range page numbers after filtering', () => {
