@@ -110,6 +110,27 @@ CREATE TABLE IF NOT EXISTS task_templates (
     updated_at TEXT NOT NULL
 );
 
+-- 8. Amenity Requests (รายการขอของใช้และบริการเสริมจากลูกค้า/ฟรอนต์)
+CREATE TABLE IF NOT EXISTS amenity_requests (
+    id TEXT PRIMARY KEY,
+    room_number TEXT NOT NULL,
+    reservation_id TEXT,
+    amenity_id TEXT NOT NULL,
+    amenity_name TEXT NOT NULL,
+    category TEXT NOT NULL DEFAULT 'other',
+    quantity INTEGER NOT NULL DEFAULT 1,
+    is_chargeable INTEGER NOT NULL DEFAULT 0,
+    unit_price REAL NOT NULL DEFAULT 0.0,
+    total_price REAL NOT NULL DEFAULT 0.0,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'preparing', 'delivered', 'cancelled')),
+    requested_by TEXT DEFAULT 'Front Desk',
+    assigned_to TEXT REFERENCES housekeeping_staff(id),
+    notes TEXT,
+    delivered_at TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_tasks_room ON housekeeping_tasks(room_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON housekeeping_tasks(status);
@@ -122,3 +143,5 @@ CREATE INDEX IF NOT EXISTS idx_outsource_is_active ON outsource_contacts(is_acti
 CREATE INDEX IF NOT EXISTS idx_outsource_is_emergency ON outsource_contacts(is_emergency);
 CREATE INDEX IF NOT EXISTS idx_task_templates_task_type ON task_templates(task_type);
 CREATE INDEX IF NOT EXISTS idx_task_templates_is_active ON task_templates(is_active);
+CREATE INDEX IF NOT EXISTS idx_amenity_requests_room ON amenity_requests(room_number);
+CREATE INDEX IF NOT EXISTS idx_amenity_requests_status ON amenity_requests(status);

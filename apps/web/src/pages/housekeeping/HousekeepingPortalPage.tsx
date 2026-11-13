@@ -198,6 +198,24 @@ interface CompletedRoomItem {
   afterPhotoUrl?: string | null;
 }
 
+export interface AmenityRequestItem {
+  id: string;
+  roomNumber: string;
+  reservationId?: string | null;
+  amenityId: string;
+  amenityName: string;
+  category: string;
+  quantity: number;
+  isChargeable: number;
+  unitPrice: number;
+  totalPrice: number;
+  status: 'pending' | 'preparing' | 'delivered' | 'cancelled';
+  requestedBy: string;
+  notes?: string | null;
+  deliveredAt?: string | null;
+  createdAt: string;
+}
+
 // ========================================================
 // Real-time Date & Calendar Helpers
 // ========================================================
@@ -385,6 +403,7 @@ export const HousekeepingPortalPage: React.FC = () => {
   const [tasks, setTasks] = useState<CleaningTaskItem[]>([]);
   const [completedRooms, setCompletedRooms] = useState<CompletedRoomItem[]>([]);
   const [roomStatusList, setRoomStatusList] = useState<RoomStatusItem[]>([]);
+  const [amenityRequestsList, setAmenityRequestsList] = useState<AmenityRequestItem[]>([]);
   const [timerSeconds, setTimerSeconds] = useState<number>(30 * 60); // เริ่มที่ 30:00 (1800s) และนับถอยหลัง
   const [isTimerRunning, setIsTimerRunning] = useState<boolean>(true);
   const [isFocusModeOpen, setIsFocusModeOpen] = useState<boolean>(false); // โหมดโฟกัสทำความสะอาด (Focus Mode)
@@ -594,6 +613,49 @@ export const HousekeepingPortalPage: React.FC = () => {
     }
   };
 
+  // 4. Fetch live amenity requests from /api/housekeeping/amenity-requests
+  const fetchLiveAmenityRequests = async () => {
+    try {
+      const token = getAuthToken();
+      const res = await fetch(apiUrl('/api/housekeeping/amenity-requests'), {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          setAmenityRequestsList(json.data);
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to fetch amenity requests:', err);
+    }
+  };
+
+  // Handle Update Amenity Request Status (preparing -> delivered)
+  const handleUpdateAmenityStatus = async (requestId: string, newStatus: 'preparing' | 'delivered' | 'cancelled') => {
+    try {
+      const token = getAuthToken();
+      const res = await fetch(apiUrl(`/api/housekeeping/amenity-requests/${requestId}/status`), {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (res.ok) {
+        const statusTh = newStatus === 'preparing' ? 'กำลังนำส่ง' : newStatus === 'delivered' ? 'จัดส่งเรียบร้อย' : 'ยกเลิก';
+        showToast(`อัปเดตคำขอเป็น "${statusTh}" สำเร็จ`);
+        fetchLiveAmenityRequests();
+      } else {
+        showToast('ไม่สามารถอัปเดตสถานะได้');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+    }
+  };
+
   // ตรวจสอบสิทธิ์และดึงข้อมูลสดจากฐานข้อมูลเมื่อเข้าสู่หน้าเว็บ (Initial Load)
   useEffect(() => {
     const token = getAuthToken();
@@ -602,7 +664,7 @@ export const HousekeepingPortalPage: React.FC = () => {
       return;
     }
     setIsLoadingData(true);
-    Promise.all([fetchLiveTasks(), fetchLiveRooms(), fetchTaskTemplates()]).finally(() => setIsLoadingData(false));
+    Promise.all([fetchLiveTasks(), fetchLiveRooms(), fetchTaskTemplates(), fetchLiveAmenityRequests()]).finally(() => setIsLoadingData(false));
   }, [navigate]);
 
   // Real-time clock tick (every 10s to keep date & minutes current)
@@ -1772,6 +1834,119 @@ export const HousekeepingPortalPage: React.FC = () => {
                   <span className="text-[11px] text-slate-500 mt-0.5">รอทำความสะอาด</span>
                 </div>
               </div>
+            </section>
+
+            {/* Guest Amenity Requests Section (คำขอของใช้เพิ่มเติมจากลูกค้า / Front Desk) */}
+            <section className="bg-white rounded-xl border border-indigo-100 shadow-sm p-4 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 leading-tight">
+                      คำขอของใช้เพิ่มเติม (Guest Requests)
+                    </h3>
+                    <p className="text-[11px] text-slate-500">คำขอส่งตรงจาก Front Desk เพื่อให้แม่บ้านจัดส่ง</p>
+                  </div>
+                </div>
+                <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-xs font-bold font-mono border border-indigo-200">
+                  {amenityRequestsList.filter((r) => r.status !== 'delivered' && r.status !== 'cancelled').length} รายการค้างส่ง
+                </span>
+              </div>
+
+              {amenityRequestsList.length === 0 ? (
+                <div className="p-4 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-center">
+                  <p className="text-xs text-slate-500">ไม่มีคำขอของใช้ค้างอยู่ในขณะนี้</p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2.5">
+                  {amenityRequestsList.map((req) => (
+                    <div
+                      key={req.id}
+                      className={`p-3 rounded-xl border flex flex-col gap-2 transition-all ${
+                        req.status === 'delivered'
+                          ? 'bg-slate-50/70 border-slate-200 opacity-60'
+                          : req.status === 'preparing'
+                          ? 'bg-amber-50/50 border-amber-200'
+                          : 'bg-white border-indigo-100 shadow-xs'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2.5 py-1 rounded-lg bg-slate-900 text-white font-mono text-xs font-bold">
+                            ห้อง {req.roomNumber}
+                          </span>
+                          <div>
+                            <span className="text-xs font-bold text-slate-900 block">
+                              {req.amenityName} <span className="text-indigo-600 font-mono">x{req.quantity}</span>
+                            </span>
+                            <span className="text-[10px] text-slate-500">
+                              จาก {req.requestedBy || 'Front Desk'} • {new Date(req.createdAt).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.
+                            </span>
+                          </div>
+                        </div>
+
+                        {req.isChargeable === 1 ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                            คิดเงิน {req.totalPrice} บ.
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            ของฟรี
+                          </span>
+                        )}
+                      </div>
+
+                      {req.notes && (
+                        <p className="text-[11px] text-slate-600 bg-slate-100/80 p-2 rounded-lg italic">
+                          "{req.notes}"
+                        </p>
+                      )}
+
+                      <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+                        <span className="text-[11px] font-medium text-slate-500">
+                          สถานะ: {' '}
+                          <strong className={
+                            req.status === 'delivered'
+                              ? 'text-emerald-600'
+                              : req.status === 'preparing'
+                              ? 'text-amber-600'
+                              : 'text-indigo-600'
+                          }>
+                            {req.status === 'delivered'
+                              ? '✓ จัดส่งเรียบร้อย'
+                              : req.status === 'preparing'
+                              ? '⏳ กำลังนำไปส่ง'
+                              : '🔔 รอแม่บ้านรับเรื่อง'}
+                          </strong>
+                        </span>
+
+                        {req.status !== 'delivered' && req.status !== 'cancelled' && (
+                          <div className="flex items-center gap-1.5">
+                            {req.status === 'pending' && (
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateAmenityStatus(req.id, 'preparing')}
+                                className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold transition-all shadow-xs"
+                              >
+                                เตรียมของ
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateAmenityStatus(req.id, 'delivered')}
+                              className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold transition-all shadow-xs"
+                            >
+                              ส่งมอบแล้ว ✓
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </section>
 
             {/* Filter Pills with Express Categories */}
