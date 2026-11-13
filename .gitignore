@@ -35,6 +35,8 @@ tail.log
 
 # D1 local databases
 .wrangler/state/v3/d1/
+dev-dbs/
+*.sqlite
 
 # Test & coverage
 coverage/
@@ -54,3 +56,7 @@ desktop.ini
 scratch/
 OnlyMe/
 onlyMe/
+.vscode/
+.agents
+.superpowers/
+PR_*.md

@@ -14,6 +14,7 @@
 | เขียน service ฝั่ง backend (Cloudflare Workers + D1) | `docs/systemdesign.md` |
 | ดูแผนแบ่งงาน, Phase, ใครรับผิดชอบ service ไหน | `docs/อ่านก่อนทำงาน.md` |
 | ดู Test Cases, เกณฑ์การทดสอบ, UAT ฉบับละเอียด | `docs/uat.md` |
+| เตรียมนำเสนอความคืบหน้า CSI400 ต่อ อ.ท็อป (7 เกณฑ์) | `docs/PROGRESS_PRESENTATION_GUIDE.md` |
 | ติดตั้งครั้งแรกหรือ setup เครื่องใหม่ | `docs/How to Install and Command.md` |
 
 > `README.md` อยู่ที่ **root** ของ repo — ไม่ได้อยู่ใน `docs/`
@@ -30,10 +31,10 @@
    - **ตอน Check-out** ห้องต้องเปลี่ยนเป็น `checked_out` ทันทีที่แขกคืนกุญแจ โดย Room Inventory เป็นหนึ่งใน Subscriber ที่รับ Event จาก Check-out
 
 4. **RBAC ตาม 4 บทบาทหลัก (ไม่มี Role Billing แยก)** — สิทธิ์ในระบบแบ่งเป็น 4 บทบาท:
-   - `admin`: ดูแลระบบทั้งหมด, จัดการผู้ใช้, ดูแล Infrastructure
-   - `manager`: ดูแลสถิติ, KPI Dashboard, อนุมัติส่วนลดพิเศษ
-   - `front_desk`: **รวมงาน Front Office + Cashiering/Billing** (จอง, เช็คอิน, เช็คเอาท์, เพิ่มค่ามินิบาร์, รับชำระเงิน, ออกใบเสร็จ)
-   - `housekeeping`: ตรวจสอบงานทำความสะอาด, รับงาน, บันทึกงานเสร็จ, แจ้งสิ่งชำรุด
+   - `admin`: ดูแลระบบทั้งหมด, จัดการผู้ใช้, ดูแล Infrastructure, จัดการ Master Data ข้อมูลช่างและคู่ค้า Outsource (Full CRUD)
+   - `manager`: ดูแลสถิติ, KPI Dashboard, อนุมัติส่วนลดพิเศษ, ตรวจสอบสัญญาคู่ค้า Outsource
+   - `front_desk`: **รวมงาน Front Office + Cashiering/Billing** (จอง, เช็คอิน, เช็คเอาท์, เพิ่มค่ามินิบาร์, รับชำระเงิน, ออกใบเสร็จ) พร้อมสิทธิ์ Read-Only ดูเบอร์และโทรเรียกช่าง Outsource ฉุกเฉิน 24 ชม.
+   - `housekeeping`: ตรวจสอบงานทำความสะอาด, รับงาน, บันทึกงานเสร็จ, แจ้งสิ่งชำรุด พร้อมสิทธิ์ Read-Only ดูเบอร์ช่าง Outsource เฉพาะทางเพื่อประสานงานซ่อมหน้างาน
 
 5. **ห้ามใช้ Native Node.js Package บน Workers** — Cloudflare Workers รันบน V8 Isolates ไม่ใช่ Node.js ห้ามใช้ `bcrypt`, `prisma`, หรือ package ที่มี native bindings ใดๆ ให้ใช้ `bcryptjs`, `drizzle-orm`, `@upstash/qstash`, และ `crypto.randomUUID()` แทนเสมอ
 

@@ -37,7 +37,7 @@
 
 ---
 
-## 3. `apps/api-gateway` (Cloudflare Worker)
+## 3. `services/api-gateway` (Cloudflare Worker)
 
 | Package | ใช้ทำอะไร |
 |---|---|
@@ -49,7 +49,7 @@
 
 ---
 
-## 4. `apps/services/*` (ทั้ง 6 services: auth-user, room-inventory, reservation, housekeeping, billing, report-analytics)
+## 4. `services/*` (ทั้ง 6 services: auth-user, room-inventory, reservation, housekeeping, billing, report-analytics)
 
 ทุก service ใช้ dependency ชุดเดียวกันเป็นหลัก:
 
@@ -75,7 +75,7 @@
 | Package | หมวด | เหตุผล |
 |---|---|---|
 | `react`, `react-dom` | dependency | UI library |
-| `react-router-dom` | dependency | Route ระหว่าง 3 Portals (front-desk, housekeeping, manager-admin) |
+| `react-router-dom` | dependency | Route ระหว่าง 3 Portals (front-desk, housekeeping, owner) |
 | `vite`, `@vitejs/plugin-react` | devDependency | Dev server + build |
 | `typescript` | devDependency | Type safety |
 | `tailwindcss`, `postcss`, `autoprefixer` | devDependency | ตาม `designsystem.md` (Status-Color System) |

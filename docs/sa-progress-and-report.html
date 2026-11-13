@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="th" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KEYSTAY — รายงานความคืบหน้าโครงงาน (Quiz 2) & คู่มือนำเสนอ SA Lead</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Fonts: IBM Plex Sans Thai & Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"IBM Plex Sans Thai"', '"Inter"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#fff7ed',
+              100: '#ffedd5',
+              500: '#f97316',
+              600: '#ea580c',
+              700: '#c2410c',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'IBM Plex Sans Thai', 'Inter', sans-serif;
+    }
+    code, pre {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    
+    /* Print Stylesheet for Clean A4 Output */
+    @media print {
+      body {
+        background-color: white !important;
+        color: #0f172a !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .print-only {
+        display: block !important;
+      }
+      .page-break {
+        page-break-after: always;
+      }
+      .tab-content {
+        display: block !important;
+      }
+      #tab-presentation, #tab-architecture {
+        display: none !important;
+      }
+      #tab-report {
+        display: block !important;
+      }
+      .card-box {
+        box-shadow: none !important;
+        border: 1px solid #cbd5e1 !important;
+        page-break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+
+  <!-- =========================================================================
+       TOP GLOBAL HEADER (No-Print)
+       ========================================================================= -->
+  <header class="no-print bg-white border-b border-slate-200 sticky top-0 z-50 shadow-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      
+      <!-- Brand & Project Title -->
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-orange-500 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+          K
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-slate-900 tracking-tight text-base sm:text-lg">KEYSTAY</span>
+            <span class="text-xs px-2 py-0.5 rounded-md bg-orange-100 text-orange-700 font-semibold border border-orange-200">
+              CSI400 Senior Project
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-500 hidden sm:block">
+            ระบบบริหารจัดการโรงแรมขนาดเล็ก (5–10 ห้อง) · Cloudflare Edge Microservices
+          </p>
+        </div>
+      </div>
+
+      <!-- Author Pill & Action Buttons -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <!-- Author Profile -->
+        <div class="hidden md:flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-xs">
+          <div class="w-6 h-6 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-[10px]">
+            D
+          </div>
+          <div class="text-left leading-tight">
+            <span class="font-semibold text-slate-900 block">เดียร์ (@allmusgus)</span>
+            <span class="text-[10px] text-slate-500">System Analyst (SA Lead)</span>
+          </div>
+        </div>
+
+        <!-- Print PDF Button -->
+        <button onclick="window.print()" class="px-3 py-1.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+          <span class="hidden sm:inline">พิมพ์รายงาน / Export PDF</span>
+          <span class="sm:hidden">Print</span>
+        </button>
+
+        <!-- Live Demo Link -->
+        <a href="http://localhost:3000" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-md bg-orange-600 hover:bg-orange-700 text-white text-xs font-medium transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          <span class="hidden sm:inline">เปิดเดโมสด Localhost:3000</span>
+          <span class="sm:hidden">Demo</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="bg-slate-100/80 border-t border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-1 sm:gap-2 overflow-x-auto text-xs py-1.5">
+        <button onclick="switchTab('report')" id="tab-btn-report" class="tab-btn px-3.5 py-1.5 rounded-md font-semibold transition-all flex items-center gap-2 bg-white text-slate-900 shadow-xs border border-slate-200">
+          <svg class="w-3.5 h-3.5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          <span>1. รายงานทางการ Quiz 2 (ส่งอาจารย์)</span>
+        </button>
+
+        <button onclick="switchTab('presentation')" id="tab-btn-presentation" class="tab-btn px-3.5 py-1.5 rounded-md font-medium text-slate-600 hover:text-slate-900 transition-all flex items-center gap-2 hover:bg-white/60">
+          <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 13v-1m4 1v-3m4 3V8M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
+          <span>2. สคริปต์พูด & ขั้นตอนเดโมสด (Presentation Guide)</span>
+        </button>
+
+        <button onclick="switchTab('architecture')" id="tab-btn-architecture" class="tab-btn px-3.5 py-1.5 rounded-md font-medium text-slate-600 hover:text-slate-900 transition-all flex items-center gap-2 hover:bg-white/60">
+          <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+          <span>3. แผนผังระบบ & เก็งคำถามอาจารย์ (SA FAQ Vault)</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- =========================================================================
+       MAIN BODY CONTENT AREA
+       ========================================================================= -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+
+    <!-- =======================================================================
+         TAB 1: รายงานทางการ QUIZ 2 (FORMAL REPORT)
+         ======================================================================= -->
+    <div id="tab-report" class="tab-content space-y-8">
+      
+      <!-- Report Header Banner -->
+      <div class="bg-white rounded-xl border border-slate-200/90 shadow-xs p-6 sm:p-8 card-box">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-6 mb-6">
+          <div>
+            <span class="text-xs font-semibold px-2.5 py-1 rounded-md bg-orange-50 text-orange-700 border border-orange-200 uppercase tracking-wider">
+              Quiz 2: รายงานความคืบหน้าโครงงานในตำแหน่งงานและหน้าที่ที่ได้รับมอบหมาย
+            </span>
+            <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 mt-2 tracking-tight">
+              KEYSTAY — ระบบบริหารจัดการโรงแรมขนาดเล็ก (5–10 ห้อง)
+            </h1>
+            <p class="text-sm text-slate-600 mt-1">
+              ด้วย Cloudflare Edge Microservices & Event-Driven Architecture · วิชา CSI400 Senior Project
+            </p>
+          </div>
+          <div class="text-left md:text-right text-xs text-slate-500 space-y-1">
+            <p><strong class="text-slate-800">ผู้จัดทำ:</strong> นายธีรภัทร เหนียมสุวรรณ (เดียร์)</p>
+            <p><strong class="text-slate-800">บทบาท:</strong> System Analyst (SA Lead) & Full-Stack Dev</p>
+            <p><strong class="text-slate-800">GitHub:</strong> <code class="text-orange-600 bg-orange-50 px-1 py-0.5 rounded font-mono">@allmusgus</code></p>
+            <p><strong class="text-slate-800">วันที่จัดทำ:</strong> 9 พฤศจิกายน 2569</p>
+          </div>
+        </div>
+
+        <!-- Rubric Self-Assessment Table -->
+        <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center gap-2">
+          <span>🎯 ตารางประเมินตนเองตามเกณฑ์อาจารย์ 6 ข้อ (คะแนนเต็ม 5.00 คะแนน)</span>
+        </h2>
+        <div class="overflow-x-auto rounded-lg border border-slate-200">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
+              <tr>
+                <th class="py-2.5 px-3 w-12 text-center">ข้อ</th>
+                <th class="py-2.5 px-3">หัวข้อการประเมินตามเกณฑ์อาจารย์</th>
+                <th class="py-2.5 px-3 w-28 text-center">คะแนนเต็ม</th>
+                <th class="py-2.5 px-3 w-28 text-center">ประเมินตนเอง</th>
+                <th class="py-2.5 px-4">หลักฐานเชิงประจักษ์และการดำเนินงานจริง</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 font-normal text-slate-600">
+              <tr class="hover:bg-slate-50/50">
+                <td class="py-2.5 px-3 text-center font-bold text-slate-800">1</td>
+                <td class="py-2.5 px-3 font-semibold text-slate-800">บทบาทและหน้าที่ที่ได้รับมอบหมาย</td>
+                <td class="py-2.5 px-3 text-center font-mono">0.50</td>
+                <td class="py-2.5 px-3 text-center font-mono font-bold text-emerald-600">0.50</td>
+                <td class="py-2.5 px-4 text-slate-700">อธิบายตำแหน่ง SA Lead และ Full-Stack Dev รับผิดชอบ 40 APIs, State Machine 7 สถานะ และ Front Desk Portal</td>
+              </tr>
+              <tr class="hover:bg-slate-50/50">
+                <td class="py-2.5 px-3 text-center font-bold text-slate-800">2</td>
+                <td class="py-2.5 px-3 font-semibold text-slate-800">การบริหารจัดการโครงงาน (Project Management)</td>
+                <td class="py-2.5 px-3 text-center font-mono">1.00</td>
+                <td class="py-2.5 px-3 text-center font-mono font-bold text-emerald-600">1.00</td>
+                <td class="py-2.5 px-4 text-slate-700">วางแผนแบ่งงาน Phase 1-3, กำหนด API Contracts, และออกแบบโครงสร้างวงจรชีวิตห้องพัก (Guest & Room Lifecycle)</td>
+              </tr>
+              <tr class="hover:bg-slate-50/50">
+                <td class="py-2.5 px-3 text-center font-bold text-slate-800">3</td>
+                <td class="py-2.5 px-3 font-semibold text-slate-800">การจัดการทีม (Team Management)</td>
+                <td class="py-2.5 px-3 text-center font-mono">1.00</td>
+                <td class="py-2.5 px-3 text-center font-mono font-bold text-emerald-600">1.00</td>
+                <td class="py-2.5 px-4 text-slate-700">ทำงานร่วมกับ เขต (@hazeco — PM/Infra) เรื่อง 3-Role RBAC & Gateway และ บุญ (@Legxcy77 — QA) เรื่อง Housekeeping Events & UAT</td>
+              </tr>
+              <tr class="hover:bg-slate-50/50">
+                <td class="py-2.5 px-3 text-center font-bold text-slate-800">4</td>
+                <td class="py-2.5 px-3 font-semibold text-slate-800">ความคืบหน้าด้านการพัฒนาระบบ</td>
+                <td class="py-2.5 px-3 text-center font-mono">1.00</td>
+                <td class="py-2.5 px-3 text-center font-mono font-bold text-emerald-600">1.00</td>
+                <td class="py-2.5 px-4 text-slate-700">พัฒนา 40 APIs (Reservation 24 APIs + Billing 16 APIs), D1 Batch Atomic Unit, React 19 Responsive UI เสร็จสมบูรณ์</td>
+              </tr>
+              <tr class="hover:bg-slate-50/50">
+                <td class="py-2.5 px-3 text-center font-bold text-slate-800">5</td>
+                <td class="py-2.5 px-3 font-semibold text-slate-800">การแก้ไขปัญหาและการทำงานร่วมกัน</td>
+                <td class="py-2.5 px-3 text-center font-mono">0.75</td>
+                <td class="py-2.5 px-3 text-center font-mono font-bold text-emerald-600">0.75</td>
+                <td class="py-2.5 px-4 text-slate-700">แก้ปัญหา Date Range Collision ป้องกัน Overbooking, เคลียร์ Merge Conflict 5 ไฟล์โดยไม่พังโค้ดเพื่อน, และลบ Emoji Slop ทั้งหมด</td>
+              </tr>
+              <tr class="hover:bg-slate-50/50">
+                <td class="py-2.5 px-3 text-center font-bold text-slate-800">6</td>
+                <td class="py-2.5 px-3 font-semibold text-slate-800">การสรุปผลและประสบการณ์ที่ได้รับ</td>
+                <td class="py-2.5 px-3 text-center font-mono">0.75</td>
+                <td class="py-2.5 px-3 text-center font-mono font-bold text-emerald-600">0.75</td>
+                <td class="py-2.5 px-4 text-slate-700">สรุปองค์ความรู้ Systems Thinking ในฐานะ SA, ทักษะ Serverless Edge & Event-Driven, และแผนงาน UAT/Stress Test จนถึงวันปิดจ็อบ</td>
+              </tr>
+              <tr class="bg-slate-100/70 font-bold text-slate-900">
+                <td colspan="2" class="py-2.5 px-3 text-right">รวมคะแนนประเมินตนเองทั้งหมด:</td>
+                <td class="py-2.5 px-3 text-center font-mono">5.00</td>
+                <td class="py-2.5 px-3 text-center font-mono text-emerald-600">5.00</td>
+                <td class="py-2.5 px-4 text-slate-800">ผลงานเสร็จสมบูรณ์ 100% มีหลักฐานเชิงประจักษ์ตรวจสอบได้จริงบน Codebase</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Section 1: บทบาทและหน้าที่ -->
+      <section class="bg-white rounded-xl border border-slate-200/90 shadow-xs p-6 sm:p-8 card-box space-y-4">
+        <div class="flex items-center gap-2 border-b border-slate-100 pb-3">
+          <span class="w-7 h-7 rounded-lg bg-orange-100 text-orange-700 flex items-center justify-center font-bold text-sm">1</span>
+          <h2 class="text-lg font-bold text-slate-900 tracking-tight">ตำแหน่งงานและบทบาทที่ได้รับมอบหมาย (Role & Responsibilities)</h2>
+          <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-mono ml-auto">0.50 คะแนน</span>
+        </div>
+        
+        <p class="text-sm text-slate-600 leading-relaxed">
+          ในโครงงาน <strong>KEYSTAY</strong> ผมได้รับมอบหมายให้ทำหน้าที่ในตำแหน่ง <strong>System Analyst (SA Lead) ควบคู่กับ Full-Stack Developer</strong> โดยมีบทบาทหลักคือการเป็น <strong>"สะพานเชื่อมระหว่างบริบททางธุรกิจของโรงแรมขนาดเล็ก (5–10 ห้อง) เข้ากับสถาปัตยกรรมคลาวด์สมัยใหม่ (Cloudflare Edge Architecture)"</strong>
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+          <div class="p-4 rounded-lg bg-slate-50 border border-slate-200 text-xs space-y-2">
+            <h3 class="font-bold text-slate-900 flex items-center gap-1.5">
+              <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <span>Pain Point โรงแรมขนาดเล็กที่ผมนำมาวิเคราะห์</span>
+            </h3>
+            <ul class="list-disc list-inside space-y-1 text-slate-600">
+              <li><strong>ซอฟต์แวร์โรงแรมใหญ่ (Opera/Cloudbeds):</strong> แพงเกินไป คิดค่าธรรมเนียมรายเดือนสูง และระบบเทอะทะซับซ้อนเกินกว่าโรงแรม 5-10 ห้องจะใช้งานได้คล่องตัว</li>
+              <li><strong>การจดสมุดหรือใช้ Excel:</strong> ก่อให้เกิดการจองห้องชนกัน (Overbooking) โดยเฉพาะจังหวะแขก Walk-in เข้ามาพร้อมแขกออนไลน์</li>
+              <li><strong>การเก็บเงินตกหล่น:</strong> พนักงานลืมบันทึกบิลค่าน้ำมินิบาร์ ค่าซักรีด ก่อนแขกเช็คเอาต์ ทำให้โรงแรมสูญเสียรายได้</li>
+            </ul>
+          </div>
+
+          <div class="p-4 rounded-lg bg-slate-50 border border-slate-200 text-xs space-y-2">
+            <h3 class="font-bold text-slate-900 flex items-center gap-1.5">
+              <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <span>ขอบเขตความรับผิดชอบจริงของผม</span>
+            </h3>
+            <ul class="list-disc list-inside space-y-1 text-slate-600">
+              <li><strong>Domain Modeling:</strong> ออกแบบวงจรชีวิตห้องพัก (Room State Machine) 7 สถานะอย่างรัดกุม</li>
+              <li><strong>Backend Services:</strong> พัฒนา 40 APIs บน Cloudflare Workers (Reservation 24 APIs + Billing 16 APIs)</li>
+              <li><strong>Database Architecture:</strong> ออกแบบฐานข้อมูล Cloudflare D1 (SQLite) พร้อมทำ Atomic Batch Transactions</li>
+              <li><strong>Frontend Portal:</strong> พัฒนาหน้าจอ Front Desk & Cashiering Portal บน React 19 รองรับทั้ง PC และ Tablet</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 2: หน้าที่และความรับผิดชอบในการทำงานจริง -->
+      <section class="bg-white rounded-xl border border-slate-200/90 shadow-xs p-6 sm:p-8 card-box space-y-5">
+        <div class="flex items-center gap-2 border-b border-slate-100 pb-3">
+          <span class="w-7 h-7 rounded-lg bg-orange-100 text-orange-700 flex items-center justify-center font-bold text-sm">2</span>
+          <h2 class="text-lg font-bold text-slate-900 tracking-tight">หน้าที่และความรับผิดชอบในการทำงานจริง (Actual Hands-on Deliverables)</h2>
+          <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-mono ml-auto">2.00 คะแนน (ข้อ 2 + 4)</span>
+        </div>
+
+        <div class="space-y-4">
+          <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+            <span>🔹 2.1 การออกแบบ Room Lifecycle State Machine (7 สถานะรัดกุม)</span>
+          </h3>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            หัวใจหลักของซอฟต์แวร์โรงแรมคือความถูกต้องของสถานะห้องพัก ผมได้กำหนดกฎทางธุรกิจและสร้าง Guard ในระดับ API ให้สถานะห้องพัก 7 สถานะเปลี่ยนข้ามกันได้เฉพาะเส้นทางที่ถูกต้องตามตรรกะเท่านั้น:
+          </p>
+
+          <div class="p-3 bg-slate-900 text-slate-200 rounded-lg font-mono text-[11px] overflow-x-auto leading-relaxed">
+Available ──(จองล่วงหน้า)──► Reserved ──(Check-in)──► Occupied ──(Check-out)──► Checked Out ──► Cleaning ──► Available
+   │                           │                         ▲
+   └────────(Walk-in 1-Click)──┴─────────────────────────┘
+*กฎเหล็ก SA: ห้อง Occupied ห้ามเปลี่ยนเป็น Available โดยไม่ผ่าน Check-out | ห้อง Maintenance ห้ามถูกเปิดขายในปฏิทิน
+          </div>
+
+          <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2 pt-3">
+            <span>🔹 2.2 การพัฒนาระบบ Backend Services & Database (40 APIs)</span>
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div class="border border-slate-200 rounded-lg p-3 space-y-1.5">
+              <span class="font-bold text-slate-900 block text-sm text-orange-600">Reservation Microservice (24 APIs)</span>
+              <p class="text-slate-500">พัฒนาบน Cloudflare Worker บริการรับผิดชอบเรื่องแขกและการจองห้องพัก:</p>
+              <ul class="list-disc list-inside space-y-1 text-slate-600">
+                <li><code class="text-slate-800 font-bold">POST /api/v1/walk-in</code>: รับแขกหน้าร้าน สร้าง Guest + Booking + Check-in จบในคลิกเดียว</li>
+                <li><code class="text-slate-800 font-bold">POST /api/v1/reservations/:id/check-in</code>: เช็คอินแขกที่จองล่วงหน้า บันทึกเวลาและเงินมัดจำ</li>
+                <li><code class="text-slate-800 font-bold">POST /api/v1/reservations/:id/check-out</code>: เช็คเอาต์ ปรับสถานะห้อง และส่ง Event Fan-out 1:4</li>
+                <li><code class="text-slate-800 font-bold">GET /api/v1/reservations/calendar</code>: ค้นหาห้องว่างโดยตรวจจับ Date Collision</li>
+              </ul>
+            </div>
+
+            <div class="border border-slate-200 rounded-lg p-3 space-y-1.5">
+              <span class="font-bold text-slate-900 block text-sm text-blue-600">Billing & Cashiering Microservice (16 APIs)</span>
+              <p class="text-slate-500">พัฒนาบน Cloudflare Worker บริการรับผิดชอบเรื่องบิล การเงิน และใบเสร็จ:</p>
+              <ul class="list-disc list-inside space-y-1 text-slate-600">
+                <li><code class="text-slate-800 font-bold">POST /api/v1/bills/:id/items</code>: เพิ่มรายการมินิบาร์ ค่าอาหาร หรือค่าเสียหายเข้าสู่ Folio</li>
+                <li><code class="text-slate-800 font-bold">POST /api/v1/bills/:id/pay</code>: ชำระเงิน ปิดบิล หักลบเงินมัดจำกุญแจอัตโนมัติ</li>
+                <li><code class="text-slate-800 font-bold">GET /api/v1/bills/:id/receipt</code>: ออกใบเสร็จรับเงิน/ใบกำกับภาษีทางการพร้อมแจกแจง VAT 7%</li>
+                <li><code class="text-slate-800 font-bold">GET /api/v1/bills/by-room/:roomId</code>: ค้นหาบิลที่ยังไม่ปิดตามหมายเลขห้องพัก</li>
+              </ul>
+            </div>
+          </div>
+
+          <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2 pt-3">
+            <span>🔹 2.3 การสร้าง Data Integrity ด้วย Cloudflare D1 Batch Atomic Units</span>
+          </h3>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            ในจังหวะเช็คอิน หากคำสั่ง SQL รันแยกกัน อาจเกิดปัญหาเน็ตหลุดกลางคันทำให้ห้องถูกปรับเป็น Occupied แต่ประวัติการเข้าพักไม่ถูกบันทึก ผมจึงออกแบบให้ใช้ <code class="text-slate-800 bg-slate-100 px-1 py-0.5 rounded font-mono">await db.batch([...])</code> รัน 3 คำสั่ง SQL พร้อมกันเป็น Atomic Unit เที่ยวเดียว หากคำสั่งใดล้มเหลว ระบบจะ Rollback คืนค่าทั้งหมดทันที 100%
+          </p>
+        </div>
+      </section>
+
+      <!-- Section 3: การจัดการและการทำงานร่วมกับทีม -->
+      <section class="bg-white rounded-xl border border-slate-200/90 shadow-xs p-6 sm:p-8 card-box space-y-5">
+        <div class="flex items-center gap-2 border-b border-slate-100 pb-3">
+          <span class="w-7 h-7 rounded-lg bg-orange-100 text-orange-700 flex items-center justify-center font-bold text-sm">3</span>
+          <h2 class="text-lg font-bold text-slate-900 tracking-tight">การจัดการและการทำงานร่วมกับทีม (Team Management & Conflict Resolution)</h2>
+          <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-mono ml-auto">1.75 คะแนน (ข้อ 3 + 5)</span>
+        </div>
+
+        <p class="text-sm text-slate-600 leading-relaxed">
+          ทีม KEYSTAY มี 3 คน แบ่งความรับผิดชอบอย่างชัดเจน: <strong>เขต (@hazeco — Infra/PM)</strong>, <strong>เดียร์ (@allmusgus — SA Lead)</strong>, และ <strong>บุญ (@Legxcy77 — QA Lead)</strong> โดยผมมีบทบาทสำคัญในการประสานรอยต่อระหว่างระบบดังนี้:
+        </p>
+
+        <div class="space-y-3">
+          <!-- Collab with Khet -->
+          <div class="p-4 rounded-lg bg-slate-50 border border-slate-200 text-xs space-y-2">
+            <span class="font-bold text-slate-900 block text-slate-800">🤝 1. การทำงานร่วมกับ "เขต" (Project & Infra Lead)</span>
+            <ul class="list-disc list-inside space-y-1 text-slate-600">
+              <li><strong>การกำหนด Gateway Routing:</strong> ร่วมกับเขตกำหนดสเปกของ Central API Gateway เพื่อให้แน่ใจว่า JWT Verification และ Request Header Enrichment (<code class="font-mono">x-user-id</code>, <code class="font-mono">x-user-role</code>) ถูกส่งต่อมายัง Microservices ของผมอย่างถูกต้อง</li>
+              <li><strong>การปรับสถาปัตยกรรมเป็น 3-Role RBAC:</strong> ผมและเขตได้วิเคราะห์ร่วมกันเพื่อยุบรวม Role ซ้ำซ้อน จากเดิม 4 Role เหลือ 3 Role หลัก (<code class="font-mono">owner</code>, <code class="font-mono">front_desk</code>, <code class="font-mono">housekeeping</code>) ทำให้โครงสร้างสิทธิ์ในระบบสอดคล้องกับธุรกิจโรงแรมขนาดเล็กจริง</li>
+            </ul>
+          </div>
+
+          <!-- Collab with Boon -->
+          <div class="p-4 rounded-lg bg-slate-50 border border-slate-200 text-xs space-y-2">
+            <span class="font-bold text-slate-900 block text-slate-800">🤝 2. การทำงานร่วมกับ "บุญ" (QA Lead)</span>
+            <ul class="list-disc list-inside space-y-1 text-slate-600">
+              <li><strong>Asynchronous Event Fan-out 1:4 (จังหวะ Check-out):</strong> เมื่อแขกเช็คเอาต์ที่เคาน์เตอร์ของผม ระบบจะยิง Event เข้า Upstash QStash และกระจายงานไปยัง Housekeeping Service ของบุญโดยอัตโนมัติ เพื่อสร้างงานทำความสะอาดด่วนทันที</li>
+              <li><strong>Quick Emergency Contacts Integration:</strong> นำ Outsource Contacts API ที่บุญดูแล มาเชื่อมต่อกับ Emergency Drawer หน้าร้าน ให้พนักงานต้อนรับโทรเรียกช่างซ่อมฉุกเฉินได้ใน 1 คลิก</li>
+            </ul>
+          </div>
+
+          <!-- Case Study Conflict Resolution -->
+          <div class="p-4 rounded-lg bg-orange-50/60 border border-orange-200 text-xs space-y-2">
+            <span class="font-bold text-orange-900 block text-sm">💡 กรณีศึกษาการแก้ไขปัญหาข้อขัดแย้งเชิงระบบ (Git Conflict Resolution Case Study)</span>
+            <p class="text-slate-700 leading-relaxed">
+              <strong>สถานการณ์ปัญหา:</strong> เมื่อเขต Merge PR #26 เข้าสู่ branch <code class="font-mono">dev</code> ส่งผลให้เกิด Merge Conflict ถึง 5 ไฟล์ (<code class="font-mono">App.tsx</code>, <code class="font-mono">i18n.tsx</code>, <code class="font-mono">LoginPage.tsx</code>, <code class="font-mono">package.json</code>, <code class="font-mono">pnpm-lock.yaml</code>) เนื่องจากทั้งสองฝั่งมีการแก้ไข Route และโมดูลภาษาพร้อมกัน
+            </p>
+            <p class="text-slate-700 leading-relaxed">
+              <strong>การแก้ปัญหาของผมในฐานะ SA:</strong> ผมยึดหลัก <em>"Zero-Loss & Backward Compatibility"</em> โดยไม่ลบโค้ดของเพื่อนทิ้ง แต่ทำการผสาน Route ทั้ง Owner และ Front Desk เข้าด้วยกันอย่างสมบูรณ์ และเขียน Provider กลางใน <code class="font-mono">i18n.tsx</code> ให้รองรับทั้งฟังก์ชัน <code class="font-mono">useTranslation()</code> ของเขต และ <code class="font-mono">useI18n()</code> ของผม ตรวจสอบผลลัพธ์ด้วย <strong>Typecheck ผ่าน 11/11 แพ็กเกจ และ Automated Tests ผ่าน 79/79 การทดสอบทันที</strong>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 4: ความคืบหน้าและการดำเนินการต่อ -->
+      <section class="bg-white rounded-xl border border-slate-200/90 shadow-xs p-6 sm:p-8 card-box space-y-5">
+        <div class="flex items-center gap-2 border-b border-slate-100 pb-3">
+          <span class="w-7 h-7 rounded-lg bg-orange-100 text-orange-700 flex items-center justify-center font-bold text-sm">4</span>
+          <h2 class="text-lg font-bold text-slate-900 tracking-tight">ความคืบหน้าของงานและการดำเนินการต่อ (Progress & Next Milestones)</h2>
+          <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-mono ml-auto">1.75 คะแนน (ข้อ 4 + 6)</span>
+        </div>
+
+        <div class="space-y-4">
+          <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+            <span>🔹 4.1 สรุปหลักฐานความคืบหน้าจริงที่ตรวจสอบได้ (Verifiable Progress)</span>
+          </h3>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+            <div class="p-3 rounded-lg bg-slate-50 border border-slate-200">
+              <span class="text-2xl font-bold font-mono text-slate-900 block">40/40</span>
+              <span class="text-[11px] text-slate-500">APIs พัฒนาเสร็จสิ้น</span>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-50 border border-slate-200">
+              <span class="text-2xl font-bold font-mono text-emerald-600 block">79/79</span>
+              <span class="text-[11px] text-slate-500">Mocha Tests ผ่าน 100%</span>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-50 border border-slate-200">
+              <span class="text-2xl font-bold font-mono text-blue-600 block">11/11</span>
+              <span class="text-[11px] text-slate-500">Typecheck ผ่านทุกแพ็กเกจ</span>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-50 border border-slate-200">
+              <span class="text-2xl font-bold font-mono text-purple-600 block">0</span>
+              <span class="text-[11px] text-slate-500">Merge Conflicts (Ready)</span>
+            </div>
+          </div>
+
+          <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2 pt-2">
+            <span>🔹 4.2 ประสบการณ์และสิ่งที่ได้เรียนรู้ (Learnings & Reflection)</span>
+          </h3>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            การทำงานในตำแหน่ง SA ของโปรเจกต์นี้ทำให้ผมได้เข้าใจถึง <strong>Systems Thinking</strong> อย่างแท้จริง การเขียนโค้ดให้รันผ่านเป็นเพียงครึ่งเดียวของงานวิศวกรรมซอฟต์แวร์ แต่อีกครึ่งหนึ่งที่สำคัญกว่าคือการเข้าใจ <em>"สภาวะการทำงานจริงของมนุษย์หน้างาน"</em> เช่น การที่พนักงานต้อนรับต้องทำงานแข่งกับเวลาตอนแขกยืนรอเช็คอิน ทำให้ผมต้องออกแบบฟอร์มให้สั้นที่สุด มีระบบเช็คห้องว่างแบบอัตโนมัติ และกำจัดขั้นตอนที่ไม่จำเป็นออกทั้งหมด
+          </p>
+
+          <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2 pt-2">
+            <span>🔹 4.3 แผนงานขั้นตอนถัดไปและฟีเจอร์ใหม่ที่ได้รับมอบหมาย (Next Milestones & Feature Spec)</span>
+          </h3>
+          <ul class="list-disc list-inside space-y-1.5 text-xs text-slate-600">
+            <li><strong>สัปดาห์ปัจจุบัน (11 พ.ย. 2569):</strong> จัดทำสเปกระบบ <a href="FEATURE_SPEC_DYNAMIC_PRICING_AND_EXTRAS.md" class="text-orange-600 font-bold hover:underline">SPEC-2026-004</a> ครอบคลุม Dynamic Pricing (ปรับ ±5%), ช่องทางจอง + แนบสลิป (Walk-in/Phone/Facebook), แคตตาล็อกของใช้ฟรีและคิดเงิน (วิ่งลงบิล Folio อัตโนมัติ), และระบบภาษี VAT 7% พร้อมส่งมอบให้ทีมเริ่มพัฒนา Sprint ถัดไป</li>
+            <li><strong>สัปดาห์ที่ 1 ถัดไป:</strong> ดำเนินการทดสอบ Acceptance Test ร่วมกับบุญ (QA) ครบทั้ง 24 UAT Scenarios บนระบบ Cloudflare Staging ที่ Deploy จริง</li>
+            <li><strong>สัปดาห์ที่ 2 ถัดไป:</strong> ร่วมกับเขต (Infra) ทำการทดสอบ Stress/Concurrency Test เพื่อจำลองการกดจองห้องพักพร้อมกันในช่วงเทศกาล</li>
+            <li><strong>สัปดาห์สุดท้าย:</strong> จัดทำคู่มือผู้ใช้งาน (User Manual) และเอกสารฉบับสมบูรณ์เพื่อนำเสนอปิดโครงงาน CSI400</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Signature Footer for Submission -->
+      <div class="p-6 rounded-xl bg-slate-100 border border-slate-200 text-xs text-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <p class="font-bold text-slate-900">รับรองข้อมูลความถูกต้องตามจริง</p>
+          <p class="text-[11px] text-slate-500">รายงานฉบับนี้จัดทำขึ้นโดยอิงจากโค้ดจริงใน Git Repository ของโครงงาน KEYSTAY</p>
+        </div>
+        <div class="text-right">
+          <p class="font-bold text-slate-900">นายธีรภัทร เหนียมสุวรรณ (เดียร์)</p>
+          <p class="text-[11px] text-slate-500">System Analyst (SA Lead) & Full-Stack Developer</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- =======================================================================
+         TAB 2: สคริปต์พูด & ขั้นตอนเดโมสด (PRESENTATION & DEMO GUIDE)
+         ======================================================================= -->
+    <div id="tab-presentation" class="tab-content space-y-8 hidden">
+      
+      <!-- Top Alert: The 4-Step Narrative Arc -->
+      <div class="bg-gradient-to-r from-orange-500 to-amber-600 rounded-xl text-white p-6 shadow-md">
+        <span class="text-[11px] font-bold uppercase tracking-widest text-orange-200 block mb-1">
+          THE 4-STEP NARRATIVE FLOW (สคริปต์นำเสนอ 7–10 นาที สำหรับอาจารย์ที่ไม่เคยรู้เรื่องโปรเจกต์)
+        </span>
+        <h2 class="text-xl sm:text-2xl font-bold tracking-tight">
+          โครงสร้างการเล่าเรื่องสไตล์ SA: จากปัญหาจริงสู่หน้าจอเดโมสด
+        </h2>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 text-xs">
+          <div class="p-2.5 rounded-lg bg-white/10 backdrop-blur-xs border border-white/20">
+            <span class="font-mono text-orange-200 text-[10px] block">จังหวะที่ 1 (2 นาที)</span>
+            <span class="font-bold block mt-0.5">เปิดประเด็นปัญหา</span>
+            <span class="text-[11px] text-orange-100">โรงแรม 5-10 ห้อง ทำไมสมุดจด/Excel ถึงล้มเหลว</span>
+          </div>
+          <div class="p-2.5 rounded-lg bg-white/10 backdrop-blur-xs border border-white/20">
+            <span class="font-mono text-orange-200 text-[10px] block">จังหวะที่ 2 (2 นาที)</span>
+            <span class="font-bold block mt-0.5">แบบจำลอง SA</span>
+            <span class="text-[11px] text-orange-100">3-Role RBAC & Room State Machine 7 สถานะ</span>
+          </div>
+          <div class="p-2.5 rounded-lg bg-white/10 backdrop-blur-xs border border-white/20">
+            <span class="font-mono text-orange-200 text-[10px] block">จังหวะที่ 3 (4 นาที)</span>
+            <span class="font-bold block mt-0.5">เดโมระบบสด</span>
+            <span class="text-[11px] text-orange-100">Walk-in -> Check-in -> Folio บิล -> Check-out</span>
+          </div>
+          <div class="p-2.5 rounded-lg bg-white/10 backdrop-blur-xs border border-white/20">
+            <span class="font-mono text-orange-200 text-[10px] block">จังหวะที่ 4 (1 นาที)</span>
+            <span class="font-bold block mt-0.5">สรุปผล & สเต็ปถัดไป</span>
+            <span class="text-[11px] text-orange-100">40 APIs เสร็จ 100%, เตรียม UAT สัปดาห์หน้า</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step-by-Step Click & Speaking Script -->
+      <div class="space-y-6">
+        
+        <!-- Step 1: เกริ่นนำเปิดประเด็น -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-xs p-5 sm:p-6 card-box space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded bg-orange-100 text-orange-700 font-mono font-bold text-xs">STEP 1</span>
+            <h3 class="font-bold text-slate-900 text-base">เกริ่นนำปัญหาและที่มาของ KEYSTAY (เวลาพูด ~2 นาที)</h3>
+          </div>
+          <div class="p-4 rounded-lg bg-slate-50 border-l-4 border-orange-500 text-xs sm:text-sm text-slate-700 leading-relaxed space-y-2">
+            <p><strong>🗣️ สคริปต์คำพูดคุณเดียร์:</strong></p>
+            <p>
+              <em>"สวัสดีครับอาจารย์ วันนี้ผมในฐานะ SA Lead ขออนุญาตสรุปภาพรวมและความคืบหน้าของโปรเจกต์ KEYSTAY ให้เห็นภาพการทำงานจริงครับ..."</em>
+            </p>
+            <p>
+              <em>"จุดเริ่มต้นของ KEYSTAY มาจากปัญหาของ <strong>โรงแรมขนาดเล็ก 5–10 ห้อง</strong> เช่น บูทีคโฮเทลหรือเกสต์เฮาส์ ซึ่งเป็นกลุ่มที่ใช้โปรแกรมโรงแรมใหญ่ๆ ไม่ไหวเพราะค่าธรรมเนียมแพงมากและใช้งานซับซ้อน ส่วนใหญ่จึงยังใช้ <strong>สมุดจดหรือ Google Sheet</strong> ซึ่งมักก่อให้เกิดปัญหา 2 อย่างคือ: <strong>การจองห้องชนกัน (Overbooking)</strong> และ <strong>การลืมเก็บเงินค่ามินิบาร์ก่อนแขกเช็คเอาต์</strong>"</em>
+            </p>
+            <p>
+              <em>"ในฐานะ SA ผมจึงออกแบบระบบให้เป็น <strong>Edge Microservices บน Cloudflare</strong> ที่ตอบสนองไวต่ำกว่า 5ms และแบ่งระบบออกเป็น 3 บทบาทหลักที่ชัดเจนคือ <strong>เจ้าของ (Owner), พนักงานต้อนรับ (Front Desk) และแม่บ้าน (Housekeeping)</strong> ครับ"</em>
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 2: เปิดหน้า Login & เข้า Front Desk -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-xs p-5 sm:p-6 card-box space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded bg-blue-100 text-blue-700 font-mono font-bold text-xs">STEP 2</span>
+            <h3 class="font-bold text-slate-900 text-base">การเข้าสู่ระบบและการควบคุมสิทธิ์ 3-Role RBAC (เวลาพูด ~1 นาที)</h3>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div class="p-3.5 rounded-lg bg-slate-50 border border-slate-200 space-y-2">
+              <span class="font-bold text-slate-800 block">🖥️ การคลิกบนหน้าจอ:</span>
+              <ol class="list-decimal list-inside space-y-1 text-slate-600">
+                <li>เปิดเบราว์เซอร์ไปที่ <code class="text-orange-600 font-mono">http://localhost:3000/login</code></li>
+                <li>ชี้ให้อาจารย์ดูการ์ดล็อกอินที่เรียบหรู และปุ่ม <strong>Fast Login (Demo Accounts)</strong></li>
+                <li>คลิกที่ปุ่ม <strong><span class="text-slate-900 font-bold">Front Desk</span> (<code class="font-mono">frontdesk@keystay.com</code>)</strong></li>
+              </ol>
+            </div>
+            <div class="p-3.5 rounded-lg bg-blue-50/50 border border-blue-200 space-y-2">
+              <span class="font-bold text-blue-900 block">🗣️ สคริปต์คำพูดคุณเดียร์:</span>
+              <p class="text-slate-700 leading-relaxed">
+                <em>"ระบบของเรามีระบบรักษาความปลอดภัยระดับ Edge โดยใช้ JWT ตรวจสอบสิทธิ์แบบ 3 บทบาท ตอนนี้ผมจะขออนุญาตล็อกอินเข้าใช้งานในฐานะ <strong>Front Desk</strong> ผ่านปุ่ม 1-Click Fast Login ครับ..."</em>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: ผังห้องพัก 4 คอลัมน์ & การ Walk-in จบในหน้าเดียว -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-xs p-5 sm:p-6 card-box space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 font-mono font-bold text-xs">STEP 3</span>
+            <h3 class="font-bold text-slate-900 text-base">ผังห้องพักแบบ Compact Grid & โฟลว์ Walk-in หน้าเดียว (เวลาพูด ~2.5 นาที)</h3>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div class="p-3.5 rounded-lg bg-slate-50 border border-slate-200 space-y-2">
+              <span class="font-bold text-slate-800 block">🖥️ การคลิกบนหน้าจอ:</span>
+              <ol class="list-decimal list-inside space-y-1 text-slate-600">
+                <li>เมื่อระบบ Redirect มาที่ <code class="font-mono">/front-desk/room-matrix</code> ให้ชี้ผังห้อง 4 คอลัมน์</li>
+                <li>ชี้ให้ดู <strong>จุดสีสถานะบนพื้นกระจก Tempered Glass</strong> และการจัดกลุ่มแยกชั้น 1-2</li>
+                <li>คลิกปุ่ม <strong>"เปิดห้อง / Walk-in"</strong> บนการ์ดห้องว่าง (เช่น ห้อง 101)</li>
+                <li>โชว์ <strong>Center Split Modal</strong> ที่เปิดขึ้นตรงกลางหน้าจอ</li>
+                <li>กรอกชื่อแขกทดสอบ <code class="font-mono">คุณสมชาย ใจดี</code>, เบอร์โทร และกดยืนยัน</li>
+                <li>การ์ดห้อง 101 จะเปลี่ยนเป็นสีน้ำเงินเข้มสถานะ <strong>Occupied</strong> ทันที</li>
+              </ol>
+            </div>
+            <div class="p-3.5 rounded-lg bg-emerald-50/50 border border-emerald-200 space-y-2">
+              <span class="font-bold text-emerald-900 block">🗣️ สคริปต์คำพูดคุณเดียร์:</span>
+              <p class="text-slate-700 leading-relaxed">
+                <em>"นี่คือหน้าจอทำงานหลักของพนักงานต้อนรับครับ ผังห้องพักถูกออกแบบเป็น 4 คอลัมน์ แยกชั้นชัดเจน และใช้ Auto-Refresh อัปเดตข้อมูลอัตโนมัติ..."</em>
+              </p>
+              <p class="text-slate-700 leading-relaxed">
+                <em>"เมื่อแขก Walk-in เข้ามา พนักงานไม่ต้องกดเปลี่ยนหน้าจอไปมา สามารถคลิกที่การ์ดห้องพักเพื่อเปิด Center Split Modal กรอกข้อมูลแขก ระบบจะตรวจสอบความถูกต้อง และบันทึกเช็คอินเป็น Atomic Unit ทันทีครับ"</em>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4: รูมชาร์จมินิบาร์ & การ Check-out Fan-out 1:4 -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-xs p-5 sm:p-6 card-box space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded bg-purple-100 text-purple-700 font-mono font-bold text-xs">STEP 4</span>
+            <h3 class="font-bold text-slate-900 text-base">การคิดเงินมินิบาร์ & จังหวะ Check-out Fan-out 1:4 (เวลาพูด ~2.5 นาที)</h3>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div class="p-3.5 rounded-lg bg-slate-50 border border-slate-200 space-y-2">
+              <span class="font-bold text-slate-800 block">🖥️ การคลิกบนหน้าจอ:</span>
+              <ol class="list-decimal list-inside space-y-1 text-slate-600">
+                <li>ไปที่แท็บเมนูด้านซ้าย <strong>"การดำเนินงานประจำวัน (Daily Operations)"</strong></li>
+                <li>คลิกเลือกรายการห้อง 101 ที่กำลังพักอยู่ แล้วคลิก <strong>"เพิ่มค่าใช้จ่าย / มินิบาร์"</strong></li>
+                <li>เพิ่มน้ำดื่มหรือเครื่องดื่มมินิบาร์ 2 กระป๋อง ยอดเงินจะถูกคำนวณเข้า Folio ทันที</li>
+                <li>เมื่อแขกคืนกุญแจ คลิก <strong>"เช็คเอาต์ & ปิดบิล"</strong></li>
+                <li>ระบบจะดึงยอดมัดจำกุญแจมาหักลบ และออกใบเสร็จรับเงินทางการให้ทันที</li>
+              </ol>
+            </div>
+            <div class="p-3.5 rounded-lg bg-purple-50/50 border border-purple-200 space-y-2">
+              <span class="font-bold text-purple-900 block">🗣️ สคริปต์คำพูดคุณเดียร์:</span>
+              <p class="text-slate-700 leading-relaxed">
+                <em>"ในจังหวะเช็คเอาต์ ระบบจะผสานงานแคชเชียร์เข้ามาในหน้าเดียว พนักงานสามารถดูค่ามินิบาร์และหักเงินมัดจำได้อัตโนมัติ..."</em>
+              </p>
+              <p class="text-slate-700 leading-relaxed">
+                <em>"และความพิเศษทางสถาปัตยกรรมของโปรเจกต์นี้คือ เมื่อกดยืนยัน Check-out ระบบจะส่ง Event กระจายงานแบบ <strong>1:4 Fan-out</strong> ไปยังแม่บ้านให้อัตโนมัติ เพื่อสร้าง Task ทำความสะอาดด่วนทันที โดยพนักงานต้อนรับไม่ต้องโทรแจ้งแม่บ้านเลยครับ"</em>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 5: สรุปความคืบหน้า -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-xs p-5 sm:p-6 card-box space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded bg-slate-800 text-white font-mono font-bold text-xs">STEP 5</span>
+            <h3 class="font-bold text-slate-900 text-base">สรุปความคืบหน้าและเปิดโอกาสให้อาจารย์ซักถาม (เวลาพูด ~1 นาที)</h3>
+          </div>
+          <div class="p-4 rounded-lg bg-slate-50 border-l-4 border-slate-800 text-xs sm:text-sm text-slate-700 leading-relaxed space-y-2">
+            <p><strong>🗣️ สคริปต์คำพูดคุณเดียร์:</strong></p>
+            <p>
+              <em>"สรุปความคืบหน้าในส่วนของผมสัปดาห์นี้ Backend ทั้ง 40 APIs และหน้าจอ Front Desk & Cashiering เสร็จสมบูรณ์และผ่านการทดสอบอัตโนมัติ 100% แล้วครับ โดยสัปดาห์ถัดไปผมจะร่วมกับบุญทำ Acceptance Test ครบทั้ง 24 สถานการณ์บนระบบจริงครับ... อาจารย์มีข้อเสนอแนะหรือคำถามเพิ่มเติมในจุดไหนไหมครับ?"</em>
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- =======================================================================
+         TAB 3: แผนผังระบบ & คลังคำถามอาจารย์ (ARCHITECTURE & FAQ VAULT)
+         ======================================================================= -->
+    <div id="tab-architecture" class="tab-content space-y-8 hidden">
+      
+      <!-- Interactive Diagrams Quick Access -->
+      <div class="bg-white rounded-xl border border-slate-200/90 shadow-xs p-6 card-box">
+        <div class="flex items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-4">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900 tracking-tight">Interactive Architectural Diagrams</h2>
+            <p class="text-xs text-slate-500">แผนผังระบบและ State Machine ที่เปิดดูได้ในโปรเจกต์</p>
+          </div>
+          <a href="./hotel-system-diagrams.html" target="_blank" class="px-3 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold flex items-center gap-1.5 transition-colors">
+            <span>เปิด Diagram Viewer แบบเต็มจอ</span>
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          </a>
+        </div>
+
+        <!-- Room State Machine Visual Box -->
+        <div class="p-4 rounded-lg bg-slate-900 text-slate-200 font-mono text-xs overflow-x-auto space-y-2">
+          <p class="text-orange-400 font-bold font-sans text-sm">ROOM STATE MACHINE TRANSITION RULES (SA CORE):</p>
+          <pre class="leading-relaxed">
+[ available ] ────────► [ reserved ] ────────► [ occupied ] ────────► [ checked_out ]
+      ▲                                             │                       │
+      │                                             ▼                       ▼
+      └─────────────────────────────────────── [ cleaning ] ◄───────────────┘
+                                                    │
+                                                    ▼
+                                            [ maintenance ] ──► [ out_of_order ]
+          </pre>
+          <p class="text-[11px] text-slate-400 font-sans border-t border-slate-800 pt-2">
+            <strong>เหตุผลเชิง SA:</strong> การแยก <code class="text-orange-300">checked_out</code> ออกจาก <code class="text-orange-300">cleaning</code> ทำให้โรงแรมรู้ว่าแขกคืนห้องแล้วแต่แม่บ้านยังไม่ได้เริ่มทำความสะอาด สามารถประเมินเวลา Turnover ห้องพักได้อย่างแม่นยำ
+          </p>
+        </div>
+      </div>
+
+      <!-- 5 Anticipated Professor Questions & Bulletproof SA Answers -->
+      <div class="bg-white rounded-xl border border-slate-200/90 shadow-xs p-6 sm:p-8 card-box space-y-6">
+        <div class="border-b border-slate-100 pb-3">
+          <span class="text-xs font-semibold px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200 uppercase tracking-wider">
+            Anticipated Q&A Vault
+          </span>
+          <h2 class="text-xl font-bold text-slate-900 mt-2 tracking-tight">
+            เก็ง 5 คำถามยอดฮิตที่อาจารย์มักจะถาม พร้อมแนวทางการตอบแบบ SA มืออาชีพ
+          </h2>
+          <p class="text-xs text-slate-500 mt-0.5">
+            เตรียมคำตอบไว้ล่วงหน้าเพื่อให้ตอบได้อย่างมั่นใจ มีหลักการทั้งมิติธุรกิจและเทคนิค
+          </p>
+        </div>
+
+        <div class="space-y-4 text-xs sm:text-sm">
+          
+          <!-- Q1 -->
+          <div class="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-2">
+            <h3 class="font-bold text-slate-900 text-sm sm:text-base flex items-start gap-2">
+              <span class="text-orange-600 font-mono">Q1:</span>
+              <span>"ทำไมถึงเลือกจำกัดขอบเขตแค่โรงแรมขนาดเล็ก 5–10 ห้อง? ไม่ดูเล็กเกินไปเหรอ?"</span>
+            </h3>
+            <div class="text-slate-700 space-y-1.5 pl-6 text-xs sm:text-sm leading-relaxed">
+              <p><strong>💡 แนวทางการตอบ:</strong></p>
+              <p>
+                <em>"ที่เลือกขนาด 5–10 ห้อง เพราะนี่คือกลุ่ม <strong>Underserved Market</strong> ที่แท้จริงครับ โรงแรมใหญ่มีซอฟต์แวร์ระดับองค์กรดูแลอยู่แล้ว แต่โรงแรมขนาด 5–10 ห้องในไทยส่วนใหญ่ยังใช้สมุดจดเพราะไม่มีกำลังจ่ายค่าซอฟต์แวร์เดือนละหลายพันบาท การกำหนด Scope 5–10 ห้องทำให้เราสามารถออกแบบ UI แบบ <strong>Compact Single-screen</strong> ที่พนักงานคนเดียวดูแลได้ทั้งโรงแรม และยังพิสูจน์ได้ว่าสถาปัตยกรรม Serverless Edge ของเราสามารถรันระบบโรงแรมได้โดยมีต้นทุนค่าเซิร์ฟเวอร์แทบจะเป็นศูนย์บาทครับ"</em>
+              </p>
+            </div>
+          </div>
+
+          <!-- Q2 -->
+          <div class="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-2">
+            <h3 class="font-bold text-slate-900 text-sm sm:text-base flex items-start gap-2">
+              <span class="text-orange-600 font-mono">Q2:</span>
+              <span>"สถานะห้องพัก 7 สถานะ เยอะเกินไปไหมสำหรับโรงแรมขนาดเล็ก?"</span>
+            </h3>
+            <div class="text-slate-700 space-y-1.5 pl-6 text-xs sm:text-sm leading-relaxed">
+              <p><strong>💡 แนวทางการตอบ:</strong></p>
+              <p>
+                <em>"ไม่เยอะเกินไปครับอาจารย์ เพราะทั้ง 7 สถานะสะท้อน <strong>ความรับผิดชอบของคนละฝ่ายอย่างชัดเจน</strong> ครับ: <code class="font-mono bg-slate-200 px-1 py-0.5 rounded">available/reserved/occupied</code> เป็นหน้าที่ของฟรอนต์, <code class="font-mono bg-slate-200 px-1 py-0.5 rounded">checked_out/cleaning</code> เป็นของแม่บ้าน, และ <code class="font-mono bg-slate-200 px-1 py-0.5 rounded">maintenance/out_of_order</code> เป็นของช่างซ่อม การแยกสถานะให้ละเอียดทำให้ระบบสามารถตัดสินใจส่งงานแบบอัตโนมัติ (Automated Event Dispatching) ได้อย่างถูกต้อง ไม่เกิดข้อผิดพลาดในการเปิดขายห้องที่ชำรุดครับ"</em>
+              </p>
+            </div>
+          </div>
+
+          <!-- Q3 -->
+          <div class="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-2">
+            <h3 class="font-bold text-slate-900 text-sm sm:text-base flex items-start gap-2">
+              <span class="text-orange-600 font-mono">Q3:</span>
+              <span>"ถ้าตอนเช็คอินเกิดเน็ตหลุดหรือเครื่องค้าง ระบบจะเกิดข้อมูลผี หรือห้องสถานะพังไหม?"</span>
+            </h3>
+            <div class="text-slate-700 space-y-1.5 pl-6 text-xs sm:text-sm leading-relaxed">
+              <p><strong>💡 แนวทางการตอบ:</strong></p>
+              <p>
+                <em>"ไม่พังแน่นอนครับ เพราะในระดับ Database ผมออกแบบให้ใช้ <strong>Cloudflare D1 Batch Atomic Unit</strong> ด้วยคำสั่ง <code class="font-mono bg-slate-200 px-1 py-0.5 rounded">await db.batch([...])</code> รวบคำสั่ง Update สถานะห้องพัก, บันทึกประวัติ และสร้าง Event ไว้ในธุรกรรมเดียว หากมีจังหวะใดสะดุด ระบบจะ Rollback คืนค่าทั้งหมดเสมือนไม่เคยมีอะไรเกิดขึ้น ข้อมูลจึงมีความสอดคล้อง (ACID Compliance) เสมอครับ"</em>
+              </p>
+            </div>
+          </div>
+
+          <!-- Q4 -->
+          <div class="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-2">
+            <h3 class="font-bold text-slate-900 text-sm sm:text-base flex items-start gap-2">
+              <span class="text-orange-600 font-mono">Q4:</span>
+              <span>"ระบบนี้ป้องกันการจองซ้ำ (Overbooking) ในระดับโค้ดอย่างไร?"</span>
+            </h3>
+            <div class="text-slate-700 space-y-1.5 pl-6 text-xs sm:text-sm leading-relaxed">
+              <p><strong>💡 แนวทางการตอบ:</strong></p>
+              <p>
+                <em>"เราไม่ได้ตรวจแค่สถานะปัจจุบันของห้องครับ แต่เราใช้ <strong>Date Range Overlap Collision Query</strong> ในตารางการจอง โดยเช็คเงื่อนไขทางคณิตศาสตร์ว่า วันที่เข้าและออกที่ขอจองใหม่ ต้องไม่ทับซ้อนกับช่วงเวลาการจองเดิมที่ยังไม่ถูกยกเลิก (<code class="font-mono bg-slate-200 px-1 py-0.5 rounded">NOT (new_out &lt;= check_in OR new_in &gt;= check_out)</code>) จึงป้องกันการจองซ้อนข้ามวันข้ามเดือนได้อย่างสมบูรณ์แบบครับ"</em>
+              </p>
+            </div>
+          </div>
+
+          <!-- Q5 -->
+          <div class="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-2">
+            <h3 class="font-bold text-slate-900 text-sm sm:text-base flex items-start gap-2">
+              <span class="text-orange-600 font-mono">Q5:</span>
+              <span>"ทำไมถึงต้องแยก Billing Service ออกจาก Reservation Service ทำไมไม่รวมไว้ด้วยกัน?"</span>
+            </h3>
+            <div class="text-slate-700 space-y-1.5 pl-6 text-xs sm:text-sm leading-relaxed">
+              <p><strong>💡 แนวทางการตอบ:</strong></p>
+              <p>
+                <em>"ตามหลัก <strong>Single Responsibility Principle (SRP)</strong> ใน Microservices ครับ Reservation รับผิดชอบเรื่อง 'เวลาและการครอบครองห้อง' ส่วน Billing รับผิดชอบเรื่อง 'ธุรกรรมทางการเงินและภาษี' การแยกกันทำให้ระบบการเงินสามารถรองรับการเพิ่มค่าใช้จ่ายระหว่างพัก (มินิบาร์, รูมเซอร์วิส) ได้อย่างอิสระโดยไม่กระทบกับตารางการจอง และในอนาคตหากต้องการเชื่อมต่อระบบ Payment Gateway ภายนอก ก็สามารถทำที่ Billing Service ได้โดยไม่ต้องแก้ส่วนจองห้องพักเลยครับ"</em>
+              </p>
+            </div>
+          </div>
+
+          <!-- Q6: New Requirements from Ajarn Top -->
+          <div class="p-4 rounded-lg bg-orange-50/60 border border-orange-200 space-y-2">
+            <h3 class="font-bold text-slate-900 text-sm sm:text-base flex items-start gap-2">
+              <span class="text-orange-600 font-mono">Q6:</span>
+              <span>"อาจารย์ถาม: ระบบรองรับการปรับราคาตามช่วงเทศกาล (Dynamic Pricing), การแนบสลิป, ขอของใช้ฟรี/เสียเงิน และคิด VAT 7% อย่างไร?"</span>
+            </h3>
+            <div class="text-slate-700 space-y-1.5 pl-6 text-xs sm:text-sm leading-relaxed">
+              <p><strong>💡 แนวทางการตอบ (อ้างอิงตาม SPEC-2026-004):</strong></p>
+              <p>
+                <em>"ระบบเรารองรับครบถ้วนตามข้อเสนอแนะของอาจารย์ครับ โดยผมได้จัดทำข้อกำหนด <strong>SPEC-2026-004</strong> ไว้เรียบร้อยแล้ว:
+                <br>1) <strong>Dynamic Pricing:</strong> เราคง Base Price ไว้ไม่เปลี่ยน แต่ใช้ Dynamic Rules ปรับ ±5% หรือระบุจำนวนบาท ครอบคลุมทั้งรายวัน, ช่วงวัน และตารางแมตช์เดือน (High/Low/Regular)
+                <br>2) <strong>Booking Channels & Slip:</strong> รองรับ Walk-in, Phone, และ Facebook โดยระบบให้แนบได้ทั้งไฟล์รูปภาพสลิปจริง (จัดเก็บบน R2) และเลขอ้างอิงสลิป (กรณีโทรศัพท์เข้ามาจอง ลูกค้าต้องส่งรูปสลิปยืนยันเข้ามาทางเพจ Facebook เพื่อให้เพจเป็นจุดตรวจสลิปกลางจุดเดียว)
+                <br>3) <strong>Extra Amenities:</strong> แยกเป็นของฟรี (หมอน, ผ้าเช็ดตัว) ซึ่งไม่คิดเงิน และของเสียเงิน (เตียงเสริม 300 บาท/คืน) ซึ่งระบบจะลงบิล Folio ของห้องพักนั้นให้อัตโนมัติ
+                <br>4) <strong>VAT 7%:</strong> คำนวณภาษี 7% ณ จุดชำระเงิน และมีคอลัมน์แจกแจง Subtotal, VAT 7%, และ Grand Total ในรายงานส่งออกของ Owner ครบถ้วนครับ"</em>
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- =========================================================================
+       FOOTER
+       ========================================================================= -->
+  <footer class="no-print bg-white border-t border-slate-200 py-4 mt-8">
+    <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500">
+      KEYSTAY Hotel Management System · CSI400 Senior Project · จัดทำโดย นายธีรภัทร เหนียมสุวรรณ (เดียร์ - SA Lead)
+    </div>
+  </footer>
+
+  <!-- =========================================================================
+       JAVASCRIPT FOR TAB SWITCHING
+       ========================================================================= -->
+  <script>
+    function switchTab(tabId) {
+      // Hide all tabs
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      
+      // Reset all buttons styling
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-white', 'text-slate-900', 'shadow-xs', 'border', 'border-slate-200', 'font-semibold');
+        btn.classList.add('text-slate-600', 'font-medium');
+        const icon = btn.querySelector('svg');
+        if (icon) {
+          icon.classList.remove('text-orange-600');
+          icon.classList.add('text-slate-500');
+        }
+      });
+
+      // Show target tab
+      const target = document.getElementById('tab-' + tabId);
+      if (target) {
+        target.classList.remove('hidden');
+      }
+
+      // Highlight active button
+      const activeBtn = document.getElementById('tab-btn-' + tabId);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-white', 'text-slate-900', 'shadow-xs', 'border', 'border-slate-200', 'font-semibold');
+        activeBtn.classList.remove('text-slate-600', 'font-medium');
+        const icon = activeBtn.querySelector('svg');
+        if (icon) {
+          icon.classList.remove('text-slate-500');
+          icon.classList.add('text-orange-600');
+        }
+      }
+
+      // Update URL hash
+      window.location.hash = tabId;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Handle initial hash routing
+    window.addEventListener('DOMContentLoaded', () => {
+      const hash = window.location.hash.replace('#', '');
+      if (hash && ['report', 'presentation', 'architecture'].includes(hash)) {
+        switchTab(hash);
+      }
+    });
+  </script>
+</body>
+</html>
+

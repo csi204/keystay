@@ -61,11 +61,13 @@ export default {
         sm: 'calc(var(--radius) - 4px)',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['"IBM Plex Sans Thai"', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
         mono: ['JetBrains Mono', 'SF Mono', 'Consolas', 'monospace'],
       },
       boxShadow: {
         card: '0 1px 3px rgba(0, 0, 0, 0.05)',
+        'elevation-sm': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+        'elevation-md': '0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05)',
       },
     },
   },

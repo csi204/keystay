@@ -1,11 +1,17 @@
 packages:
   - "apps/*"
-  - "apps/services/*"
   - "services/*"
   - "packages/*"
 
 allowBuilds:
+  core-js: false
   esbuild: true
+  workerd: true
+  "@cloudflare/workerd-darwin-arm64": true
 
 onlyBuiltDependencies:
   - esbuild
+  - workerd
+  - "@cloudflare/workerd-darwin-arm64"
+  - "@cloudflare/workerd-linux-64"
+  - "@cloudflare/workerd-windows-64"

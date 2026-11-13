@@ -8,7 +8,7 @@
 
 | สมาชิก | GitHub | บทบาทหลัก | ดูแล Frontend | ดูแล Backend |
 |---|---|---|---|---|
-| **เขต (เขตโสภณ)** | `@hazeco` | **Project Lead**, Infra, DevOps, CI/CD, Gateway, Security | Manager & Admin Portal (`/admin`) | `api-gateway`<br>`auth-user`<br>`report-analytics` |
+| **เขต (เขตโสภณ)** | `@hazeco` | **Project Lead**, Infra, DevOps, CI/CD, Gateway, Security | Owner Portal (`/admin`) | `api-gateway`<br>`auth-user`<br>`report-analytics` |
 | **เดียร์ (ธีรภัทร)** | `@allmusgus` | **SA Lead**, System Analyst, Schemas, State Machine, Outbox Patterns | Front Desk & Cashier Portal (`/front-desk`) | `reservation`<br>`billing` |
 | **บุญ (ปวริศ)** | `@Legxcy77` | **QA Lead**, UAT Scenarios, Postman Automation, QA Quality Gates | Housekeeping Portal (`/housekeeping`) | `room-inventory`<br>`housekeeping` |
 
@@ -118,7 +118,7 @@ pnpm --filter @keystay/reservation dev
 | แอป / เซอร์วิส | Local Port | หน้าที่ |
 |---|---|---|
 | `apps/web` | `5173` | Frontend Single Page Application (React + Vite) |
-| `apps/api-gateway` | `8787` | Central API Gateway, Reverse Proxy, JWT Guard, Rate Limiter |
+| `services/api-gateway` | `8787` | Central API Gateway, Reverse Proxy, JWT Guard, Rate Limiter |
 | `auth-user` | `8788` | Authentication, Users, Roles & Permissions |
 | `room-inventory` | `8789` | Rooms, Room Types, Floors, Status History |
 | `reservation` | `8790` | Bookings, Guests, Check-in / Check-out, Walk-in |
@@ -134,8 +134,7 @@ pnpm --filter @keystay/reservation dev
 
 | Email | Password | Role | สิทธิ์ / หน้าจอที่เปิดได้ |
 |---|---|---|---|
-| `admin@keystay.com` | `Keystay@2026` | `admin` | Manager & Admin Portal (`/admin`) — สิทธิ์เต็ม |
-| `manager@keystay.com` | `Keystay@2026` | `manager` | Manager & Admin Portal (`/admin`) — ดู KPI, คุมราคา |
+| `owner@keystay.com` | `Keystay@2026` | `owner` | Owner Portal (`/admin`) — สิทธิ์เต็ม (บริหาร + จัดการระบบ) |
 | `frontdesk@keystay.com` | `Keystay@2026` | `front_desk` | Front Desk & Cashier Portal (`/front-desk`) |
 | `housekeeping@keystay.com` | `Keystay@2026` | `housekeeping` | Housekeeping Portal (`/housekeeping`) |
 
@@ -169,7 +168,7 @@ git push origin feat/ชื่อฟีเจอร์
 - **อัตโนมัติ (CI/CD):** เมื่อ PR ถูก Merge เข้า `main` GitHub Actions (`.github/workflows/deploy.yml`) จะ Build และ Deploy ทุกเซอร์วิสขึ้น Cloudflare Workers & Pages อัตโนมัติ
 - **Manual Deploy รายเซอร์วิส:**
   ```bash
-  cd apps/services/report-analytics
+  cd services/report-analytics
   pnpm dlx wrangler deploy
   ```
 

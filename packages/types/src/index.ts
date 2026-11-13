@@ -3,7 +3,7 @@ import { z } from 'zod';
 // ==========================================
 // 1. Auth & User Types (4 Roles)
 // ==========================================
-export const UserRoleSchema = z.enum(['admin', 'manager', 'front_desk', 'housekeeping']);
+export const UserRoleSchema = z.enum(['owner', 'front_desk', 'housekeeping']);
 export type UserRole = z.infer<typeof UserRoleSchema>;
 
 export interface User {
@@ -45,7 +45,7 @@ export interface Room {
   roomTypeId: string;
   floor: string;
   status: RoomStatus;
-  notes?: string;
+  notes?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -67,6 +67,7 @@ export const ReservationStatusSchema = z.enum([
   'pending',
   'confirmed',
   'checked_in',
+  'extended',
   'checked_out',
   'cancelled',
   'no_show',
@@ -114,10 +115,47 @@ export interface HousekeepingTask {
   createdAt: string;
 }
 
+// 4.1 Outsource Contacts Types
+export const OutsourceCategorySchema = z.enum([
+  'air_conditioning',
+  'plumbing',
+  'electrical',
+  'carpentry',
+  'general_maintenance',
+  'locksmith',
+  'pest_control',
+  'gardening',
+  'laundry',
+  'transport',
+  'cleaning',
+  'other',
+]);
+export type OutsourceCategory = z.infer<typeof OutsourceCategorySchema>;
+
+export interface OutsourceContact {
+  id: string;
+  name: string;
+  category: OutsourceCategory;
+  serviceType: string;
+  phonePrimary: string;
+  phoneSecondary?: string;
+  lineId?: string;
+  isEmergency: number;
+  availableHours?: string;
+  priceRateNote?: string;
+  rating?: number;
+  address?: string;
+  notes?: string;
+  isActive: number;
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ==========================================
 // 5. Billing & Cashier Types
 // ==========================================
-export const BillStatusSchema = z.enum(['pending', 'partially_paid', 'paid', 'refunded', 'void']);
+export const BillStatusSchema = z.enum(['pending', 'partially_paid', 'paid', 'unpaid', 'refunded', 'void']);
 export type BillStatus = z.infer<typeof BillStatusSchema>;
 
 export interface Bill {

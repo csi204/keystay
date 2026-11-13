@@ -3,15 +3,15 @@
 ```
 hotel-management-system/
 ├── apps/
-│   ├── api-gateway/              # Cloudflare Worker — จุดเดียวที่ client เรียก, JWT verify, RBAC, route ผ่าน Service Binding
-│   ├── web/                      # Frontend SPA — React + Vite + Tailwind CSS
-│   └── services/                 # Microservices — Cloudflare Workers (TypeScript)
-│       ├── auth-user/            # Service #1: Auth + User Management (12 APIs) — db_auth_user
-│       ├── room-inventory/       # Service #2: Rooms, Types, Floors, Amenities (18 APIs) — db_room
-│       ├── reservation/          # Service #3: Reservations, Guests, Check-in/out (24 APIs) — db_reservation
-│       ├── housekeeping/         # Service #4: Tasks, Staff, Issues, Schedule (16 APIs) — db_housekeeping
-│       ├── billing/              # Service #5: Bills, Payments, Invoices (16 APIs) — db_billing
-│       └── report-analytics/     # Service #6: Stats, Revenue, Occupancy (14 APIs) — db_report
+│   └── web/                      # Frontend SPA — React + Vite + Tailwind CSS
+├── services/                     # Backend Workers (TypeScript)
+│   ├── api-gateway/              # Central API Gateway — Reverse Proxy, JWT Guard, RBAC, Service Bindings
+│   ├── auth-user/            # Service #1: Auth + User Management (12 APIs) — db_auth_user
+│   ├── room-inventory/       # Service #2: Rooms, Types, Floors, Amenities (18 APIs) — db_room
+│   ├── reservation/          # Service #3: Reservations, Guests, Check-in/out (24 APIs) — db_reservation
+│   ├── housekeeping/         # Service #4: Tasks, Staff, Issues, Schedule, Outsource Contacts (21 APIs) — db_housekeeping
+│   ├── billing/              # Service #5: Bills, Payments, Invoices (16 APIs) — db_billing
+│   └── report-analytics/     # Service #6: Stats, Revenue, Occupancy (14 APIs) — db_report
 │
 ├── packages/                     # โค้ดที่ใช้ร่วมกันข้าม apps/services
 │   ├── types/                    # Shared TypeScript Interfaces, DTOs, Enums (auth, room, reservation, housekeeping, billing, report)
@@ -24,9 +24,9 @@ hotel-management-system/
 │   ├── design.md                 # Architecture decisions — ทำไมถึงออกแบบแบบนี้
 │   ├── designsystem.md           # Design System — สี, typography, components, Status-Color
 │   ├── structure.md              # ไฟล์นี้ — โครงสร้างโฟลเดอร์
-│   ├── systemdesign.md           # System Architecture, Sequence Diagrams, 100 APIs
+│   ├── systemdesign.md           # System Architecture, Sequence Diagrams, 105 APIs
 │   ├── อ่านก่อนทำงาน.md          # แผนแบ่งงาน, Phase, Service Ownership
-│   ├── uat.md                    # แผนและผลการทดสอบการยอมรับของผู้ใช้ฉบับละเอียด (21 Test Cases)
+│   ├── uat.md                    # แผนและผลการทดสอบการยอมรับของผู้ใช้ฉบับละเอียด (24 Test Cases)
 │   └── How to Install and Command.md  # Onboarding + คำสั่งรันโปรเจกต์
 │
 │   ⚠️  README.md ไม่ได้อยู่ใน docs/ — อยู่ที่ root ของ repo (ดูด้านล่าง)
@@ -45,15 +45,15 @@ hotel-management-system/
 ├── package.json                  # Root scripts: dev, build, lint, typecheck
 ├── tsconfig.base.json            # Base TypeScript config ที่ทุก workspace สืบทอด
 ├── .prettierrc                   # Prettier formatting rules
-└── README.md                     # เอกสารภาพรวมโปรเจกต์ฉบับสมบูรณ์ (System Spec, 100 APIs, UML, ERD, UAT)
+└── README.md                     # เอกสารภาพรวมโปรเจกต์ฉบับสมบูรณ์ (System Spec, 105 APIs, UML, ERD, UAT)
 ```
 
-> `README.md` ที่ root คือเอกสารหลักของโปรเจกต์ทั้งหมด — ประกอบด้วย System Architecture, State Machine, Sequence Diagrams, 100 APIs, ER Diagrams, และ UAT ครบ 18 test cases
+> `README.md` ที่ root คือเอกสารหลักของโปรเจกต์ทั้งหมด — ประกอบด้วย System Architecture, State Machine, Sequence Diagrams, 105 APIs, ER Diagrams, และ UAT ครบ 24 test cases
 
-## โครงสร้างภายใน `apps/api-gateway/`
+## โครงสร้างภายใน `services/api-gateway/`
 
 ```
-apps/api-gateway/
+services/api-gateway/
 ├── src/
 │   ├── index.ts                  # Worker entry point (fetch handler)
 │   ├── middleware/
@@ -69,10 +69,10 @@ apps/api-gateway/
 └── wrangler.toml                 # Service Bindings (ชี้ไปทั้ง 6 Workers) + KV binding
 ```
 
-## โครงสร้างภายในแต่ละ `apps/services/<service-name>/`
+## โครงสร้างภายในแต่ละ `services/<service-name>/`
 
 ```
-apps/services/reservation/        # ตัวอย่าง: Reservation Service
+services/reservation/        # ตัวอย่าง: Reservation Service
 ├── src/
 │   ├── index.ts                  # Worker entry point (fetch handler + QStash webhook handler)
 │   ├── controllers/              # รับ HTTP Request, validate, ส่งต่อให้ service layer
@@ -114,9 +114,9 @@ apps/web/
 │   │   └── room/                 # RoomCard, RoomGrid, RoomStatusFilter
 │   ├── pages/
 │   │   ├── auth/                 # LoginPage, UnauthorizedPage
-│   │   ├── front-desk/           # 🧑‍💼 Portal 1 (เดียร์): Room Matrix, Check-in, Check-out, Walk-in, Bills & Cashier, Minibar, Invoices
-│   │   ├── housekeeping/         # 🧹 Portal 2 (บุญ): Task Kanban, Room Clean Status, Staff Schedule, Report Issues
-│   │   └── manager-admin/        # 📊 Portal 3 (เขต): KPI Dashboard, Occupancy/Revenue Reports, User Management, Audit Logs
+│   │   ├── front-desk/           # 🧑‍💼 Portal 1 (เดียร์): Room Matrix, Check-in, Check-out, Walk-in, Bills & Cashier, Minibar, Invoices, Quick Emergency Outsource Drawer
+│   │   ├── housekeeping/         # 🧹 Portal 2 (บุญ): Task Kanban, Room Clean Status, Staff Schedule, Report Issues, Quick Outsource Contacts
+│   │   └── manager-admin/        # 📊 Portal 3 (เขต): KPI Dashboard, Occupancy/Revenue Reports, User Management, Audit Logs, Outsource Master Data CRUD
 │   ├── hooks/                    # useAuth, useRooms, useTasks, useBills
 │   ├── services/
 │   │   └── api.ts                # Axios/Fetch client เรียก API Gateway เท่านั้น (ไม่เรียก service ตรงๆ)
@@ -137,7 +137,7 @@ packages/types/
 │   ├── auth.types.ts             # User, Role enum, TokenPair, JWTPayload
 │   ├── room.types.ts             # Room, RoomType, RoomStatus enum, Amenity, Floor
 │   ├── reservation.types.ts      # Reservation, Guest, BookingType enum, ReservationStatus enum
-│   ├── housekeeping.types.ts     # HousekeepingTask, Staff, RoomIssue, Priority enum, TaskStatus enum
+│   ├── housekeeping.types.ts     # HousekeepingTask, Staff, RoomIssue, OutsourceContact, OutsourceCategory enum, Priority enum, TaskStatus enum
 │   ├── billing.types.ts          # Bill, BillItem, Payment, Invoice, BillStatus enum
 │   └── report.types.ts           # DailyStats, MonthlySummary, RevenueRecord, KPIOverview
 ├── package.json
