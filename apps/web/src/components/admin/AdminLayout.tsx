@@ -232,8 +232,21 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
           </nav>
         </div>
 
-        {/* User Card at Bottom: Language Switcher (Orange), Clock & Logout button */}
+        {/* User Card at Bottom: Clock, Language Switcher (Orange) & Logout button */}
         <div className="p-3 border-t border-slate-200/80 bg-white shrink-0 space-y-2">
+          {/* Live Monospace Clock (Above the Language Switcher) */}
+          {currentTime && (
+            <div
+              className={`flex items-center ${
+                isCollapsed ? 'justify-center p-1.5' : 'gap-1.5 px-2.5 py-1.5'
+              } text-xs font-mono font-medium text-slate-700 tabular-nums bg-white rounded-md border border-slate-200 shadow-2xs`}
+              title={currentTime}
+            >
+              <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" aria-hidden="true" />
+              {!isCollapsed && <span className="truncate">{currentTime}</span>}
+            </div>
+          )}
+
           {/* Global Language Switcher (Matching FrontDesk layout with orange theme) */}
           {isCollapsed ? (
             <button
@@ -275,19 +288,6 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
               >
                 EN
               </button>
-            </div>
-          )}
-
-          {/* Live Monospace Clock (Situating underneath the Language Switcher) */}
-          {currentTime && (
-            <div
-              className={`flex items-center ${
-                isCollapsed ? 'justify-center p-1.5' : 'gap-1.5 px-2.5 py-1.5'
-              } text-xs font-mono font-medium text-slate-700 tabular-nums bg-white rounded-md border border-slate-200 shadow-2xs`}
-              title={currentTime}
-            >
-              <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" aria-hidden="true" />
-              {!isCollapsed && <span className="truncate">{currentTime}</span>}
             </div>
           )}
 
