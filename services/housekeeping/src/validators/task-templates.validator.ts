@@ -20,6 +20,7 @@ export const CreateTaskTemplateSchema = z.object({
   defaultPriority: TaskPriorityEnum.default('normal'),
   estimatedMinutes: z.coerce.number().int().positive('ระยะเวลาโดยประมาณต้องมากกว่า 0 นาที').default(30),
   description: z.string().optional(),
+  checklistItems: z.union([z.array(z.any()), z.string()]).optional().nullable(),
   isActive: z.union([z.boolean(), z.number()]).optional().default(true),
 });
 
@@ -29,6 +30,7 @@ export const UpdateTaskTemplateSchema = z.object({
   defaultPriority: TaskPriorityEnum.optional(),
   estimatedMinutes: z.coerce.number().int().positive().optional(),
   description: z.string().optional(),
+  checklistItems: z.union([z.array(z.any()), z.string()]).optional().nullable(),
   isActive: z.union([z.boolean(), z.number()]).optional(),
 });
 

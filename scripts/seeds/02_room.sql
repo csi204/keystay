@@ -10,11 +10,11 @@ INSERT OR REPLACE INTO room_types (id, name, description, base_price, max_occupa
 
 -- 2. Floors
 INSERT OR REPLACE INTO floors (id, floor_number, name, total_rooms, created_at) VALUES
-('fl-1', 1, 'Floor 1 — Lobby & Garden Wing', 5, '2026-09-01T08:00:00Z'),
-('fl-2', 2, 'Floor 2 — Ocean Wing', 5, '2026-09-01T08:00:00Z'),
-('fl-3', 3, 'Floor 3 — Horizon Wing', 5, '2026-09-01T08:00:00Z'),
-('fl-4', 4, 'Floor 4 — Executive Club Level', 5, '2026-09-01T08:00:00Z'),
-('fl-5', 5, 'Floor 5 — Penthouse Residences', 2, '2026-09-01T08:00:00Z');
+('fl-1', 1, 'ชั้น 1', 5, '2026-09-01T08:00:00Z'),
+('fl-2', 2, 'ชั้น 2', 5, '2026-09-01T08:00:00Z'),
+('fl-3', 3, 'ชั้น 3', 5, '2026-09-01T08:00:00Z'),
+('fl-4', 4, 'ชั้น 4', 5, '2026-09-01T08:00:00Z'),
+('fl-5', 5, 'ชั้น 5', 2, '2026-09-01T08:00:00Z');
 
 -- 3. Rooms
 INSERT OR REPLACE INTO rooms (id, room_number, room_type_id, floor_id, status, is_active, notes, created_at, updated_at) VALUES
@@ -65,9 +65,28 @@ INSERT OR REPLACE INTO room_status_history (id, room_id, previous_status, new_st
 INSERT OR REPLACE INTO minibar_items (id, name, category, price_per_unit, unit, is_active, created_at, updated_at) VALUES
 ('mb-001', 'น้ำดื่ม 600ml', 'เครื่องดื่ม', 20.00, 'ขวด', 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z'),
 ('mb-002', 'โค้ก 330ml', 'เครื่องดื่ม', 35.00, 'กระป๋อง', 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z'),
-('mb-003', 'เบียร์ Chang 330ml', 'แอลกอฮอล์', 80.00, 'กระป๋อง', 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z'),
-('mb-004', 'มันฝรั่งทอด', 'ขนม', 45.00, 'ถุง', 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z'),
-('mb-005', 'ช็อกโกแลต KitKat', 'ขนม', 35.00, 'แท่ง', 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z'),
-('mb-006', 'กาแฟสำเร็จรูป', 'เครื่องดื่ม', 25.00, 'ซอง', 0, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z');
+('mb-003', 'สไปรท์ 330ml', 'เครื่องดื่ม', 35.00, 'กระป๋อง', 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z'),
+('mb-004', 'เบียร์ Chang 330ml', 'แอลกอฮอล์', 80.00, 'กระป๋อง', 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z'),
+('mb-005', 'เบียร์ Singha 330ml', 'แอลกอฮอล์', 90.00, 'กระป๋อง', 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z'),
+('mb-006', 'ไวน์แดงขวดเล็ก 187ml', 'แอลกอฮอล์', 280.00, 'ขวด', 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z'),
+('mb-007', 'มันฝรั่งทอด Lay''s', 'ขนม', 45.00, 'ถุง', 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z'),
+('mb-008', 'ช็อกโกแลต KitKat', 'ขนม', 35.00, 'แท่ง', 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z'),
+('mb-009', 'ถั่วรวมอบเกลือ', 'ขนม', 50.00, 'ซอง', 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z'),
+('mb-010', 'กาแฟสำเร็จรูป', 'เครื่องดื่ม', 25.00, 'ซอง', 0, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z'),
+('mb-011', 'ชาเขียวโออิชิ 380ml', 'เครื่องดื่ม', 30.00, 'ขวด', 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z'),
+('mb-012', 'ป๊อปคอร์นคาราเมล', 'ขนม', 65.00, 'ถุง', 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z'),
+('mb-013', 'บะหมี่กึ่งสำเร็จรูป', 'ขนม', 35.00, 'ถ้วย', 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z'),
+('mb-014', 'น้ำแร่ Perrier 330ml', 'เครื่องดื่ม', 95.00, 'ขวด', 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z');
 
+-- 7. Seasonal Pricing Rules (กฎราคาตามฤดูกาลและเทศกาล)
+INSERT OR REPLACE INTO seasonal_pricing_rules (id, name, tier, room_type_id, start_date, end_date, days_of_week, adjustment_type, adjustment_value, priority, is_active, created_at, updated_at) VALUES
+('rule-high-winter', 'High Season ภาคเหนือ (พ.ย.-ก.พ.)', 'High Season', NULL, '2026-11-01', '2027-02-28', NULL, 'percent', 5.0, 10, 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z'),
+('rule-countdown', 'คืนเคานต์ดาวน์ปีใหม่', 'Special Holiday', NULL, '2026-12-31', '2027-01-01', NULL, 'fixed_amount', 300.0, 25, 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z');
+
+-- 8. Amenities Catalog (แคตตาล็อกของใช้และบริการเสริม)
+INSERT OR REPLACE INTO amenities_catalog (id, name_th, name_en, category, is_chargeable, unit_price, unit_name_th, unit_name_en, stock_quantity, is_active, created_at, updated_at) VALUES
+('am-extra-bed', 'เตียงเสริม', 'Extra Bed', 'bedding', 1, 300.0, 'หลัง', 'unit', 5, 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z'),
+('am-extra-pillow', 'หมอนหนุนเสริม', 'Extra Pillow', 'bedding', 0, 0.0, 'ใบ', 'piece', 30, 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z'),
+('am-hair-dryer', 'ไดร์เป่าผมพลังไอออน', 'Ionic Hair Dryer', 'appliance', 0, 0.0, 'เครื่อง', 'unit', 15, 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z'),
+('am-premium-dental', 'เซ็ตแปรงสีฟันพรีเมียม', 'Premium Dental Kit', 'bath', 0, 0.0, 'ชุด', 'kit', 50, 1, '2026-09-01T08:00:00Z', '2026-09-01T08:00:00Z');
 
