@@ -7,6 +7,7 @@ import { scheduleRoute } from './routes/schedule';
 import { webhooksRoute } from './routes/webhooks';
 import { outsourceRoute } from './routes/outsource';
 import { taskTemplatesRoute } from './routes/task-templates';
+import { amenityRequestsRoute } from './routes/amenity-requests';
 
 export interface Env {
   DB: D1Database;
@@ -96,6 +97,10 @@ app.route('/outsource-contacts', outsourceRoute);
 // 9. Mount Task Templates Routes (CRUD for Front Desk & Owner)
 app.route('/housekeeping/task-templates', taskTemplatesRoute);
 app.route('/task-templates', taskTemplatesRoute);
+
+// 10. Mount Amenity Requests Routes (Front Desk <-> Housekeeping Request Flow)
+app.route('/housekeeping/amenity-requests', amenityRequestsRoute);
+app.route('/amenity-requests', amenityRequestsRoute);
 
 // Global Error Handler
 app.onError((err, c) => {

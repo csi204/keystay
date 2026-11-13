@@ -415,6 +415,12 @@ app.all('/api/housekeeping/*', async (c) => {
 app.all('/api/housekeeping', async (c) => {
   return forwardRequest(c.env.HOUSEKEEPING_SERVICE, c, '/api');
 });
+app.all('/api/v1/housekeeping/*', async (c) => {
+  return forwardRequest(c.env.HOUSEKEEPING_SERVICE, c, '/api/v1');
+});
+app.all('/api/v1/housekeeping', async (c) => {
+  return forwardRequest(c.env.HOUSEKEEPING_SERVICE, c, '/api/v1');
+});
 
 // Service #5: Billing
 app.all('/api/bills/*', async (c) => {
