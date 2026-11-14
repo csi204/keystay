@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
+import { PaginationBar, paginateItems } from '@/components/common/PaginationBar';
 import { apiFetch, assetUrl } from '@/lib/api';
 import { useTranslation } from '@/lib/i18n';
 import { resolveGuestName, type ExtendedReservation } from '@/hooks/useReservations';
@@ -31,12 +33,12 @@ const BOOKING_SOURCE_LABEL: Record<string, { th: string; en: string }> = {
   facebook: { th: 'เพจ Facebook', en: 'Facebook' },
 };
 
-const STATUS_BADGE_MAP: Record<string, { th: string; en: string; cls: string }> = {
-  checked_in: { th: 'กำลังเข้าพัก', en: 'Checked In', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  extended: { th: 'พักต่อ', en: 'Extended', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  checked_out: { th: 'เช็คเอาต์แล้ว', en: 'Checked Out', cls: 'bg-slate-100 text-slate-700 border-slate-200' },
-  confirmed: { th: 'ยืนยันการจอง', en: 'Confirmed', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
-  cancelled: { th: 'ยกเลิก', en: 'Cancelled', cls: 'bg-rose-50 text-rose-700 border-rose-200' },
+const STATUS_DOT_MAP: Record<string, { th: string; en: string; dot: string }> = {
+  checked_in: { th: 'กำลังเข้าพัก', en: 'Checked In', dot: 'bg-emerald-500' },
+  extended: { th: 'พักต่อ', en: 'Extended', dot: 'bg-emerald-500' },
+  checked_out: { th: 'เช็คเอาต์แล้ว', en: 'Checked Out', dot: 'bg-slate-400' },
+  confirmed: { th: 'ยืนยันการจอง', en: 'Confirmed', dot: 'bg-amber-400' },
+  cancelled: { th: 'ยกเลิก', en: 'Cancelled', dot: 'bg-rose-500' },
 };
 
 export const StayEvidencePage: React.FC = () => {
@@ -48,6 +50,7 @@ export const StayEvidencePage: React.FC = () => {
   const [refreshSuccess, setRefreshSuccess] = useState<boolean>(false);
   const [search, setSearch] = useState<string>('');
   const [filter, setFilter] = useState<EvidenceFilter>('all');
+  const [currentPage, setCurrentPage] = useState<number>(1);
   const [selectedItem, setSelectedItem] = useState<ExtendedReservation | null>(null);
 
   const loadReservations = async () => {
@@ -120,6 +123,15 @@ export const StayEvidencePage: React.FC = () => {
     });
   }, [reservations, filter, search]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, filter]);
+
+  const paginated = useMemo(
+    () => paginateItems(filteredRows, currentPage, 10),
+    [filteredRows, currentPage]
+  );
+
   const formatDateTime = (val?: string | null) => {
     if (!val) return '-';
     const d = new Date(val);
@@ -131,12 +143,12 @@ export const StayEvidencePage: React.FC = () => {
   };
 
   return (
-    <AdminLayout>
+    <AdminLayout activePath="/admin/stay-evidence">
       {/* Header */}
-      <div className="px-4 pt-5 pb-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="bg-white border-b border-slate-200/90 px-4 py-3.5 mb-4 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-1">
+            <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
               <span>Owner Portal</span>
               <span>/</span>
               <span className="font-semibold text-slate-800">
@@ -158,7 +170,7 @@ export const StayEvidencePage: React.FC = () => {
             size="sm"
             onClick={handleRefresh}
             disabled={loading}
-            className="text-xs font-semibold gap-1.5 h-9 px-3 bg-white hover:bg-slate-50 border-slate-300 text-slate-700 shadow-2xs self-start sm:self-auto"
+            className="text-xs font-semibold gap-1.5 h-9 px-3 bg-white hover:bg-slate-50 border-slate-300 text-slate-700 shadow-2xs self-start md:self-auto"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#F97316]' : 'text-slate-600'}`} />
             <span>
@@ -175,14 +187,14 @@ export const StayEvidencePage: React.FC = () => {
       </div>
 
       <div className="px-4 pb-8 space-y-4">
-        {/* 4 Summary Cards */}
+        {/* 4 Summary Cards (Unified Owner Orange Icons) */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
           <div className="bg-white rounded-xl border border-slate-200/90 p-4 shadow-2xs flex flex-col justify-between">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold text-slate-500">
                 {isEn ? 'Total Bookings' : 'รายการจองทั้งหมด'}
               </span>
-              <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-orange-50 text-[#F97316] flex items-center justify-center">
                 <FileCheck2 className="w-4 h-4" />
               </div>
             </div>
@@ -206,11 +218,11 @@ export const StayEvidencePage: React.FC = () => {
               <span className="text-xs font-semibold text-slate-500">
                 {isEn ? 'Payment Verified' : 'ยืนยันชำระแล้ว'}
               </span>
-              <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-orange-50 text-[#F97316] flex items-center justify-center">
                 <CheckCircle2 className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-2xl font-bold font-mono text-emerald-700">{stats.verified}</div>
+            <div className="text-2xl font-bold font-mono text-slate-900">{stats.verified}</div>
           </div>
 
           <div className="bg-white rounded-xl border border-slate-200/90 p-4 shadow-2xs flex flex-col justify-between">
@@ -218,7 +230,7 @@ export const StayEvidencePage: React.FC = () => {
               <span className="text-xs font-semibold text-slate-500">
                 {isEn ? 'Checked In / Stayed' : 'เช็คอินเข้าพักแล้ว'}
               </span>
-              <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-orange-50 text-[#F97316] flex items-center justify-center">
                 <UserCheck className="w-4 h-4" />
               </div>
             </div>
@@ -226,12 +238,12 @@ export const StayEvidencePage: React.FC = () => {
           </div>
         </div>
 
-        {/* Search & Filters */}
-        <Card className="border-slate-200/90 shadow-2xs bg-white rounded-xl overflow-hidden">
-          <CardHeader className="py-3.5 px-4 border-b border-slate-100 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-            <div className="relative flex-1 max-w-md">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
+        {/* Search & Filter Toolbar (Owner Standard) */}
+        <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex flex-1 flex-wrap items-center gap-3">
+            <div className="relative flex-1 min-w-[220px] max-w-sm">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -240,78 +252,84 @@ export const StayEvidencePage: React.FC = () => {
                     ? 'Search guest, room, ID card, slip ref...'
                     : 'ค้นหาชื่อแขก, เลขห้อง, เลขบัตร, เลขอ้างอิงสลิป...'
                 }
-                className="w-full h-9 pl-9 pr-3 rounded-lg border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#F97316]/30 focus:border-[#F97316]"
+                className="pl-9 h-8.5 text-xs border-slate-200"
               />
             </div>
 
-            <div className="flex flex-wrap items-center gap-1.5">
-              {(
-                [
-                  { id: 'all', th: 'ทั้งหมด', en: 'All' },
-                  { id: 'has_slip', th: 'มีสลิป/อ้างอิง', en: 'Has Slip' },
-                  { id: 'verified', th: 'ยืนยันชำระแล้ว', en: 'Verified' },
-                  { id: 'checked_in', th: 'เช็คอินแล้ว', en: 'Checked In' },
-                  { id: 'missing_slip', th: 'ยังไม่แนบสลิป', en: 'No Slip' },
-                ] as const
-              ).map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setFilter(tab.id)}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                    filter === tab.id
-                      ? 'bg-[#F97316] text-white shadow-2xs'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  {isEn ? tab.en : tab.th}
-                </button>
-              ))}
+            <div className="flex items-center gap-1.5 text-xs text-slate-600">
+              <span className="text-slate-400">{isEn ? 'Filter:' : 'ตัวกรอง:'}</span>
+              <Select
+                containerClassName="w-44"
+                value={filter}
+                onChange={(e) => setFilter(e.target.value as EvidenceFilter)}
+              >
+                <option value="all">{isEn ? 'All' : 'ทั้งหมด'}</option>
+                <option value="has_slip">{isEn ? 'Has Slip / Ref' : 'มีสลิป/อ้างอิง'}</option>
+                <option value="verified">{isEn ? 'Payment Verified' : 'ยืนยันชำระแล้ว'}</option>
+                <option value="checked_in">{isEn ? 'Checked In' : 'เช็คอินแล้ว'}</option>
+                <option value="missing_slip">{isEn ? 'No Slip' : 'ยังไม่แนบสลิป'}</option>
+              </Select>
             </div>
+          </div>
+
+          <span className="text-xs text-slate-500">
+            {isEn
+              ? `Showing ${paginated.totalItems} of ${reservations.length} records`
+              : `แสดง ${paginated.totalItems} จาก ${reservations.length} รายการ`}
+          </span>
+        </div>
+
+        {/* Evidence Table */}
+        <Card className="border-slate-200 shadow-sm bg-white overflow-hidden">
+          <CardHeader className="py-3 px-4 border-b border-slate-100 flex flex-row items-center justify-between bg-white">
+            <CardTitle className="text-sm font-bold text-slate-900">
+              {isEn ? 'Stay & Payment Records' : 'รายการหลักฐานการเข้าพักและสลิป'}
+            </CardTitle>
+            <span className="text-[11px] text-slate-400 font-mono">Front Desk Audit Log</span>
           </CardHeader>
 
           <CardContent className="p-0">
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead className="bg-white border-b border-slate-100 text-[11px] text-slate-500 font-semibold uppercase tracking-wider">
+                  <tr>
                     <th className="py-3 px-4">{isEn ? 'Room / Code' : 'ห้อง / รหัสจอง'}</th>
-                    <th className="py-3 px-4">{isEn ? 'Guest & ID' : 'ผู้เข้าพัก & เลขบัตร'}</th>
-                    <th className="py-3 px-4">{isEn ? 'Channel & Dates' : 'ช่องทาง & วันเข้าพัก'}</th>
-                    <th className="py-3 px-4">{isEn ? 'Payment & Slip' : 'การชำระ & หลักฐานสลิป'}</th>
-                    <th className="py-3 px-4">{isEn ? 'Status' : 'สถานะ'}</th>
+                    <th className="py-3 px-3">{isEn ? 'Guest & ID' : 'ผู้เข้าพัก & เลขบัตร'}</th>
+                    <th className="py-3 px-3">{isEn ? 'Channel & Dates' : 'ช่องทาง & วันเข้าพัก'}</th>
+                    <th className="py-3 px-3">{isEn ? 'Payment & Slip' : 'การชำระ & หลักฐานสลิป'}</th>
+                    <th className="py-3 px-3">{isEn ? 'Status' : 'สถานะ'}</th>
                     <th className="py-3 px-4 text-right">{isEn ? 'Action' : 'ตรวจสอบ'}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-xs">
+                <tbody className="divide-y divide-slate-100">
                   {loading ? (
                     <tr>
                       <td colSpan={6} className="py-10 text-center text-slate-400">
                         {isEn ? 'Loading evidence records...' : 'กำลังโหลดข้อมูลหลักฐานการเข้าพัก...'}
                       </td>
                     </tr>
-                  ) : filteredRows.length === 0 ? (
+                  ) : paginated.pageItems.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="py-10 text-center text-slate-400">
                         {isEn ? 'No matching stay records found.' : 'ไม่พบรายการที่ตรงกับเงื่อนไข'}
                       </td>
                     </tr>
                   ) : (
-                    filteredRows.map((item) => {
+                    paginated.pageItems.map((item) => {
                       const guestName = resolveGuestName(item);
-                      const statusCfg = STATUS_BADGE_MAP[item.status] || {
+                      const statusCfg = STATUS_DOT_MAP[item.status] || {
                         th: item.status,
                         en: item.status,
-                        cls: 'bg-slate-100 text-slate-700 border-slate-200',
+                        dot: 'bg-slate-400',
                       };
                       const sourceCfg = item.bookingSource ? BOOKING_SOURCE_LABEL[item.bookingSource] : null;
                       const hasSlip = Boolean(item.paymentSlipUrl || item.paymentSlipRef);
                       const isPaid = item.paymentStatus === 'paid' || Boolean(item.paymentVerifiedAt);
 
                       return (
-                        <tr key={item.id} className="hover:bg-slate-50/70 transition-colors">
-                          <td className="py-3 px-4 align-top">
-                            <div className="font-mono font-bold text-slate-900 text-sm">
+                        <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="py-3 px-4 align-top whitespace-nowrap">
+                            <div className="font-mono font-semibold text-slate-900">
                               {item.roomNumber ? (isEn ? `Rm ${item.roomNumber}` : `ห้อง ${item.roomNumber}`) : '-'}
                             </div>
                             <div className="text-[11px] font-mono text-slate-400 mt-0.5">
@@ -319,7 +337,7 @@ export const StayEvidencePage: React.FC = () => {
                             </div>
                           </td>
 
-                          <td className="py-3 px-4 align-top">
+                          <td className="py-3 px-3 align-top">
                             <div className="font-semibold text-slate-900">{guestName}</div>
                             <div className="text-[11px] text-slate-500 font-mono mt-0.5">
                               {item.guest?.nationalId
@@ -329,11 +347,11 @@ export const StayEvidencePage: React.FC = () => {
                                 : 'ยังไม่ระบุเลขบัตร'}
                             </div>
                             {item.guest?.phone && (
-                              <div className="text-[11px] text-slate-400 mt-0.5">{item.guest.phone}</div>
+                              <div className="text-[11px] text-slate-400 font-mono mt-0.5">{item.guest.phone}</div>
                             )}
                           </td>
 
-                          <td className="py-3 px-4 align-top">
+                          <td className="py-3 px-3 align-top">
                             <div className="text-slate-700 font-medium">
                               {sourceCfg ? (isEn ? sourceCfg.en : sourceCfg.th) : '-'}
                             </div>
@@ -342,16 +360,14 @@ export const StayEvidencePage: React.FC = () => {
                             </div>
                           </td>
 
-                          <td className="py-3 px-4 align-top">
-                            <div className="flex items-center gap-1.5">
-                              <Badge
-                                variant="outline"
-                                className={`text-[10px] font-semibold ${
-                                  isPaid
-                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                    : 'bg-amber-50 text-amber-700 border-amber-200'
+                          <td className="py-3 px-3 align-top">
+                            <div className="flex items-center gap-1.5 whitespace-nowrap">
+                              <span
+                                className={`w-2 h-2 rounded-full shrink-0 ${
+                                  isPaid ? 'bg-emerald-500' : 'bg-amber-400'
                                 }`}
-                              >
+                              />
+                              <span className="font-medium text-slate-700">
                                 {isPaid
                                   ? isEn
                                     ? 'Paid'
@@ -359,38 +375,38 @@ export const StayEvidencePage: React.FC = () => {
                                   : isEn
                                   ? 'Unpaid'
                                   : 'รอชำระ'}
-                              </Badge>
+                              </span>
                               {hasSlip && (
-                                <Badge
-                                  variant="outline"
-                                  className="text-[10px] font-semibold bg-orange-50 text-[#F97316] border-orange-200"
-                                >
-                                  {isEn ? 'Slip Attached' : 'มีสลิป'}
-                                </Badge>
+                                <span className="text-[11px] text-slate-500">
+                                  · {isEn ? 'Slip Attached' : 'มีสลิป'}
+                                </span>
                               )}
                             </div>
                             {item.paymentSlipRef && (
-                              <div className="text-[11px] font-mono text-slate-500 mt-1">
+                              <div className="text-[11px] font-mono text-slate-400 mt-0.5">
                                 Ref: {item.paymentSlipRef}
                               </div>
                             )}
                           </td>
 
-                          <td className="py-3 px-4 align-top">
-                            <Badge variant="outline" className={`text-[11px] font-semibold whitespace-nowrap ${statusCfg.cls}`}>
-                              {isEn ? statusCfg.en : statusCfg.th}
-                            </Badge>
+                          <td className="py-3 px-3 align-top whitespace-nowrap">
+                            <div className="flex items-center gap-1.5">
+                              <span className={`w-2 h-2 rounded-full shrink-0 ${statusCfg.dot}`} />
+                              <span className="font-medium text-slate-700">
+                                {isEn ? statusCfg.en : statusCfg.th}
+                              </span>
+                            </div>
                           </td>
 
-                          <td className="py-3 px-4 align-top text-right">
+                          <td className="py-3 px-4 align-top text-right whitespace-nowrap">
                             <Button
                               type="button"
                               variant="outline"
                               size="sm"
                               onClick={() => setSelectedItem(item)}
-                              className="h-8 px-2.5 text-xs font-semibold gap-1 border-slate-200 hover:border-[#F97316] hover:text-[#F97316]"
+                              className="h-7 px-2.5 text-[11px] font-medium gap-1 border-slate-300 text-slate-700 hover:bg-slate-100"
                             >
-                              <Eye className="w-3.5 h-3.5" />
+                              <Eye className="w-3 h-3 text-slate-500" />
                               <span>{isEn ? 'View' : 'ดูหลักฐาน'}</span>
                             </Button>
                           </td>
@@ -401,6 +417,20 @@ export const StayEvidencePage: React.FC = () => {
                 </tbody>
               </table>
             </div>
+
+            {paginated.totalItems > 0 && (
+              <div className="border-t border-slate-100 px-4 py-3">
+                <PaginationBar
+                  currentPage={paginated.currentPage}
+                  totalPages={paginated.totalPages}
+                  totalItems={paginated.totalItems}
+                  startIndex={paginated.startIndex}
+                  endIndex={paginated.endIndex}
+                  pageSize={10}
+                  onPageChange={setCurrentPage}
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
