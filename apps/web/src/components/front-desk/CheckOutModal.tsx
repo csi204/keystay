@@ -306,6 +306,15 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
       let billIdToPay = billId;
 
       if (!billIdToPay) {
+        const existingBillRes = await apiFetch<DetailedBill>(`/api/bills/by-reservation/${reservation.id}`).catch(
+          () => null
+        );
+        if (existingBillRes?.data?.id) {
+          billIdToPay = existingBillRes.data.id;
+        }
+      }
+
+      if (!billIdToPay) {
         const mappedItems = folioItems.map((item) => {
           let itemType = 'other';
           if (item.category === 'room' || item.itemType === 'room_charge') itemType = 'room_charge';
@@ -352,6 +361,7 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
             paymentMethod: summary.netDue > 0 ? paymentMethod : 'cash',
             depositDeducted: summary.depositDeduction,
             amount: Math.max(0, summary.netDue).toFixed(2),
+            settleInFull: true,
           }),
         }).catch((e) => console.warn('Payment recording error:', e));
       }

@@ -810,8 +810,8 @@ bills.post('/:id/pay', async (c) => {
     const netPayable = Math.max(0, Number((bill.total_amount - newDeposit - currentPaid).toFixed(2)));
     const paymentAmount = data.amount !== undefined ? Number(data.amount) : netPayable;
 
-    // If netPayable is 0 (e.g. deposit covered all or total is 0), settle bill as paid without error
-    if (paymentAmount <= 0 && netPayable > 0) {
+    // If netPayable is 0 (e.g. deposit covered all or total is 0) or settleInFull is true, settle bill as paid without error
+    if (!data.settleInFull && paymentAmount <= 0 && netPayable > 0) {
       return c.json({ success: false, error: { code: 'INVALID_AMOUNT', message: 'Payment amount must be greater than 0' } }, 400);
     }
 
@@ -821,9 +821,32 @@ bills.post('/:id/pay', async (c) => {
     const referenceNumber = data.referenceNumber || `REF-${Date.now().toString().slice(-6)}`;
 
     const effectivePaymentAmount = Math.max(0, paymentAmount);
-    const newAmountPaid = Number((currentPaid + effectivePaymentAmount).toFixed(2));
-    const newAmountDue = Math.max(0, Number((bill.total_amount - newDeposit - newAmountPaid).toFixed(2)));
-    const newStatus = (newAmountDue === 0 || netPayable === 0) ? 'paid' : 'partially_paid';
+    const vatOnlyTotal = Number(
+      (Math.max(0, Number(bill.subtotal || 0) - Number(bill.discount_amount || 0)) + Number(bill.tax_amount || 0)).toFixed(2)
+    );
+    const vatOnlyNetPayable = Math.max(0, Number((vatOnlyTotal - newDeposit - currentPaid).toFixed(2)));
+    const rawAmountPaid = Number((currentPaid + effectivePaymentAmount).toFixed(2));
+    const rawAmountDue = Math.max(0, Number((bill.total_amount - newDeposit - rawAmountPaid).toFixed(2)));
+
+    const coversVatOnlyTotal =
+      effectivePaymentAmount > 0 && vatOnlyNetPayable > 0 && effectivePaymentAmount >= vatOnlyNetPayable;
+    const isFullSettlement =
+      Boolean(data.settleInFull) || rawAmountDue === 0 || netPayable === 0 || coversVatOnlyTotal;
+
+    const shouldStripLegacyServiceCharge =
+      isFullSettlement && Number(bill.service_charge || 0) > 0 && rawAmountDue > 0;
+    const finalTotalAmount = shouldStripLegacyServiceCharge ? vatOnlyTotal : Number(bill.total_amount);
+    const finalServiceChargeRate = shouldStripLegacyServiceCharge ? 0 : Number(bill.service_charge_rate ?? 0.10);
+    const finalServiceCharge = shouldStripLegacyServiceCharge ? 0 : Number(bill.service_charge || 0);
+
+    const newAmountPaid =
+      isFullSettlement && rawAmountPaid < Number((finalTotalAmount - newDeposit).toFixed(2))
+        ? Math.max(rawAmountPaid, Number((finalTotalAmount - newDeposit).toFixed(2)))
+        : rawAmountPaid;
+    const newAmountDue = isFullSettlement
+      ? 0
+      : Math.max(0, Number((finalTotalAmount - newDeposit - newAmountPaid).toFixed(2)));
+    const newStatus = isFullSettlement ? 'paid' : 'partially_paid';
 
     // 3. Prepare Batch Statements
     const stmts: any[] = [];
@@ -840,9 +863,20 @@ bills.post('/:id/pay', async (c) => {
     stmts.push(
       c.env.DB.prepare(
         `UPDATE bills
-         SET deposit_deducted = ?, amount_paid = ?, amount_due = ?, status = ?, updated_at = ?
+         SET service_charge_rate = ?, service_charge = ?, total_amount = ?,
+             deposit_deducted = ?, amount_paid = ?, amount_due = ?, status = ?, updated_at = ?
          WHERE id = ?`
-      ).bind(newDeposit, newAmountPaid, newAmountDue, newStatus, now, bill.id)
+      ).bind(
+        finalServiceChargeRate,
+        finalServiceCharge,
+        finalTotalAmount,
+        newDeposit,
+        newAmountPaid,
+        newAmountDue,
+        newStatus,
+        now,
+        bill.id
+      )
     );
 
     if (newStatus === 'paid') {

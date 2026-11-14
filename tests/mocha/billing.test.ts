@@ -1085,5 +1085,51 @@ describe('Billing Service (Dear - @allmusgus)', () => {
       expect(Number(updatedSmall.subtotal)).to.equal(100);
       expect(Number(updatedSmall.serviceCharge)).to.equal(5);
     });
+
+    it('SUCCESS: checkout settlement on legacy seed bills (bill-002 Sarah Jenkins & bill-003 Kenji Sato) or with settleInFull=true marks bill paid with 0 amountDue and all items isPaid=true', async () => {
+      // 1. Settle bill-002 (Sarah Jenkins) with VAT-only netDue (12429.40) + depositDeducted (3000)
+      const paySarah = await app.request(
+        '/bills/bill-002/pay',
+        {
+          method: 'POST',
+          headers: HEADERS,
+          body: JSON.stringify({
+            paymentMethod: 'qr_promptpay',
+            depositDeducted: 3000,
+            amount: 12429.4,
+            settleInFull: true,
+          }),
+        },
+        env
+      );
+      expect(paySarah.status).to.equal(200);
+      const sarahBillRes = await app.request('/bills/bill-002', { method: 'GET', headers: HEADERS }, env);
+      const sarahBill = (await sarahBillRes.json()).data;
+      expect(sarahBill.status).to.equal('paid');
+      expect(Number(sarahBill.amountDue)).to.equal(0);
+      expect(sarahBill.items.every((it: any) => it.isPaid === true)).to.equal(true);
+
+      // 2. Settle bill-003 (Kenji Sato) with settleInFull=true and amount=0 (when initial stay was prepaid and deposit covered minibar)
+      const payKenji = await app.request(
+        '/bills/bill-003/pay',
+        {
+          method: 'POST',
+          headers: HEADERS,
+          body: JSON.stringify({
+            paymentMethod: 'cash',
+            depositDeducted: 5000,
+            amount: 0,
+            settleInFull: true,
+          }),
+        },
+        env
+      );
+      expect(payKenji.status).to.equal(200);
+      const kenjiBillRes = await app.request('/bills/bill-003', { method: 'GET', headers: HEADERS }, env);
+      const kenjiBill = (await kenjiBillRes.json()).data;
+      expect(kenjiBill.status).to.equal('paid');
+      expect(Number(kenjiBill.amountDue)).to.equal(0);
+      expect(kenjiBill.items.every((it: any) => it.isPaid === true)).to.equal(true);
+    });
   });
 });

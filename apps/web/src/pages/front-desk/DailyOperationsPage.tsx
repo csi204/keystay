@@ -69,7 +69,7 @@ export const DailyOperationsPage: React.FC = () => {
     loading: billingLoading,
     refresh: refreshBilling,
     loadBillDetails,
-  } = useBilling();
+  } = useBilling(reservations);
 
   const [activeSubTab, setActiveSubTab] = useState<'arrivals' | 'departures' | 'billing'>('arrivals');
   const [departureSubTab, setDepartureSubTab] = useState<'due_today' | 'early_or_extended'>('due_today');

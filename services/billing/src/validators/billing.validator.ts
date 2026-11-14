@@ -61,6 +61,7 @@ export const payBillSchema = z.object({
   amount: z.coerce.number().min(0, 'Payment amount must be non-negative').optional(),
   referenceNumber: z.string().optional(),
   depositDeducted: z.coerce.number().min(0).optional(),
+  settleInFull: z.boolean().optional(),
 });
 
 export const applyBillDiscountSchema = z

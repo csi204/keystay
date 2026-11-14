@@ -68,11 +68,7 @@ export function isFolioItemPaid(
   item: FolioItemLike,
   options?: { reservationPaymentStatus?: string }
 ): boolean {
-  if (item.isPaid === true) return true;
-  if (item.isPaid === false) return false;
-  if (item.is_paid !== undefined && item.is_paid !== null) {
-    return Boolean(item.is_paid);
-  }
+  if (item.isPaid === true || item.is_paid === 1 || item.is_paid === true) return true;
   const isRoomCategory =
     item.category === 'room' ||
     item.itemType === 'room_charge' ||
@@ -83,6 +79,10 @@ export function isFolioItemPaid(
     !isExtensionChargeDescription(item.description)
   ) {
     return true;
+  }
+  if (item.isPaid === false) return false;
+  if (item.is_paid !== undefined && item.is_paid !== null) {
+    return Boolean(item.is_paid);
   }
   return false;
 }
@@ -216,6 +216,8 @@ export interface FolioSplitScreenProps {
   bill: DetailedBill | null;
   depositAmount?: string;
   reservationPaymentStatus?: string;
+  isCheckedOut?: boolean;
+  isInHouse?: boolean;
   onAddCharge: () => void;
   onRequestAmenities?: () => void;
   onDeleteItem: (itemId: string) => void;
@@ -228,6 +230,8 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
   bill,
   depositAmount = '500',
   reservationPaymentStatus,
+  isCheckedOut = false,
+  isInHouse = false,
   onAddCharge,
   onRequestAmenities,
   onDeleteItem,
@@ -254,12 +258,20 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
   }
 
   const items = bill.items || [];
-  const effectivePaymentStatus = reservationPaymentStatus || (bill.status === 'paid' ? 'paid' : undefined);
-  const summary = calculateFolioSummary(items, depositAmount, bill.subtotal, {
-    reservationPaymentStatus: effectivePaymentStatus,
-  });
+  const isPaid = bill.status === 'paid' || paymentSuccess || Boolean(isCheckedOut);
+  const canAddCharges = !isCheckedOut && (!isPaid || Boolean(isInHouse));
+  const effectivePaymentStatus = isPaid
+    ? 'paid'
+    : reservationPaymentStatus || (bill.status === 'paid' ? 'paid' : undefined);
+  const summary = calculateFolioSummary(
+    isPaid ? items.map((it) => ({ ...it, isPaid: true })) : items,
+    depositAmount,
+    bill.subtotal,
+    {
+      reservationPaymentStatus: effectivePaymentStatus,
+    }
+  );
   const depositAmountNum = Number(depositAmount || 0);
-  const isPaid = bill.status === 'paid' || paymentSuccess;
 
   const handleSettlePayment = async () => {
     if (!onPay) return;
@@ -305,7 +317,7 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
             </p>
           </div>
 
-          {!isPaid && (
+          {canAddCharges && (
             <div className="flex items-center gap-2">
               {onRequestAmenities && (
                 <button

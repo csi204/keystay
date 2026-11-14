@@ -12,6 +12,33 @@ export function syncBillWithReservation(
   bill: DetailedBill,
   reservations: ExtendedReservation[]
 ): DetailedBill {
+  const checkedOutRes = bill.reservationId
+    ? reservations.find((r) => r.id === bill.reservationId && r.status === 'checked_out')
+    : undefined;
+
+  if (checkedOutRes) {
+    const realGuestName = checkedOutRes.guestName || checkedOutRes.guest?.fullName;
+    const isFallbackName =
+      !bill.guestName ||
+      bill.guestName.startsWith('Guest (Room ') ||
+      bill.guestName === 'Guest' ||
+      bill.guestName === '—';
+    const effectiveGuestName =
+      realGuestName && realGuestName.trim() && realGuestName !== '—'
+        ? realGuestName.trim()
+        : isFallbackName
+        ? realGuestName || bill.guestName
+        : bill.guestName;
+
+    return {
+      ...bill,
+      guestName: effectiveGuestName,
+      status: 'paid',
+      amountDue: '0.00',
+      items: bill.items?.map((it) => ({ ...it, isPaid: true })),
+    };
+  }
+
   const matchingRes = reservations.find(
     (r) =>
       (r.id === bill.reservationId || (bill.roomNumber && r.roomNumber === bill.roomNumber)) &&

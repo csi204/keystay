@@ -57,6 +57,24 @@ export function reconcileLiveFolios(
           (r.status === 'checked_in' || r.status === 'extended')
       );
 
+      const checkedOutRes = bill.reservationId
+        ? reservations.find((r) => r.id === bill.reservationId && r.status === 'checked_out')
+        : undefined;
+
+      if (checkedOutRes) {
+        const checkedOutName = checkedOutRes.guestName || checkedOutRes.guest?.fullName;
+        return {
+          ...bill,
+          guestName:
+            checkedOutName && checkedOutName.trim() && checkedOutName !== '—'
+              ? checkedOutName.trim()
+              : bill.guestName,
+          status: 'paid' as const,
+          amountDue: '0.00',
+          items: bill.items?.map((it) => ({ ...it, isPaid: true })),
+        };
+      }
+
       if (!matchingRes) return bill;
 
       const realGuestName = matchingRes.guestName || matchingRes.guest?.fullName;
@@ -135,6 +153,24 @@ export const CashierFolioPage: React.FC = () => {
   // Synchronize selected bill with active reservation details
   const selectedBill = useMemo(() => {
     if (!rawSelectedBill) return null;
+    const checkedOutRes = rawSelectedBill.reservationId
+      ? reservations.find((r) => r.id === rawSelectedBill.reservationId && r.status === 'checked_out')
+      : undefined;
+
+    if (checkedOutRes) {
+      const checkedOutName = checkedOutRes.guestName || checkedOutRes.guest?.fullName;
+      return {
+        ...rawSelectedBill,
+        guestName:
+          checkedOutName && checkedOutName.trim() && checkedOutName !== '—'
+            ? checkedOutName.trim()
+            : rawSelectedBill.guestName,
+        status: 'paid' as const,
+        amountDue: '0.00',
+        items: rawSelectedBill.items?.map((it) => ({ ...it, isPaid: true })),
+      };
+    }
+
     const matchingRes = reservations.find(
       (r) =>
         (r.id === rawSelectedBill.reservationId || r.roomNumber === rawSelectedBill.roomNumber) &&
@@ -245,6 +281,7 @@ export const CashierFolioPage: React.FC = () => {
         description: string;
         quantity: number;
         unitPrice: number;
+        isPaid?: boolean;
       }> = [];
 
       let depositDeducted = 0;
@@ -272,6 +309,7 @@ export const CashierFolioPage: React.FC = () => {
             description: desc,
             quantity: nights,
             unitPrice: nightlyRate,
+            isPaid: matchingRes?.paymentStatus === 'paid',
           });
         }
       }
@@ -285,6 +323,7 @@ export const CashierFolioPage: React.FC = () => {
           guestName,
           roomNumber: roomNum,
           subtotal,
+          serviceChargeRate: 0,
           depositDeducted,
           items,
           status: 'pending',
@@ -567,6 +606,15 @@ export const CashierFolioPage: React.FC = () => {
                 bill={selectedBill}
                 depositAmount={String(matchingRes?.depositAmount ?? selectedBill.depositDeducted ?? 500)}
                 reservationPaymentStatus={matchingRes?.paymentStatus}
+                isInHouse={Boolean(matchingRes)}
+                isCheckedOut={Boolean(
+                  selectedBill.reservationId &&
+                    reservations.some(
+                      (r) =>
+                        r.id === selectedBill.reservationId &&
+                        (r.status === 'checked_out' || r.status === 'cancelled')
+                    )
+                )}
                 onAddCharge={() => setIsAddChargeOpen(true)}
                 onRequestAmenities={() => setIsAmenitiesOpen(true)}
                 onDeleteItem={(itemId) => {

@@ -51,6 +51,7 @@ export function useBilling(reservations?: ExtendedReservation[]) {
   const [isOffline, setIsOffline] = useState<boolean>(false);
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
   const hasLoadedOnceRef = useRef<boolean>(false);
+  const healedCheckedOutBillsRef = useRef<Set<string>>(new Set());
 
   const synchronizedBills = useMemo(() => {
     if (!reservations || reservations.length === 0) return bills;
@@ -62,6 +63,29 @@ export function useBilling(reservations?: ExtendedReservation[]) {
     if (!reservations || reservations.length === 0) return selectedBill;
     return syncBillWithReservation(selectedBill, reservations);
   }, [selectedBill, reservations]);
+
+  // Self-heal any backend bill that belongs to an already checked-out reservation
+  useEffect(() => {
+    if (!reservations || reservations.length === 0 || bills.length === 0) return;
+    for (const bill of bills) {
+      if (
+        bill.status !== 'paid' &&
+        bill.reservationId &&
+        !healedCheckedOutBillsRef.current.has(bill.id) &&
+        reservations.some((r) => r.id === bill.reservationId && r.status === 'checked_out')
+      ) {
+        healedCheckedOutBillsRef.current.add(bill.id);
+        apiFetch(`/api/bills/${bill.id}/pay`, {
+          method: 'POST',
+          body: JSON.stringify({
+            paymentMethod: 'cash',
+            amount: 0,
+            settleInFull: true,
+          }),
+        }).catch(() => {});
+      }
+    }
+  }, [bills, reservations]);
 
   const fetchBills = useCallback(async (options?: boolean | { forceLoading?: boolean }) => {
     const forceLoading =
@@ -181,6 +205,7 @@ export function useBilling(reservations?: ExtendedReservation[]) {
         paymentMethod,
         amount,
         referenceNumber,
+        settleInFull: true,
       }),
     });
     if (!res.error) {
