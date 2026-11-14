@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Logo } from '../../components/common/Logo';
 import { QuickContactModal } from '../../components/housekeeping/QuickContactModal';
-import { clearAuthSession, getAuthToken, getAuthUser, apiUrl } from '../../lib/api';
+import { clearAuthSession, getAuthToken, getAuthUser, apiUrl, assetUrl } from '../../lib/api';
 import { reconcileLiveRooms } from '../../lib/roomStatusReconciliation';
 import {
   Sparkles,
@@ -5281,7 +5281,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                     {selectedEvidenceRoom.beforePhotoUrl ? (
                       <>
                         <img
-                          src={selectedEvidenceRoom.beforePhotoUrl}
+                          src={assetUrl(selectedEvidenceRoom.beforePhotoUrl)}
                           alt="Before"
                           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
@@ -5330,7 +5330,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                     {selectedEvidenceRoom.afterPhotoUrl ? (
                       <>
                         <img
-                          src={selectedEvidenceRoom.afterPhotoUrl}
+                          src={assetUrl(selectedEvidenceRoom.afterPhotoUrl)}
                           alt="After"
                           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
@@ -5415,7 +5415,7 @@ export const HousekeepingPortalPage: React.FC = () => {
             className="relative max-w-4xl w-full max-h-[82vh] rounded-2xl overflow-hidden bg-black/50 border border-white/20 shadow-2xl flex items-center justify-center"
           >
             <img
-              src={fullscreenPhotoUrl.url}
+              src={assetUrl(fullscreenPhotoUrl.url)}
               alt={fullscreenPhotoUrl.title}
               className="max-h-[82vh] w-auto max-w-full object-contain rounded-xl select-none"
             />

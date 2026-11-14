@@ -22,7 +22,7 @@ import {
   isValidThaiId,
   isValidPassport,
 } from '../common/MaskedInputs';
-import { apiFetch, apiUrl, getAuthToken } from '@/lib/api';
+import { apiFetch, apiUrl, assetUrl, getAuthToken } from '@/lib/api';
 import { useToast } from '@/context/ToastContext';
 import {
   X,
@@ -1207,7 +1207,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                             className="group relative aspect-4/3 w-full rounded-lg overflow-hidden border border-slate-200/90 bg-slate-900 cursor-pointer shadow-2xs hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-all"
                           >
                             <img
-                              src={housekeepingTask.beforePhotoUrl}
+                              src={assetUrl(housekeepingTask.beforePhotoUrl)}
                               alt={locale === 'th' ? 'ภาพก่อนทำความสะอาด' : 'Before cleaning photo'}
                               className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                             />
@@ -1274,7 +1274,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                             className="group relative aspect-4/3 w-full rounded-lg overflow-hidden border border-emerald-200/90 bg-slate-900 cursor-pointer shadow-2xs hover:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all"
                           >
                             <img
-                              src={housekeepingTask.afterPhotoUrl}
+                              src={assetUrl(housekeepingTask.afterPhotoUrl)}
                               alt={
                                 locale === 'th'
                                   ? 'หลังตรวจรับเสร็จสมบูรณ์'
@@ -2210,7 +2210,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
             onClick={() => setLightboxPhoto(null)}
           >
             <img
-              src={lightboxPhoto.url}
+              src={assetUrl(lightboxPhoto.url)}
               alt={lightboxPhoto.title}
               onClick={(e) => e.stopPropagation()}
               className="max-h-[82vh] w-auto max-w-full object-contain rounded-xl shadow-2xl border border-white/10"
