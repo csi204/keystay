@@ -9,7 +9,8 @@ export interface Env {
   HOUSEKEEPING_SERVICE: Fetcher;
   BILLING_SERVICE: Fetcher;
   REPORT_ANALYTICS_SERVICE: Fetcher;
-  KV: KVNamespace;
+  RATE_LIMITER?: RateLimit;
+  KV?: KVNamespace;
   KEYSTAY_ASSETS?: R2Bucket;
   JWT_SECRET?: string;
   ENVIRONMENT?: string;
@@ -74,22 +75,18 @@ app.use('*', async (c, next) => {
 });
 
 // ==========================================
-// 3. RATE LIMITING MIDDLEWARE (KV-backed, 100 req/min)
+// 3. RATE LIMITING MIDDLEWARE (Cloudflare Rate Limiting binding, 120 req/min)
 // ==========================================
 app.use('*', async (c, next) => {
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || '127.0.0.1';
-  const nowMinute = Math.floor(Date.now() / 60000);
 /**
  * [Middleware 3] Rate Limiting
- * จำกัดคำขอตาม IP ด้วย Cloudflare KV (สูงสุด 120 req/นาที ต่อ IP) เกินจะตอบ 429
+ * จำกัดคำขอตาม IP ด้วย Cloudflare Rate Limiting binding (สูงสุด 120 req/นาที ต่อ IP) เกินจะตอบ 429
  */
-  const rateLimitKey = `ratelimit:${ip}:${nowMinute}`;
-
-  if (c.env.KV) {
+  if (c.env.RATE_LIMITER) {
     try {
-      const current = await c.env.KV.get(rateLimitKey);
-      const count = current ? parseInt(current, 10) : 0;
-      if (count > 120) {
+      const { success } = await c.env.RATE_LIMITER.limit({ key: ip });
+      if (!success) {
         return c.json(
           {
             success: false,
@@ -101,9 +98,8 @@ app.use('*', async (c, next) => {
           429
         );
       }
-      await c.env.KV.put(rateLimitKey, (count + 1).toString(), { expirationTtl: 120 });
-    } catch (e) {
-      // Non-blocking in case of KV errors
+    } catch {
+      // Non-blocking in case of rate limiter errors
     }
   }
 
