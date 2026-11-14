@@ -101,6 +101,28 @@ app.use('*', async (c, next) => {
     } catch {
       // Non-blocking in case of rate limiter errors
     }
+  } else if (c.env.KV) {
+    try {
+      const nowMinute = Math.floor(Date.now() / 60000);
+      const rateLimitKey = `ratelimit:${ip}:${nowMinute}`;
+      const currentCountStr = await c.env.KV.get(rateLimitKey);
+      const currentCount = currentCountStr ? parseInt(currentCountStr, 10) : 0;
+      if (currentCount >= 120) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: 'RATE_LIMIT_EXCEEDED',
+              message: 'Too many requests. Please slow down.',
+            },
+          },
+          429
+        );
+      }
+      await c.env.KV.put(rateLimitKey, String(currentCount + 1), { expirationTtl: 60 });
+    } catch {
+      // Non-blocking in case of KV errors
+    }
   }
 
   await next();

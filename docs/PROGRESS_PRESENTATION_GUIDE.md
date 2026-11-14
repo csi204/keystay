@@ -48,7 +48,7 @@
 | **2. API Implementation** | Endpoints ครบถ้วน (GET, POST, PUT, DELETE) พร้อม Payload | **เดียร์** & ทุกคน | หมวดที่ 2 (Flow 2.1, 2.2) และ หมวดที่ 3 (Flow 3.1, 3.2) |
 | **3. Database** | โครงสร้าง D1 Schemas, Foreign Keys, ข้อมูลบันทึกจริง (Real Record Proof) | **เดียร์** | หมวดที่ 2 (Database Evidence) |
 | **4. Integration** | การเชื่อมโยง Frontend ↔ Gateway ↔ Backend ↔ Upstash QStash 1:4 Fan-out | **เขต** & **เดียร์** | หมวดที่ 1 (Flow 1.1) และ หมวดที่ 2 (Flow 2.2) |
-| **5. Security** | การตรวจสอบ JWT Bearer, สิทธิ์ตาม 4 บทบาท (RBAC), การซ่อนหน้า (404 Obscurity) | **เขต** | หมวดที่ 1 (Flow 1.2) |
+| **5. Security** | การตรวจสอบ JWT Bearer, สิทธิ์ตาม 3 บทบาท (`owner`, `front_desk`, `housekeeping`), การซ่อนหน้า (404 Obscurity) | **เขต** | หมวดที่ 1 (Flow 1.2) |
 | **6. Testing** | ผลการทดสอบ API Happy Path (200, 201) และ Error Cases (400, 401, 403, 404, 409) | **บุญ** & **เดียร์** | หมวดที่ 2 (Flow 2.3) และ หมวดที่ 3 (Flow 3.3) |
 | **7. Project Status** | สรุปงานที่เสร็จ, กำลังทำ, ปัญหาที่พบ, แผนงานถัดไปบน GitHub Projects | **เขต** | หมวดที่ 1 (Flow 1.3) |
 
@@ -117,8 +117,8 @@
             ▼
 [ POST /api/v1/auth/login ]
             │
-            ├── ตรวจสอบรหัสผ่านผ่าน bcryptjs (Salt 10 rounds)
-            ├── ดึง Role ผู้ใช้: 'admin' | 'manager' | 'front_desk' | 'housekeeping'
+            ├── ตรวจสอบรหัสผ่านผ่าน bcryptjs / PBKDF2
+            ├── ดึง Role ผู้ใช้: 'owner' | 'front_desk' | 'housekeeping'
             ├── สร้าง Access Token (JWT 15 นาที) + Refresh Token (30 วันหาก Remember Me)
             └── บันทึก Session Hash ลง Cloudflare KV (`keystay_kv`)
             ▼
@@ -129,16 +129,16 @@
             └── role: 'housekeeping'       ──► Redirect สู่ /housekeeping (Housekeeping Portal)
 ```
 
-#### 🛡️ สิทธิการเข้าถึงตาม 4 บทบาทหลัก (RBAC Matrix)
+#### 🛡️ สิทธิการเข้าถึงตาม 3 บทบาทหลัก (RBAC Matrix)
 
-| ทรัพยากร / หน้าที่ | `admin` | `manager` | `front_desk` | `housekeeping` |
-|---|:---:|:---:|:---:|:---:|
-| จัดการ User & Role (`/users`) | ✅ Full CRUD | ❌ ซ่อนปุ่ม | ❌ 404/403 | ❌ 404/403 |
-| จัดการ Master Data ช่าง Outsource (`/outsource-contacts`) | ✅ Full CRUD | 👁️ Read-only | 👁️ Quick Call | 👁️ Quick Call |
-| จองห้อง / เช็คอิน / เช็คเอาท์ (`/reservations`) | ✅ | ✅ | ✅ Full Access | ❌ 404/403 |
-| คิดเงิน / ออกใบเสร็จ / จัดการมินิบาร์ (`/bills`) | ✅ | ✅ | ✅ Cashier Full | ❌ 404/403 |
-| รับงานทำความสะอาด / ตรวจห้อง (`/housekeeping/tasks`) | ✅ | 👁️ ดูรายงาน | 👁️ ดูสถานะ | ✅ Full Access |
-| ดูสถิติรายได้ & Occupancy (`/reports`) | ✅ | ✅ Full Report | ❌ | ❌ |
+| ทรัพยากร / หน้าที่ | `owner` | `front_desk` | `housekeeping` |
+|---|:---:|:---:|:---:|
+| จัดการ User & Role (`/users`) | ✅ Full CRUD | ❌ 404/403 | ❌ 404/403 |
+| จัดการ Master Data ช่าง Outsource (`/outsource-contacts`) | ✅ Full CRUD | 👁️ Quick Call | 👁️ Quick Call |
+| จองห้อง / เช็คอิน / เช็คเอาต์ (`/reservations`) | ✅ | ✅ Full Access | ❌ 404/403 |
+| คิดเงิน / ออกใบเสร็จ / จัดการมินิบาร์ (`/bills`) | ✅ | ✅ Cashier Full | ❌ 404/403 |
+| รับงานทำความสะอาด / ตรวจห้อง (`/housekeeping/tasks`) | ✅ | 👁️ ดูสถานะ | ✅ Full Access |
+| ดูสถิติรายได้ & Occupancy (`/reports`) | ✅ Full Report | ❌ | ❌ |
 
 #### 💡 จุดเด่นความปลอดภัยที่โชว์อาจารย์ (Security Highlights)
 - **Security by Obscurity (404 Guard):** หากพนักงาน `housekeeping` แอบพิมพ์ URL ข้ามไป `/admin` ระบบ Frontend Guard และ Gateway จะตอบกลับด้วย **`404 Not Found`** เสมือนว่าหน้านั้นไม่มีอยู่จริง แทนที่จะตอบ 403 Forbidden เพื่อป้องกันไม่ให้ผู้โจมตีสำรวจ Endpoint ภายในระบบได้
@@ -153,10 +153,10 @@
 
 ```
 [ Phase 0: Core Setup ] ──► ✅ เสร็จสมบูรณ์ 100% (Issue #1)
-[ Phase 1: Core CRUD ]  ──► 🟢 เสร็จแล้ว 85% (Issue #2, #3, #4)
-[ Phase 2: Business Op] ──► 🟡 กำลังดำเนินการ 75% (Issue #5, #6 เสร็จแล้ว / #7, #8, #9 กำลังทำ)
-[ Phase 3: Portals UI ] ──► ⚪ กำลังเริ่มต้น (Issue #10, #11, #12)
-[ Phase 4: UAT & Demo ] ──► ⚪ เตรียมการทดสอบ 24 Scenarios (Issue #13)
+[ Phase 1: Core CRUD ]  ──► ✅ เสร็จสมบูรณ์ 100% (Issue #2, #3, #4)
+[ Phase 2: Business Op] ──► ✅ เสร็จสมบูรณ์ 100% (Issue #5, #6, #7, #8, #9)
+[ Phase 3: Portals UI ] ──► ✅ เสร็จสมบูรณ์ 100% (Issue #10, #11, #12)
+[ Phase 4: UAT & Demo ] ──► ✅ เสร็จสมบูรณ์ 100% — ผ่านครบ 24 UAT Scenarios & 250 Mocha Tests (Issue #13)
 ```
 
 - **งานที่เสร็จสมบูรณ์แล้ว (Completed):**

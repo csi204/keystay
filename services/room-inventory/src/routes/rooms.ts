@@ -25,7 +25,11 @@ export const roomsRoute = new Hono<{ Bindings: Env }>();
 // API #13: GET /rooms - รายการห้องพักทั้งหมด (รองรับ filter: floor_id, room_type_id, status, is_active)
 roomsRoute.get('/', async (c) => {
   const db = getDb(c.env.DB);
-  const floorId = c.req.query('floorId') || c.req.query('floor_id');
+  const rawFloor = c.req.query('floor');
+  const floorId =
+    c.req.query('floorId') ||
+    c.req.query('floor_id') ||
+    (rawFloor ? (rawFloor.startsWith('fl-') ? rawFloor : `fl-${rawFloor}`) : undefined);
   const roomTypeId = c.req.query('roomTypeId') || c.req.query('room_type_id');
   const status = c.req.query('status');
   const isActive = c.req.query('isActive') ?? c.req.query('is_active');

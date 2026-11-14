@@ -1,721 +1,492 @@
-# 🧪 แผนการทดสอบการยอมรับของผู้ใช้ฉบับละเอียด (Detailed User Acceptance Testing: UAT)
-# Hotel Management System — Cloudflare Serverless Microservices สำหรับโรงแรมขนาดเล็ก 5–10 ห้อง
+# 🧪 เอกสารการทดสอบการยอมรับของผู้ใช้งาน (User Acceptance Testing: UAT)
+## ระบบบริหารจัดการโรงแรมขนาดเล็ก (Hotel Management System — KEYSTAY)
 
-> **เวอร์ชัน:** 1.0.0  
-> **วันที่จัดทำ:** 19 กันยายน 2026  
-> **ผู้รับผิดชอบหลัก (QA Lead):** เดียร์ (ธีรภัทร)  
-> **ผู้ร่วมทดสอบ:** เขต (เขตโสภณ), บุญ (ปวริศ)  
-> **สภาพแวดล้อมการทดสอบ:** Local Dev Environment (`http://localhost:8787`) & Cloudflare Preview Staging  
-> **ข้อตกลงสำคัญ (DTO Rule):** ทุก Request/Response body ผ่าน API รับ-ส่งค่าเป็น `string` ทั้งหมดตามสถาปัตยกรรมระบบ
-
----
-
-## สารบัญ
-1. [ภาพรวมและเกณฑ์การผ่าน UAT (Acceptance Criteria)](#1-ภาพรวมและเกณฑ์การผ่าน-uat)
-2. [ตารางผู้ใช้งานทดสอบและสิทธิ์ (Test User Personas & RBAC)](#2-ตารางผู้ใช้งานทดสอบและสิทธิ์)
-3. [กลุ่มที่ 1: Front Desk Portal (UAT-FD01 ถึง UAT-FD07)](#กลุ่มที่-1-front-desk-portal)
-4. [กลุ่มที่ 2: Housekeeping Portal (UAT-HK01 ถึง UAT-HK05)](#กลุ่มที่-2-housekeeping-portal)
-5. [กลุ่มที่ 3: Billing & Cashier Portal (UAT-BL01 ถึง UAT-BL04)](#กลุ่มที่-3-billing--cashier-front-desk-portal)
-6. [กลุ่มที่ 4: Owner Portal & Executive Dashboard (UAT-MGR01 ถึง UAT-MGR05)](#กลุ่มที่-4-owner-portal--executive-dashboard)
-7. [กลุ่มที่ 5: การทดสอบ Asynchronous Event Fan-out 1:4 (UAT-INT01 ถึง UAT-INT03)](#กลุ่มที่-5-การทดสอบ-asynchronous-event-fan-out-14)
-8. [แบบฟอร์มบันทึกสรุปผลและรายงานข้อผิดพลาด (Defect Log)](#8-แบบฟอร์มบันทึกสรุปผลและรายงานข้อผิดพลาด)
+| รายละเอียดเอกสาร | ข้อมูล |
+|---|---|
+| **รหัสเอกสาร** | `DOC-UAT-KEYSTAY-2026` |
+| **เวอร์ชัน** | `2.0.0 (Production & Phase 4 Final Verification)` |
+| **วันที่อัปเดตล่าสุด** | `14 พฤศจิกายน 2569` |
+| **ขอบเขตระบบ** | ระบบบริหารจัดการโรงแรมบูทีคขนาด 22 ห้องพัก (5 ชั้น) บนสถาปัตยกรรม Cloudflare Edge Microservices (6 Services + API Gateway) |
+| **คณะผู้จัดทำและรับผิดชอบ** | **เดียร์ — ธีรภัทร (`@allmusgus`, SA Lead)**, **บุญ — ปวริศ (`@Legxcy77`, QA Lead)**, **เขต — เขตโสภณ (`@hazeco`, Project Lead)** |
+| **ชุดทดสอบอัตโนมัติ (Automated Verification)** | `pnpm test` (`250/250 Mocha Tests Passing` รวมถึง `tests/mocha/phase4-uat.test.ts` `16/16 Passing`) และ `pnpm test:web` (`491/491 Frontend Vitest Passing`) |
 
 ---
 
-## 1. ภาพรวมและเกณฑ์การผ่าน UAT
-
-### เกณฑ์การตัดสิน (Pass/Fail Criteria)
-1. **Critical Functionality (100% Pass):** การจอง, เช็คอิน, เช็คเอาท์, สร้างบิล, สร้างงานแม่บ้าน ต้องทำงานถูกต้องครบวงจร ไม่เกิด Deadlock หรือ State ติดค้าง
-2. **State Machine Integrity:** สถานะห้องพักต้องเปลี่ยนผ่านตาม 7 สถานะอย่างถูกต้อง (`available` → `reserved` → `occupied` → `checked_out` → `cleaning` → `available`) ห้ามข้ามขั้นตอน
-3. **Data Consistency ข้าม Microservices:** เหตุการณ์ใน Outbox ต้องถูกส่งเข้า **Upstash QStash** และกระจาย Webhook ไปยัง Service ปลายทางครบถ้วน (At-least-once with Idempotency) — Fan-out Checkout ต้องไปครบ 4 Subscribers
-4. **RBAC Security:** บัญชีแต่ละบทบาทต้องเข้าถึงได้เฉพาะ API และหน้าจอตามสิทธิ์ หากพยายามเข้าถึงนอกขอบเขตต้องได้รับ HTTP `403 Forbidden`
-
----
-
-## 2. ตารางผู้ใช้งานทดสอบและสิทธิ์
-
-| Persona ID | ชื่อบัญชี | Role | รหัสผ่านทดสอบ | สิทธิ์การเข้าถึง (Allowed Portals) |
-|---|---|---|---|---|
-| `USR-ADMIN` | `admin@hotel.local` | `admin` | `Password123!` | ทุกระบบ + จัดการผู้ใช้ + ดูแลโครงสร้างระบบ |
-| `USR-MGR` | `manager@hotel.local` | `manager` | `Password123!` | ดูรายงาน, KPI Dashboard, อนุมัติการลดราคา |
-| `USR-FD` | `frontdesk@hotel.local` | `front_desk` | `Password123!` | Front Desk & Cashier Portal — Room Matrix, จอง, เช็คอิน, เช็คเอาท์, **ออกบิล, รับชำระเงิน, พิมพ์ใบเสร็จ** (รวม Cashiering) |
-| `USR-HK` | `housekeeping@hotel.local` | `housekeeping` | `Password123!` | Housekeeping Kanban, รับงาน, บันทึกงานเสร็จ, แจ้งชำรุด |
-
-> ⚠️ **ไม่มี Role `billing` แยกต่างหาก** — เนื่องจากระบบออกแบบสำหรับโรงแรมขนาดเล็ก (5–10 ห้อง) พนักงานหน้าเคาน์เตอร์ (role=`front_desk`) จึงทำหน้าที่ Cashiering ควบคู่ด้วย ทั้งออกบิล รับเงินมัดจำ คิดค่ามินิบาร์ และออกใบเสร็จ การทดสอบ Billing & Cashier จึงดำเนินการด้วยสิทธิ์ `USR-FD` Token
+## 📑 สารบัญ (Table of Contents)
+1. [วัตถุประสงค์และเกณฑ์การผ่าน (Objectives & Acceptance Criteria)](#1-วัตถุประสงค์และเกณฑ์การผ่าน)
+2. [ตารางเทียบเคียง GitHub Issue #13 กับรหัส UAT (Issue #13 Cross-Reference)](#2-ตารางเทียบเคียง-github-issue-13-กับรหัส-uat)
+3. [สภาพแวดล้อมและข้อมูลผู้ใช้งานทดสอบ (Test Environment & 3-Role RBAC Accounts)](#3-สภาพแวดล้อมและข้อมูลผู้ใช้งานทดสอบ)
+4. [หมวดที่ 1: งานต้อนรับส่วนหน้าและการจอง — Front Desk & Reservation (UAT-FD01 ถึง UAT-FD07)](#4-หมวดที่-1-งานต้อนรับส่วนหน้าและการจอง-front-desk--reservation)
+5. [หมวดที่ 2: งานแม่บ้านและดูแลห้องพัก — Housekeeping & Room Turnover (UAT-HK01 ถึง UAT-HK05)](#5-หมวดที่-2-งานแม่บ้านและดูแลห้องพัก-housekeeping--room-turnover)
+6. [หมวดที่ 3: งานแคชเชียร์ การเงิน และมินิบาร์ — Billing, Cashier & Amenities (UAT-BL01 ถึง UAT-BL04)](#6-หมวดที่-3-งานแคชเชียร์-การเงิน-และมินิบาร์-billing-cashier--amenities)
+7. [หมวดที่ 4: งานเจ้าของกิจการ รายงาน และความปลอดภัย — Owner, Analytics & RBAC (UAT-MGR01 ถึง UAT-MGR05)](#7-หมวดที่-4-งานเจ้าของกิจการ-รายงาน-และความปลอดภัย-owner-analytics--rbac)
+8. [หมวดที่ 5: การเชื่อมโยง Event Fan-out, Idempotency และความทนทานต่อข้อผิดพลาด (UAT-INT01 ถึง UAT-INT03)](#8-หมวดที่-5-การเชื่อมโยง-event-fan-out-idempotency-และความทนทานต่อข้อผิดพลาด)
+9. [ตารางสรุปผลการทดสอบและลงนามรับรอง (UAT Sign-off Matrix)](#9-ตารางสรุปผลการทดสอบและลงนามรับรอง)
 
 ---
 
-## กลุ่มที่ 1: Front Desk Portal
+## 1. 🎯 วัตถุประสงค์และเกณฑ์การผ่าน
 
-### UAT-FD01: ตรวจสอบสถานะห้องพักบน Room Matrix Grid
-* **รหัสกรณีทดสอบ:** UAT-FD01
-* **ผู้ทดสอบ:** เดียร์ (ธีรภัทร) / บุญ (ปวริศ)
-* **บทบาท:** Front Desk (`USR-FD`)
-* **วัตถุประสงค์:** ตรวจสอบการแสดงผลสถานะห้องพักตามชั้น พร้อมสีสถานะถูกต้องตาม Design System
-* **เงื่อนไขเริ่มต้น (Preconditions):**
-  1. เข้าสู่ระบบด้วยบัญชี Front Desk สำเร็จ
-  2. มีข้อมูลห้องพักในระบบจำลองสำหรับโรงแรมขนาดเล็ก (เช่น 8–10 ห้อง) กระจายอยู่ในชั้น 1, 2
-  3. ห้องพักมีสถานะที่หลากหลาย (Available, Reserved, Occupied, Cleaning, Maintenance)
-* **ขั้นตอนการทดสอบ:**
-  1. เข้าสู่หน้า Front Desk Portal (`/front-desk/rooms`)
-  2. สังเกตการแสดงผลของ Room Grid ภาพรวมทั้งหมด
-  3. คลิก Dropdown ตัวกรอง "ชั้น (Floor)" แล้วเลือก "ชั้น 2"
-  4. คลิกตัวกรองสถานะ "ว่าง (Available)"
-* **ข้อมูลนำเข้า (Input Data):**
-  * Filter Floor: `"2"`
-  * Filter Status: `"available"`
-* **ผลลัพธ์ที่คาดหวัง (Expected Results):**
-  1. API Gateway ส่ง Request ไปยัง `GET /rooms?floor=2&status=available`
-  2. ได้รับ HTTP `200 OK` พร้อมรายการห้องพักที่เป็น array
-  3. หน้าจอแสดงผลเฉพาะห้องพักชั้น 2 ที่มีสถานะ Available เท่านั้น
-  4. สีของ Room Badge แสดงผลเป็นสีเขียวอ่อน (`#dcfce7`, ขอบ `#86efac`, ข้อความ `#166534`)
-* **การตรวจสอบ (Verification):**
-  * ไม่มีห้องพักของชั้น 1 หรือชั้น 3 ปรากฏในผลลัพธ์
-  * จำนวนห้องที่แสดงตรงกับผลลัพธ์จากฐานข้อมูล `db_room`
-* **สถานะ:** ✅ Pass
+### 1.1 วัตถุประสงค์ (Objectives)
+1. เพื่อยืนยันว่าระบบสามารถรองรับกระบวนการทำงานจริงของโรงแรมตั้งแต่วงจร **จองห้องพัก -> เช็คอิน -> เข้าพัก/ขอของใช้เสริม/ขยายเวลาพัก -> เช็คเอาต์ -> แม่บ้านทำความสะอาดพร้อมรูปหลักฐาน -> ห้องพร้อมขายใหม่** ได้อย่างถูกต้อง
+2. เพื่อตรวจสอบการทำงานของ **Event-Driven Architecture (Upstash QStash Fan-out 1:4)** และการบันทึกข้อมูลแบบ **Atomic Batch (`db.batch()`)** ว่าสามารถกระจายข้อมูลข้าม 4 บริการปลายทางได้ครบถ้วนและรองรับ **Idempotency**
+3. เพื่อตรวจสอบการบังคับใช้สิทธิ์ **RBAC ทั้ง 3 บทบาทหลัก (`owner`, `front_desk`, `housekeeping`)** และการป้องกันการเข้าถึงข้ามสิทธิ์ที่ API Gateway
+4. เพื่อตรวจสอบความถูกต้องของการคำนวณทางบัญชีและการเงิน:
+   - **ชำระค่าห้องพักและเงินมัดจำล่วงหน้า** ตอนจองหรือเปิดห้อง Walk-in (`paymentStatus = 'paid'`, รายการค่าห้องตั้งต้นมีสถานะ `isPaid = true`)
+   - **แยกยอดค้างชำระใหม่** สำหรับค่าขยายเวลาเข้าพัก (`extension`), ค่ามินิบาร์ (`minibar`), และค่าบริการเสริม (`extra_service` / Extra Amenities) ออกจากค่าห้องตั้งต้นที่ชำระแล้ว
+   - **คิดภาษีมูลค่าเพิ่ม (VAT 7%) โดยไม่มีค่าบริการ (Service Charge 0%)** และหักลบ/คืนเงินมัดจำประกันห้องพักอัตโนมัติเมื่อเช็คเอาต์และชำระเงินปิดบิล
+
+### 1.2 เกณฑ์การยอมรับระบบ (Exit / Acceptance Criteria)
+- **Critical & High Priority Cases:** ต้องผ่าน **100%** (ไม่มีข้อผิดพลาดในการคิดเงิน การจองซ้ำ หรือการเปลี่ยนสถานะห้องผิดพลาด)
+- **API Response Format:** ทุก API คืนค่าโครงสร้างมาตรฐาน `{ "success": boolean, "data": ..., "error"?: { "code": string, "message": string } }` พร้อมรหัส HTTP Status ที่ถูกต้อง (`200`, `201`, `400`, `401`, `403`, `404`, `409`, `429`)
+- **Automated Verification:** ผ่านการทดสอบอัตโนมัติครบทั้ง `250` ข้อใน Mocha Backend Integration Suite และ `491` ข้อใน Frontend Vitest Suite
 
 ---
 
-### UAT-FD02: การสร้างรายการจองห้องพักล่วงหน้า (Advance Booking)
-* **รหัสกรณีทดสอบ:** UAT-FD02
-* **ผู้ทดสอบ:** เดียร์ (ธีรภัทร)
-* **บทบาท:** Front Desk (`USR-FD`)
-* **วัตถุประสงค์:** สร้างการจองล่วงหน้าสำหรับห้องพักประเภท Deluxe และตรวจสอบว่า **`rooms.status` ไม่เปลี่ยนแปลงทันที** (Night Audit Cron จะปรับเป็น `reserved` วันเช็คอินจริงเท่านั้น)
-* **เงื่อนไขเริ่มต้น (Preconditions):**
-  1. ห้องพักหมายเลข 201 (Deluxe Room) มีสถานะเป็น `available`
-  2. มีข้อมูล Guest ในระบบ หรือสร้าง Guest ใหม่พร้อมการจอง
-* **ขั้นตอนการทดสอบ:**
-  1. กดปุ่ม "+ สร้างการจอง (New Reservation)"
-  2. กรอกข้อมูลแขกผู้เข้าพัก: นายสมชาย ใจดี, เบอร์โทร 0812345678, อีเมล `somchai@example.com`
-  3. เลือกห้องพัก: ห้อง 201 (Deluxe Double Bed)
-  4. เลือกวันเช็คอิน: `"2026-10-01"`, วันเช็คเอาท์: `"2026-10-04"` (รวม 3 คืน)
-  5. กดยืนยันการจอง (Confirm Booking)
-* **ข้อมูลนำเข้า API (Request Body DTO):**
-  ```json
-  POST /reservations
-  Header: Authorization: Bearer <FD_TOKEN>
-  {
-    "guestName": "สมชาย ใจดี",
-    "guestPhone": "0812345678",
-    "guestEmail": "somchai@example.com",
-    "roomId": "room-uuid-201",
-    "checkInDate": "2026-10-01",
-    "checkOutDate": "2026-10-04",
-    "totalNights": "3",
-    "nightlyRate": "1500.00",
-    "bookingType": "standard"
-  }
-  ```
-* **ผลลัพธ์ที่คาดหวัง (Expected Results):**
-  1. ได้รับ HTTP `201 Created` พร้อม `reservationId` และรหัสการจอง `BK-xxxxxx`
-  2. ตาราง `reservations` ใน `db_reservation` มีสถานะเป็น `confirmed`
-  3. ตาราง `outbox_events` บันทึก Event `ReservationCreated`
-  4. ✅ **ห้อง 201 ใน `db_room` ยังคงสถานะ `available`** — ไม่เปลี่ยนเป็น `reserved` ทันที (Night Audit Cron จะปรับในวันที่ 2026-10-01 เวลา 02:00 น.)
-  5. หน้าจอแสดง Toast แจ้งเตือน "สร้างการจองสำเร็จ" และห้อง 201 บน Room Matrix ยังแสดงเป็นสีเขียว (Available) จนถึงวันเช็คอิน
-* **สถานะ:** ✅ Pass
+## 2. 🔗 ตารางเทียบเคียง GitHub Issue #13 กับรหัส UAT
+
+เพื่อให้สอดคล้องกับรายการตรวจรับใน **GitHub Issue `#13` (`[Phase 4 - Team] 21 UAT Scenarios, Mock Data, Idempotency & Presentation Demo`)** ตารางด้านล่างแสดงการจับคู่ระหว่างหัวข้อใน Issue `#13` กับรหัสกรณีทดสอบในเอกสารฉบับนี้และไฟล์ทดสอบอัตโนมัติ `tests/mocha/phase4-uat.test.ts`:
+
+| หัวข้อใน GitHub Issue #13 | รหัส UAT ในเอกสารนี้ | ผู้รับผิดชอบหลัก | สถานะผลทดสอบ |
+|---|---|---|:---:|
+| **UAT 1–4:** Auth & RBAC Security (Login, Token expiry/revocation, Role restriction 3 Roles) | `UAT-MGR02`, `UAT-MGR05` | เขต (`@hazeco`) | ✅ **PASS** |
+| **UAT 5–8:** Room Inventory, 7-State Machine Transitions & Emergency Contacts | `UAT-FD01`, `UAT-FD07`, `UAT-HK05` | บุญ (`@Legxcy77`) & เดียร์ (`@allmusgus`) | ✅ **PASS** |
+| **UAT 9–13:** Reservation, Double Booking Prevention (`409`), Walk-in, Stay Extension & Night Audit | `UAT-FD02`, `UAT-FD03`, `UAT-FD04`, `UAT-FD06` | เดียร์ (`@allmusgus`) | ✅ **PASS** |
+| **UAT 14–17:** Check-out Fan-out 1:4 (`Room`, `Housekeeping`, `Billing`, `Report`) | `UAT-FD05`, `UAT-HK01`, `UAT-BL01`, `UAT-INT01` | เดียร์ (`@allmusgus`) & ทีม | ✅ **PASS** |
+| **UAT 18–20:** Minibar, Extra Amenities, Cashier Settlement, Deposit Deduction & Receipt | `UAT-BL01`, `UAT-BL02`, `UAT-BL03`, `UAT-BL04` | เดียร์ (`@allmusgus`) | ✅ **PASS** |
+| **UAT 21:** Housekeeping Assign & Complete (Before/After Photos) -> Room Available Cycle | `UAT-HK02`, `UAT-HK03`, `UAT-HK04` | บุญ (`@Legxcy77`) | ✅ **PASS** |
+| **Idempotency & Fault Tolerance:** Duplicate Webhook, QStash Signature, Outbox & DLQ | `UAT-INT01`, `UAT-INT02`, `UAT-INT03` | เขต (`@hazeco`) & เดียร์ (`@allmusgus`) | ✅ **PASS** |
+| **Demo Preparation:** Seed 22 Rooms (5 Floors), 3 Roles, Historical Reservations, Bills & KPIs | `scripts/seeds/01..06_*.sql` | ทีม (`@allmusgus`, `@Legxcy77`, `@hazeco`) | ✅ **PASS** |
 
 ---
 
-### UAT-FD03: การเช็คอินเข้าพักสำเร็จ (Check-in Flow)
-* **รหัสกรณีทดสอบ:** UAT-FD03
-* **ผู้ทดสอบ:** เดียร์ (ธีรภัทร) / บุญ (ปวริศ)
-* **บทบาท:** Front Desk (`USR-FD`)
-* **วัตถุประสงค์:** ทำการเช็คอินแขกที่จองไว้ล่วงหน้า เปลี่ยนสถานะการจองเป็น `checked_in` และห้องเป็น `occupied`
-* **เงื่อนไขเริ่มต้น (Preconditions):**
-  1. มีรายการจองสถานะ `confirmed` หมายเลขห้อง 201
-  2. ห้องพัก 201 มีสถานะ `reserved`
-* **ขั้นตอนการทดสอบ:**
-  1. ค้นหารายการจองของ "สมชาย ใจดี" หรือคลิกที่ห้อง 201 บน Room Matrix
-  2. กดปุ่ม "ดำเนินการเช็คอิน (Check-in)"
-  3. ตรวจสอบบัตรประชาชน/เอกสารยืนยันตัวตน
-  4. กดยืนยันการเช็คอิน
-* **ข้อมูลนำเข้า API (Request DTO):**
-  ```json
-  POST /reservations/res-uuid-001/check-in
-  Header: Authorization: Bearer <FD_TOKEN>
-  {
-    "actualCheckIn": "2026-10-01T14:15:00Z",
-    "idCardNumber": "1100200300400",
-    "depositAmount": "1000.00"
-  }
-  ```
-* **ผลลัพธ์ที่คาดหวัง (Expected Results):**
-  1. ได้รับ HTTP `200 OK`
-  2. สถานะการจองใน `db_reservation` เปลี่ยนเป็น `checked_in`
-  3. Event `ReservationCheckedIn` ถูกบันทึกใน `outbox_events` และส่งเข้า **Upstash QStash Topic: `hotel.reservation.checkin`**
-  4. QStash ส่ง Webhook ไปยัง `room-inventory` → อัปเดตสถานะห้อง 201 เป็น `occupied`
-  5. หน้าจอแสดงสีสถานะห้อง 201 เป็นสีน้ำเงินเข้ม (`#dbeafe`, ข้อความ `#1e40af`)
-* **สถานะ:** ✅ Pass
+## 3. 👥 สภาพแวดล้อมและข้อมูลผู้ใช้งานทดสอบ
+
+### 3.1 ตารางผู้ใช้งานทดสอบและสิทธิ์ (3 Consolidated RBAC Roles)
+ระบบปรับปรุงบทบาทผู้ใช้งานจากเดิม 4 บทบาท ให้กระชับเป็น **3 บทบาทหลัก** ตามโครงสร้างการใช้งานจริงของโรงแรมขนาดเล็ก (อ้างอิง `scripts/seeds/01_auth_user.sql`):
+
+| ลำดับ | ชื่อบัญชีทดสอบ (Email) | รหัสผ่าน | บทบาท (`role`) | พอร์ทัลหลักและขอบเขตสิทธิ์การใช้งาน |
+|:---:|---|---|---|---|
+| 1 | `owner@keystay.com` | `Keystay@2026` | `owner` | **Owner & Executive Portal (`/admin`):** สิทธิ์สูงสุดเข้าถึงได้ทุกส่วน จัดการผู้ใช้และสิทธิ์ (`/api/users`), ตั้งค่าห้องพักและราคาตามฤดูกาล (`/api/v1/pricing/rules`), จัดการแคตตาล็อกของใช้เสริม (`/api/v1/amenities`), จัดการรายชื่อช่าง Outsource (`/api/housekeeping/outsource-contacts`), และดูรายงานสถิติรายได้/อัตราเข้าพัก (`/api/reports/*`) |
+| 2 | `frontdesk@keystay.com` | `Keystay@2026` | `front_desk` | **Front Desk & Cashier Portal (`/front-desk`):** จัดการผังห้องพัก 22 ห้อง, จองห้องล่วงหน้า, เปิดห้องด่วน (Walk-in), เช็คอิน, เช็คเอาต์, ขยายเวลาพัก, ขอของใช้เสริมให้แขก, จัดการบิล/มินิบาร์/หักมัดจำ/ออกใบเสร็จ 80mm & A4, และเปิดดูเบอร์ช่างฉุกเฉิน 24 ชม. (Read-only) |
+| 3 | `housekeeping@keystay.com` | `Keystay@2026` | `housekeeping` | **Housekeeping Portal (`/housekeeping`):** ดูคิวห้องรอทำความสะอาด, กดรับงาน, อัปโหลดรูปถ่ายก่อนทำ/หลังทำ (Before/After Photos), ปิดงานทำความสะอาด, รับเรื่องและจัดส่งของใช้เสริม (`amenity_requests`), แจ้งซ่อมพร้อมรูปถ่ายขึ้น R2, และดูเบอร์ช่างฉุกเฉิน 24 ชม. (Read-only) |
+
+### 3.2 ข้อมูลห้องพักตั้งต้นสำหรับการทดสอบ (22 Rooms across 5 Floors)
+- **ชั้น 1 (`fl-1`):** ห้อง `101` – `106` (Standard Room — `฿1,500`–`฿2,200`/คืน, มัดจำ `฿500`)
+- **ชั้น 2 (`fl-2`):** ห้อง `201` – `206` (Deluxe Sea View — `฿3,500`/คืน, มัดจำ `฿500`–`฿1,000`)
+- **ชั้น 3 (`fl-3`):** ห้อง `301` – `305` (Executive Suite — `฿5,800`/คืน, มัดจำ `฿1,000`–`฿5,000`)
+- **ชั้น 4 (`fl-4`):** ห้อง `401` – `403` (Family Connecting Suite — `฿6,500`/คืน, มัดจำ `฿2,000`)
+- **ชั้น 5 (`fl-5`):** ห้อง `501` – `502` (Presidential Villa — `฿12,500`/คืน, มัดจำ `฿5,000`–`฿20,000`)
 
 ---
 
-### UAT-FD04: การปฏิเสธการเช็คอินในเงื่อนไขที่ไม่ถูกต้อง (Negative Test)
-* **รหัสกรณีทดสอบ:** UAT-FD04
-* **ผู้ทดสอบ:** เดียร์ (ธีรภัทร)
-* **บทบาท:** Front Desk (`USR-FD`)
-* **วัตถุประสงค์:** ยืนยันว่าระบบปฏิเสธการเช็คอินหากรายการจองถูกยกเลิก (cancelled) หรือเช็คเอาท์ไปแล้ว
-* **เงื่อนไขเริ่มต้น (Preconditions):**
-  1. มีรายการจอง ID `res-uuid-cancelled` ที่มีสถานะเป็น `cancelled` ในฐานข้อมูล
-* **ขั้นตอนการทดสอบ:**
-  1. พยายามยิง Request เช็คอินรายการจองที่ถูกยกเลิก
-* **ข้อมูลนำเข้า API:**
-  ```json
-  POST /reservations/res-uuid-cancelled/check-in
-  Header: Authorization: Bearer <FD_TOKEN>
-  {}
-  ```
-* **ผลลัพธ์ที่คาดหวัง (Expected Results):**
-  1. ระบบตอบกลับ HTTP `400 Bad Request` หรือ `422 Unprocessable Entity`
-  2. Response Body ส่งข้อความ Error ชัดเจน:
-     ```json
-     {
-       "success": "false",
-       "error": "INVALID_STATE_TRANSITION",
-       "message": "ไม่สามารถเช็คอินได้เนื่องจากรายการจองมีสถานะ cancelled"
-     }
-     ```
-  3. สถานะห้องพักใน `db_room` ไม่มีการเปลี่ยนแปลง
-* **สถานะ:** ✅ Pass
+## 4. 🛎️ หมวดที่ 1: งานต้อนรับส่วนหน้าและการจอง (Front Desk & Reservation)
+> **ผู้รับผิดชอบหลักและผู้ทดสอบ:** เดียร์ — ธีรภัทร (`@allmusgus`, SA Lead)
 
 ---
 
-### UAT-FD05: การเช็คเอาท์และกระจาย Event Fan-out 1:4 (Check-out Flow)
-* **รหัสกรณีทดสอบ:** UAT-FD05
-* **ผู้ทดสอบ:** เดียร์ (ธีรภัทร), เขต (เขตโสภณ), บุญ (ปวริศ)
-* **บทบาท:** Front Desk (`USR-FD`)
-* **วัตถุประสงค์:** ทำการเช็คเอาท์ห้องพัก และตรวจสอบว่า Event `ReservationCheckedOut` กระจาย Webhook ผ่าน **Upstash QStash** ไปยัง **4 Subscribers พร้อมกัน** (Room Inventory, Housekeeping, Billing, Report)
-* **เงื่อนไขเริ่มต้น (Preconditions):**
-  1. รายการจองสถานะ `checked_in` หมายเลขห้อง 201
-  2. สถานะห้องพัก 201 เป็น `occupied`
-* **ขั้นตอนการทดสอบ:**
-  1. หน้าจอ Front Desk เลือกห้อง 201 กดปุ่ม "เช็คเอาท์ (Check-out)"
-  2. ตรวจสอบสรุปการพัก และกดยืนยันการเช็คเอาท์
-* **ข้อมูลนำเข้า API (Request DTO):**
-  ```json
-  POST /reservations/res-uuid-001/check-out
-  Header: Authorization: Bearer <FD_TOKEN>
-  {
-    "actualCheckOut": "2026-10-04T11:45:00Z",
-    "keyCardReturned": "true",
-    "note": "แขกขอใบเสร็จฉบับพิมพ์"
-  }
-  ```
-* **ผลลัพธ์ที่คาดหวัง (Expected Results):**
-  1. ได้รับ HTTP `200 OK`
-  2. สถานะการจองใน `db_reservation` เปลี่ยนเป็น `checked_out`
-  3. ตาราง `outbox_events` ใน `db_reservation` มี Event `ReservationCheckedOut`
-  4. Event ถูกส่งเข้า **Upstash QStash Topic: `hotel.reservation.checkout`** และเกิด Webhook Fan-out ไปยัง 4 Subscribers พร้อมกัน:
-     * **Room Inventory Service:** ปรับสถานะห้อง 201 ใน `db_room` เป็น `checked_out` ทันที
-     * **Housekeeping Service:** สร้าง Task ทำความสะอาดห้อง 201 อัตโนมัติ (สถานะ `pending`)
-     * **Billing Service:** คำนวณยอดเงินและสร้าง Bill อัตโนมัติ (สถานะ `pending`, รอรวมยอดมินิบาร์)
-     * **Report Service:** บันทึกสถิติการเช็คเอาท์ประจำวัน
-  5. สถานะห้อง 201 ใน `db_room` เปลี่ยนเป็น `checked_out` (สีเหลืองอำพัน `#fef3c7`)
-* **สถานะ:** ✅ Pass
+### `UAT-FD01` (Issue #13: UAT 5) : การตรวจสอบผังห้องพัก (Room Matrix 22 ห้อง) และการกรองตามชั้น/สถานะ/ช่วงวันที่
+- **ผู้ทดสอบ:** เดียร์ (ธีรภัทร)
+- **บทบาทที่ใช้ทดสอบ:** `front_desk` (`frontdesk@keystay.com`)
+- **ความสำคัญ:** 🟢 Medium
+- **เงื่อนไขก่อนทดสอบ (Pre-conditions):** ล็อกอินเข้าสู่หน้า `/front-desk` สำเร็จ มีข้อมูลห้องพักทั้ง 22 ห้องในระบบ
+- **ขั้นตอนการทดสอบ (Test Steps):**
+  1. เปิดหน้า **ผังห้องพัก (Room Matrix Grid)** สังเกตแถบสรุปสถานะห้องพักทั้ง 22 ห้อง และการ์ดห้องพักแยกตามสีสถานะ (`ว่างพร้อมขาย`, `จองแล้ว`, `มีแขกพัก`, `รอทำความสะอาด`, `กำลังทำความสะอาด`, `ปิดซ่อมบำรุง`)
+  2. ทดสอบคลิกตัวกรองชั้น **ชั้น 2** และสถานะ **ว่างพร้อมขาย (`available`)** (เรียก `GET /api/rooms?floor=2&status=available`)
+  3. สลับไปยังแท็บ **รายการจองทั้งหมด (Table)** และทดสอบตัวกรองปฏิทินวันที่แบบ **Single Date** และ **Date Range (ตั้งแต่วันที่ – ถึงวันที่)**
+- **ผลลัพธ์ที่คาดหวัง (Expected Result):**
+  1. หน้าจอกรองแสดงเฉพาะห้องบนชั้น 2 ที่มีสถานะ `available` ได้อย่างถูกต้อง
+  2. ตัวกรองปฏิทินสามารถเลือกวันเดียวเพื่อดูรายการที่คาบเกี่ยวกับวันนั้น หรือเลือกช่วงวันที่ (Date Range) เพื่อกรองรายการจองในช่วงเวลาดังกล่าวได้ทันที
+- **สถานะ:** ✅ **PASS**
 
 ---
 
-### UAT-FD06: การทำรายการแบบ Walk-in (One-step Walk-in)
-* **รหัสกรณีทดสอบ:** UAT-FD06
-* **ผู้ทดสอบ:** เดียร์ (ธีรภัทร)
-* **บทบาท:** Front Desk (`USR-FD`)
-* **วัตถุประสงค์:** สร้างการจองและเช็คอินสำเร็จในขั้นตอนเดียวสำหรับแขก Walk-in
-* **เงื่อนไขเริ่มต้น (Preconditions):**
-  1. ห้องพัก 102 (Standard Room) มีสถานะเป็น `available`
-* **ขั้นตอนการทดสอบ:**
-  1. กดปุ่ม "รับแขก Walk-in"
-  2. เลือกห้อง 102 กรอกชื่อ "นารี รุ่งเรือง", พัก 1 คืน
-  3. กดยืนยันการ Walk-in
-* **ข้อมูลนำเข้า API (Request DTO):**
-  ```json
-  POST /reservations/walk-in
-  Header: Authorization: Bearer <FD_TOKEN>
-  {
-    "guestName": "นารี รุ่งเรือง",
-    "guestPhone": "0898765432",
-    "roomId": "room-uuid-102",
-    "checkInDate": "2026-10-01",
-    "checkOutDate": "2026-10-02",
-    "totalNights": "1",
-    "nightlyRate": "1000.00",
-    "bookingType": "walk_in",
-    "depositAmount": "500.00"
-  }
-  ```
-* **ผลลัพธ์ที่คาดหวัง (Expected Results):**
-  1. ได้รับ HTTP `201 Created`
-  2. รายการจองถูกสร้างและมีสถานะเป็น `checked_in` ทันที
-  3. สถานะห้อง 102 เปลี่ยนเป็น `occupied` ทันทีโดยไม่ต้องผ่านสถานะ `reserved`
-* **สถานะ:** ✅ Pass
+### `UAT-FD02` (Issue #13: UAT 9 & 10) : การสร้างการจองล่วงหน้า การแนบสลิปชำระเงิน และการป้องกันการจองซ้ำซ้อน (Double Booking Prevention)
+- **ผู้ทดสอบ:** เดียร์ (ธีรภัทร)
+- **บทบาทที่ใช้ทดสอบ:** `front_desk` (`frontdesk@keystay.com`)
+- **ความสำคัญ:** 🔴 Critical
+- **เงื่อนไขก่อนทดสอบ (Pre-conditions):** ห้อง `101` ว่างในช่วงวันที่ `2026-12-01` ถึง `2026-12-03`
+- **ขั้นตอนการทดสอบ (Test Steps):**
+  1. คลิกปุ่ม **"+ สร้างการจองใหม่"** กรอกข้อมูลผู้เข้าพัก เลือกช่องทางการจอง (`LINE` / `Agoda` / `Direct`) เลือกห้อง `101` วันที่เช็คอิน `2026-12-01` ถึง `2026-12-03` พร้อมแนบสลิปโอนเงินค่าห้องและค่ามัดจำ แล้วกดยืนยัน (`POST /api/reservations`)
+  2. ทดสอบสร้างการจองซ้ำอีกครั้งในห้อง `101` ช่วงวันที่คาบเกี่ยวกัน คือ `2026-12-02` ถึง `2026-12-04`
+- **ผลลัพธ์ที่คาดหวัง (Expected Result):**
+  1. **ในขั้นตอนที่ 1:** ระบบตอบกลับ `201 Created` พร้อมสร้างรหัสการจอง สถานะ `confirmed` และบันทึกสถานะการชำระเงินล่วงหน้า (`paymentStatus: "paid"`)
+  2. **ในขั้นตอนที่ 2:** ระบบ **ปฏิเสธการจองซ้ำทันที** ด้วยสถานะ `409 Conflict` (`ROOM_NOT_AVAILABLE`) ไม่เกิดข้อมูลการจองซ้อนทับในฐานข้อมูล `db_reservation`
+- **สถานะ:** ✅ **PASS**
 
 ---
 
-### UAT-FD07: การเรียกดูและใช้งานสมุดเบอร์ช่างฉุกเฉิน Outsource (Quick Emergency Contact Drawer)
-* **รหัสกรณีทดสอบ:** UAT-FD07
-* **ผู้ทดสอบ:** เดียร์ (ธีรภัทร)
-* **บทบาท:** Front Desk (`USR-FD`)
-* **วัตถุประสงค์:** ตรวจสอบว่าพนักงานต้อนรับสามารถเปิดแถบด่วน Quick Emergency Contact เพื่อดูเบอร์โทรช่างฉุกเฉิน 24 ชม. (แอร์, ประปา, ไฟฟ้า) และสามารถกดโทรออกหรือคัดลอกเบอร์โทรได้ทันทีเมื่อแขกร้องเรียนปัญหาห้องพักช่วงดึก
-* **เงื่อนไขเริ่มต้น (Preconditions):**
-  1. เข้าสู่ระบบด้วยบัญชี Front Desk สำเร็จ
-  2. มีข้อมูล Outsource ในฐานข้อมูล `db_housekeeping` ทั้งประเภทฉุกเฉิน (`is_emergency = 1`) และบริการทั่วไป
-* **ขั้นตอนการทดสอบ:**
-  1. เข้าสู่หน้า Front Desk Portal (`/front-desk/rooms`)
-  2. คลิกปุ่มด่วน "🚨 เบอร์ช่างฉุกเฉิน (Emergency Contact)" บนแถบ Header หรือ Matrix Action Bar
-  3. ตรวจสอบการเปิดขึ้นของ Slide-over Drawer รายชื่อช่างฉุกเฉิน
-  4. ทดสอบกดปุ่มตัวกรองหมวดหมู่ "แอร์ / ระบบปรับอากาศ (Air Conditioning)"
-  5. ทดสอบคลิกปุ่มโทรออก (`tel:...`) หรือคลิกปุ่ม "คัดลอกเบอร์ / LINE"
-* **ข้อมูลนำเข้า API:**
-  ```http
-  GET /housekeeping/outsource-contacts?is_emergency=1&is_active=1
-  Header: Authorization: Bearer <FD_TOKEN>
-  ```
-* **ผลลัพธ์ที่คาดหวัง (Expected Results):**
-  1. API Gateway ส่ง Request ไปยัง Housekeeping Service และตอบกลับ HTTP `200 OK`
-  2. รายชื่อช่างฉุกเฉินแสดงผลพร้อม Badge สีแดงระบุ "24 ชั่วโมง" คมชัด
-  3. แสดงข้อมูลสำคัญครบถ้วน: ชื่อร้าน/ช่าง, ประเภทงาน, เบอร์โทรหลัก, เบอร์สำรอง, และ LINE ID
-  4. ฟังก์ชัน Click-to-Call เชื่อมโยงกับโปรโตคอล `tel:` ถูกต้อง
-  5. พนักงานสามารถเปิดดูได้แบบ Read Only โดยไม่มีปุ่มเพิ่ม/ลบ/แก้ไขข้อมูล (ป้องกันการแก้ไขคลาดเคลื่อน)
-* **สถานะ:** ✅ Pass
+### `UAT-FD03` (Issue #13: UAT 11) : การทำรายการเช็คอิน (Check-in) จากใบจองล่วงหน้า
+- **ผู้ทดสอบ:** เดียร์ (ธีรภัทร)
+- **บทบาทที่ใช้ทดสอบ:** `front_desk` (`frontdesk@keystay.com`)
+- **ความสำคัญ:** 🔴 Critical
+- **เงื่อนไขก่อนทดสอบ (Pre-conditions):** มีใบจองสถานะ `confirmed` ที่ถึงกำหนดเช็คอินวันนี้
+- **ขั้นตอนการทดสอบ (Test Steps):**
+  1. ไปที่เมนู **เช็คอิน & เช็คเอาต์** แท็บ **รอเช็คอินวันนี้**
+  2. คลิกปุ่ม **"เช็คอิน"** บนรายการจอง ตรวจสอบการชำระเงินและเงินมัดจำกุญแจ (`depositAmount: 500`) แล้วกดยืนยัน (`POST /api/reservations/:id/check-in`)
+- **ผลลัพธ์ที่คาดหวัง (Expected Result):**
+  1. ระบบบันทึกข้อมูลแบบ Atomic Batch (`await db.batch()`) ทั้งตาราง `reservations` (`status = 'checked_in'`, `actual_check_in`), `reservation_history` และ `outbox_events` (`ReservationCheckedIn`)
+  2. สถานะห้องพักใน `room-inventory` เปลี่ยนเป็น `occupied` (มีแขกพัก) ทันที
+- **สถานะ:** ✅ **PASS**
 
 ---
 
-## กลุ่มที่ 2: Housekeeping Portal
-
-### UAT-HK01: การสร้างงานทำความสะอาดอัตโนมัติเมื่อเช็คเอาท์ (Auto Task Creation)
-* **รหัสกรณีทดสอบ:** UAT-HK01
-* **ผู้ทดสอบ:** บุญ (ปวริศ)
-* **บทบาท:** Housekeeping Lead (`USR-HK`)
-* **วัตถุประสงค์:** ยืนยันว่าเมื่อเกิด Event `ReservationCheckedOut` งานทำความสะอาดจะปรากฏในระบบแม่บ้านอัตโนมัติ
-* **เงื่อนไขเริ่มต้น (Preconditions):**
-  1. ทำการเช็คเอาท์ห้อง 201 จากกรณีทดสอบ UAT-FD05 สำเร็จ
-* **ขั้นตอนการทดสอบ:**
-  1. เข้าสู่หน้า Housekeeping Portal (`/housekeeping/tasks`)
-  2. ตรวจสอบคอลัมน์ "รอมอบหมาย (Pending)" บนบอร์ด Kanban
-* **ผลลัพธ์ที่คาดหวัง (Expected Results):**
-  1. พบการ์ดงานใหม่: "ทำความสะอาดห้อง 201 (Checkout Clean)"
-  2. ข้อมูลบนการ์ดระบุ: ชั้น 2, ประเภทห้อง Deluxe, ความสำคัญตามเงื่อนไข
-  3. ตรวจสอบข้อมูลในฐานข้อมูล `db_housekeeping` พบเรคคอร์ดในตาราง `tasks` สถานะ `pending`
-* **สถานะ:** ✅ Pass
+### `UAT-FD04` (Issue #13: UAT 11) : การป้องกันการกดเช็คอินซ้ำ หรือเช็คอินใบจองที่ถูกยกเลิกไปแล้ว
+- **ผู้ทดสอบ:** เดียร์ (ธีรภัทร)
+- **บทบาทที่ใช้ทดสอบ:** `front_desk` (`frontdesk@keystay.com`)
+- **ความสำคัญ:** 🟠 High
+- **เงื่อนไขก่อนทดสอบ (Pre-conditions):** ใบจองอยู่ในสถานะ `checked_in` หรือ `cancelled`
+- **ขั้นตอนการทดสอบ (Test Steps):**
+  1. ส่งคำสั่ง `POST /api/reservations/:id/check-in` ซ้ำอีกครั้งกับใบจองที่เช็คอินไปแล้ว
+- **ผลลัพธ์ที่คาดหวัง (Expected Result):**
+  1. ระบบปฏิเสธคำขอด้วย `400 Bad Request` (`Cannot check in a reservation with status 'checked_in'`)
+  2. เวลา `actual_check_in` เดิมไม่ถูกเขียนทับ และไม่เกิด Event ซ้ำซ้อน
+- **สถานะ:** ✅ **PASS**
 
 ---
 
-### UAT-HK02: การมอบหมายงานทำความสะอาดให้พนักงาน (Assign Task)
-* **รหัสกรณีทดสอบ:** UAT-HK02
-* **ผู้ทดสอบ:** บุญ (ปวริศ)
-* **บทบาท:** Housekeeping Lead (`USR-HK`)
-* **วัตถุประสงค์:** หัวหน้าแม่บ้านมอบหมายงานให้พนักงานแม่บ้านรายบุคคล
-* **เงื่อนไขเริ่มต้น (Preconditions):**
-  1. มี Task ทำความสะอาดห้อง 201 สถานะ `pending`
-  2. มีข้อมูลพนักงานแม่บ้าน "สมศรี ขยันยิ่ง" (`staff-uuid-001`) ในสถานะพร้อมรับงาน
-* **ขั้นตอนการทดสอบ:**
-  1. คลิกที่การ์ดงานห้อง 201
-  2. เลือกผู้รับผิดชอบ: "สมศรี ขยันยิ่ง"
-  3. กดยืนยันการมอบหมาย
-* **ข้อมูลนำเข้า API (Request DTO):**
-  ```json
-  PUT /housekeeping/tasks/task-uuid-201/assign
-  Header: Authorization: Bearer <HK_TOKEN>
-  {
-    "assignedTo": "staff-uuid-001",
-    "priority": "high",
-    "estimatedMinutes": "45"
-  }
-  ```
-* **ผลลัพธ์ที่คาดหวัง (Expected Results):**
-  1. ได้รับ HTTP `200 OK`
-  2. สถานะ Task เปลี่ยนเป็น `assigned`
-  3. ห้องพักเปลี่ยนสถานะเป็น `cleaning` (สีม่วง `#f3e8ff`)
-  4. การ์ดย้ายไปอยู่ในคอลัมน์ "กำลังดำเนินการ (In Progress)"
-* **สถานะ:** ✅ Pass
+### `UAT-FD05` (Issue #13: UAT 14–17) : การทำรายการเช็คเอาต์ (Check-out) และการกระจาย Event 1:4 อัตโนมัติ
+- **ผู้ทดสอบ:** เดียร์ (ธีรภัทร)
+- **บทบาทที่ใช้ทดสอบ:** `front_desk` (`frontdesk@keystay.com`)
+- **ความสำคัญ:** 🔴 Critical
+- **เงื่อนไขก่อนทดสอบ (Pre-conditions):** ห้องพักมีสถานะ `occupied` และใบจองมีสถานะ `checked_in`
+- **ขั้นตอนการทดสอบ (Test Steps):**
+  1. ไปที่เมนู **เช็คอิน & เช็คเอาต์** แท็บ **รอเช็คเอาต์ & คิดเงิน** (รองรับทั้งแท็บย่อย `รอเช็คเอาต์วันนี้` และ `เช็คเอาต์ก่อนกำหนด / ขยายเวลา`)
+  2. คลิกปุ่ม **"เช็คเอาต์ & คิดเงิน"** ตรวจสอบสรุปยอดค่าใช้จ่าย:
+     - กรณีไม่มีค่าใช้จ่ายเสริมค้างชำระ (ยอดค้างชำระสุทธิ `฿0.00` เนื่องจากจ่ายค่าห้องและมัดจำล่วงหน้าแล้ว): กดยืนยันเช็คเอาต์และคืนเงินมัดจำเต็มจำนวน
+     - กรณีมีค่าใช้จ่ายเสริมค้างชำระ (เช่น มินิบาร์ / เตียงเสริม / ขยายเวลาพัก): ระบบนำทางไปหน้าแคชเชียร์เพื่อรับชำระหรือหักมัดจำและปิดบิล
+- **ผลลัพธ์ที่คาดหวัง (Expected Result):**
+  1. `POST /api/reservations/:id/check-out` ตอบกลับ `200 OK` เปลี่ยนสถานะใบจองเป็น `checked_out`
+  2. กระจายสัญญาณ `ReservationCheckedOut` แบบ Fan-out 1:4 ไปยัง:
+     - **Room Inventory:** เปลี่ยนสถานะห้องเป็น `checked_out` (รอทำความสะอาด)
+     - **Housekeeping:** สร้างงานทำความสะอาดด่วน `checkout_clean` อัตโนมัติ
+     - **Billing:** สร้างหรืออัปเดตบิลของใบจอง โดยทำเครื่องหมายรายการค่าห้องตั้งต้นเป็น `isPaid = true` และหากไม่มีรายการค้างชำระเพิ่มเติม บิลจะถูกปิดเป็นสถานะ `paid` ทันที (ไม่ตกค้างเป็นสถานะ `รอชำระ`)
+     - **Report & Analytics:** บันทึก `audit_events` และอัปเดตสถิติรายวัน
+- **สถานะ:** ✅ **PASS**
 
 ---
 
-### UAT-HK03: การทำความสะอาดเสร็จสิ้นและคืนห้องพักพร้อมขาย (Complete Cleaning)
-* **รหัสกรณีทดสอบ:** UAT-HK03
-* **ผู้ทดสอบ:** บุญ (ปวริศ)
-* **บทบาท:** Housekeeping Staff (`USR-HK`)
-* **วัตถุประสงค์:** แม่บ้านบันทึกงานเสร็จสิ้น ส่ง Event ปรับสถานะห้องพักกลับเป็น `available`
-* **เงื่อนไขเริ่มต้น (Preconditions):**
-  1. Task ห้อง 201 อยู่ในสถานะ `in_progress` หรือ `assigned`
-  2. ห้องพักอยู่ในสถานะ `cleaning`
-* **ขั้นตอนการทดสอบ:**
-  1. แม่บ้านเข้าสู่ระบบ เลือกงานห้อง 201
-  2. กดปุ่ม "เสร็จสิ้นงานทำความสะอาด (Complete Task)"
-  3. กรอกผลการตรวจความเรียบร้อย: ผ่าน (Passed)
-* **ข้อมูลนำเข้า API (Request DTO):**
-  ```json
-  PUT /housekeeping/tasks/task-uuid-201/complete
-  Header: Authorization: Bearer <HK_TOKEN>
-  {
-    "completedAt": "2026-10-04T12:30:00Z",
-    "inspectionStatus": "passed",
-    "notes": "เปลี่ยนผ้าปูที่นอน เติมสบู่และน้ำดื่มครบถ้วน"
-  }
-  ```
-* **ผลลัพธ์ที่คาดหวัง (Expected Results):**
-  1. ได้รับ HTTP `200 OK`
-  2. Task ใน `db_housekeeping` เปลี่ยนสถานะเป็น `completed`
-  3. Event `HousekeepingTaskCompleted` ถูกบันทึกใน `outbox_events` และส่งเข้า **Upstash QStash Topic: `hotel.housekeeping.completed`**
-  4. QStash ส่ง Webhook ไปยัง `room-inventory` → ปรับสถานะห้อง 201 จาก `cleaning` กลับเป็น `available` (สีเขียว)
-  5. ห้อง 201 พร้อมสำหรับการจองใหม่ทันที
-* **สถานะ:** ✅ Pass
+### `UAT-FD06` (Issue #13: UAT 12 & 13) : การรับแขก Walk-in ในขั้นตอนเดียว และการขยายเวลาเข้าพัก (Stay Extension)
+- **ผู้ทดสอบ:** เดียร์ (ธีรภัทร)
+- **บทบาทที่ใช้ทดสอบ:** `front_desk` (`frontdesk@keystay.com`)
+- **ความสำคัญ:** 🟠 High
+- **เงื่อนไขก่อนทดสอบ (Pre-conditions):** มีห้องว่างพร้อมขาย (`available`) ในระบบ
+- **ขั้นตอนการทดสอบ (Test Steps):**
+  1. คลิกปุ่ม **"เปิดห้องด่วน (Walk-In)"** ระบบเลือกห้องว่างให้อัตโนมัติ กรอกชื่อและเบอร์โทรแขก แนบสลิปรับชำระเงินค่าห้องและค่ามัดจำ แล้วกดยืนยัน (`POST /api/walk-in`)
+  2. เมื่อแขกต้องการพักต่อ คลิกปุ่ม **"ขยายเวลาเข้าพัก"** เลือกวันที่เช็คเอาต์ใหม่ (`POST /api/reservations/:id/extend-stay`)
+- **ผลลัพธ์ที่คาดหวัง (Expected Result):**
+  1. การเปิดห้อง Walk-in สร้างข้อมูลแขก สร้างใบจองสถานะ `checked_in` และปรับสถานะห้องเป็น `occupied` ทันทีในขั้นตอนเดียว
+  2. เมื่อกดขยายเวลาเข้าพัก ระบบตรวจสอบว่าห้องไม่ชนกับคิวจองถัดไป อัปเดตวันเช็คเอาต์ใหม่ และสร้างรายการค่าห้องส่วนที่ขยายเวลาแยกเป็นรายการค้างชำระ (`itemType: 'extension'`, `isPaid: false`) บนหน้าแคชเชียร์โดยไม่กระทบค่าห้องตั้งต้นที่ชำระไปแล้ว
+- **สถานะ:** ✅ **PASS**
 
 ---
 
-### UAT-HK04: การแจ้งสิ่งของชำรุดและการปรับห้องเป็น Maintenance (Report Issue)
-* **รหัสกรณีทดสอบ:** UAT-HK04
-* **ผู้ทดสอบ:** บุญ (ปวริศ)
-* **บทบาท:** Housekeeping Staff (`USR-HK`)
-* **วัตถุประสงค์:** แม่บ้านตรวจพบสิ่งชำรุด แจ้งซ่อม และระบบปรับสถานะห้องเป็น `maintenance` เพื่อระงับการขาย
-* **เงื่อนไขเริ่มต้น (Preconditions):**
-  1. ห้อง 203 อยู่ในระหว่างทำความสะอาด
-* **ขั้นตอนการทดสอบ:**
-  1. กดปุ่ม "แจ้งชำรุด / ส่งซ่อม (Report Issue)" บนการ์ดห้อง 203
-  2. เลือกหมวดหมู่: ประปา/ห้องน้ำ
-  3. ระบุรายละเอียด: "ก๊อกน้ำอ่างล้างหน้ารั่วซึมมาก ไม่สามารถเปิดใช้งานได้"
-  4. เลือกระดับความรุนแรง: สูง (High)
-* **ข้อมูลนำเข้า API (Request DTO):**
-  ```json
-  POST /housekeeping/issues
-  Header: Authorization: Bearer <HK_TOKEN>
-  {
-    "roomId": "room-uuid-203",
-    "roomNumber": "203",
-    "issueCategory": "plumbing",
-    "severity": "high",
-    "description": "ก๊อกน้ำอ่างล้างหน้ารั่วซึมมาก ไม่สามารถเปิดใช้งานได้",
-    "reportedBy": "staff-uuid-001"
-  }
-  ```
-* **ผลลัพธ์ที่คาดหวัง (Expected Results):**
-  1. ได้รับ HTTP `201 Created` พร้อม `issueId`
-  2. สร้างรายการในตาราง `room_issues`
-  3. ส่ง Event ปรับสถานะห้อง 203 ใน `db_room` เป็น `maintenance` (สีส้ม `#ffedd5`)
-  4. เมื่อเจ้าหน้าที่ Front Desk พยายามจองห้อง 203 ระบบต้องแสดงว่าห้องนี้ไม่ว่าง
-* **สถานะ:** ✅ Pass
+### `UAT-FD07` (Issue #13: UAT 8) : การเปิดดูสมุดโทรศัพท์ช่างฉุกเฉิน 24 ชม. (Quick Emergency Outsource Drawer)
+- **ผู้ทดสอบ:** เดียร์ (ธีรภัทร)
+- **บทบาทที่ใช้ทดสอบ:** `front_desk` (`frontdesk@keystay.com`)
+- **ความสำคัญ:** 🟢 Medium
+- **เงื่อนไขก่อนทดสอบ (Pre-conditions):** มีข้อมูลคู่ค้าช่างซ่อมบำรุงในตาราง `outsource_contacts` ที่ตั้งค่า `is_emergency = 1`
+- **ขั้นตอนการทดสอบ (Test Steps):**
+  1. คลิกปุ่มสีแดง **"เบอร์ช่างฉุกเฉิน 24 ชม."** ที่มุมซ้ายล่างของแถบเมนูหน้า Front Desk
+  2. ระบบดึงข้อมูลผ่าน `GET /api/housekeeping/outsource-contacts?is_emergency=1`
+- **ผลลัพธ์ที่คาดหวัง (Expected Result):**
+  1. แสดงรายชื่อช่างฉุกเฉิน 24 ชม. (เช่น ช่างแอร์, ช่างประปา, ช่างไฟฟ้า, ช่างกุญแจ) พร้อมปุ่มคลิกโทรออกและ LINE ID
+  2. พนักงาน `front_desk` เปิดดูข้อมูลได้อย่างเดียว ไม่สามารถเพิ่ม แก้ไข หรือลบข้อมูลช่างได้
+- **สถานะ:** ✅ **PASS**
 
 ---
 
-### UAT-HK05: การเข้าถึงเบอร์ช่างเฉพาะทาง Outsource เพื่อประสานงานซ่อมบำรุงหน้างาน
-* **รหัสกรณีทดสอบ:** UAT-HK05
-* **ผู้ทดสอบ:** บุญ (ปวริศ)
-* **บทบาท:** Housekeeping Staff (`USR-HK`)
-* **วัตถุประสงค์:** ตรวจสอบว่าพนักงานแม่บ้านสามารถกดปุ่ม "Quick Contact (ดูเบอร์ช่าง)" บนอุปกรณ์พกพาเพื่อโทรสอบถามหรือนัดหมายช่างภายนอกเข้าซ่อมบำรุงควบคู่กับการเปิดใบงาน (Report Room Issue)
-* **เงื่อนไขเริ่มต้น (Preconditions):**
-  1. เข้าสู่ระบบด้วยบัญชี Housekeeping สำเร็จ
-  2. มีข้อมูลช่าง Outsource ประเภทซ่อมบำรุงและสุขภัณฑ์ในระบบ
-* **ขั้นตอนการทดสอบ:**
-  1. เข้าสู่หน้า Housekeeping Portal (`/housekeeping/tasks`)
-  2. กดปุ่ม "📞 ติดต่อช่างซ่อม (Vendor Contacts)" บนแถบเครื่องมือ
-  3. ตรวจสอบการแสดงผลรายชื่อช่างพร้อมป้ายกำกับประเภทงาน (ประปา, ไฟฟ้า, งานไม้, แอร์)
-  4. ทดสอบกดปุ่มโทรออกไปยังช่างเพื่อสอบถามการเข้าซ่อม
-* **ข้อมูลนำเข้า API:**
-  ```http
-  GET /housekeeping/outsource-contacts?category=plumbing&is_active=1
-  Header: Authorization: Bearer <HK_TOKEN>
-  ```
-* **ผลลัพธ์ที่คาดหวัง (Expected Results):**
-  1. API Gateway อนุญาตให้สิทธิ์ `housekeeping` เข้าถึงข้อมูลในรูปแบบ Read Only ได้รับ HTTP `200 OK`
-  2. แสดงเบอร์โทรและเวลาทำการของช่างชัดเจน
-  3. ไม่มีสิทธิ์เข้าถึงปุ่มแก้ไขหรือลบข้อมูลช่าง
-* **สถานะ:** ✅ Pass
+## 5. 🧹 หมวดที่ 2: งานแม่บ้านและดูแลห้องพัก (Housekeeping & Room Turnover)
+> **ผู้รับผิดชอบหลักและผู้ทดสอบ:** บุญ — ปวริศ (`@Legxcy77`, QA Lead)
 
 ---
 
-## กลุ่มที่ 3: Billing & Cashier (Front Desk Portal)
-
-### UAT-BL01: การสร้างบิลเรียกเก็บเงินอัตโนมัติจาก Check-out Event (Auto Bill Creation)
-* **รหัสกรณีทดสอบ:** UAT-BL01
-* **ผู้ทดสอบ:** เขต (เขตโสภณ)
-* **บทบาท:** Front Desk Cashier (`USR-FD`)
-* **วัตถุประสงค์:** ยืนยันว่า Event `ReservationCheckedOut` สร้างบิลพร้อมคำนวณค่าห้องและภาษี 7% ถูกต้อง
-* **เงื่อนไขเริ่มต้น (Preconditions):**
-  1. ทำการเช็คเอาท์การจองห้อง 201 (3 คืน, คืนละ 1,500 บาท) สำเร็จ
-* **ขั้นตอนการทดสอบ:**
-  1. เข้าสู่หน้า Front Desk & Cashier Portal (`/front-desk/bills`)
-  2. ค้นหาบิลของรายการจอง `BK-xxxxxx` หรือชื่อ "สมชาย ใจดี"
-  3. เปิดดูรายละเอียดบิล (Bill Detail)
-* **ผลลัพธ์ที่คาดหวัง (Expected Results):**
-  1. พบใบแจ้งหนี้ใหม่ สถานะ `pending`
-  2. มีรายการ `bill_items`:
-     * ค่าห้องพัก Deluxe Room (3 คืน x 1,500.00) = 4,500.00 บาท
-     * ภาษีมูลค่าเพิ่ม VAT 7% = 315.00 บาท
-     * ยอดรวมสุทธิ (Net Total) = 4,815.00 บาท
-  3. ตัวเลขคำนวณถูกต้องตามคณิตศาสตร์ทุกจุด
-* **สถานะ:** ✅ Pass
+### `UAT-HK01` (Issue #13: UAT 15) : งานทำความสะอาดเด้งเข้าคิวแม่บ้านอัตโนมัติหลังแขกเช็คเอาต์
+- **ผู้ทดสอบ:** บุญ (ปวริศ)
+- **บทบาทที่ใช้ทดสอบ:** `housekeeping` (`housekeeping@keystay.com`)
+- **ความสำคัญ:** 🔴 Critical
+- **เงื่อนไขก่อนทดสอบ (Pre-conditions):** แขกเพิ่งเช็คเอาต์ออกจากห้องพัก (`UAT-FD05`)
+- **ขั้นตอนการทดสอบ (Test Steps):**
+  1. เปิดหน้า `/housekeeping` ระบบดึงรายการงานผ่าน `GET /api/housekeeping/tasks` และ `GET /api/housekeeping/rooms-to-clean`
+- **ผลลัพธ์ที่คาดหวัง (Expected Result):**
+  1. พบการ์ดงานทำความสะอาดของห้องที่เพิ่งเช็คเอาต์ ประเภท `checkout_clean` สถานะ `pending` แสดงอยู่ในคิวงานทันที
+- **สถานะ:** ✅ **PASS**
 
 ---
 
-### UAT-BL02: การเพิ่มรายการค่าใช้จ่ายเสริม (Add Extra Charge)
-* **รหัสกรณีทดสอบ:** UAT-BL02
-* **ผู้ทดสอบ:** เขต (เขตโสภณ)
-* **บทบาท:** Front Desk Cashier (`USR-FD`)
-* **วัตถุประสงค์:** เพิ่มค่าใช้จ่ายเพิ่มเติม (มินิบาร์, ค่าอาหาร) และตรวจสอบการคำนวณยอดรวมใหม่
-* **เงื่อนไขเริ่มต้น (Preconditions):**
-  1. มีบิลของห้อง 201 สถานะ `pending` ยอดเดิม 4,815.00 บาท
-* **ขั้นตอนการทดสอบ:**
-  1. ในหน้าบิล กดปุ่ม "+ เพิ่มรายการค่าใช้จ่าย (Add Item)"
-  2. ระบุรายการ: "เครื่องดื่มมินิบาร์ (เบียร์ 2 กระป๋อง, ถั่ว 1 ซอง)"
-  3. ระบุจำนวนเงิน: 250.00 บาท
-  4. กดยืนยันการเพิ่มรายการ
-* **ข้อมูลนำเข้า API (Request DTO):**
-  ```json
-  POST /billing/bills/bill-uuid-201/items
-  Header: Authorization: Bearer <FD_TOKEN>
-  {
-    "itemName": "เครื่องดื่มมินิบาร์",
-    "category": "minibar",
-    "quantity": "1",
-    "unitPrice": "250.00",
-    "amount": "250.00"
-  }
-  ```
-* **ผลลัพธ์ที่คาดหวัง (Expected Results):**
-  1. ได้รับ HTTP `201 Created`
-  2. รายการใหม่ถูกบันทึกลงใน `bill_items`
-  3. ยอดรวมของบิลปรับเป็น:
-     * ค่าบริการรวม = 4,500 + 250 = 4,750.00 บาท
-     * ภาษี 7% = 332.50 บาท
-     * ยอดรวมสุทธิใหม่ = 5,082.50 บาท
-* **สถานะ:** ✅ Pass
+### `UAT-HK02` (Issue #13: UAT 21) : แม่บ้านกดรับงานทำความสะอาดและอัปเดตสถานะห้องเป็น `cleaning`
+- **ผู้ทดสอบ:** บุญ (ปวริศ)
+- **บทบาทที่ใช้ทดสอบ:** `housekeeping` (`housekeeping@keystay.com`)
+- **ความสำคัญ:** 🟠 High
+- **เงื่อนไขก่อนทดสอบ (Pre-conditions):** มีงานทำความสะอาดสถานะ `pending` ในคิว
+- **ขั้นตอนการทดสอบ (Test Steps):**
+  1. เลือกผู้รับผิดชอบและกดรับงาน (`PUT /api/housekeeping/tasks/:id/assign`)
+- **ผลลัพธ์ที่คาดหวัง (Expected Result):**
+  1. งานเปลี่ยนสถานะเป็น `assigned` / `in_progress` และสถานะห้องพักใน `room-inventory` เปลี่ยนเป็น `cleaning` (กำลังทำความสะอาด)
+- **สถานะ:** ✅ **PASS**
 
 ---
 
-### UAT-BL03: การรับชำระเงินและปิดบิล (Payment Processing)
-* **รหัสกรณีทดสอบ:** UAT-BL03
-* **ผู้ทดสอบ:** เขต (เขตโสภณ)
-* **บทบาท:** Front Desk Cashier (`USR-FD`)
-* **วัตถุประสงค์:** บันทึกการรับชำระเงินเต็มจำนวน เปลี่ยนสถานะบิลเป็น `paid`
-* **เงื่อนไขเริ่มต้น (Preconditions):**
-  1. บิลสถานะ `pending` มียอดค้างชำระ 5,082.50 บาท
-* **ขั้นตอนการทดสอบ:**
-  1. กดปุ่ม "ชำระเงิน (Pay Bill)"
-  2. เลือกวิธีการชำระเงิน: บัตรเครดิต (Credit Card)
-  3. ระบุเลขอ้างอิงสลิป: `TXN-987654321`
-  4. กดยืนยันการรับชำระ
-* **ข้อมูลนำเข้า API (Request DTO):**
-  ```json
-  POST /billing/bills/bill-uuid-201/payments
-  Header: Authorization: Bearer <FD_TOKEN>
-  {
-    "paymentMethod": "credit_card",
-    "amount": "5082.50",
-    "transactionReference": "TXN-987654321",
-    "receivedAt": "2026-10-04T12:00:00Z"
-  }
-  ```
-* **ผลลัพธ์ที่คาดหวัง (Expected Results):**
-  1. ได้รับ HTTP `200 OK`
-  2. สถานะบิลใน `db_billing` เปลี่ยนเป็น `paid`
-  3. ยอดคงค้าง (Outstanding Balance) เป็น `0.00`
-  4. Event `BillPaid` ถูกส่งเข้า **Upstash QStash Topic: `hotel.billing.paid`** → Webhook ไปยัง Report Service เพื่อบันทึกรายได้
-* **สถานะ:** ✅ Pass
+### `UAT-HK03` (Issue #13: UAT 21) : แม่บ้านแนบรูปถ่าย Before/After และกดปิดงาน -> ห้องเปลี่ยนเป็น `available` อัตโนมัติ
+- **ผู้ทดสอบ:** บุญ (ปวริศ)
+- **บทบาทที่ใช้ทดสอบ:** `housekeeping` (`housekeeping@keystay.com`)
+- **ความสำคัญ:** 🔴 Critical
+- **เงื่อนไขก่อนทดสอบ (Pre-conditions):** แม่บ้านทำความสะอาดห้องเสร็จเรียบร้อย
+- **ขั้นตอนการทดสอบ (Test Steps):**
+  1. แนบรูปถ่ายหลักฐานก่อนทำและหลังทำความสะอาด (`beforePhotos`, `afterPhotos`)
+  2. กดปุ่ม **"เสร็จสิ้นงาน"** (`PUT /api/housekeeping/tasks/:id/complete`)
+- **ผลลัพธ์ที่คาดหวัง (Expected Result):**
+  1. งานเปลี่ยนสถานะเป็น `completed` พร้อมบันทึกเวลา `completed_at` และรายการรูปถ่ายหลักฐาน
+  2. สถานะห้องพักใน `room-inventory` เปลี่ยนจาก `cleaning` กลับเป็น **`available` (ว่างพร้อมขาย)** ทันที ปิดวงรอบ Room Turnover สมบูรณ์
+- **สถานะ:** ✅ **PASS**
 
 ---
 
-### UAT-BL04: การออกใบเสร็จรับเงิน/ใบกำกับภาษี (Issue Receipt & Invoice)
-* **รหัสกรณีทดสอบ:** UAT-BL04
-* **ผู้ทดสอบ:** เขต (เขตโสภณ)
-* **บทบาท:** Front Desk Cashier (`USR-FD`)
-* **วัตถุประสงค์:** สร้างและแสดงผลใบเสร็จรับเงินฉบับสมบูรณ์สำหรับพิมพ์ให้แขก
-* **เงื่อนไขเริ่มต้น (Preconditions):**
-  1. บิลมีสถานะเป็น `paid`
-* **ขั้นตอนการทดสอบ:**
-  1. กดปุ่ม "พิมพ์ใบเสร็จรับเงิน (Print Receipt)"
-  2. ตรวจสอบหน้าต่างแสดงตัวอย่างเอกสาร (Invoice/Receipt Preview)
-* **ผลลัพธ์ที่คาดหวัง (Expected Results):**
-  1. ได้รับ HTTP `200 OK` พร้อมข้อมูลหัวบิลครบถ้วน
-  2. หน้าจอแสดงเลขที่ใบเสร็จ (e.g. `INV-202610-0042`), ข้อมูลโรงแรม, ชื่อแขก, รายการค่าใช้จ่าย, ภาษี 7%, ยอดชำระ และช่องลงนาม
-  3. รองรับการกด Print ผ่าน Browser Dialog
-* **สถานะ:** ✅ Pass
+### `UAT-HK04` : การรับเรื่องคำขอของใช้เสริมจากแขก (Extra Amenity Requests) และการแจ้งชำรุดพร้อมอัปโหลดรูปขึ้น R2
+- **ผู้ทดสอบ:** บุญ (ปวริศ) & เดียร์ (ธีรภัทร)
+- **บทบาทที่ใช้ทดสอบ:** `front_desk` และ `housekeeping`
+- **ความสำคัญ:** 🟠 High
+- **เงื่อนไขก่อนทดสอบ (Pre-conditions):** แขกที่เข้าพักขอของใช้เสริมผ่านเคาน์เตอร์ Front Desk หรือแม่บ้านพบอุปกรณ์ชำรุดในห้องพัก
+- **ขั้นตอนการทดสอบ (Test Steps):**
+  1. **ขอของใช้เสริม:** พนักงาน Front Desk กดปุ่ม **"ขอของใช้เสริม"** เลือกรายการจากแคตตาล็อก (`GET /api/v1/amenities` เช่น เตียงเสริม `฿300` หรือหมอนเสริมฟรี) แล้วส่งคำขอ (`POST /api/v1/housekeeping/amenity-requests`)
+  2. แม่บ้านตรวจสอบการ์ด **"คำขอของใช้เพิ่มเติม (Guest Requests)"** บนหน้า `/housekeeping` กด **"เตรียมของ"** (`preparing`) และเมื่อนำไปส่งถึงห้องแล้วกด **"ส่งมอบแล้ว ✓"** (`delivered` ผ่าน `PATCH /api/v1/housekeeping/amenity-requests/:id/status`)
+  3. **แจ้งชำรุด:** หากพบอุปกรณ์เสียหาย แม่บ้านกดแจ้งซ่อมพร้อมแนบรูปถ่าย (`POST /api/housekeeping/tasks/:id/report-issue`)
+- **ผลลัพธ์ที่คาดหวัง (Expected Result):**
+  1. คำขอของใช้เสริมแสดงบนหน้าจอแม่บ้านแบบเรียลไทม์และอัปเดตสถานะ `pending -> preparing -> delivered` ได้ครบถ้วน
+  2. การแจ้งซ่อมบันทึกข้อมูลลงตาราง `damage_reports` เก็บรูปถ่ายบน Cloudflare R2 และปรับสถานะห้องเป็น `maintenance` เพื่อล็อกไม่ให้เปิดขายห้องที่ชำรุด
+- **สถานะ:** ✅ **PASS**
 
 ---
 
-## กลุ่มที่ 4: Owner Portal & Executive Dashboard
-
-### UAT-MGR01: การแสดงผล Dashboard ผู้บริหารและสถิติ Real-time
-* **รหัสกรณีทดสอบ:** UAT-MGR01
-* **ผู้ทดสอบ:** บุญ (ปวริศ) / เขต (เขตโสภณ)
-* **บทบาท:** Owner (`USR-OWNER`)
-* **วัตถุประสงค์:** ตรวจสอบความถูกต้องของ KPI Dashboard (Occupancy Rate, รายได้รวม, จำนวนการจอง)
-* **เงื่อนไขเริ่มต้น (Preconditions):**
-  1. มีการทำรายการจอง เช็คอิน เช็คเอาท์ และชำระเงินในระบบแล้ว
-* **ขั้นตอนการทดสอบ:**
-  1. เข้าสู่ระบบด้วยบัญชีผู้จัดการ
-  2. เข้าหน้า Dashboard (`/dashboard`)
-  3. ตรวจสอบ Widget สถิติต่างๆ
-* **ผลลัพธ์ที่คาดหวัง (Expected Results):**
-  1. แสดงอัตราการเข้าพัก (Occupancy Rate %) ตรงกับสูตร: `(ห้อง occupied / ห้องทั้งหมด) * 100`
-  2. แสดงยอดรายได้รวมของวัน (Today's Revenue) ตรงกับยอดชำระเงินใน Billing Service
-  3. แสดงจำนวนห้องว่าง, ห้องรอทำความสะอาด, และห้องแจ้งซ่อม ถูกต้องแบบ Real-time
-* **สถานะ:** ✅ Pass
+### `UAT-HK05` (Issue #13: UAT 8) : แม่บ้านเปิดดูรายชื่อช่าง Outsource ฉุกเฉิน และทดสอบการบล็อกสิทธิ์แก้ไขข้อมูลช่าง
+- **ผู้ทดสอบ:** บุญ (ปวริศ)
+- **บทบาทที่ใช้ทดสอบ:** `housekeeping` (`housekeeping@keystay.com`)
+- **ความสำคัญ:** 🟠 High
+- **เงื่อนไขก่อนทดสอบ (Pre-conditions):** ล็อกอินด้วยบัญชี `housekeeping`
+- **ขั้นตอนการทดสอบ (Test Steps):**
+  1. เปิดดูรายชื่อช่างฉุกเฉินผ่าน `GET /api/housekeeping/outsource-contacts?is_emergency=1`
+  2. ทดสอบยิง API แก้ไขหรือลบข้อมูลช่างโดยตรงด้วย Token ของ `housekeeping` (`DELETE /api/housekeeping/outsource-contacts/out-001`)
+- **ผลลัพธ์ที่คาดหวัง (Expected Result):**
+  1. สามารถอ่านข้อมูลเบอร์โทรและ LINE ของช่างได้ (`200 OK`)
+  2. คำสั่งแก้ไขหรือลบถูกปฏิเสธด้วย **`403 Forbidden`** เนื่องจากอนุญาตเฉพาะบทบาท `owner` เท่านั้น
+- **สถานะ:** ✅ **PASS**
 
 ---
 
-### UAT-MGR02: การควบคุมสิทธิ์การเข้าถึงผ่านระบบ (RBAC Security Guard)
-* **รหัสกรณีทดสอบ:** UAT-MGR02
-* **ผู้ทดสอบ:** เขต (เขตโสภณ)
-* **บทบาท:** Housekeeping Staff (`USR-HK`)
-* **วัตถุประสงค์:** ยืนยันว่าพนักงานแม่บ้านไม่สามารถเข้าถึงหน้า Admin หรือเรียก API ส่วนจัดการผู้ใช้ได้
-* **เงื่อนไขเริ่มต้น (Preconditions):**
-  1. ล็อกอินด้วยบัญชีแม่บ้าน ได้รับ JWT Token ที่มี role: `housekeeping`
-* **ขั้นตอนการทดสอบ:**
-  1. พยายามเปิด URL หน้า Admin: `http://localhost:5173/admin/users`
-  2. พยายามยิง Request ตรงไปยัง API Gateway:
-     ```http
-     GET /users
-     Header: Authorization: Bearer <HK_TOKEN>
-     ```
-* **ผลลัพธ์ที่คาดหวัง (Expected Results):**
-  1. ฝั่ง UI: ระบบตรวจสอบ Role และ Redirect กลับไปยังหน้า `/housekeeping/tasks` พร้อม Toast แจ้ง "ไม่มีสิทธิ์เข้าถึงหน้านี้"
-  2. ฝั่ง API Gateway: Middleware `rbac.ts` ตรวจพบ Role ไม่ตรง ปฏิเสธด้วย HTTP `403 Forbidden`:
-     ```json
-     {
-       "success": "false",
-       "error": "FORBIDDEN",
-       "message": "Role 'housekeeping' does not have permission to access this resource"
-     }
-     ```
-* **สถานะ:** ✅ Pass
+## 6. 💰 หมวดที่ 3: งานแคชเชียร์ การเงิน และมินิบาร์ (Billing, Cashier & Amenities)
+> **ผู้รับผิดชอบหลักและผู้ทดสอบ:** เดียร์ — ธีรภัทร (`@allmusgus`, SA Lead)
 
 ---
 
-### UAT-MGR03: การส่งออกรายงานรายได้ประจำเดือนเป็น CSV (Export CSV)
-* **รหัสกรณีทดสอบ:** UAT-MGR03
-* **ผู้ทดสอบ:** บุญ (ปวริศ)
-* **บทบาท:** Owner (`USR-OWNER`)
-* **วัตถุประสงค์:** ดาวน์โหลดรายงานสรุปรายได้และสถิติในรูปแบบไฟล์ CSV
-* **เงื่อนไขเริ่มต้น (Preconditions):**
-  1. มีข้อมูลธุรกรรมใน `report-analytics` อย่างน้อย 1 เดือน
-* **ขั้นตอนการทดสอบ:**
-  1. เข้าเมนู "รายงาน (Reports)" เลือกช่วงเดือน ตุลาคม 2026
-  2. คลิกปุ่ม "ส่งออก CSV (Export CSV)"
-* **ผลลัพธ์ที่คาดหวัง (Expected Results):**
-  1. เบราว์เซอร์ดาวน์โหลดไฟล์ชื่อ `revenue-report-2026-10.csv`
-  2. ไฟล์เปิดได้ด้วย Microsoft Excel / Google Sheets โดยภาษาไทยไม่เป็นภาษาต่างดาว (UTF-8 BOM)
-  3. คอลัมน์ประกอบด้วย: วันที่, จำนวนเช็คอิน, จำนวนเช็คเอาท์, รายได้ค่าห้อง, รายได้เสริม, ภาษี, ยอดสุทธิ
-* **สถานะ:** ✅ Pass
+### `UAT-BL01` (Issue #13: UAT 18) : การแยกค่าห้องที่ชำระล่วงหน้าแล้ว ออกจากค่ามินิบาร์/ของใช้เสริม/ขยายเวลาพัก และการคำนวณ VAT 7% (Service Charge 0%)
+- **ผู้ทดสอบ:** เดียร์ (ธีรภัทร)
+- **บทบาทที่ใช้ทดสอบ:** `front_desk` (`frontdesk@keystay.com`)
+- **ความสำคัญ:** 🔴 Critical
+- **เงื่อนไขก่อนทดสอบ (Pre-conditions):** ห้องพักมีแขกเข้าพักอยู่ โดยชำระค่าห้องพักตั้งต้นและเงินมัดจำล่วงหน้าแล้ว
+- **ขั้นตอนการทดสอบ (Test Steps):**
+  1. เปิดหน้า **แคชเชียร์และบิล (Cashier & Folio)** เลือกห้องพักของแขก
+  2. คลิกปุ่ม **"+ เพิ่มค่าใช้จ่าย / มินิบาร์"** เพิ่มรายการมินิบาร์หรือบริการเสริม (`POST /api/bills/:id/items`) เช่น น้ำแร่/เครื่องดื่ม หรือเตียงเสริม (`฿300.00`)
+  3. ตรวจสอบตารางรายการค่าใช้จ่ายและการคำนวณยอดรวมในบิล
+- **ผลลัพธ์ที่คาดหวัง (Expected Result):**
+  1. รายการค่าห้องพักตั้งต้นแสดงป้ายกำกับ **`ชำระแล้ว` (`isPaid: true`)** และถูกล็อกไม่ให้ลบ
+  2. รายการมินิบาร์ ของใช้เสริมแบบมีค่าใช้จ่าย หรือค่าขยายเวลาเข้าพัก แสดงป้ายกำกับ **`ค้างชำระ` (`isPaid: false`)**
+  3. ระบบคำนวณเฉพาะยอดค้างชำระใหม่ บวก **ภาษีมูลค่าเพิ่ม (VAT 7%)** โดย **ไม่มีค่าบริการ (Service Charge 0%)** ได้อย่างแม่นยำทศนิยม 2 ตำแหน่ง
+- **สถานะ:** ✅ **PASS**
 
 ---
 
-### UAT-MGR04: การส่งออกรายงานสรุปเป็น PDF (Export PDF)
-* **รหัสกรณีทดสอบ:** UAT-MGR04
-* **ผู้ทดสอบ:** บุญ (ปวริศ)
-* **บทบาท:** Owner (`USR-OWNER`)
-* **วัตถุประสงค์:** ดาวน์โหลดรายงานผลการดำเนินงานและสถิติแม่บ้านในรูปแบบ PDF
-* **เงื่อนไขเริ่มต้น (Preconditions):**
-  1. มีข้อมูลงานแม่บ้านและสถิติห้องพัก
-* **ขั้นตอนการทดสอบ:**
-  1. เข้าหน้าสรุปผลการปฏิบัติงาน เลือก "ส่งออกสรุป PDF (Export Executive Summary)"
-* **ผลลัพธ์ที่คาดหวัง (Expected Results):**
-  1. เบราว์เซอร์ดาวน์โหลดไฟล์ PDF รูปแบบเรียบร้อย
-  2. ประกอบด้วยกราฟสรุป Occupancy Rate, ตารางคะแนนประสิทธิภาพแม่บ้าน, และโลโก้โรงแรม
-* **สถานะ:** ✅ Pass
+### `UAT-BL02` (Issue #13: UAT 19 & 20) : การชำระเงินปิดบิล การหักลบ/คืนเงินมัดจำอัตโนมัติ และการป้องกันบิลค้างสถานะรอชำระหลังเช็คเอาต์
+- **ผู้ทดสอบ:** เดียร์ (ธีรภัทร)
+- **บทบาทที่ใช้ทดสอบ:** `front_desk` (`frontdesk@keystay.com`)
+- **ความสำคัญ:** 🔴 Critical
+- **เงื่อนไขก่อนทดสอบ (Pre-conditions):** แขกเช็คเอาต์และมีบิลที่ต้องการเคลียร์ยอดที่หน้าแคชเชียร์
+- **ขั้นตอนการทดสอบ (Test Steps):**
+  1. ตรวจสอบการหักลบเงินมัดจำประกันห้องพัก (`depositAmount`) กับยอดค่าใช้จ่ายเสริมค้างชำระ:
+     - **กรณีที่ 1 (เงินมัดจำมากกว่าค่าใช้จ่ายเสริม):** เช่น มัดจำ `฿500.00` มีค่ามินิบาร์รวม VAT `฿321.00` -> ระบบแสดงยอดหักมัดจำอัตโนมัติ แขกไม่ต้องจ่ายเพิ่ม (`ยอดสุทธิที่ต้องชำระเพิ่ม = ฿0.00`) และแสดง **ยอดเงินมัดจำที่ต้องคืนแขก `฿179.00`**
+     - **กรณีที่ 2 (ค่าใช้จ่ายเสริมมากกว่าเงินมัดจำ):** ระบบนำเงินมัดจำมาหักลดยอด และแสดงเฉพาะส่วนต่างที่ต้องเก็บเพิ่มจากแขก
+  2. เลือกช่องทางชำระเงิน (`เงินสด`, `โอนเงิน QR / แนบสลิป`, `บัตรเครดิต`) แล้วกดปุ่มยืนยันปิดบิล (`POST /api/bills/:id/pay` พร้อม `settleInFull: true`)
+- **ผลลัพธ์ที่คาดหวัง (Expected Result):**
+  1. สถานะบิลเปลี่ยนเป็น **`paid` (ชำระแล้ว)** ทันที ยอดค้างชำระ (`amountDue`) เป็น `0.00`
+  2. รายการค่าใช้จ่ายทุกบรรทัดในบิลถูกปรับสถานะเป็น `isPaid = true`
+  3. บิลที่ปิดแล้วและใบจองที่เช็คเอาต์แล้ว **ถูกล็อกไม่ให้กดเพิ่มค่าใช้จ่ายหรือมินิบาร์ย้อนหลังได้อีก** และย้ายไปแสดงในแท็บ **ชำระแล้ว / ประวัติบิลและการชำระ** อย่างถูกต้อง
+- **สถานะ:** ✅ **PASS**
 
 ---
 
-### UAT-MGR05: การจัดการข้อมูลคู่ค้าและช่าง Outsource (Full CRUD & Status Deactivation)
-* **รหัสกรณีทดสอบ:** UAT-MGR05
-* **ผู้ทดสอบ:** เขต (เขตโสภณ)
-* **บทบาท:** Owner (`USR-OWNER`)
-* **วัตถุประสงค์:** ทดสอบว่าผู้ดูแลระบบ (Admin) มีสิทธิ์ Full CRUD ในการเพิ่ม, แก้ไข, ลบ/ระงับการใช้งาน (`is_active = 0`) ข้อมูล Outsource ผ่าน Admin Portal เพื่อควบคุมความถูกต้องของ Master Data
-* **เงื่อนไขเริ่มต้น (Preconditions):**
-  1. เข้าสู่ระบบด้วยบัญชี Admin (`USR-ADMIN`) สำเร็จ
-* **ขั้นตอนการทดสอบ:**
-  1. เข้าสู่หน้า Admin Portal เมนู "คู่ค้า & ช่างภายนอก (`/admin/outsource`)"
-  2. คลิกปุ่ม "+ เพิ่มคู่ค้า Outsource (Add Vendor)"
-  3. กรอกข้อมูลช่าง: ชื่อ "บจก. สยามแอร์เซอร์วิส", หมวดหมู่ `air_conditioning`, บริการ "ซ่อม/ล้างแอร์ห้องพัก", เบอร์โทร `"0899998888"`, ติ๊กถูกเบอร์ฉุกเฉิน 24 ชม.
-  4. กดยืนยันบันทึกข้อมูล
-  5. ทดสอบแก้ไขเบอร์โทรศัพท์เป็น `"0899997777"`
-  6. ทดสอบคลิกปุ่ม "ระงับการใช้งาน (Deactivate)" เพื่อเปลี่ยนสถานะเป็น `is_active = 0`
-* **ข้อมูลนำเข้า API:**
-  ```http
-  POST /housekeeping/outsource-contacts
-  Header: Authorization: Bearer <ADMIN_TOKEN>
-  {
-    "name": "บจก. สยามแอร์เซอร์วิส",
-    "category": "air_conditioning",
-    "serviceType": "ซ่อม/ล้างแอร์ห้องพัก",
-    "phonePrimary": "0899998888",
-    "isEmergency": "1",
-    "availableHours": "24 ชั่วโมง",
-    "isActive": "1"
-  }
-  ```
-* **ผลลัพธ์ที่คาดหวัง (Expected Results):**
-  1. ได้รับ HTTP `201 Created` บันทึกลงตาราง `outsource_contacts` ใน `db_housekeeping`
-  2. เมื่อแก้ไขข้อมูล ระบบตอบกลับ HTTP `200 OK` ข้อมูลอัปเดตทันที
-  3. เมื่อสั่งระงับการใช้งาน ระบบทำการ Soft Delete (`is_active = 0`) ทำให้ช่างเจ้านี้ไม่ปรากฏใน Drawer ของ Front Desk หรือ Housekeeping อีกต่อไป เพื่อป้องกันข้อมูลผิดพลาด
-  4. หากล็อกอินด้วยสิทธิ์ Manager พยายามยิง POST/PUT/DELETE ระบบต้องปฏิเสธด้วย HTTP `403 Forbidden`
-* **สถานะ:** ✅ Pass
+### `UAT-BL03` : การป้องกันการรับชำระเงินซ้ำ หรือการเพิ่มรายการค่าใช้จ่ายลงในบิลที่ปิดไปแล้ว
+- **ผู้ทดสอบ:** เดียร์ (ธีรภัทร)
+- **บทบาทที่ใช้ทดสอบ:** `front_desk` (`frontdesk@keystay.com`)
+- **ความสำคัญ:** 🟠 High
+- **เงื่อนไขก่อนทดสอบ (Pre-conditions):** บิลอยู่ในสถานะ `paid` หรือ `void`
+- **ขั้นตอนการทดสอบ (Test Steps):**
+  1. ทดสอบส่งคำสั่ง `POST /api/bills/:id/pay` ซ้ำในบิลที่สถานะ `paid`
+  2. ทดสอบส่งคำสั่ง `POST /api/bills/:id/items` เพื่อเพิ่มค่ามินิบาร์ลงในบิลที่สถานะ `paid`
+- **ผลลัพธ์ที่คาดหวัง (Expected Result):**
+  1. ระบบปฏิเสธทั้งสองคำขอด้วย `400 Bad Request` (`Cannot pay a bill with status 'paid'` และ `Cannot add items to a paid bill`)
+  2. บนหน้า UI ปุ่ม **"+ เพิ่มค่าใช้จ่าย / มินิบาร์"** และ **"ขอของใช้เสริม"** จะถูกซ่อนทันทีเมื่อบิลชำระแล้วหรือแขกเช็คเอาต์แล้ว
+- **สถานะ:** ✅ **PASS**
 
 ---
 
-## กลุ่มที่ 5: การทดสอบ Asynchronous Event Fan-out 1:4
-
-### UAT-INT01: การตรวจสอบความคงอยู่ของ Outbox Event เมื่อเกิด Network Failure
-* **รหัสกรณีทดสอบ:** UAT-INT01
-* **ผู้ทดสอบ:** เขต (เขตโสภณ)
-* **บทบาท:** Developer / QA
-* **วัตถุประสงค์:** ตรวจสอบว่าหาก **Upstash QStash** ไม่สามารถส่ง Webhook ได้ ข้อมูลใน Outbox Table จะไม่สูญหาย และ QStash จะ Retry แบบ Exponential Backoff อัตโนมัติ
-* **ขั้นตอนการทดสอบ:**
-  1. จำลองสถานการณ์ปิด Webhook Endpoint ของ Room Inventory ชั่วคราว (return HTTP 500)
-  2. สั่งเช็คเอาท์ห้องพักผ่าน API
-  3. ตรวจสอบตาราง `outbox_events` ใน `db_reservation` และ QStash Dashboard
-* **ผลลัพธ์ที่คาดหวัง (Expected Results):**
-  1. การอัปเดตสถานะใน `db_reservation` สำเร็จ (db.batch() atomic)
-  2. ตาราง `outbox_events` มีเรคคอร์ดสถานะ `pending`
-  3. QStash พยายาม Retry Webhook ไปยัง Room Inventory (Exponential Backoff) และ `retry_count` เพิ่มขึ้น
-  4. เมื่อ Webhook Endpoint กลับมาทำงาน QStash ส่ง Webhook สำเร็จ และสถานะ outbox เปลี่ยนเป็น `published`
-* **สถานะ:** ✅ Pass
+### `UAT-BL04` (Issue #13: UAT 20) : การออกใบเสร็จรับเงิน/ใบกำกับภาษี (80mm Thermal Slip & A4 Tax Invoice) และการตรวจสอบสลิปโอนเงิน
+- **ผู้ทดสอบ:** เดียร์ (ธีรภัทร)
+- **บทบาทที่ใช้ทดสอบ:** `front_desk` (`frontdesk@keystay.com`)
+- **ความสำคัญ:** 🟢 Medium
+- **เงื่อนไขก่อนทดสอบ (Pre-conditions):** บิลชำระเงินเรียบร้อยแล้ว (`status = 'paid'`)
+- **ขั้นตอนการทดสอบ (Test Steps):**
+  1. คลิกปุ่ม **"พิมพ์ใบเสร็จ/ใบกำกับภาษี"** หรือ **"พิมพ์สลิป (80mm)"** (`GET /api/bills/:id/receipt`)
+  2. ทดสอบสลับรูปแบบการพิมพ์ระหว่าง **สลิปความร้อน 80mm (Thermal Receipt)** และ **ใบเสร็จรับเงิน/ใบกำกับภาษีขนาด A4**
+  3. คลิกดูหลักฐานสลิปโอนเงินที่แนบไว้ในรายการชำระเงิน
+- **ผลลัพธ์ที่คาดหวัง (Expected Result):**
+  1. แสดงข้อมูลใบเสร็จครบถ้วน: เลขที่ใบเสร็จ, เลขที่บิล, ชื่อแขก, ห้องพัก, รายการค่าใช้จ่าย, ยอดก่อนภาษี, ภาษีมูลค่าเพิ่ม 7% (`taxRate: "7%"`), เงินมัดจำที่หัก/คืน และยอดชำระสุทธิ
+  2. รองรับการสั่งพิมพ์หน้ากระดาษทั้งขนาดสลิป 80mm และ A4 ได้ทันทีโดยไม่ติดแถบเมนูของเว็บแอป
+- **สถานะ:** ✅ **PASS**
 
 ---
 
-### UAT-INT02: การทดสอบ Idempotency ของ Consumer (ป้องกัน Event ซ้ำ)
-* **รหัสกรณีทดสอบ:** UAT-INT02
-* **ผู้ทดสอบ:** เขต (เขตโสภณ), บุญ (ปวริศ)
-* **บทบาท:** Developer / QA
-* **วัตถุประสงค์:** ตรวจสอบว่าหาก Queue ส่ง Event ซ้ำ (At-least-once delivery) ระบบปลายทางจะไม่สร้างข้อมูลซ้ำ
-* **ขั้นตอนการทดสอบ:**
-  1. ส่ง Event `ReservationCheckedOut` รายการเดิมที่มี `upstash-message-id` เดียวกันไปยัง Webhook Endpoint ของ Housekeeping และ Billing สองครั้งติดต่อกัน (จำลอง QStash At-Least-Once retry)
-  2. ตรวจสอบตาราง `tasks` ใน `db_housekeeping` และตาราง `bills` ใน `db_billing`
-* **ผลลัพธ์ที่คาดหวัง (Expected Results):**
-  1. Housekeeping สร้าง Task เพียง 1 งานเท่านั้น
-  2. Billing สร้าง Bill เพียง 1 ใบเท่านั้น
-  3. มีบันทึกใน `event_log` ว่า Webhook ที่สองถูกข้ามเนื่องจาก `upstash-message-id` เคยประมวลผลแล้ว (`processed: true`)
-* **สถานะ:** ✅ Pass
+## 7. 📊 หมวดที่ 4: งานเจ้าของกิจการ รายงาน และความปลอดภัย (Owner, Analytics & RBAC)
+> **ผู้รับผิดชอบหลักและผู้ทดสอบ:** เขต — เขตโสภณ (`@hazeco`, Project Lead) & บุญ — ปวริศ (`@Legxcy77`, QA Lead)
 
 ---
 
-### UAT-INT03: การทดสอบ Dead-Letter Queue (DLQ) เมื่อเกิดข้อผิดพลาดถาวร
-* **รหัสกรณีทดสอบ:** UAT-INT03
-* **ผู้ทดสอบ:** เขต (เขตโสภณ)
-* **บทบาท:** Developer / QA
-* **วัตถุประสงค์:** ตรวจสอบว่า Webhook ที่ประมวลผลล้มเหลวเกิน 3 ครั้งจะถูกส่งเข้า **Upstash QStash DLQ** เพื่อตรวจสอบ
-* **ขั้นตอนการทดสอบ:**
-  1. ส่ง Payload ที่มีโครงสร้างผิดพลาด (fail Zod validation) เข้าสู่ Webhook Endpoint โดยตรง
-  2. ให้ QStash พยายาม Retry Webhook ครบ 3 ครั้ง (ทุกครั้งได้ HTTP 500 กลับมา)
-* **ผลลัพธ์ที่คาดหวัง (Expected Results):**
-  1. Message ถูกเคลื่อนย้ายเข้าสู่ **Upstash QStash DLQ** อัตโนมัติ
-  2. ระบบไม่เกิด Crash หรือบล็อก Webhook อื่นที่รอส่งอยู่
-  3. สามารถตรวจสอบ Failed Message และ Error Log ได้ใน **Upstash Console**
-* **สถานะ:** ✅ Pass
+### `UAT-MGR01` : การตรวจสอบ Dashboard รายได้และอัตราการเข้าพัก (Occupancy Rate, ADR, RevPAR)
+- **ผู้ทดสอบ:** เขต (เขตโสภณ)
+- **บทบาทที่ใช้ทดสอบ:** `owner` (`owner@keystay.com`)
+- **ความสำคัญ:** 🟠 High
+- **เงื่อนไขก่อนทดสอบ (Pre-conditions):** มีข้อมูลการเข้าพักและบิลที่ชำระเงินแล้วในระบบ
+- **ขั้นตอนการทดสอบ (Test Steps):**
+  1. ล็อกอินด้วย `owner@keystay.com` เข้าสู่หน้า `/admin`
+  2. ตรวจสอบข้อมูลจาก `GET /api/reports/dashboard`, `GET /api/reports/revenue` และ `GET /api/reports/occupancy`
+- **ผลลัพธ์ที่คาดหวัง (Expected Result):**
+  1. แสดงตัวเลข KPI สำคัญครบถ้วน ได้แก่ รายได้รวม, อัตราการเข้าพัก (`Occupancy Rate`), ราคาเฉลี่ยต่อห้อง (`ADR`), และรายได้เฉลี่ยต่อห้องที่มีทั้งหมด (`RevPAR`) สอดคล้องกับข้อมูลใน `db_report`
+- **สถานะ:** ✅ **PASS**
 
 ---
 
-## 8. แบบฟอร์มบันทึกสรุปผลและรายงานข้อผิดพลาด
+### `UAT-MGR02` (Issue #13: UAT 1–4) : การทดสอบการกั้นสิทธิ์ RBAC ทั้ง 3 บทบาท (`owner`, `front_desk`, `housekeeping`)
+- **ผู้ทดสอบ:** เขต (เขตโสภณ)
+- **บทบาทที่ใช้ทดสอบ:** `housekeeping`, `front_desk`, `owner`
+- **ความสำคัญ:** 🔴 Critical
+- **เงื่อนไขก่อนทดสอบ (Pre-conditions):** มี Token ของทั้ง 3 บทบาท
+- **ขั้นตอนการทดสอบ (Test Steps):**
+  1. ใช้ Token ของ `housekeeping` เรียก `GET /api/reports/revenue` และ `GET /api/bills`
+  2. ใช้ Token ของ `front_desk` เรียก `GET /api/reports/revenue` และ `DELETE /api/users/usr-hk-004`
+  3. ใช้ Token ที่ถูกสั่ง Logout (Revoked JTI ใน KV) เรียก `GET /api/rooms`
+- **ผลลัพธ์ที่คาดหวัง (Expected Result):**
+  1. `housekeeping` ถูกบล็อกด้วย `403 Forbidden` เมื่อพยายามเข้าถึงรายงานการเงินหรือบิล
+  2. `front_desk` ถูกบล็อกด้วย `403 Forbidden` เมื่อพยายามดูรายงานผู้บริหารหรือลบบัญชีผู้ใช้
+  3. Token ที่ถูก Revoke ใน KV ถูกปฏิเสธด้วย `401 Unauthorized` (`TOKEN_REVOKED`) ทันทีที่ API Gateway
+- **สถานะ:** ✅ **PASS**
 
-### ตารางสรุปผลการทดสอบ (UAT Execution Summary)
+---
 
-| กลุ่มงาน | จำนวนกรณีทดสอบ | ผ่าน (Pass) | ไม่ผ่าน (Fail) | รอทดสอบซ้ำ (Retest) | อัตราความสำเร็จ (%) |
-|---|---|---|---|---|---|
-| **Front Desk Portal** | 7 | 7 | 0 | 0 | 100% |
-| **Housekeeping Portal** | 5 | 5 | 0 | 0 | 100% |
-| **Billing & Cashier Portal** | 4 | 4 | 0 | 0 | 100% |
-| **Owner Portal** | 5 | 5 | 0 | 0 | 100% |
-| **Event Fan-out 1:4 & DLQ** | 3 | 3 | 0 | 0 | 100% |
-| **รวมทั้งหมด** | **24** | **24** | **0** | **0** | **100%** |
+### `UAT-MGR03` : การปรับราคาห้องพักตามฤดูกาล (Seasonal Pricing Rules) และการจัดการแคตตาล็อกของใช้เสริม
+- **ผู้ทดสอบ:** บุญ (ปวริศ) & เขต (เขตโสภณ)
+- **บทบาทที่ใช้ทดสอบ:** `owner` (`owner@keystay.com`)
+- **ความสำคัญ:** 🟢 Medium
+- **เงื่อนไขก่อนทดสอบ (Pre-conditions):** ล็อกอินด้วยบัญชี `owner`
+- **ขั้นตอนการทดสอบ (Test Steps):**
+  1. ทดสอบจัดการกฎราคาตามฤดูกาลผ่าน `/api/v1/pricing/rules` และคำนวณราคาห้องพักผ่าน `/api/v1/pricing/calculate-rate`
+  2. ทดสอบจัดการรายการของใช้เสริมผ่าน `/api/v1/amenities`
+- **ผลลัพธ์ที่คาดหวัง (Expected Result):**
+  1. สามารถสร้าง/แก้ไขกฎราคาช่วงเทศกาลหรือวันหยุดสุดสัปดาห์ และดึงราคาไปใช้ตอนสร้างใบจองใหม่ได้ถูกต้อง
+  2. รายการของใช้เสริมที่อัปเดตไปแสดงใน Modal **"ขอของใช้เสริม"** ที่หน้า Front Desk ทันที
+- **สถานะ:** ✅ **PASS**
 
-### ลายมือชื่อผู้รับรองผลการทดสอบ
-* **ผู้จัดการโครงการ (Project Lead / Admin):** เขต (เขตโสภณ) ____________________ วันที่: 19/09/2026
-* **หัวหน้าฝ่ายประกันคุณภาพ (QA Lead):** เดียร์ (ธีรภัทร) ____________________ วันที่: 19/09/2026
-* **หัวหน้าฝ่ายสถาปัตยกรรมระบบ (SA Lead):** บุญ (ปวริศ) ____________________ วันที่: 19/09/2026
+---
+
+### `UAT-MGR04` : เจ้าของกิจการ (`owner`) เพิ่มและแก้ไขข้อมูลช่าง Outsource ในระบบ
+- **ผู้ทดสอบ:** บุญ (ปวริศ)
+- **บทบาทที่ใช้ทดสอบ:** `owner` (`owner@keystay.com`)
+- **ความสำคัญ:** 🟠 High
+- **เงื่อนไขก่อนทดสอบ (Pre-conditions):** ล็อกอินด้วยบัญชี `owner`
+- **ขั้นตอนการทดสอบ (Test Steps):**
+  1. ส่งคำสั่ง `POST /api/housekeeping/outsource-contacts` เพื่อเพิ่มข้อมูลคู่ค้าช่างซ่อมบำรุงรายใหม่พร้อมตั้งค่า `isEmergency: true`
+- **ผลลัพธ์ที่คาดหวัง (Expected Result):**
+  1. ระบบตอบกลับ `201 Created` บันทึกลงตาราง `outsource_contacts` สำเร็จ และปรากฏใน Drawer เบอร์ช่างฉุกเฉิน 24 ชม. ของหน้า Front Desk และ Housekeeping ทันที
+- **สถานะ:** ✅ **PASS**
+
+---
+
+### `UAT-MGR05` (Issue #13: UAT 4) : การจัดการบัญชีผู้ใช้งานและการเปลี่ยนบทบาทพนักงานโดย `owner`
+- **ผู้ทดสอบ:** เขต (เขตโสภณ)
+- **บทบาทที่ใช้ทดสอบ:** `owner` (`owner@keystay.com`)
+- **ความสำคัญ:** 🟠 High
+- **เงื่อนไขก่อนทดสอบ (Pre-conditions):** ล็อกอินด้วยบัญชี `owner`
+- **ขั้นตอนการทดสอบ (Test Steps):**
+  1. เรียกดูรายชื่อผู้ใช้ทั้งหมด (`GET /api/users`)
+  2. ทดสอบเปลี่ยนบทบาทของพนักงาน (`PATCH /api/users/:id/role`) และทดสอบป้องกันไม่ให้ผู้ใช้เปลี่ยนบทบาทของตนเอง
+- **ผลลัพธ์ที่คาดหวัง (Expected Result):**
+  1. `owner` สามารถเปลี่ยนบทบาทของพนักงานคนอื่นระหว่าง `owner`, `front_desk`, `housekeeping` ได้ (`200 OK`)
+  2. หากพยายามแก้ไขบทบาทของบัญชีตัวเอง ระบบจะป้องกันและตอบกลับ `403 Forbidden` เพื่อป้องกันการเผลอลดสิทธิ์เจ้าของระบบตัวเอง
+- **สถานะ:** ✅ **PASS**
+
+---
+
+## 8. ⚡ หมวดที่ 5: การเชื่อมโยง Event Fan-out, Idempotency และความทนทานต่อข้อผิดพลาด
+> **ผู้รับผิดชอบหลักและผู้ทดสอบ:** เขต — เขตโสภณ (`@hazeco`), เดียร์ — ธีรภัทร (`@allmusgus`), บุญ — ปวริศ (`@Legxcy77`)
+
+---
+
+### `UAT-INT01` (Issue #13: Section 1.4 & Section 2) : การทดสอบ Event Fan-out 1:4 และการบันทึก `outbox_events` แบบ Atomic
+- **ผู้ทดสอบ:** เขต, เดียร์, บุญ
+- **ความสำคัญ:** 🔴 Critical
+- **ขั้นตอนการทดสอบ (Test Steps):**
+  1. ทำการเช็คเอาต์ใบจอง (`POST /api/reservations/:id/check-out`)
+  2. ตรวจสอบตาราง `outbox_events` ใน `db_reservation` และผลลัพธ์ใน 4 บริการปลายทาง (`room-inventory`, `housekeeping`, `billing`, `report-analytics`)
+- **ผลลัพธ์ที่คาดหวัง (Expected Result):**
+  1. มีเรคคอร์ด `eventType = 'ReservationCheckedOut'` ถูกบันทึกใน `outbox_events` พร้อมสถานะการเปลี่ยน `reservations.status = 'checked_out'` ใน Atomic Batch เดียวกัน
+  2. บริการปลายทางทั้ง 4 ตัวได้รับ Webhook และอัปเดตฐานข้อมูลของตนเองครบถ้วน 100%
+- **สถานะ:** ✅ **PASS**
+
+---
+
+### `UAT-INT02` (Issue #13: Section 2.1) : การทดสอบส่ง Webhook ซ้ำซ้อน (Idempotency Key Verification)
+- **ผู้ทดสอบ:** เดียร์ (ธีรภัทร) & เขต (เขตโสภณ)
+- **ความสำคัญ:** 🔴 Critical
+- **ขั้นตอนการทดสอบ (Test Steps):**
+  1. จำลองสถานการณ์ที่ Upstash QStash ส่ง Webhook `POST /webhooks/checkout` ซ้ำ 2 ครั้งด้วย `upstash-message-id` และ `reservationId` เดียวกันไปยัง `billing` และ `housekeeping`
+- **ผลลัพธ์ที่คาดหวัง (Expected Result):**
+  1. **Billing Service:** ตรวจพบว่ามีบิลของ `reservationId` นี้ถูกสร้างไว้แล้ว จึงตอบกลับ `200 OK` (`alreadyExists: true`) โดย **ไม่สร้างบิลซ้ำซ้อน** (`COUNT(*) = 1`)
+  2. **Housekeeping Service:** ตรวจพบงานทำความสะอาดของห้องและใบจองนี้แล้ว จึงตอบกลับ `200 OK` (`idempotent: true`) โดย **ไม่สร้าง Task ซ้ำซ้อน** (`COUNT(*) = 1`)
+- **สถานะ:** ✅ **PASS**
+
+---
+
+### `UAT-INT03` (Issue #13: Section 2.2 & 2.3) : การตรวจสอบลายเซ็น Upstash QStash Signature และการจัดการ Payload ผิดพลาด (DLQ / Fault Tolerance)
+- **ผู้ทดสอบ:** เขต (เขตโสภณ) & บุญ (ปวริศ)
+- **ความสำคัญ:** 🟠 High
+- **ขั้นตอนการทดสอบ (Test Steps):**
+  1. ตั้งค่า `QSTASH_CURRENT_SIGNING_KEY` แล้วทดสอบยิง `POST /webhooks/checkout` โดยไม่มี Header `upstash-signature` หรือใช้ลายเซ็นปลอม
+  2. ทดสอบส่ง Payload ที่ข้อมูลสำคัญไม่ครบถ้วนไปยัง Webhook
+- **ผลลัพธ์ที่คาดหวัง (Expected Result):**
+  1. เมื่อไม่มีลายเซ็นหรือลายเซ็นไม่ถูกต้อง Middleware `verifyQStashSignature` ปฏิเสธคำขอทันทีด้วย **`401 Unauthorized`**
+  2. เมื่อส่ง Payload ที่ไม่สมบูรณ์ ระบบดักจับด้วย Schema Validation และตอบกลับ **`400 Bad Request`** อย่างปลอดภัยโดยที่ Worker ไม่ล่ม และเก็บข้อมูลต้นทางไว้ใน `outbox_events` เพื่อรองรับการตรวจสอบย้อนหลัง
+- **สถานะ:** ✅ **PASS**
+
+---
+
+## 9. ✍️ ตารางสรุปผลการทดสอบและลงนามรับรอง (UAT Sign-off Matrix)
+
+| หมวดหมู่การทดสอบ | จำนวน Test Cases | ผ่าน (PASS) | ไม่ผ่าน (FAIL) | อัตราความสำเร็จ | ผู้รับผิดชอบหลัก |
+|---|:---:|:---:|:---:|:---:|---|
+| **1. Front Desk & Reservation (`UAT-FD01` – `UAT-FD07`)** | 7 | 7 | 0 | **100%** | เดียร์ — ธีรภัทร (`@allmusgus`) |
+| **2. Housekeeping & Room Turnover (`UAT-HK01` – `UAT-HK05`)** | 5 | 5 | 0 | **100%** | บุญ — ปวริศ (`@Legxcy77`) |
+| **3. Billing, Cashier & Amenities (`UAT-BL01` – `UAT-BL04`)** | 4 | 4 | 0 | **100%** | เดียร์ — ธีรภัทร (`@allmusgus`) |
+| **4. Owner, Analytics & RBAC (`UAT-MGR01` – `UAT-MGR05`)** | 5 | 5 | 0 | **100%** | เขต — เขตโสภณ (`@hazeco`) |
+| **5. Event Fan-out, Idempotency & Fault Tolerance (`UAT-INT01` – `UAT-INT03`)** | 3 | 3 | 0 | **100%** | เขต, เดียร์, บุญ (ร่วมกัน) |
+| **รวมทั้งสิ้น (Total UAT Scenarios)** | **24** | **24** | **0** | **100%** | **ผ่านเกณฑ์การตรวจรับ (Accepted)** |
+
+---
+
+### คำรับรองจากคณะผู้จัดทำโครงงาน (Team Sign-off)
+
+ข้าพเจ้าขอรับรองว่าได้ดำเนินการทดสอบระบบบริหารจัดการโรงแรม **KEYSTAY** ตามกรณีทดสอบทั้ง 24 Scenarios (ครอบคลุมทุกหัวข้อใน GitHub Issue `#13`) รวมถึงชุดทดสอบอัตโนมัติ Backend Mocha (`250/250 Passing`) และ Frontend Vitest (`491/491 Passing`) เรียบร้อยแล้ว ระบบทำงานได้ถูกต้องครบถ้วนตามขอบเขตโครงงานและพร้อมสำหรับการนำเสนอผลงาน
+
+<br>
+
+| ลงชื่อผู้รับผิดชอบ | บทบาทและขอบเขตความรับผิดชอบ | สถานะการรับรอง |
+|---|---|:---:|
+| **นายเขตโสภณ** (`@hazeco`) | **Project & Infrastructure Lead** — API Gateway, Auth & User, Report & Analytics, Owner Portal | ✅ ลงนามรับรองแล้ว |
+| **นายธีรภัทร** (`@allmusgus`) | **System Analyst (SA) Lead** — Reservation Service, Billing & Payment Service, Front Desk & Cashier Portal | ✅ ลงนามรับรองแล้ว |
+| **นายปวริศ** (`@Legxcy77`) | **Quality Assurance (QA) Lead** — Room Inventory Service, Housekeeping & Outsource Service, Housekeeping Portal | ✅ ลงนามรับรองแล้ว |

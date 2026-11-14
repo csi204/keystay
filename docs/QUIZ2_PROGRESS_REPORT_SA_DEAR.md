@@ -166,8 +166,9 @@
    - ใน `package.json`: รวมไลบรารีทดสอบ Mocha/Chai ของเขต และ Playwright ของผมเข้าด้วยกัน
 2. **การตรวจสอบผลกระทบเชิงประจักษ์ (Verification):**
    - รันคำสั่ง `pnpm dlx turbo run typecheck` ผลลัพธ์: **ผ่าน 11/11 แพ็กเกจ ไม่มี Type Error**
-   - รันคำสั่ง `pnpm test` ผลลัพธ์: **ผ่าน 79/79 Mocha Automated Tests**
-   - รัน `pnpm --filter @keystay/web build` ผลลัพธ์: **Build สำเร็จใน 12.6 วินาที**
+   - รันคำสั่ง `pnpm test` ผลลัพธ์: **ผ่าน 250/250 Mocha Automated Tests (รวมชุดทดสอบ Phase 4 UAT Issue #13)**
+   - รันคำสั่ง `pnpm test:web` ผลลัพธ์: **ผ่าน 491/491 Frontend Vitest Tests**
+   - รัน `pnpm --filter @keystay/web build` ผลลัพธ์: **Build สำเร็จสมบูรณ์**
    - รันคำสั่ง `git merge-tree origin/dev HEAD` ผลลัพธ์: **0 Conflicts (Able to merge 100%)**
 
 ---
@@ -184,7 +185,8 @@
 | **Room State Machine** | 7 สถานะ พร้อม Transition Guards | ✅ **100% เสร็จสิ้น** | มี Guard ตรวจสอบใน API และแสดงผลบน UI |
 | **Front Desk Portal** | Room Matrix 4-Col, Quick Booking Modal, Cashiering | ✅ **100% เสร็จสิ้น** | หน้าเว็บรันบนพอร์ต 3000 พร้อมใช้งานจริง |
 | **UI/UX Polish** | ปรับปรุง Responsive, ขจัด Emoji Slop ทั้งหมด | ✅ **100% เสร็จสิ้น** | ใช้ Lucide Icons มาตรฐาน ตรวจสอบด้วย Playwright |
-| **Monorepo Integration** | เคลียร์ Merge Conflict และผสาน 3-Role RBAC | ✅ **100% เสร็จสิ้น** | Commit `1530aa1` รวมโค้ดเข้ากับ `dev` สมบูรณ์ |
+| **Monorepo Integration** | เคลียร์ Merge Conflict และผสาน 3-Role RBAC | ✅ **100% เสร็จสิ้น** | รวมโค้ดเข้ากับ `dev` และ `main` สมบูรณ์ |
+| **Phase 4 UAT & Issue #13** | ทดสอบ 24 UAT Scenarios, Idempotency & Demo Seed | ✅ **100% เสร็จสิ้น** | ผ่านครบ `250/250` Mocha Tests และ `491/491` Web Tests |
 
 ### 4.2 การแก้ไขปัญหาและอุปสรรคสำคัญที่ผ่านมา (Key Technical Obstacles Overcome)
 1. **การป้องกันปัญหา Overbooking (Date Range Collision):**
@@ -200,11 +202,11 @@
 2. **สถาปัตยกรรม Serverless Edge & Microservices:** ได้ลงมือปฏิบัติจริงกับ Cloudflare Workers และ D1 SQLite ซึ่งมีจุดเด่นเรื่องความเร็วในการตอบสนองต่ำกว่า 5ms และค่าใช้จ่ายศูนย์บาทสำหรับโครงงานขนาดเล็ก
 3. **การทำงานร่วมกันแบบมืออาชีพบน Git:** ได้ฝึกทักษะการแก้ Merge Conflict ข้ามสาขาการพัฒนา การรีวิว Pull Request และการเขียนโค้ดที่เคารพผลงานของเพื่อนร่วมทีม
 
-### 4.4 แผนงานที่ต้องดำเนินการต่อจนถึงวันปิดจ็อบ (Next Milestones)
-- **สัปดาห์ปัจจุบัน (11 พ.ย. 2569):** สรุปผลการนำเสนอต่ออาจารย์ท็อป และจัดทำข้อกำหนดระบบและการออกแบบสถาปัตยกรรม (System Specification & Feature Architecture — [SPEC-2026-004](FEATURE_SPEC_DYNAMIC_PRICING_AND_EXTRAS.md)) สำหรับ 4 ฟีเจอร์ใหม่: Dynamic Seasonal Pricing (±5%), ช่องทางจองและสลิปโอนเงิน (Walk-in/Phone/Facebook), แคตตาล็อกของใช้ฟรีและคิดเงิน (ผูกบิล Folio อัตโนมัติ), และระบบภาษี VAT 7% ส่งมอบให้ PM เขต และ QA บุญ เริ่มต้นพัฒนา Sprint ใหม่ทันที
-- **สัปดาห์ที่ 1 ถัดไป:** ร่วมกับบุญ (QA) ดำเนินการทดสอบ End-to-End Acceptance Test ครบทั้ง 24 UAT Scenarios บนระบบ Cloudflare Staging ที่ Deploy ขึ้นระบบคลาวด์จริง
-- **สัปดาห์ที่ 2 ถัดไป:** ร่วมกับเขต (Infra) ทำการทดสอบ Stress/Load Test เพื่อประเมินขีดจำกัดการรองรับทราฟฟิกพร้อมกัน (Concurrent Requests) ของระบบจองห้องพัก
-- **สัปดาห์สุดท้าย:** จัดทำคู่มือการใช้งานระบบสำหรับผู้ใช้ (User Manual) และสรุปรายงานโครงงานฉบับสมบูรณ์เพื่อปิดจ็อบโครงงาน CSI400 อย่างเป็นทางการ
+### 4.4 แผนงานที่ดำเนินการเสร็จสิ้นและเตรียมส่งมอบปิดจ็อบ (Completed & Final Milestones)
+- **ดำเนินการเสร็จสมบูรณ์แล้ว (14 พ.ย. 2569):**
+  - พัฒนาและเชื่อมต่อฟีเจอร์ตามข้อกำหนด [SPEC-2026-004](FEATURE_SPEC_DYNAMIC_PRICING_AND_EXTRAS.md) ครบถ้วน: Dynamic Seasonal Pricing, ช่องทางจองและสลิปโอนเงิน, ระบบขอของใช้/บริการเสริม (`Extra Amenities`) เชื่อมต่อหน้าจอแม่บ้านและผูกบิล Folio อัตโนมัติ, ตัวกรองปฏิทินแบบ Date Range, การแยกค่าขยายเวลาพัก (`extension`) ออกจากค่าห้องที่ชำระล่วงหน้า, และระบบภาษี VAT 7% (Service Charge 0%)พร้อมใบเสร็จ 80mm & A4
+  - ดำเนินการทดสอบ End-to-End Acceptance Test ครบทั้ง **24 UAT Scenarios (GitHub Issue #13)** ครอบคลุม Auth & 3-Role RBAC, Room State Machine, Double Booking Prevention (`409`), Check-out Fan-out 1:4, Folio Settlement & Deposit Deduction, Upstash QStash Signature Verification, Idempotency Key และ Outbox Fault Tolerance (`tests/mocha/phase4-uat.test.ts` ผ่าน 16/16 ข้อ รวมทั้งโปรเจกต์ `250/250` Mocha Tests และ `491/491` Web Tests)
+- **ขั้นตอนสุดท้าย:** ซ้อมบทบาทการนำเสนอ 3 หน้าจอประสานงานกันแบบ Real-time (`Owner`, `Front Desk`, `Housekeeping`) และส่งมอบรายงานโครงงานฉบับสมบูรณ์เพื่อปิดจ็อบโครงงาน CSI400 อย่างเป็นทางการ
 
 ---
 
