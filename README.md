@@ -1,5 +1,7 @@
 # 🏨 Hotel Management System — Project Design Document & Specification
 
+![KEYSTAY — Hotel Management System](./apps/web/public/og-image.jpg)
+
 > ## โครงงานระบบบริหารจัดการโรงแรมหลังบ้าน (Internal Hotel Operations & Back-Office)
 > สถาปัตยกรรม Microservices บน Serverless Stack (Cloudflare Workers, D1, Queues/QStash) รวม 105 APIs  
 > ออกแบบเฉพาะสำหรับ**ระบบบริหารจัดการภายในโรงแรมขนาดเล็ก 5–10 ห้อง (Boutique Hotel / Poshtel)**  
