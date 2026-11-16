@@ -102,25 +102,25 @@ export const QuickEmergencyDrawer: React.FC<QuickEmergencyDrawerProps> = ({
         return {
           icon: Wind,
           label: t('emergency.categoryAir'),
-          badgeClass: 'bg-sky-50 text-sky-700 border-sky-200',
+          badgeClass: 'bg-orange-50 text-[#F97316] border-orange-200',
         };
       case 'plumbing':
         return {
           icon: Wrench,
           label: t('emergency.categoryPlumbing'),
-          badgeClass: 'bg-cyan-50 text-cyan-700 border-cyan-200',
+          badgeClass: 'bg-orange-50 text-[#F97316] border-orange-200',
         };
       case 'electrical':
         return {
           icon: Zap,
           label: t('emergency.categoryElectrical'),
-          badgeClass: 'bg-amber-50 text-amber-700 border-amber-200',
+          badgeClass: 'bg-orange-50 text-[#F97316] border-orange-200',
         };
       case 'locksmith':
         return {
           icon: Lock,
           label: t('emergency.categoryLocksmith'),
-          badgeClass: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+          badgeClass: 'bg-orange-50 text-[#F97316] border-orange-200',
         };
       default:
         return {

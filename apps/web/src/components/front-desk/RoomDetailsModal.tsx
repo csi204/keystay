@@ -820,13 +820,14 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
 
                         <div className="flex items-center gap-1.5">
                           <span className="text-slate-500">{locale === 'th' ? 'สถานะ:' : 'Status:'}</span>
-                          <span
-                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                              (currentReservation as any).paymentStatus === 'paid'
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                : 'bg-amber-50 text-amber-700 border border-amber-200'
-                            }`}
-                          >
+                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                            <span
+                              className={`w-2 h-2 rounded-full shrink-0 ${
+                                (currentReservation as any).paymentStatus === 'paid'
+                                  ? 'bg-emerald-500'
+                                  : 'bg-amber-400'
+                              }`}
+                            />
                             {(currentReservation as any).paymentStatus === 'paid'
                               ? (locale === 'th' ? 'ชำระแล้ว' : 'Paid')
                               : (locale === 'th' ? 'รอชำระ' : 'Unpaid')}
@@ -1236,8 +1237,8 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                             </span>
                           </span>
                           {housekeepingTask?.afterPhotoUrl && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
-                              <CheckCircle2 className="w-3.5 h-3.5 mr-0.5 text-emerald-600" />
+                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 shrink-0">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                               {locale === 'th' ? 'ผ่าน' : 'Done'}
                             </span>
                           )}

@@ -1496,12 +1496,13 @@ export const HousekeepingPortalPage: React.FC = () => {
                     {/* Center: Status Pill */}
                     <div className="shrink-0">
                       {needsUrgentMinibar ? (
-                        <span className="px-3.5 py-1.5 rounded-full bg-[#FFEDD5] text-[#9A3412] text-xs font-bold shadow-2xs inline-block">
-                          เพิ่งเช็คเอาต์ • รอมินิบาร์
+                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                          <span className="w-2 h-2 rounded-full bg-[#F97316] shrink-0" />
+                          <span>เพิ่งเช็คเอาต์ • รอมินิบาร์</span>
                         </span>
                       ) : isCheckout && isMinibarDone ? (
-                        <span className="px-3.5 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold shadow-2xs inline-flex items-center gap-1">
-                          <Check className="w-3.5 h-3.5 text-emerald-700" />
+                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
                           <span>ตรวจมินิบาร์แล้ว</span>
                         </span>
                       ) : isStayover ? (
@@ -2324,12 +2325,13 @@ export const HousekeepingPortalPage: React.FC = () => {
                         {/* Center: Status Pill */}
                         <div className="shrink-0">
                           {needsUrgentMinibar ? (
-                            <span className="px-3.5 py-1.5 rounded-full bg-[#FFEDD5] text-[#9A3412] text-xs font-bold shadow-2xs inline-block">
-                              เพิ่งเช็คเอาต์ • รอมินิบาร์
+                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                              <span className="w-2 h-2 rounded-full bg-[#F97316] shrink-0" />
+                              <span>เพิ่งเช็คเอาต์ • รอมินิบาร์</span>
                             </span>
                           ) : isCheckout && isMinibarDone ? (
-                            <span className="px-3.5 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold shadow-2xs inline-flex items-center gap-1">
-                              <Check className="w-3.5 h-3.5 text-emerald-700" />
+                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
                               <span>ตรวจมินิบาร์แล้ว</span>
                             </span>
                           ) : isStayover ? (
@@ -2543,12 +2545,13 @@ export const HousekeepingPortalPage: React.FC = () => {
                         className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer border border-slate-200"
                         title="ดูรูปภาพสภาพห้องก่อนและหลังทำความสะอาด"
                       >
-                        <Camera className="w-3.5 h-3.5 text-blue-600" />
+                        <Camera className="w-3.5 h-3.5 text-[#F97316]" />
                         <span className="hidden sm:inline">ดูหลักฐานภาพถ่าย</span>
                         <span className="sm:hidden">รูปถ่าย</span>
                       </button>
 
-                      <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
                         พร้อมขาย
                       </span>
                     </div>
@@ -2748,19 +2751,20 @@ export const HousekeepingPortalPage: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          isClean
-                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                            : isMaintenance
-                            ? 'bg-rose-50 text-rose-800 border border-rose-200'
-                            : isCleaning
-                            ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                            : isCheckedOut
-                            ? 'bg-orange-50 text-orange-800 border border-orange-200'
-                            : 'bg-blue-50 text-blue-800 border border-blue-200'
-                        }`}
-                      >
+                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                        <span
+                          className={`w-2 h-2 rounded-full shrink-0 ${
+                            isClean
+                              ? 'bg-emerald-500'
+                              : isMaintenance
+                              ? 'bg-rose-500'
+                              : isCleaning
+                              ? 'bg-amber-400'
+                              : isCheckedOut
+                              ? 'bg-[#F97316]'
+                              : 'bg-slate-400'
+                          }`}
+                        />
                         {isClean
                           ? 'พร้อมขาย'
                           : isMaintenance
@@ -3064,7 +3068,8 @@ export const HousekeepingPortalPage: React.FC = () => {
                             <p className="text-[10px] text-slate-400">เสร็จเมื่อ {c.finishedAt}</p>
                           </div>
                         </div>
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold">
+                        <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-700">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
                           พร้อมขาย
                         </span>
                       </div>
@@ -3552,16 +3557,10 @@ export const HousekeepingPortalPage: React.FC = () => {
                     </p>
                   </div>
                 </div>
-                <span
-                  className={`px-2 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 ${
-                    isBeforeToday(selectedDate)
-                      ? 'bg-slate-100 text-slate-600 border border-slate-200'
-                      : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                  }`}
-                >
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
                   <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      isBeforeToday(selectedDate) ? 'bg-slate-400' : 'bg-emerald-500 animate-pulse'
+                    className={`w-2 h-2 rounded-full shrink-0 ${
+                      isBeforeToday(selectedDate) ? 'bg-slate-400' : 'bg-emerald-500'
                     }`}
                   />
                   {isBeforeToday(selectedDate) ? 'เสร็จสิ้นรอบ' : 'กำลังปฏิบัติงาน'}
@@ -3661,16 +3660,10 @@ export const HousekeepingPortalPage: React.FC = () => {
                     </p>
                   </div>
                 </div>
-                <span
-                  className={`px-2 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 ${
-                    isBeforeToday(selectedDate)
-                      ? 'bg-slate-100 text-slate-600 border border-slate-200'
-                      : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                  }`}
-                >
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
                   <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      isBeforeToday(selectedDate) ? 'bg-slate-400' : 'bg-emerald-500 animate-pulse'
+                    className={`w-2 h-2 rounded-full shrink-0 ${
+                      isBeforeToday(selectedDate) ? 'bg-slate-400' : 'bg-emerald-500'
                     }`}
                   />
                   {isBeforeToday(selectedDate) ? 'เสร็จสิ้นรอบ' : 'กำลังปฏิบัติงาน'}
@@ -3741,7 +3734,8 @@ export const HousekeepingPortalPage: React.FC = () => {
                     </p>
                   </div>
                 </div>
-                <span className="px-2 py-1 rounded-full bg-slate-100 text-slate-600 text-[10px] font-semibold">
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600">
+                  <span className="w-2 h-2 rounded-full bg-slate-400 shrink-0" />
                   {isBeforeToday(selectedDate) ? 'กะดึก (ปิดรอบ)' : 'กะดึก (ยังไม่เข้างาน)'}
                 </span>
               </div>
@@ -3764,7 +3758,8 @@ export const HousekeepingPortalPage: React.FC = () => {
                     การครอบคลุมพื้นที่ (Zone Coverage)
                   </h3>
                 </div>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
                   ครบ 100%
                 </span>
               </div>
@@ -3889,8 +3884,8 @@ export const HousekeepingPortalPage: React.FC = () => {
                   <div className="flex flex-col">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <h2 className="text-base font-extrabold text-slate-900 leading-tight">{staffName}</h2>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                        หัวหน้าเวร
+                      <span className="text-[11px] font-semibold text-[#F97316]">
+                        • หัวหน้าเวร
                       </span>
                     </div>
                     <p className="text-xs text-slate-600 mt-0.5">{authUser?.email || 'housekeeping@keystay.com'}</p>
@@ -5228,7 +5223,8 @@ export const HousekeepingPortalPage: React.FC = () => {
                     <h2 className="text-sm sm:text-base font-bold text-slate-900">
                       หลักฐานภาพถ่ายตรวจรับห้อง {selectedEvidenceRoom.roomNumber}
                     </h2>
-                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
                       พร้อมขาย
                     </span>
                   </div>

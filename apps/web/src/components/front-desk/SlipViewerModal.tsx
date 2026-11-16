@@ -180,24 +180,17 @@ export const SlipViewerModal: React.FC<SlipViewerModalProps> = ({
                 <h2 className="text-base font-bold text-slate-900">
                   {locale === 'th' ? 'หลักฐานการโอนเงิน (Payment Slip)' : 'Payment Slip Verification'}
                 </h2>
-                <span
-                  className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full border ${
-                    isPaid
-                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                      : 'bg-amber-50 text-amber-800 border-amber-200'
-                  }`}
-                >
-                  {isPaid ? (
-                    <>
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                      <span>{locale === 'th' ? 'ชำระเงินแล้ว (Paid)' : 'Paid'}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Clock className="w-3 h-3 text-amber-600" />
-                      <span>{locale === 'th' ? 'รอชำระเงิน (Unpaid)' : 'Unpaid'}</span>
-                    </>
-                  )}
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                  <span
+                    className={`w-2 h-2 rounded-full shrink-0 ${
+                      isPaid ? 'bg-emerald-500' : 'bg-amber-400'
+                    }`}
+                  />
+                  <span>
+                    {isPaid
+                      ? (locale === 'th' ? 'ชำระเงินแล้ว (Paid)' : 'Paid')
+                      : (locale === 'th' ? 'รอชำระเงิน (Unpaid)' : 'Unpaid')}
+                  </span>
                 </span>
               </div>
               <p className="text-xs text-slate-500 font-mono mt-0.5">
