@@ -262,7 +262,7 @@ export const RoomDetailsDrawer: React.FC<RoomDetailsDrawerProps> = ({
             {room.status === 'checked_out' && (
               <button
                 onClick={() => (onAction as any)?.('clean', room)}
-                className="w-full text-sm font-semibold py-3 px-3 bg-purple-600 hover:bg-purple-700 text-white rounded-md shadow-sm transition-colors flex items-center justify-center gap-2"
+                className="w-full text-sm font-semibold py-3 px-3 bg-[#F97316] hover:bg-[#ea580c] text-white rounded-md shadow-sm transition-colors flex items-center justify-center gap-2"
               >
                 <Sparkles className="w-4 h-4" />
                 <span>{t('drawer.requestCleaning')}</span>

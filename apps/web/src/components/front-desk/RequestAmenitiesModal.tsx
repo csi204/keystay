@@ -445,8 +445,8 @@ export const RequestAmenitiesModal: React.FC<RequestAmenitiesModalProps> = ({
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-indigo-50 text-indigo-700 rounded-lg">
-              <Sparkles className="w-5 h-5 text-indigo-600" />
+            <div className="p-2 bg-orange-50 text-[#F97316] rounded-lg">
+              <Sparkles className="w-5 h-5 text-[#F97316]" />
             </div>
             <div>
               <h2 className="text-base font-bold text-slate-900">
@@ -525,7 +525,7 @@ export const RequestAmenitiesModal: React.FC<RequestAmenitiesModalProps> = ({
                     onClick={() => setSelectedAmenityId(item.id)}
                     className={`flex flex-col text-left p-3 rounded-xl border transition-all ${
                       isSelected
-                        ? 'bg-indigo-50/70 border-indigo-400 ring-1 ring-indigo-400/40 shadow-xs'
+                        ? 'bg-orange-50/70 border-[#F97316] ring-1 ring-[#F97316]/30 shadow-xs'
                         : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/60'
                     }`}
                   >
@@ -606,7 +606,7 @@ export const RequestAmenitiesModal: React.FC<RequestAmenitiesModalProps> = ({
             className={`p-3.5 rounded-xl border flex items-center justify-between text-xs font-mono ${
               selectedAmenity?.isChargeable
                 ? 'bg-emerald-50/70 border-emerald-200 text-emerald-950'
-                : 'bg-indigo-50/60 border-indigo-200 text-indigo-950'
+                : 'bg-slate-50 border-slate-200 text-slate-900'
             }`}
           >
             <div className="space-y-0.5">

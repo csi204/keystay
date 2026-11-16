@@ -181,7 +181,7 @@ export const ReceiptTaxInvoiceModal: React.FC<ReceiptTaxInvoiceModalProps> = ({
                 onClick={() => setInvoiceLocale('th')}
                 className={`px-3 py-1.5 rounded-md font-semibold transition-colors ${
                   invoiceLocale === 'th'
-                    ? 'bg-blue-600 text-white shadow-xs'
+                    ? 'bg-[#F97316] text-white shadow-xs'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -192,7 +192,7 @@ export const ReceiptTaxInvoiceModal: React.FC<ReceiptTaxInvoiceModalProps> = ({
                 onClick={() => setInvoiceLocale('en')}
                 className={`px-3 py-1.5 rounded-md font-semibold transition-colors ${
                   invoiceLocale === 'en'
-                    ? 'bg-blue-600 text-white shadow-xs'
+                    ? 'bg-[#F97316] text-white shadow-xs'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -204,7 +204,7 @@ export const ReceiptTaxInvoiceModal: React.FC<ReceiptTaxInvoiceModalProps> = ({
             <button
               type="button"
               onClick={handlePrint}
-              className="inline-flex items-center justify-center px-3.5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg shadow-sm transition-all active:scale-[0.98] min-h-[44px]"
+              className="inline-flex items-center justify-center px-3.5 py-2 text-xs font-semibold text-white bg-[#F97316] hover:bg-[#ea580c] rounded-lg shadow-sm transition-all active:scale-[0.98] min-h-[44px]"
             >
               <Printer className="w-4 h-4 mr-1.5" strokeWidth={1.75} aria-hidden="true" />
               <span>พิมพ์สลิปใบเสร็จ (80mm)</span>

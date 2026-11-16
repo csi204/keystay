@@ -907,9 +907,9 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                         <button
                           type="button"
                           onClick={() => setIsAmenitiesModalOpen(true)}
-                          className="min-h-[44px] text-xs font-semibold py-2.5 px-2 bg-white border border-indigo-200 hover:bg-indigo-50/60 text-indigo-700 rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-xs"
+                          className="min-h-[44px] text-xs font-semibold py-2.5 px-2 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-xs"
                         >
-                          <Sparkles className="w-4 h-4 text-indigo-600 shrink-0" />
+                          <Sparkles className="w-4 h-4 text-[#F97316] shrink-0" />
                           <span>{locale === 'th' ? 'ขอของใช้เสริม' : 'Amenities'}</span>
                         </button>
                       </div>
@@ -925,7 +925,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                         <button
                           type="button"
                           onClick={() => (onAction as any)?.('checkout', room)}
-                          className="min-h-[44px] text-xs font-semibold py-2.5 px-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5"
+                          className="min-h-[44px] text-xs font-semibold py-2.5 px-2 bg-[#F97316] hover:bg-[#ea580c] text-white rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5"
                         >
                           <LogOut className="w-4 h-4 shrink-0" />
                           <span>{t('ops.checkOut') || 'เช็คเอาต์'}</span>
@@ -936,7 +936,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                         <div className="pt-2 space-y-1.5">
                           <div className="flex items-center justify-between text-[11px] font-semibold text-slate-600">
                             <span className="flex items-center gap-1.5">
-                              <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+                              <Sparkles className="w-3.5 h-3.5 text-[#F97316]" />
                               <span>
                                 {locale === 'th'
                                   ? `รายการขอของใช้เสริม (${roomAmenityRequests.length})`
@@ -947,25 +947,25 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                           <div className="space-y-1 max-h-28 overflow-y-auto pr-1">
                             {roomAmenityRequests.map((req: any) => {
                               const st = req.status || 'pending';
-                              const stBadge =
+                              const stDot =
                                 st === 'delivered'
                                   ? {
                                       label: locale === 'th' ? 'จัดส่งแล้ว' : 'Delivered',
-                                      cls: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                      dot: 'bg-emerald-500',
                                     }
                                   : st === 'preparing'
                                   ? {
                                       label: locale === 'th' ? 'กำลังนำส่ง' : 'Preparing',
-                                      cls: 'bg-amber-50 text-amber-800 border-amber-200',
+                                      dot: 'bg-amber-400',
                                     }
                                   : st === 'cancelled'
                                   ? {
                                       label: locale === 'th' ? 'ยกเลิก' : 'Cancelled',
-                                      cls: 'bg-slate-100 text-slate-500 border-slate-200',
+                                      dot: 'bg-slate-400',
                                     }
                                   : {
                                       label: locale === 'th' ? 'รอแม่บ้าน' : 'Pending',
-                                      cls: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+                                      dot: 'bg-[#F97316]',
                                     };
                               return (
                                 <div
@@ -976,10 +976,9 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                                     <span className="font-medium text-slate-800">{req.amenityName}</span>
                                     <span className="text-slate-500 ml-1.5">x{req.quantity}</span>
                                   </div>
-                                  <span
-                                    className={`px-2 py-0.5 rounded text-[10px] font-semibold border shrink-0 ${stBadge.cls}`}
-                                  >
-                                    {stBadge.label}
+                                  <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-700 shrink-0">
+                                    <span className={`w-1.5 h-1.5 rounded-full ${stDot.dot}`} />
+                                    {stDot.label}
                                   </span>
                                 </div>
                               );
@@ -1021,9 +1020,9 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                           setCheckInDate(todayStr);
                           setMode('booking');
                         }}
-                        className="w-full min-h-[44px] text-xs font-semibold py-2.5 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
+                        className="w-full min-h-[44px] text-xs font-semibold py-2.5 px-3 bg-[#F97316] hover:bg-[#ea580c] text-white rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
                       >
-                        <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+                        <Zap className="w-4 h-4 text-white shrink-0" />
                         <span>{locale === 'th' ? 'เปิดห้องด่วน (Walk-In)' : 'Quick Walk-In'}</span>
                       </button>
                       <button
@@ -1392,7 +1391,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                               onClick={handleSaveNotes}
                               disabled={isSavingNotes}
                               title={t('common.save') ? `${t('common.save')} (Ctrl+Enter)` : 'บันทึก (Ctrl+Enter)'}
-                              className="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-lg transition-colors flex items-center gap-1 shadow-xs"
+                              className="px-3 py-1 text-xs font-medium text-white bg-[#F97316] hover:bg-[#ea580c] disabled:opacity-50 rounded-lg transition-colors flex items-center gap-1 shadow-xs"
                             >
                               {isSavingNotes ? (
                                 <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={1.75} />
@@ -1418,9 +1417,9 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                           setCheckInDate(todayStr);
                           setMode('booking');
                         }}
-                        className="w-full min-h-[44px] text-xs font-semibold py-2.5 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
+                        className="w-full min-h-[44px] text-xs font-semibold py-2.5 px-3 bg-[#F97316] hover:bg-[#ea580c] text-white rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
                       >
-                        <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+                        <Zap className="w-4 h-4 text-white shrink-0" />
                         <span>{locale === 'th' ? 'เปิดห้องด่วน (Walk-In)' : 'Quick Walk-In'}</span>
                       </button>
                       <button
@@ -1443,7 +1442,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                       <button
                         type="button"
                         onClick={() => (onAction as any)?.('clean', room)}
-                        className="w-full min-h-[44px] text-xs font-semibold py-2.5 px-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
+                        className="w-full min-h-[44px] text-xs font-semibold py-2.5 px-3 bg-[#F97316] hover:bg-[#ea580c] text-white rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
                       >
                         <Sparkles className="w-4 h-4" />
                         <span>{t('drawer.requestCleaning')}</span>

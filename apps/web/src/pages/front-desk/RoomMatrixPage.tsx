@@ -36,19 +36,6 @@ import {
   Ban,
 } from 'lucide-react';
 
-const RESERVATION_STATUS_STYLES: Record<
-  ReservationStatus,
-  { bg: string; text: string; border: string }
-> = {
-  pending: { bg: 'bg-slate-100', text: 'text-slate-700', border: 'border-slate-300' },
-  confirmed: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
-  checked_in: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
-  extended: { bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-200' },
-  checked_out: { bg: 'bg-slate-100', text: 'text-slate-600', border: 'border-slate-200' },
-  cancelled: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' },
-  no_show: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
-};
-
 export const RoomMatrixPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -665,7 +652,7 @@ export const RoomMatrixPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsNewModalOpen(true)}
-                className="inline-flex items-center gap-1.5 h-9 px-3.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-sm transition-colors"
+                className="inline-flex items-center gap-1.5 h-9 px-3.5 text-xs font-semibold text-white bg-[#F97316] hover:bg-[#ea580c] rounded-lg shadow-2xs transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" aria-hidden="true" />
                 <span>{t('res.newReservation')}</span>
@@ -749,9 +736,9 @@ export const RoomMatrixPage: React.FC = () => {
               </span>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-sm">
+              <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase tracking-wider py-3">
+                  <tr className="bg-white border-b border-slate-100 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                     <th className="py-3 px-4">
                       {t('res.bookingNumber')}
                     </th>
@@ -811,11 +798,6 @@ export const RoomMatrixPage: React.FC = () => {
                     </tr>
                   ) : (
                     paginatedReservations.pageItems.map((res) => {
-                      const stCfg = RESERVATION_STATUS_STYLES[res.status] || {
-                        bg: 'bg-slate-100',
-                        text: 'text-slate-700',
-                        border: 'border-slate-200',
-                      };
                       const room = rooms.find((r) => r.id === res.roomId);
                       const roomType = roomTypes.find((rt) => rt.id === room?.roomTypeId);
                       const roomNum = res.roomNumber || room?.roomNumber || '—';
@@ -825,38 +807,38 @@ export const RoomMatrixPage: React.FC = () => {
                       return (
                         <tr
                           key={res.id}
-                          className="hover:bg-slate-50/70 transition-colors text-sm text-slate-800"
+                          className="hover:bg-slate-50/80 transition-colors text-xs text-slate-800"
                         >
-                          <td className="py-3.5 px-4 text-sm font-medium text-slate-900 tabular-nums">
+                          <td className="py-3 px-4 font-mono font-semibold text-slate-900 tabular-nums whitespace-nowrap">
                             {res.bookingNumber || res.id.slice(0, 8)}
                           </td>
-                          <td className="py-3.5 px-4 font-medium text-sm text-slate-800">
+                          <td className="py-3 px-4 font-medium text-slate-900">
                             {guestDisplayName}
                           </td>
-                          <td className="py-3.5 px-4 text-sm font-semibold text-slate-900 tabular-nums">
+                          <td className="py-3 px-4 font-mono font-semibold text-slate-900 tabular-nums whitespace-nowrap">
                             {roomNum}
                           </td>
-                          <td className="text-sm py-3.5 px-4 text-slate-700">
+                          <td className="py-3 px-4 text-slate-700">
                             {roomTypeName}
                           </td>
-                          <td className="py-3.5 px-4 text-sm text-slate-600 tabular-nums">
+                          <td className="py-3 px-4 font-mono text-slate-600 tabular-nums whitespace-nowrap">
                             {formatDateRange(res.checkInDate, res.checkOutDate, res.totalNights)}
                           </td>
-                          <td className="py-3.5 px-4 text-center tabular-nums text-slate-800">
+                          <td className="py-3 px-4 text-center font-mono tabular-nums text-slate-800">
                             {res.totalNights || '1'}
                           </td>
-                          <td className="py-3.5 px-4 text-right text-sm font-medium text-slate-900 tabular-nums">
+                          <td className="py-3 px-4 text-right font-mono font-semibold text-slate-900 tabular-nums whitespace-nowrap">
                             {formatCurrency(res.totalAmount || '0')}
                           </td>
-                          <td className="py-3.5 px-4 text-right text-sm font-medium text-slate-900 tabular-nums">
+                          <td className="py-3 px-4 text-right font-mono text-slate-600 tabular-nums whitespace-nowrap">
                             {formatCurrency(res.depositAmount || '0')}
                           </td>
-                          <td className="text-sm py-3.5 px-4 text-center">
-                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                          <td className="py-3 px-4 text-center whitespace-nowrap">
+                            <span className="inline-flex items-center gap-1.5 font-medium text-slate-700">
                               <span
                                 className={`w-2 h-2 rounded-full shrink-0 ${
                                   res.status === 'checked_in'
-                                    ? 'bg-blue-500'
+                                    ? 'bg-[#F97316]'
                                     : res.status === 'confirmed'
                                     ? 'bg-emerald-500'
                                     : res.status === 'checked_out'
@@ -869,28 +851,28 @@ export const RoomMatrixPage: React.FC = () => {
                               {t(`status.${res.status}`)}
                             </span>
                           </td>
-                          <td className="text-sm py-3.5 px-4 text-right">
+                          <td className="py-3 px-4 text-right whitespace-nowrap">
                             {res.status === 'confirmed' ? (
                               <div className="flex items-center justify-end gap-1.5">
                                 <button
                                   onClick={() => setCheckInReservationTarget(res)}
-                                  className="inline-flex items-center gap-1.5 text-xs font-semibold py-1.5 px-2.5 text-white bg-emerald-600 hover:bg-emerald-700 rounded shadow-sm transition-colors"
+                                  className="inline-flex items-center gap-1 h-7 text-[11px] font-semibold px-2.5 text-white bg-[#F97316] hover:bg-[#ea580c] rounded shadow-2xs transition-colors"
                                   title={t('ops.checkIn')}
                                 >
-                                  <LogIn className="w-3.5 h-3.5" aria-hidden="true" />
+                                  <LogIn className="w-3 h-3" aria-hidden="true" />
                                   <span>{t('ops.checkIn')}</span>
                                 </button>
                                 <button
                                   onClick={() => setCancelReservationTarget(res)}
-                                  className="inline-flex items-center gap-1 text-xs font-medium py-1.5 px-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded transition-colors"
+                                  className="inline-flex items-center gap-1 h-7 text-[11px] font-medium px-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded transition-colors"
                                   title={locale === 'th' ? 'ยกเลิกการจอง' : 'Cancel'}
                                 >
-                                  <Ban className="w-3.5 h-3.5" aria-hidden="true" />
+                                  <Ban className="w-3 h-3" aria-hidden="true" />
                                   <span>{locale === 'th' ? 'ยกเลิก' : 'Cancel'}</span>
                                 </button>
                               </div>
                             ) : (
-                              <span className="text-slate-400 text-sm">—</span>
+                              <span className="text-slate-400">—</span>
                             )}
                           </td>
                         </tr>

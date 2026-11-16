@@ -1505,16 +1505,19 @@ export const HousekeepingPortalPage: React.FC = () => {
                           <span>ตรวจมินิบาร์แล้ว</span>
                         </span>
                       ) : isStayover ? (
-                        <span className="px-3.5 py-1.5 rounded-full bg-teal-100 text-teal-800 text-xs font-bold shadow-2xs inline-block">
-                          แขกพักต่อเนื่อง
+                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                          <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
+                          <span>แขกพักต่อเนื่อง</span>
                         </span>
                       ) : isInspect ? (
-                        <span className="px-3.5 py-1.5 rounded-full bg-purple-100 text-purple-800 text-xs font-bold shadow-2xs inline-block">
-                          รอตรวจปล่อยห้อง
+                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                          <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
+                          <span>รอตรวจปล่อยห้อง</span>
                         </span>
                       ) : (
-                        <span className="px-3.5 py-1.5 rounded-full bg-[#FFEDD5] text-[#9A3412] text-xs font-bold shadow-2xs inline-block">
-                          กำลังทำความสะอาด
+                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                          <span className="w-2 h-2 rounded-full bg-[#F97316] shrink-0" />
+                          <span>กำลังทำความสะอาด</span>
                         </span>
                       )}
                     </div>
@@ -2253,7 +2256,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setIsFocusModeOpen(true)}
-                          className="flex-1 min-h-[52px] py-2 px-4 rounded-lg bg-gradient-to-r from-[#F97316] to-[#EA580C] hover:from-[#EA580C] hover:to-[#C2410C] text-white font-bold text-sm sm:text-base shadow-md shadow-orange-500/20 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                          className="flex-1 min-h-[52px] py-2 px-4 rounded-lg bg-[#F97316] hover:bg-[#ea580c] text-white font-bold text-sm sm:text-base shadow-2xs active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer"
                         >
                           <span>ตรวจเช็ครายการ ({checklistCheckedCount}/{checklistTotalCount})</span>
                           <ChevronRight className="w-5 h-5 stroke-[2.5]" />
@@ -2330,16 +2333,19 @@ export const HousekeepingPortalPage: React.FC = () => {
                               <span>ตรวจมินิบาร์แล้ว</span>
                             </span>
                           ) : isStayover ? (
-                            <span className="px-3.5 py-1.5 rounded-full bg-teal-100 text-teal-800 text-xs font-bold shadow-2xs inline-block">
-                              แขกพักต่อเนื่อง
+                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                              <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
+                              <span>แขกพักต่อเนื่อง</span>
                             </span>
                           ) : isInspect ? (
-                            <span className="px-3.5 py-1.5 rounded-full bg-purple-100 text-purple-800 text-xs font-bold shadow-2xs inline-block">
-                              รอตรวจปล่อยห้อง
+                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                              <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
+                              <span>รอตรวจปล่อยห้อง</span>
                             </span>
                           ) : (
-                            <span className="px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-700 text-xs font-bold shadow-2xs inline-block">
-                              ห้องว่างพร้อมทำ
+                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                              <span className="w-2 h-2 rounded-full bg-slate-400 shrink-0" />
+                              <span>ห้องว่างพร้อมทำ</span>
                             </span>
                           )}
                         </div>
@@ -2472,7 +2478,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                           className={`flex-1 min-h-[52px] py-2 px-4 rounded-lg font-bold text-sm sm:text-base transition-all flex items-center justify-center gap-2 ${
                             activeTask
                               ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60'
-                              : 'bg-gradient-to-r from-[#F97316] to-[#EA580C] hover:from-[#EA580C] hover:to-[#C2410C] text-white shadow-md shadow-orange-500/20 active:scale-98 cursor-pointer'
+                              : 'bg-[#F97316] hover:bg-[#ea580c] text-white shadow-2xs active:scale-98 cursor-pointer'
                           }`}
                           title={
                             activeTask
@@ -3437,7 +3443,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                       : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                   }`}
                 >
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#F97316]" />
                   <span>กะบ่าย 14:30 - 23:00 (2 คน)</span>
                 </button>
 
@@ -3469,26 +3475,28 @@ export const HousekeepingPortalPage: React.FC = () => {
                   </span>
                 </div>
               ) : isToday(selectedDate) ? (
-                <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-200/80 flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2 text-blue-900 font-medium">
-                    <Clock className="w-4 h-4 text-blue-600 shrink-0" />
+                <div className="p-3 rounded-xl bg-orange-50/70 border border-orange-200/80 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2 text-slate-800 font-medium">
+                    <Clock className="w-4 h-4 text-[#F97316] shrink-0" />
                     <span>
                       สถานะกะของคุณ: <strong className="font-bold">กำลังปฏิบัติงานกะเช้า</strong>
                     </span>
                   </div>
-                  <span className="px-2.5 py-1 rounded-full bg-white text-blue-700 border border-blue-200 font-bold text-[11px] shadow-2xs shrink-0">
+                  <span className="inline-flex items-center gap-1.5 text-slate-700 font-semibold text-[11px] shrink-0">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
                     เหลือ 3 ชม. 45 นาที
                   </span>
                 </div>
               ) : (
-                <div className="p-3 rounded-xl bg-indigo-50/70 border border-indigo-200/80 flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2 text-indigo-900 font-medium">
-                    <Calendar className="w-4 h-4 text-indigo-600 shrink-0" />
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2 text-slate-800 font-medium">
+                    <Calendar className="w-4 h-4 text-[#F97316] shrink-0" />
                     <span>
                       สถานะกะ: <strong className="font-bold">ตารางกะล่วงหน้า (Scheduled)</strong>
                     </span>
                   </div>
-                  <span className="px-2.5 py-1 rounded-full bg-white text-indigo-700 border border-indigo-200 font-bold text-[11px] shadow-2xs shrink-0">
+                  <span className="inline-flex items-center gap-1.5 text-slate-700 font-semibold text-[11px] shrink-0">
+                    <span className="w-2 h-2 rounded-full bg-amber-400" />
                     รอเข้าเวร
                   </span>
                 </div>
@@ -3511,7 +3519,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                 className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
                   isBeforeToday(selectedDate)
                     ? 'bg-slate-100 text-slate-600 border-slate-300'
-                    : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                    : 'bg-orange-50 text-[#F97316] border-orange-200'
                 }`}
               >
                 {isBeforeToday(selectedDate) ? 'ประวัติรอบกะ' : 'กะปัจจุบัน'}
@@ -3570,13 +3578,13 @@ export const HousekeepingPortalPage: React.FC = () => {
                     </span>
                   </div>
                   <div className="text-right">
-                    <span className="font-bold text-blue-700 text-xs">Utilization 83% (แน่น)</span>
+                    <span className="font-bold text-[#F97316] text-xs">Utilization 83% (แน่น)</span>
                   </div>
                 </div>
 
-                {/* Progress Bar 83% Blue */}
+                {/* Progress Bar 83% Orange */}
                 <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
-                  <div className="h-full rounded-full bg-blue-600 transition-all duration-500" style={{ width: '83%' }} />
+                  <div className="h-full rounded-full bg-[#F97316] transition-all duration-500" style={{ width: '83%' }} />
                 </div>
               </div>
 
@@ -3637,7 +3645,7 @@ export const HousekeepingPortalPage: React.FC = () => {
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div className="relative">
-                    <div className="w-11 h-11 rounded-xl bg-purple-600 text-white flex items-center justify-center font-extrabold text-sm shadow-xs">
+                    <div className="w-11 h-11 rounded-xl bg-slate-800 text-white flex items-center justify-center font-extrabold text-sm shadow-xs">
                       มา
                     </div>
                     <span
@@ -3917,7 +3925,8 @@ export const HousekeepingPortalPage: React.FC = () => {
                     ผลงานรอบกะวันนี้ (Turnover Performance)
                   </h3>
                 </div>
-                <span className="text-[10px] text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-700">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
                   ทันเวลา (On Track)
                 </span>
               </div>
@@ -3931,7 +3940,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                   </div>
                   <div className="w-full h-1.5 rounded-full bg-slate-200 mt-2 overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-blue-600 transition-all duration-500"
+                      className="h-full rounded-full bg-[#F97316] transition-all duration-500"
                       style={{ width: `${shiftProgressPercent}%` }}
                     />
                   </div>
@@ -4642,98 +4651,98 @@ export const HousekeepingPortalPage: React.FC = () => {
             </div>
 
             {/* Body: 4 Categories 12 Items */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 divide-y divide-slate-100">
               {/* Category 1 */}
-              <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200/80 space-y-2.5">
+              <div className="pb-4 space-y-2.5">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
-                  <span className="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs">
+                  <span className="w-6 h-6 rounded-lg bg-orange-50 text-[#F97316] flex items-center justify-center text-xs">
                     <DoorOpen className="w-3.5 h-3.5" />
                   </span>
                   <span>หมวดที่ 1: ขั้นตอนก่อนเข้าห้องและสำรวจ (Entry & Assessment)</span>
                 </div>
                 <div className="space-y-2 text-xs text-slate-700 pl-4 sm:pl-8">
-                  <div className="p-2.5 bg-white rounded-xl border border-slate-100">
-                    <span className="font-bold text-indigo-700 mr-1.5">1. เคาะประตู 3 ครั้งพร้อมขานชื่อ:</span>
+                  <div>
+                    <span className="font-semibold text-slate-900 mr-1.5">1. เคาะประตู 3 ครั้งพร้อมขานชื่อ:</span>
                     <span>เคาะประตู 3 ครั้งพร้อมขาน "Housekeeping ขออนุญาตทำความสะอาดค่ะ" เสมอเพื่อความสุภาพและความปลอดภัย</span>
                   </div>
-                  <div className="p-2.5 bg-white rounded-xl border border-slate-100">
-                    <span className="font-bold text-indigo-700 mr-1.5">2. เปิดม่านระบายอากาศ + ตรวจระบบไฟ:</span>
+                  <div>
+                    <span className="font-semibold text-slate-900 mr-1.5">2. เปิดม่านระบายอากาศ + ตรวจระบบไฟ:</span>
                     <span>เปิดผ้าม่านระบายกลิ่นอับ ทดสอบเปิดไฟทุกดวง รีโมทแอร์ และทีวีว่าทำงานปกติ</span>
                   </div>
-                  <div className="p-2.5 bg-white rounded-xl border border-slate-100">
-                    <span className="font-bold text-indigo-700 mr-1.5">3. ตรวจมินิบาร์และของที่ลูกค้าลืมไว้ (Lost & Found):</span>
+                  <div>
+                    <span className="font-semibold text-slate-900 mr-1.5">3. ตรวจมินิบาร์และของที่ลูกค้าลืมไว้ (Lost & Found):</span>
                     <span>เปิดตู้เย็นเช็คมินิบาร์ทันทีเพื่อแจ้ง Front Desk คืนมัดจำแขก และกวาดสายตาตรวจของลืมใต้เตียง/ตู้เสื้อผ้า หากพบให้ถ่ายรูปส่งระบบทันที</span>
                   </div>
                 </div>
               </div>
 
               {/* Category 2 */}
-              <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200/80 space-y-2.5">
+              <div className="py-4 space-y-2.5">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
-                  <span className="w-6 h-6 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center text-xs">
+                  <span className="w-6 h-6 rounded-lg bg-orange-50 text-[#F97316] flex items-center justify-center text-xs">
                     <Sparkles className="w-3.5 h-3.5" />
                   </span>
                   <span>หมวดที่ 2: การรื้อถอนและทำความสะอาดลึก (Stripping & Cleaning)</span>
                 </div>
                 <div className="space-y-2 text-xs text-slate-700 pl-4 sm:pl-8">
-                  <div className="p-2.5 bg-white rounded-xl border border-slate-100">
-                    <span className="font-bold text-amber-700 mr-1.5">4. รื้อผ้าปูเตียงและผ้าเช็ดตัวเก่า:</span>
+                  <div>
+                    <span className="font-semibold text-slate-900 mr-1.5">4. รื้อผ้าปูเตียงและผ้าเช็ดตัวเก่า:</span>
                     <span>ปลดปลอกหมอน ผ้าปู ผ้าเช็ดตัวลงถุงผ้า ห้ามวางผ้าใช้แล้วบนพื้นห้องเด็ดขาด</span>
                   </div>
-                  <div className="p-2.5 bg-white rounded-xl border border-slate-100">
-                    <span className="font-bold text-amber-700 mr-1.5">5. ฉีดน้ำยาฆ่าเชื้อห้องน้ำ 3-5 นาที:</span>
+                  <div>
+                    <span className="font-semibold text-slate-900 mr-1.5">5. ฉีดน้ำยาฆ่าเชื้อห้องน้ำ 3-5 นาที:</span>
                     <span>ฉีดน้ำยาชักโครก อ่างล้างหน้า ผนัง และพื้น ปล่อยให้น้ำยาทำปฏิกิริยาก่อนเริ่มขัดล้าง</span>
                   </div>
-                  <div className="p-2.5 bg-white rounded-xl border border-slate-100">
-                    <span className="font-bold text-amber-700 mr-1.5">6. เก็บขยะทุกจุดและเช็ดถังขยะ:</span>
+                  <div>
+                    <span className="font-semibold text-slate-900 mr-1.5">6. เก็บขยะทุกจุดและเช็ดถังขยะ:</span>
                     <span>รวบถุงขยะทุกจุด ทิ้งลงถังใหญ่ เช็ดทำความสะอาดถัง และสวมถุงขยะใหม่ทุกครั้ง</span>
                   </div>
                 </div>
               </div>
 
               {/* Category 3 */}
-              <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200/80 space-y-2.5">
+              <div className="py-4 space-y-2.5">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
-                  <span className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">
+                  <span className="w-6 h-6 rounded-lg bg-orange-50 text-[#F97316] flex items-center justify-center text-xs">
                     <Bed className="w-3.5 h-3.5" />
                   </span>
                   <span>หมวดที่ 3: การเซ็ตอัปห้องและเติมสิ่งอำนวยความสะดวก (Setup & Amenities)</span>
                 </div>
                 <div className="space-y-2 text-xs text-slate-700 pl-4 sm:pl-8">
-                  <div className="p-2.5 bg-white rounded-xl border border-slate-100">
-                    <span className="font-bold text-emerald-700 mr-1.5">7. ปูเตียงตึงเปรี๊ยะ (Hospital Corners):</span>
+                  <div>
+                    <span className="font-semibold text-slate-900 mr-1.5">7. ปูเตียงตึงเปรี๊ยะ (Hospital Corners):</span>
                     <span>ดึงผ้าปูเตียงให้ตึงเรียบ พับมุมสามเหลี่ยม ตบหมอนให้ฟู ไม่มีรอยยับหรือเส้นผม</span>
                   </div>
-                  <div className="p-2.5 bg-white rounded-xl border border-slate-100">
-                    <span className="font-bold text-emerald-700 mr-1.5">8. เช็ดห้องน้ำแห้งสนิท (Zero Moisture):</span>
+                  <div>
+                    <span className="font-semibold text-slate-900 mr-1.5">8. เช็ดห้องน้ำแห้งสนิท (Zero Moisture):</span>
                     <span>ขัดล้างกระจกใสไม่มีคราบน้ำ เช็ดพื้นและสุขภัณฑ์ให้แห้งสนิท ปิดฝาชักโครก</span>
                   </div>
-                  <div className="p-2.5 bg-white rounded-xl border border-slate-100">
-                    <span className="font-bold text-emerald-700 mr-1.5">9. เซ็ตของใช้และเติมมินิบาร์ครบถ้วน:</span>
+                  <div>
+                    <span className="font-semibold text-slate-900 mr-1.5">9. เซ็ตของใช้และเติมมินิบาร์ครบถ้วน:</span>
                     <span>เติมน้ำดื่ม 2 ขวด, ผ้าเช็ดตัว 2 ผืน, สบู่, แชมพู, แปรงสีฟัน และจัดของในตู้เย็นให้ครบเซ็ต</span>
                   </div>
                 </div>
               </div>
 
               {/* Category 4 */}
-              <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200/80 space-y-2.5">
+              <div className="pt-4 space-y-2.5">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
-                  <span className="w-6 h-6 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center text-xs">
+                  <span className="w-6 h-6 rounded-lg bg-orange-50 text-[#F97316] flex items-center justify-center text-xs">
                     <CheckCircle2 className="w-3.5 h-3.5" />
                   </span>
                   <span>หมวดที่ 4: การตรวจสอบขั้นสุดท้ายและความปลอดภัย (Final Inspection & Lock)</span>
                 </div>
                 <div className="space-y-2 text-xs text-slate-700 pl-4 sm:pl-8">
-                  <div className="p-2.5 bg-white rounded-xl border border-slate-100">
-                    <span className="font-bold text-purple-700 mr-1.5">10. กวาดและถูพื้นถอยหลังออกจากห้อง:</span>
+                  <div>
+                    <span className="font-semibold text-slate-900 mr-1.5">10. กวาดและถูพื้นถอยหลังออกจากห้อง:</span>
                     <span>กวาดและถูพื้นจากมุมในสุด ถอยหลังออกทางประตู เพื่อไม่ให้เกิดรอยเท้าบนพื้นสะอาด</span>
                   </div>
-                  <div className="p-2.5 bg-white rounded-xl border border-slate-100">
-                    <span className="font-bold text-purple-700 mr-1.5">11. ตรวจจุดสัมผัส + ฉีดสเปรย์ปรับอากาศ:</span>
+                  <div>
+                    <span className="font-semibold text-slate-900 mr-1.5">11. ตรวจจุดสัมผัส + ฉีดสเปรย์ปรับอากาศ:</span>
                     <span>เช็ดแอลกอฮอล์ที่ลูกบิด สวิตช์ไฟ ดึงผ้าม่านให้สวยงาม ฉีดสเปรย์กลิ่นโรงแรม</span>
                   </div>
-                  <div className="p-2.5 bg-white rounded-xl border border-slate-100">
-                    <span className="font-bold text-purple-700 mr-1.5">12. ล็อคห้องและกดเปลี่ยนสถานะในแอป:</span>
+                  <div>
+                    <span className="font-semibold text-slate-900 mr-1.5">12. ล็อคห้องและกดเปลี่ยนสถานะในแอป:</span>
                     <span>ดึงประตูล็อคสนิท และกดเปลี่ยนสถานะห้องเป็น "พร้อมขาย (Available)" ในแอป Keystay</span>
                   </div>
                 </div>
@@ -4747,7 +4756,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                   setIsSOPModalOpen(false);
                   showToast('รับทราบและยืนยันมาตรฐานการปฏิบัติงาน 12 ข้อเรียบร้อยแล้ว');
                 }}
-                className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
+                className="w-full py-3 px-4 rounded-xl bg-[#F97316] hover:bg-[#ea580c] active:scale-[0.99] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer"
               >
                 <Check className="w-4 h-4" />
                 <span>ฉันได้อ่านและเข้าใจมาตรฐานการปฏิบัติงานแล้ว</span>
@@ -5040,7 +5049,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                 onClick={handleConfirmStartWithBeforePhoto}
                 className={`flex-1 py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all ${
                   capturedBeforePhoto
-                    ? 'bg-gradient-to-r from-[#F97316] to-[#EA580C] hover:from-[#EA580C] text-white active:scale-98 cursor-pointer'
+                    ? 'bg-[#F97316] hover:bg-[#ea580c] text-white active:scale-98 cursor-pointer'
                     : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                 }`}
               >
