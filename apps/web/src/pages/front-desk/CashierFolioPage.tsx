@@ -410,18 +410,12 @@ export const CashierFolioPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <div
+            <span
               title={formatRelativeTime(lastRefreshed, locale)}
-              className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-200/60 shrink-0"
+              className="tabular-nums text-xs text-slate-500 shrink-0"
             >
-              <span
-                className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"
-                aria-hidden="true"
-              />
-              <span className="font-mono tabular-nums text-xs text-slate-500 font-medium">
-                {locale === 'th' ? `อัปเดตอัตโนมัติ: ${refreshTimeStr}` : `Auto-refresh: ${refreshTimeStr}`}
-              </span>
-            </div>
+              {locale === 'th' ? `อัปเดตอัตโนมัติ: ${refreshTimeStr}` : `Auto-refresh: ${refreshTimeStr}`}
+            </span>
           </div>
         </div>
 
@@ -452,53 +446,47 @@ export const CashierFolioPage: React.FC = () => {
             </div>
 
             {/* Filter Tabs */}
-            <div className="flex border-b border-slate-200 bg-slate-50/30 overflow-x-auto no-scrollbar text-xs">
+            <div className="flex border-b border-slate-200 bg-white overflow-x-auto no-scrollbar text-xs">
               <button
                 type="button"
                 onClick={() => setFilterTab('all')}
-                className={`flex-1 py-2.5 px-3 font-semibold text-center whitespace-nowrap transition-colors border-b-2 ${
+                className={`px-2.5 py-2.5 font-medium text-center whitespace-nowrap transition-colors border-b-2 ${
                   filterTab === 'all'
-                    ? 'border-slate-900 text-slate-900 bg-white'
+                    ? 'border-slate-900 text-slate-900 font-semibold'
                     : 'border-transparent text-slate-500 hover:text-slate-800'
                 }`}
               >
                 {locale === 'th' ? 'ทั้งหมด' : 'All'}
-                <span className="ml-1.5 px-1.5 py-0.2 rounded-full font-mono tabular-nums text-[10px] bg-slate-100 text-slate-600">
-                  {bills.length}
-                </span>
+                <span className="ml-1 tabular-nums text-slate-400">({bills.length})</span>
               </button>
               <button
                 type="button"
                 onClick={() => setFilterTab('pending')}
-                className={`flex-1 py-2.5 px-3 font-semibold text-center whitespace-nowrap transition-colors border-b-2 ${
+                className={`flex-1 px-2.5 py-2.5 font-medium text-center whitespace-nowrap transition-colors border-b-2 ${
                   filterTab === 'pending'
-                    ? 'border-amber-500 text-amber-900 bg-white'
+                    ? 'border-slate-900 text-slate-900 font-semibold'
                     : 'border-transparent text-slate-500 hover:text-slate-800'
                 }`}
               >
                 {locale === 'th' ? 'เปิดบิลอยู่ / กำลังพัก' : 'Pending'}
-                <span className="ml-1.5 px-1.5 py-0.2 rounded-full font-mono tabular-nums text-[10px] bg-amber-100 text-amber-800">
-                  {pendingCount}
-                </span>
+                <span className="ml-1 tabular-nums text-slate-400">({pendingCount})</span>
               </button>
               <button
                 type="button"
                 onClick={() => setFilterTab('paid')}
-                className={`flex-1 py-2.5 px-3 font-semibold text-center whitespace-nowrap transition-colors border-b-2 ${
+                className={`px-2.5 py-2.5 font-medium text-center whitespace-nowrap transition-colors border-b-2 ${
                   filterTab === 'paid'
-                    ? 'border-emerald-600 text-emerald-900 bg-white'
+                    ? 'border-slate-900 text-slate-900 font-semibold'
                     : 'border-transparent text-slate-500 hover:text-slate-800'
                 }`}
               >
                 {locale === 'th' ? 'ชำระแล้ว' : 'Paid'}
-                <span className="ml-1.5 px-1.5 py-0.2 rounded-full font-mono tabular-nums text-[10px] bg-emerald-100 text-emerald-800">
-                  {paidCount}
-                </span>
+                <span className="ml-1 tabular-nums text-slate-400">({paidCount})</span>
               </button>
             </div>
 
-            {/* Bill List Cards */}
-            <div className="p-3 space-y-2 max-h-[calc(100vh-260px)] overflow-y-auto">
+            {/* Bill List Rows (Flat divide-y list, no nested cards) */}
+            <div className="divide-y divide-slate-200 max-h-[calc(100vh-260px)] overflow-y-auto">
               {filteredBills.length === 0 ? (
                 <div className="py-12 px-4 text-center text-slate-400 text-xs font-sans">
                   {locale === 'th' ? 'ไม่พบบิลตามเงื่อนไขที่ค้นหา' : 'No bills found matching criteria'}
@@ -525,67 +513,59 @@ export const CashierFolioPage: React.FC = () => {
                       key={b.id}
                       type="button"
                       onClick={() => loadBillDetails(b.id)}
-                      className={`w-full text-left p-3 rounded-lg border transition-all ${
+                      className={`w-full text-left px-4 py-3.5 transition-colors ${
                         isSelected
-                          ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
-                          : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800'
+                          ? 'bg-slate-900 text-white'
+                          : 'bg-white hover:bg-slate-50 text-slate-800'
                       }`}
                     >
-                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <div className="flex items-center justify-between gap-2 mb-1">
                         <div className="flex items-center gap-2 min-w-0">
                           <span
-                            className={`font-mono font-bold text-xs px-2 py-0.5 rounded border tabular-nums ${
-                              isSelected
-                                ? 'bg-white/10 text-white border-white/20'
-                                : 'bg-slate-100 text-slate-800 border-slate-200'
+                            className={`font-semibold text-sm tabular-nums ${
+                              isSelected ? 'text-white' : 'text-slate-900'
                             }`}
                           >
                             {roomNum}
                           </span>
+                          <span className={isSelected ? 'text-slate-500' : 'text-slate-300'}>·</span>
                           <span
-                            className={`font-sans font-semibold text-sm truncate ${
-                              isSelected ? 'text-white' : 'text-slate-900'
+                            className={`font-sans font-medium text-sm truncate ${
+                              isSelected ? 'text-white' : 'text-slate-800'
                             }`}
                           >
                             {b.guestName || t('common.guest')}
                           </span>
                         </div>
                         <span
-                          className={`text-[11px] px-2 py-0.5 rounded-full font-mono font-medium tabular-nums tracking-tight border shrink-0 ${
-                            isSelected
-                              ? isPaid
-                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                                : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
-                              : isPaid
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                : 'bg-amber-50 text-amber-700 border-amber-200'
+                          className={`inline-flex items-center gap-1.5 text-xs font-medium shrink-0 ${
+                            isSelected ? 'text-slate-200' : 'text-slate-700'
                           }`}
                         >
+                          <span
+                            className={`w-2 h-2 rounded-full shrink-0 ${
+                              isPaid ? 'bg-emerald-500' : 'bg-amber-500'
+                            }`}
+                          />
                           {isPaid ? (locale === 'th' ? 'ชำระแล้ว' : 'Paid') : (locale === 'th' ? 'รอชำระ' : 'Pending')}
                         </span>
                       </div>
 
-                      <div className="flex items-center justify-between text-xs mt-2 pt-2 border-t border-slate-100/10">
+                      <div className="flex items-center justify-between text-xs mt-1.5">
                         <span
-                          className={`font-mono text-[11px] truncate ${
+                          className={`text-xs tabular-nums truncate ${
                             isSelected ? 'text-slate-400' : 'text-slate-500'
                           }`}
                         >
                           {b.billNumber || b.id.slice(0, 12)}
                         </span>
                         <div className="flex items-center gap-1.5 shrink-0">
-                          <span
-                            className={`text-[10px] px-1.5 py-0.5 rounded font-medium border ${
-                              isSelected
-                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            }`}
-                          >
+                          <span className={`text-xs ${isSelected ? 'text-slate-400' : 'text-slate-500'}`}>
                             {locale === 'th' ? 'ยอดสุทธิ' : 'Net Due'}
                           </span>
                           <span
-                            className={`font-mono font-bold tabular-nums text-sm ${
-                              isSelected ? 'text-emerald-300' : 'text-slate-900'
+                            className={`font-semibold tabular-nums text-sm ${
+                              isSelected ? 'text-white' : 'text-slate-900'
                             }`}
                           >
                             {formatCurrency(netAmount)}

@@ -700,12 +700,10 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
             {/* Header */}
             <div className="px-6 py-4 border-b border-slate-200/80 flex items-center justify-between bg-slate-50/70">
               <div className="flex items-center gap-3">
-                <span className="text-3xl font-bold font-mono tracking-tight text-slate-900">
+                <span className="text-3xl font-bold tracking-tight text-slate-900">
                   {room.roomNumber}
                 </span>
-                <span
-                  className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}
-                >
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
                   <span className={`w-2 h-2 rounded-full ${statusCfg.dot}`} />
                   <span>{localizedStatus}</span>
                 </span>
@@ -778,7 +776,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                           <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 block mb-0.5">
                             {locale === 'th' ? 'รหัสการจอง' : 'Booking Code'}
                           </span>
-                          <span className="font-mono text-xs font-bold text-slate-700 bg-white px-2 py-0.5 rounded border border-slate-200">
+                          <span className="text-xs font-bold text-slate-700 bg-white px-2 py-0.5 rounded border border-slate-200">
                             {reservationCode}
                           </span>
                         </div>
@@ -790,7 +788,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                           <span className="text-slate-500 block mb-0.5">
                             {t('res.phoneNumber') || (locale === 'th' ? 'เบอร์โทรศัพท์' : 'Phone')}
                           </span>
-                          <span className="font-mono font-medium text-slate-800 flex items-center gap-1.5">
+                          <span className="font-medium text-slate-800 flex items-center gap-1.5">
                             <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                             <span>{guestPhone}</span>
                           </span>
@@ -800,7 +798,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                           <span className="text-slate-500 block mb-0.5">
                             {locale === 'th' ? 'เลขบัตรประชาชน / พาสปอร์ต' : 'ID / Passport'}
                           </span>
-                          <span className="font-mono font-medium text-slate-800 flex items-center gap-1.5">
+                          <span className="font-medium text-slate-800 flex items-center gap-1.5">
                             <CreditCard className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                             <span>{guestIdCard}</span>
                           </span>
@@ -842,7 +840,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                             <Calendar className="w-3.5 h-3.5 text-slate-400" />
                             <span>{locale === 'th' ? 'กำหนดเช็คเอาต์:' : 'Check-out:'}</span>
                           </span>
-                          <span className="font-mono font-semibold text-slate-800">
+                          <span className="font-semibold text-slate-800">
                             {currentReservation.checkOutDate}
                           </span>
                         </div>
@@ -976,7 +974,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                                 >
                                   <div className="truncate pr-2">
                                     <span className="font-medium text-slate-800">{req.amenityName}</span>
-                                    <span className="text-slate-500 font-mono ml-1.5">x{req.quantity}</span>
+                                    <span className="text-slate-500 ml-1.5">x{req.quantity}</span>
                                   </div>
                                   <span
                                     className={`px-2 py-0.5 rounded text-[10px] font-semibold border shrink-0 ${stBadge.cls}`}
@@ -1072,7 +1070,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                           {t('common.floor', { floor: '' }).replace('{floor}', '').trim() ||
                             (locale === 'th' ? 'ชั้น' : 'Floor')}
                         </span>
-                        <span className="font-mono text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                        <span className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
                           <Layers className="w-4 h-4 text-slate-500 shrink-0" />
                           <span>{t('common.floor', { floor: room.floor || '1' })}</span>
                         </span>
@@ -1082,7 +1080,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                         <span className="text-xs text-slate-500 block mb-0.5">
                           {t('drawer.price')}
                         </span>
-                        <span className="font-mono tabular-nums text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                        <span className="tabular-nums text-sm font-semibold text-slate-900 flex items-center gap-1.5">
                           <DollarSign className="w-4 h-4 text-emerald-600 shrink-0" />
                           <span>{formattedPrice ? `${formattedPrice}${t('common.pricePerNight')}` : '—'}</span>
                         </span>
@@ -1148,7 +1146,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                               ? ' • '
                               : ''}
                             {formattedHousekeepingCompletedAt ? (
-                              <span className="font-mono tabular-nums">
+                              <span className="tabular-nums">
                                 {formattedHousekeepingCompletedAt}
                               </span>
                             ) : null}
@@ -1485,44 +1483,42 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                     {locale === 'th' ? 'สรุปห้องพักสำหรับการจอง' : 'Room Summary'}
                   </span>
                   <div className="flex items-center gap-2.5">
-                    <span className="text-3xl font-bold font-mono tracking-tight text-slate-900">
+                    <span className="text-3xl font-bold tabular-nums tracking-tight text-slate-900">
                       {room.roomNumber}
                     </span>
-                    <span
-                      className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full border ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}
-                    >
-                      <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
+                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                      <span className={`w-2 h-2 rounded-full ${statusCfg.dot}`} />
                       <span>{localizedStatus}</span>
                     </span>
                   </div>
                 </div>
 
-                {/* Specs Box */}
-                <div className="bg-white rounded-xl border border-slate-200/80 p-3.5 space-y-2.5 shadow-2xs">
+                {/* Specs List (Flat, no nested card) */}
+                <div className="pt-3 border-t border-slate-200 space-y-2.5">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-500">{t('common.roomType')}</span>
                     <span className="font-semibold text-slate-800 flex items-center gap-1.5">
-                      <BedDouble className="w-3.5 h-3.5 text-slate-500" />
+                      <BedDouble className="w-3.5 h-3.5 text-slate-400" />
                       {localizeRoomType(roomType?.name, locale)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-500">{locale === 'th' ? 'ชั้น' : 'Floor'}</span>
-                    <span className="font-mono font-semibold text-slate-800 flex items-center gap-1.5">
-                      <Layers className="w-3.5 h-3.5 text-slate-500" />
+                    <span className="font-semibold tabular-nums text-slate-800 flex items-center gap-1.5">
+                      <Layers className="w-3.5 h-3.5 text-slate-400" />
                       {t('common.floor', { floor: room.floor || '1' })}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-500">{t('drawer.capacity')}</span>
                     <span className="font-semibold text-slate-800 flex items-center gap-1.5">
-                      <Users className="w-3.5 h-3.5 text-slate-500" />
+                      <Users className="w-3.5 h-3.5 text-slate-400" />
                       {t('drawer.capacityCount', { count: roomType?.capacity || 2 })}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
+                  <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-200/70">
                     <span className="text-slate-500">{t('drawer.price')}</span>
-                    <span className="font-mono tabular-nums font-bold text-slate-900 text-sm">
+                    <span className="tabular-nums font-bold text-slate-900 text-sm">
                       {formattedPrice ? `${formattedPrice}${t('common.pricePerNight')}` : '—'}
                     </span>
                   </div>
@@ -1530,44 +1526,37 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
 
                 {/* Amenities Chips */}
                 {roomType?.amenities && roomType.amenities.length > 0 && (
-                  <div className="space-y-1.5">
+                  <div className="pt-3 border-t border-slate-200 space-y-1.5">
                     <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 block">
                       {t('drawer.amenities')}
                     </span>
-                    <div className="flex flex-wrap gap-1">
-                      {roomType.amenities.slice(0, 5).map((amenity, idx) => (
-                        <span
-                          key={idx}
-                          className="text-[11px] px-2 py-0.5 font-medium bg-slate-200/60 text-slate-700 rounded border border-slate-300/60"
-                        >
-                          {localizeAmenity(amenity, locale)}
-                        </span>
-                      ))}
-                    </div>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      {roomType.amenities.slice(0, 5).map((a) => localizeAmenity(a, locale)).join(' · ')}
+                    </p>
                   </div>
                 )}
 
-                {/* Real-time Calculation Summary Card */}
-                <div className="bg-emerald-50/60 border border-emerald-200/80 rounded-xl p-3.5 space-y-1.5 text-xs">
+                {/* Real-time Calculation Summary (Flat, no green card) */}
+                <div className="pt-3 border-t border-slate-200 space-y-1.5 text-xs">
                   <div className="flex justify-between text-slate-600">
                     <span>
                       {locale === 'th'
                         ? `ค่าห้องพัก (${nightsCount} คืน)`
                         : `Room charge (${nightsCount} nights)`}
                     </span>
-                    <span className="font-mono tabular-nums font-semibold text-slate-800">
+                    <span className="tabular-nums font-semibold text-slate-800">
                       {formatCurrency(roomCharges)}
                     </span>
                   </div>
                   <div className="flex justify-between text-slate-600">
                     <span>{locale === 'th' ? 'มัดจำกุญแจ' : 'Key deposit'}</span>
-                    <span className="font-mono tabular-nums font-semibold text-slate-800">
+                    <span className="tabular-nums font-semibold text-slate-800">
                       {formatCurrency(depositNum)}
                     </span>
                   </div>
-                  <div className="flex justify-between text-slate-900 font-bold pt-1.5 border-t border-emerald-200 text-sm">
+                  <div className="flex justify-between text-slate-900 font-bold pt-2 border-t border-slate-200 text-sm">
                     <span>{locale === 'th' ? 'ยอดรวมโดยประมาณ' : 'Estimated total'}</span>
-                    <span className="font-mono tabular-nums text-emerald-700">
+                    <span className="tabular-nums text-[#F97316]">
                       {formatCurrency(estimatedTotal)}
                     </span>
                   </div>
@@ -1739,8 +1728,8 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                             onClick={() => setBookingSource(c.id as any)}
                             className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg border text-xs font-medium transition-all min-h-[36px] ${
                               isSelected
-                                ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
-                                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                                ? 'bg-[#F97316] text-white border-[#F97316]'
+                                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                             }`}
                           >
                             <Icon className="w-3.5 h-3.5 shrink-0" />
@@ -1754,13 +1743,13 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
 
                 {/* Single Verification Point Rule Notice */}
                 {(bookingSource === 'phone' || bookingSource === 'facebook') && (
-                  <div className="p-2.5 bg-amber-50/90 border border-amber-300 rounded-xl flex items-start gap-2 text-xs text-amber-900 animate-in fade-in duration-150">
-                    <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="pl-3 py-1 border-l-2 border-[#F97316] flex items-start gap-2 text-xs text-slate-600">
+                    <AlertCircle className="w-3.5 h-3.5 text-[#F97316] shrink-0 mt-0.5" />
                     <div className="space-y-0.5 leading-snug">
-                      <span className="font-semibold block">
+                      <span className="font-semibold text-slate-800 block">
                         {locale === 'th' ? 'นโยบายการยืนยันหลักฐานการชำระเงิน' : 'Single Verification Point Policy'}
                       </span>
-                      <span className="text-[11px]">
+                      <span className="text-[11px] text-slate-500">
                         {locale === 'th'
                           ? 'ลูกค้าต้องส่งสลิปยืนยันเข้าเพจ Facebook ของโรงแรม พนักงานสามารถตรวจสอบแชทเพจและแนบสลิปด้านล่างได้ทันที'
                           : 'Guests must submit payment slip via official Facebook Page inbox. Staff can attach slip below.'}
@@ -1849,7 +1838,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                         }
                         if (validationErrors.length > 0) setValidationErrors([]);
                       }}
-                      className="w-full h-9 px-3 text-xs font-mono bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors"
+                      className="w-full h-9 px-3 text-xs bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors"
                     />
                   </div>
 
@@ -1858,7 +1847,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                       <label className="block text-xs font-medium text-slate-700">
                         {t('res.checkOutDate')} <span className="text-rose-500 font-bold ml-1 text-xs select-none" aria-hidden="true">*</span>
                       </label>
-                      <span className="text-[10px] font-mono font-medium text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded">
+                      <span className="text-[10px] font-medium text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded">
                         {nightsCount} {locale === 'th' ? 'คืน' : 'night(s)'}
                       </span>
                     </div>
@@ -1871,7 +1860,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                         setCheckOutDate(date);
                         if (validationErrors.length > 0) setValidationErrors([]);
                       }}
-                      className="w-full h-9 px-3 text-xs font-mono bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors"
+                      className="w-full h-9 px-3 text-xs bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors"
                     />
                   </div>
                 </div>
@@ -1892,7 +1881,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                           setGuestsCount(Math.min(parseInt(e.target.value) || 1, maxCapacity));
                           if (validationErrors.length > 0) setValidationErrors([]);
                         }}
-                        className="w-full h-9 pl-3 pr-8 text-xs font-mono bg-white text-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors appearance-none"
+                        className="w-full h-9 pl-3 pr-8 text-xs bg-white text-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors appearance-none"
                       >
                         {Array.from({ length: maxCapacity }, (_, i) => i + 1).map((num) => (
                           <option key={num} value={num}>
@@ -1916,7 +1905,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                         setDepositAmount(e.target.value);
                         if (validationErrors.length > 0) setValidationErrors([]);
                       }}
-                      className="w-full h-9 px-3 text-xs font-mono bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors"
+                      className="w-full h-9 px-3 text-xs bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors"
                     />
                   </div>
                 </div>
@@ -2187,7 +2176,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
               </span>
-              <h4 className="text-sm sm:text-base font-semibold text-white tracking-tight font-mono tabular-nums">
+              <h4 className="text-sm sm:text-base font-semibold text-white tracking-tight tabular-nums">
                 {lightboxPhoto.title}
               </h4>
             </div>
@@ -2200,7 +2189,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
               aria-label="Close photo preview"
             >
               <X className="w-5 h-5" />
-              <span className="hidden sm:inline font-mono text-[11px] text-slate-400">ESC</span>
+              <span className="hidden sm:inline text-[11px] text-slate-400">ESC</span>
             </button>
           </div>
 
@@ -2219,7 +2208,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
 
           {/* Footer bar with tip */}
           <div className="text-center py-1">
-            <p className="text-[11px] font-mono text-slate-400">
+            <p className="text-[11px] text-slate-400">
               {locale === 'th'
                 ? 'กด ESC หรือคลิกพื้นที่ภายนอกเพื่อปิด'
                 : 'Press ESC or click outside to dismiss'}

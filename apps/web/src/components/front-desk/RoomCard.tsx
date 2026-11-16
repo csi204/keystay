@@ -249,20 +249,14 @@ export const RoomCard: React.FC<RoomCardProps> = ({
           : 'border-slate-200'
       }`}
     >
-      {/* Top Header: Room Number, Tempered Glass Status Badge & Quick Actions Menu */}
+      {/* Top Header: Room Number, Clean Dot Status & Quick Actions Menu */}
       <div className={`flex items-center justify-between gap-2 ${isCompact ? 'mb-1.5' : 'mb-2'}`}>
-        <span className="text-lg font-bold font-mono tracking-tight text-slate-900 group-hover:text-slate-800">
+        <span className="text-lg font-bold tracking-tight tabular-nums text-slate-900 group-hover:text-slate-800">
           {room.roomNumber}
         </span>
         <div className="flex items-center gap-1.5">
-          <span
-            className={`inline-flex items-center gap-1.5 rounded-full text-xs px-2.5 py-0.5 font-semibold shadow-2xs ${
-              room.status === 'reserved'
-                ? 'bg-amber-100 text-amber-950 border border-amber-300'
-                : 'text-slate-900 bg-slate-100/70 backdrop-blur-xs border border-slate-200/70'
-            }`}
-          >
-            <span className={`w-2 h-2 rounded-full shrink-0 ${statusCfg.dot}`} />
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+            <span className={`w-2 h-2 rounded-full shrink-0 ${statusCfg.dot.replace(/ring-\S+/g, '').trim()}`} />
             <span>{localizedStatus}</span>
           </span>
           <div className="relative" ref={menuRef}>
@@ -327,104 +321,110 @@ export const RoomCard: React.FC<RoomCardProps> = ({
           {localizeRoomType(roomType?.name, locale)}
         </p>
         <div className="flex items-center justify-between">
-          <span className="text-xs text-slate-600 font-mono tracking-tight">
+          <span className="text-xs text-slate-500 tabular-nums">
             {t('common.floor', { floor: resolvedFloor })}
           </span>
           {formattedPrice && (
-            <span className="text-xs sm:text-sm font-bold font-mono text-slate-900 tracking-tight">
+            <span className="text-xs sm:text-sm font-semibold tabular-nums text-slate-900">
               {formattedPrice}{t('common.pricePerNight')}
             </span>
           )}
         </div>
       </div>
 
-      {/* Bottom Spec / Status Section (Clean, without inner dividing line) */}
-      <div className={isCompact ? 'mt-2.5' : 'mt-3'}>
-        {/* Available Rooms: Micro-Chips for BedDouble, Users, Bath */}
+      {/* Bottom Spec / Status Section (Flat, no nested cards or tinted chips) */}
+      <div className={`${isCompact ? 'mt-2.5 pt-2' : 'mt-3 pt-2.5'} border-t border-slate-100`}>
+        {/* Available Rooms */}
         {room.status === 'available' && (
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="bg-slate-50 border border-slate-200 text-slate-700 text-[11px] px-2 py-0.5 rounded-md font-medium inline-flex items-center gap-1">
-              <BedDouble className="w-3.5 h-3.5 text-slate-500 shrink-0" strokeWidth={1.75} aria-hidden="true" />
-              <span className="leading-none">{bedLabel}</span>
-            </span>
-            <span className="bg-slate-50 border border-slate-200 text-slate-700 text-[11px] px-2 py-0.5 rounded-md font-medium inline-flex items-center gap-1">
-              <Users className="w-3.5 h-3.5 text-slate-500 shrink-0" strokeWidth={1.75} aria-hidden="true" />
-              <span className="leading-none">{capacityLabel}</span>
-            </span>
-            <span className="bg-slate-50 border border-slate-200 text-slate-700 text-[11px] px-2 py-0.5 rounded-md font-medium inline-flex items-center gap-1">
-              <Bath className="w-3.5 h-3.5 text-slate-500 shrink-0" strokeWidth={1.75} aria-hidden="true" />
-              <span className="leading-none">{bathLabel}</span>
-            </span>
+          <div className="space-y-1">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-600">
+              <span className="inline-flex items-center gap-1">
+                <BedDouble className="w-3.5 h-3.5 text-slate-400 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+                <span>{bedLabel}</span>
+              </span>
+              <span className="text-slate-300" aria-hidden="true">•</span>
+              <span className="inline-flex items-center gap-1">
+                <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+                <span>{capacityLabel}</span>
+              </span>
+              <span className="text-slate-300" aria-hidden="true">•</span>
+              <span className="inline-flex items-center gap-1">
+                <Bath className="w-3.5 h-3.5 text-slate-400 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+                <span>{bathLabel}</span>
+              </span>
+            </div>
             {room.notes && (
-              <div
+              <p
                 title={localizeRoomNote(room.notes, locale)}
-                className="inline-flex items-center gap-1 text-[11px] bg-amber-50 text-amber-900 px-2 py-0.5 rounded border border-amber-200 max-w-full truncate"
+                className="text-xs text-slate-500 truncate flex items-center gap-1"
               >
-                <FileText className="w-3 h-3 text-amber-700 shrink-0" />
-                <span className="truncate line-clamp-1">{localizeRoomNote(room.notes, locale)}</span>
-              </div>
+                <FileText className="w-3 h-3 text-slate-400 shrink-0" aria-hidden="true" />
+                <span className="truncate">{localizeRoomNote(room.notes, locale)}</span>
+              </p>
             )}
           </div>
         )}
 
-        {/* Occupied Rooms: Guest Name & Checkout Date Chip */}
+        {/* Occupied Rooms */}
         {room.status === 'occupied' && (
-          <div className="flex flex-wrap items-center gap-1.5">
-            {displayGuest && (
-              <div className="inline-flex items-center gap-1.5 bg-blue-50/80 border border-blue-200 text-xs sm:text-sm font-semibold text-blue-900 px-2.5 py-1 rounded-md max-w-full">
-                <User className="w-3.5 h-3.5 text-blue-600 shrink-0" strokeWidth={1.75} aria-hidden="true" />
-                <span className="truncate leading-none">{displayGuest}</span>
-              </div>
-            )}
-            {displayCheckout && (
-              <div className="inline-flex items-center gap-1 bg-blue-50/80 border border-blue-200 text-blue-900 text-xs px-2 py-1 rounded-md font-mono">
-                <Calendar className="w-3 h-3 text-blue-600 shrink-0" strokeWidth={1.75} aria-hidden="true" />
-                <span className="leading-none">{locale === 'th' ? `ออก: ${formatDisplayDate(displayCheckout, locale)}` : `Out: ${formatDisplayDate(displayCheckout, locale)}`}</span>
-              </div>
-            )}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between gap-2 text-xs">
+              {displayGuest && (
+                <span className="inline-flex items-center gap-1.5 font-medium text-slate-800 truncate">
+                  <User className="w-3.5 h-3.5 text-slate-400 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+                  <span className="truncate">{displayGuest}</span>
+                </span>
+              )}
+              {displayCheckout && (
+                <span className="inline-flex items-center gap-1 text-slate-500 tabular-nums shrink-0">
+                  <Calendar className="w-3 h-3 text-slate-400 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+                  <span>{locale === 'th' ? `ออก: ${formatDisplayDate(displayCheckout, locale)}` : `Out: ${formatDisplayDate(displayCheckout, locale)}`}</span>
+                </span>
+              )}
+            </div>
             {room.notes && (
-              <div
+              <p
                 title={localizeRoomNote(room.notes, locale)}
-                className="inline-flex items-center gap-1 text-[11px] bg-amber-50 text-amber-900 px-2 py-0.5 rounded border border-amber-200 max-w-full truncate"
+                className="text-xs text-slate-500 truncate flex items-center gap-1"
               >
-                <FileText className="w-3 h-3 text-amber-700 shrink-0" />
-                <span className="truncate line-clamp-1">{localizeRoomNote(room.notes, locale)}</span>
-              </div>
+                <FileText className="w-3 h-3 text-slate-400 shrink-0" aria-hidden="true" />
+                <span className="truncate">{localizeRoomNote(room.notes, locale)}</span>
+              </p>
             )}
           </div>
         )}
 
-        {/* Reserved Rooms: Display Guest Name */}
+        {/* Reserved Rooms */}
         {room.status === 'reserved' && (
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="space-y-1">
             {displayGuest && (
               <span
-                className="inline-flex items-center gap-1 text-xs bg-amber-100 text-amber-950 font-semibold border border-amber-300 px-2 py-0.5 rounded max-w-[140px] truncate"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-800 max-w-full truncate"
                 title={displayGuest}
               >
-                <User className="w-3 h-3 text-amber-800 shrink-0" strokeWidth={1.75} />
+                <User className="w-3.5 h-3.5 text-slate-400 shrink-0" strokeWidth={1.75} aria-hidden="true" />
                 <span className="truncate">{displayGuest}</span>
               </span>
             )}
             {room.notes ? (
-              <div
+              <p
                 title={localizeRoomNote(room.notes, locale)}
-                className="inline-flex items-center gap-1 text-[11px] bg-amber-50 text-amber-900 px-2 py-0.5 rounded border border-amber-200 max-w-full truncate"
+                className="text-xs text-slate-500 truncate flex items-center gap-1"
               >
-                <FileText className="w-3 h-3 text-amber-700 shrink-0" />
-                <span className="truncate line-clamp-1">{localizeRoomNote(room.notes, locale)}</span>
-              </div>
+                <FileText className="w-3 h-3 text-slate-400 shrink-0" aria-hidden="true" />
+                <span className="truncate">{localizeRoomNote(room.notes, locale)}</span>
+              </p>
             ) : !displayGuest ? (
-              <span className="text-slate-400 font-mono text-[11px]">—</span>
+              <span className="text-slate-400 text-xs">—</span>
             ) : null}
           </div>
         )}
 
-        {/* Maintenance & Out of Order: Prominent reason notice box */}
+        {/* Maintenance & Out of Order */}
         {(room.status === 'maintenance' || room.status === 'out_of_order') && (
-          <div className="bg-amber-50/90 border border-amber-200 text-amber-800 text-xs px-2.5 py-1.5 rounded-md font-medium flex items-center gap-1.5">
-            <Wrench className="w-3.5 h-3.5 text-amber-600 shrink-0" strokeWidth={1.75} aria-hidden="true" />
-            <span className="truncate leading-none">{maintenanceReason}</span>
+          <div className="text-xs text-slate-600 flex items-center gap-1.5">
+            <Wrench className="w-3.5 h-3.5 text-rose-500 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+            <span className="truncate">{maintenanceReason}</span>
           </div>
         )}
 
@@ -434,17 +434,17 @@ export const RoomCard: React.FC<RoomCardProps> = ({
           room.status !== 'reserved' &&
           room.status !== 'maintenance' &&
           room.status !== 'out_of_order' && (
-            <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-600 leading-snug">
+            <div className="text-xs text-slate-500 leading-snug">
               {room.notes ? (
-                <div
+                <p
                   title={localizeRoomNote(room.notes, locale)}
-                  className="inline-flex items-center gap-1 text-[11px] bg-amber-50 text-amber-900 px-2 py-0.5 rounded border border-amber-200 max-w-full truncate"
+                  className="inline-flex items-center gap-1 max-w-full truncate"
                 >
-                  <FileText className="w-3 h-3 text-amber-700 shrink-0" />
-                  <span className="truncate line-clamp-1">{localizeRoomNote(room.notes, locale)}</span>
-                </div>
+                  <FileText className="w-3 h-3 text-slate-400 shrink-0" aria-hidden="true" />
+                  <span className="truncate">{localizeRoomNote(room.notes, locale)}</span>
+                </p>
               ) : (
-                <span className="text-slate-400 font-mono text-[11px]">—</span>
+                <span className="text-slate-400 text-xs">—</span>
               )}
             </div>
           )}

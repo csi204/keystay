@@ -346,13 +346,13 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
 
           {/* Single Verification Point Rule Notice */}
           {(bookingSource === 'phone' || bookingSource === 'facebook') && (
-            <div className="p-3 bg-amber-50/90 border border-amber-300 rounded-lg flex items-start gap-2.5 text-xs text-amber-900 animate-in fade-in duration-150">
-              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <div className="pl-3 py-1 border-l-2 border-[#F97316] flex items-start gap-2.5 text-xs text-slate-600">
+              <AlertCircle className="w-4 h-4 text-[#F97316] shrink-0 mt-0.5" />
               <div className="space-y-0.5">
-                <span className="font-semibold block">
+                <span className="font-semibold text-slate-800 block">
                   {locale === 'th' ? 'นโยบายการยืนยันหลักฐานการชำระเงิน' : 'Single Verification Point Policy'}
                 </span>
-                <span>
+                <span className="text-slate-500">
                   {locale === 'th'
                     ? 'ลูกค้าต้องส่งสลิปยืนยันเข้าเพจ Facebook ของโรงแรม พนักงานสามารถตรวจสอบแชทเพจและแนบสลิปด้านล่างได้ทันที'
                     : 'Guests must submit payment slip via official Facebook Page inbox. Staff can attach slip below.'}
@@ -499,7 +499,7 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
                       setCheckOutDate(date);
                     }
                   }}
-                  className="w-full text-sm py-2 px-3 bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono tabular-nums"
+                  className="w-full text-sm py-2 px-3 bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 tabular-nums"
                 />
               </div>
 
@@ -513,7 +513,7 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
                   placement="top"
                   value={checkOutDate}
                   onChange={setCheckOutDate}
-                  className={`w-full text-sm py-2 px-3 bg-white text-slate-900 placeholder:text-slate-400 border rounded-md focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono tabular-nums ${
+                  className={`w-full text-sm py-2 px-3 bg-white text-slate-900 placeholder:text-slate-400 border rounded-md focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 tabular-nums ${
                     isDateRangeInvalid ? 'border-rose-400 ring-1 ring-rose-500/20' : 'border-slate-300'
                   }`}
                 />
@@ -539,7 +539,7 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
                     step="50"
                     value={depositAmount}
                     onChange={(e) => setDepositAmount(e.target.value)}
-                    className="w-full text-sm py-2 px-3 pl-9 bg-white text-slate-900 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="w-full text-sm py-2 px-3 pl-9 bg-white text-slate-900 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-slate-900 tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
               </div>
@@ -635,7 +635,7 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
             </div>
             <div className="text-right">
               <span className="text-slate-500 block text-xs">{t('res.estimatedTotal')}</span>
-              <span className="text-base font-bold font-mono text-slate-900 tabular-nums">{formatCurrency(totalAmount)}</span>
+              <span className="text-base font-bold text-slate-900 tabular-nums">{formatCurrency(totalAmount)}</span>
             </div>
           </div>
 

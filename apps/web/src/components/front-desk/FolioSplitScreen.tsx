@@ -302,18 +302,17 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
                 <Receipt className="w-4 h-4 sm:w-5 sm:h-5 text-slate-700" />
                 <span>{t('folio.itemizedTitle')}</span>
               </h2>
-              <span
-                className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-medium tabular-nums border ${
-                  isPaid
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                    : 'bg-amber-50 text-amber-700 border-amber-200'
-                }`}
-              >
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                <span
+                  className={`w-2 h-2 rounded-full shrink-0 ${
+                    isPaid ? 'bg-emerald-500' : 'bg-amber-500'
+                  }`}
+                />
                 {isPaid ? (locale === 'th' ? 'ชำระแล้ว' : 'Paid') : (locale === 'th' ? 'รอชำระ' : 'Pending')}
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-1 font-sans">
-              {t('common.room')} <span className="font-mono font-medium tracking-tight tabular-nums text-slate-800">{bill.roomNumber || '—'}</span> · {t('common.guest')}: <span className="font-medium text-slate-800">{bill.guestName || t('common.guest')}</span>
+              {t('common.room')} <span className="font-medium tabular-nums text-slate-800">{bill.roomNumber || '—'}</span> · {t('common.guest')}: <span className="font-medium text-slate-800">{bill.guestName || t('common.guest')}</span>
             </p>
           </div>
 
@@ -323,9 +322,9 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
                 <button
                   type="button"
                   onClick={onRequestAmenities}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[38px] text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-md shadow-xs transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[38px] text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded-md shadow-xs transition-colors cursor-pointer"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                  <Sparkles className="w-3.5 h-3.5 text-slate-500" />
                   <span>{locale === 'th' ? 'ขอของใช้เสริม' : 'Amenities'}</span>
                 </button>
               )}
@@ -348,9 +347,9 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
               <tr className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-700 uppercase tracking-wider py-3">
                 <th className="py-3 px-4">{t('folio.category')}</th>
                 <th className="py-3 px-4">{t('folio.item')}</th>
-                <th className="py-3 px-4 text-center font-mono tracking-tight tabular-nums">{t('folio.qty')}</th>
-                <th className="py-3 px-4 text-right font-mono tracking-tight tabular-nums">{t('folio.unitPrice')}</th>
-                <th className="py-3 px-4 text-right font-mono tracking-tight tabular-nums">{t('folio.amount')}</th>
+                <th className="py-3 px-4 text-center tracking-tight tabular-nums">{t('folio.qty')}</th>
+                <th className="py-3 px-4 text-right tracking-tight tabular-nums">{t('folio.unitPrice')}</th>
+                <th className="py-3 px-4 text-right tracking-tight tabular-nums">{t('folio.amount')}</th>
                 {!isPaid && <th className="py-3 px-4 text-center">{t('common.delete')}</th>}
               </tr>
             </thead>
@@ -386,13 +385,13 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
                         </span>
                       </div>
                     </td>
-                    <td className="text-sm py-3.5 px-4 text-center font-mono tracking-tight tabular-nums text-slate-800">
+                    <td className="text-sm py-3.5 px-4 text-center tracking-tight tabular-nums text-slate-800">
                       {it.quantity}
                     </td>
-                    <td className="text-sm py-3.5 px-4 text-right font-semibold font-mono tracking-tight tabular-nums text-slate-900">
+                    <td className="text-sm py-3.5 px-4 text-right font-semibold tracking-tight tabular-nums text-slate-900">
                       {formatCurrency(it.unitPrice || 0)}
                     </td>
-                    <td className="text-sm py-3.5 px-4 text-right font-semibold font-mono tracking-tight tabular-nums text-slate-900">
+                    <td className="text-sm py-3.5 px-4 text-right font-semibold tracking-tight tabular-nums text-slate-900">
                       {formatCurrency(calculateItemTotal(it))}
                     </td>
                     {!isPaid && (
@@ -438,7 +437,7 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
                   <span className="text-emerald-700 font-medium">
                     {locale === 'th' ? 'ชำระแล้ว (ห้องพัก+VAT):' : 'Paid Initial Stay:'}
                   </span>
-                  <span className="font-mono font-semibold text-emerald-700 tabular-nums">
+                  <span className="font-semibold text-emerald-700 tabular-nums">
                     {formatCurrency(summary.paidTotalWithVat)}
                   </span>
                 </div>
@@ -447,13 +446,13 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
                 <span className="text-slate-500">
                   {locale === 'th' ? 'ยอดรายการค้างชำระ (ก่อน VAT):' : `${t('folio.subtotal')}:`}
                 </span>
-                <span className="font-mono font-semibold text-slate-800 tabular-nums">
+                <span className="font-semibold text-slate-800 tabular-nums">
                   {formatCurrency(summary.unpaidSubtotal)}
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="text-slate-500">{t('folio.vat')}:</span>
-                <span className="font-mono font-semibold text-slate-800 tabular-nums">
+                <span className="font-semibold text-slate-800 tabular-nums">
                   {formatCurrency(summary.unpaidVat)}
                 </span>
               </div>
@@ -461,13 +460,13 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
                 <span className="text-slate-500">
                   {locale === 'th' ? 'รวมค่าใช้จ่ายใหม่สุทธิ:' : `${t('folio.totalAmount')}:`}
                 </span>
-                <span className="font-mono font-semibold text-slate-900 tabular-nums">
+                <span className="font-semibold text-slate-900 tabular-nums">
                   {formatCurrency(summary.unpaidTotalWithVat)}
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="text-slate-500">{t('folio.depositDeducted')}:</span>
-                <span className="font-mono font-semibold text-emerald-700 tabular-nums">
+                <span className="font-semibold text-emerald-700 tabular-nums">
                   -{formatCurrency(summary.depositDeduction)}
                 </span>
               </div>
@@ -488,8 +487,8 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
                 <div
                   className={
                     summary.netDue === 0 && summary.refundAmount > 0
-                      ? 'text-2xl sm:text-3xl font-mono font-bold text-emerald-700 tracking-tight tabular-nums'
-                      : 'text-2xl sm:text-3xl font-mono font-bold text-slate-950 tracking-tight tabular-nums'
+                      ? 'text-2xl sm:text-3xl font-bold text-emerald-700 tracking-tight tabular-nums'
+                      : 'text-2xl sm:text-3xl font-bold text-slate-950 tracking-tight tabular-nums'
                   }
                 >
                   {formatCurrency(summary.netDue > 0 ? summary.netDue : summary.refundAmount)}
@@ -536,7 +535,7 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
             {/* Money Breakdown */}
             <div className="space-y-2.5 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
               {summary.paidTotalWithVat > 0 && (
-                <div className="flex justify-between items-center text-sm font-medium text-emerald-700 font-mono tracking-tight tabular-nums pb-2 border-b border-slate-100">
+                <div className="flex justify-between items-center text-sm font-medium text-emerald-700 tracking-tight tabular-nums pb-2 border-b border-slate-100">
                   <span className="font-sans flex items-center gap-1.5">
                     <span>{locale === 'th' ? 'ค่าห้องพักเบื้องต้น (รวม VAT 7%)' : 'Initial Stay (incl. VAT)'}</span>
                     <span className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -546,19 +545,19 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
                   <span>{formatCurrency(summary.paidTotalWithVat)}</span>
                 </div>
               )}
-              <div className="flex justify-between text-sm font-medium text-slate-700 font-mono tracking-tight tabular-nums">
+              <div className="flex justify-between text-sm font-medium text-slate-700 tracking-tight tabular-nums">
                 <span className="font-sans">{locale === 'th' ? 'ยอดรายการค้างชำระ (ก่อน VAT):' : `${t('folio.subtotal')}:`}</span>
                 <span>{formatCurrency(summary.unpaidSubtotal)}</span>
               </div>
-              <div className="flex justify-between text-sm font-medium text-slate-700 font-mono tracking-tight tabular-nums">
+              <div className="flex justify-between text-sm font-medium text-slate-700 tracking-tight tabular-nums">
                 <span className="font-sans">{t('folio.vat')}:</span>
                 <span>{formatCurrency(summary.unpaidVat)}</span>
               </div>
-              <div className="flex justify-between text-sm font-medium text-slate-700 font-mono tracking-tight tabular-nums">
+              <div className="flex justify-between text-sm font-medium text-slate-700 tracking-tight tabular-nums">
                 <span className="font-sans">{locale === 'th' ? 'รวมค่าใช้จ่ายใหม่สุทธิ:' : `${t('folio.totalAmount')}:`}</span>
                 <span className="font-semibold text-slate-900">{formatCurrency(summary.unpaidTotalWithVat)}</span>
               </div>
-              <div className="flex justify-between text-sm font-medium text-slate-700 font-mono tracking-tight tabular-nums pt-1.5 border-t border-slate-100">
+              <div className="flex justify-between text-sm font-medium text-slate-700 tracking-tight tabular-nums pt-1.5 border-t border-slate-100">
                 <span className="font-sans">{t('folio.depositDeducted')}:</span>
                 <span className="text-emerald-700">-{formatCurrency(summary.depositDeduction)}</span>
               </div>
@@ -573,7 +572,7 @@ export const FolioSplitScreen: React.FC<FolioSplitScreenProps> = ({
                       : (locale === 'th' ? 'ยอดค้างชำระสุทธิ:' : `${t('folio.netDue')}:`)}
                 </span>
                 <span
-                  className={`text-2xl sm:text-3xl font-mono font-bold tracking-tight tabular-nums ${
+                  className={`text-2xl sm:text-3xl font-bold tracking-tight tabular-nums ${
                     summary.netDue === 0 && summary.refundAmount > 0 ? 'text-emerald-700' : 'text-slate-950'
                   }`}
                 >

@@ -229,12 +229,12 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
           <button
             type="button"
             onClick={() => setIsEmergencyOpen(true)}
-            className="px-2.5 py-1.5 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-200 transition-colors flex items-center gap-1 min-h-[44px]"
+            className="px-2.5 py-1.5 text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 rounded-lg border border-slate-200 transition-colors flex items-center gap-1.5 min-h-[44px]"
             title={t('emergency.buttonTitle')}
             aria-label={t('emergency.buttonTitle')}
           >
             <ShieldCheck className="w-4 h-4 text-rose-600 shrink-0" aria-hidden="true" />
-            <span className="text-xs sm:text-sm font-semibold hidden xs:inline">{t('emergency.buttonTitle')}</span>
+            <span className="text-xs sm:text-sm font-medium hidden xs:inline">{t('emergency.buttonTitle')}</span>
           </button>
 
           {/* Language Switcher */}
@@ -345,15 +345,15 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
                   setIsMobileMenuOpen(false);
                   setIsEmergencyOpen(true);
                 }}
-                className="w-full py-2.5 px-3 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-200 transition-colors flex items-center justify-center gap-2 min-h-[44px]"
+                className="w-full py-2.5 px-3 text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 rounded-lg border border-slate-200 transition-colors flex items-center justify-center gap-2 min-h-[44px]"
               >
                 <ShieldCheck className="w-4 h-4 text-rose-600" aria-hidden="true" />
                 <span>{t('emergency.buttonTitle')}</span>
               </button>
 
-              {/* Monospace Clock */}
+              {/* Clock */}
               {currentTime && (
-                <div className="flex items-center justify-center gap-2 text-xs font-mono tabular-nums text-slate-600 bg-white py-2 px-3 rounded-lg border border-slate-200">
+                <div className="flex items-center justify-center gap-2 text-xs tabular-nums text-slate-600 bg-white py-2 px-3 rounded-lg border border-slate-200">
                   <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" aria-hidden="true" />
                   <span>{currentTime}</span>
                 </div>
@@ -533,7 +533,7 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
               onClick={() => setIsEmergencyOpen(true)}
               title={t('emergency.buttonTitle')}
               aria-label={t('emergency.buttonTitle')}
-              className="w-full flex items-center justify-center p-2 text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-200 transition-colors shadow-xs"
+              className="w-full flex items-center justify-center p-2 text-slate-700 bg-white hover:bg-slate-50 rounded-lg border border-slate-200 transition-colors"
             >
               <ShieldCheck className="w-4 h-4 text-rose-600 shrink-0" aria-hidden="true" />
             </button>
@@ -541,7 +541,7 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
             <button
               type="button"
               onClick={() => setIsEmergencyOpen(true)}
-              className="w-full flex items-center justify-center gap-1.5 py-2 px-2.5 text-xs sm:text-sm font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-200 transition-colors shadow-xs"
+              className="w-full flex items-center justify-center gap-1.5 py-2 px-2.5 text-xs sm:text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 rounded-lg border border-slate-200 transition-colors"
               title={t('emergency.buttonTitle')}
             >
               <ShieldCheck className="w-3.5 h-3.5 text-rose-600 shrink-0" aria-hidden="true" />
@@ -549,12 +549,12 @@ export const FrontDeskLayout: React.FC<FrontDeskLayoutProps> = ({
             </button>
           )}
 
-          {/* Live Monospace Clock */}
+          {/* Live Clock */}
           {currentTime && (
             <div
               className={`flex items-center ${
                 isCollapsed ? 'justify-center p-1.5' : 'gap-1.5 px-2.5 py-1.5'
-              } text-xs sm:text-sm font-mono font-medium text-slate-700 tabular-nums bg-white rounded-md border border-slate-200 shadow-2xs`}
+              } text-xs sm:text-sm font-medium text-slate-600 tabular-nums bg-white rounded-md border border-slate-200`}
               title={currentTime}
             >
               <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" aria-hidden="true" />

@@ -437,8 +437,8 @@ export const RoomMatrixPage: React.FC = () => {
           >
             <LayoutGrid className="w-4 h-4" aria-hidden="true" />
             <span>{t('matrix.tabGrid')}</span>
-            <span className="ml-1 px-1.5 py-0.2 rounded-full text-xs font-mono bg-slate-100 text-slate-600 border border-slate-200/60">
-              {rooms.length}
+            <span className="ml-1 text-xs tabular-nums text-slate-500">
+              ({rooms.length})
             </span>
           </button>
           <button
@@ -455,8 +455,8 @@ export const RoomMatrixPage: React.FC = () => {
           >
             <CalendarDays className="w-4 h-4" aria-hidden="true" />
             <span>{t('matrix.tabReservations')}</span>
-            <span className="ml-1 px-1.5 py-0.2 rounded-full text-xs font-mono bg-slate-100 text-slate-600 border border-slate-200/60">
-              {reservations.length}
+            <span className="ml-1 text-xs tabular-nums text-slate-500">
+              ({reservations.length})
             </span>
           </button>
         </div>
@@ -672,16 +672,10 @@ export const RoomMatrixPage: React.FC = () => {
               </button>
             )}
 
-            {/* Live Auto-Refresh Indicator with Pulse Dot and Tabular Numbers */}
-            <div className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-50 rounded-lg border border-slate-200/60 shrink-0">
-              <span
-                className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"
-                aria-hidden="true"
-              />
-              <span className="font-mono tabular-nums text-xs text-slate-500 font-medium">
-                {locale === 'th' ? `อัปเดตอัตโนมัติ: ${refreshTimeStr}` : `Auto-refresh: ${refreshTimeStr}`}
-              </span>
-            </div>
+            {/* Live Auto-Refresh Indicator */}
+            <span className="tabular-nums text-xs text-slate-500 shrink-0">
+              {locale === 'th' ? `อัปเดตอัตโนมัติ: ${refreshTimeStr}` : `Auto-refresh: ${refreshTimeStr}`}
+            </span>
           </div>
         </div>
 
@@ -757,35 +751,35 @@ export const RoomMatrixPage: React.FC = () => {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-sm">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-700 uppercase tracking-wider py-3">
-                    <th className="py-3 px-4 font-mono font-bold tracking-wider">
+                  <tr className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase tracking-wider py-3">
+                    <th className="py-3 px-4">
                       {t('res.bookingNumber')}
                     </th>
-                    <th className="py-3 px-4 font-bold tracking-wider">
+                    <th className="py-3 px-4">
                       {t('common.guestName')}
                     </th>
-                    <th className="py-3 px-4 font-mono font-bold tracking-wider">
+                    <th className="py-3 px-4">
                       {t('common.room')}
                     </th>
-                    <th className="py-3 px-4 font-bold tracking-wider">
+                    <th className="py-3 px-4">
                       {t('common.roomType')}
                     </th>
-                    <th className="py-3 px-4 font-mono font-bold tracking-wider">
+                    <th className="py-3 px-4">
                       {t('common.dates')}
                     </th>
-                    <th className="py-3 px-4 text-center font-mono font-bold tracking-wider">
+                    <th className="py-3 px-4 text-center">
                       {t('common.nights')}
                     </th>
-                    <th className="py-3 px-4 text-right font-mono font-bold tracking-wider">
+                    <th className="py-3 px-4 text-right">
                       {t('common.total')}
                     </th>
-                    <th className="py-3 px-4 text-right font-mono font-bold tracking-wider">
+                    <th className="py-3 px-4 text-right">
                       {t('common.deposit')}
                     </th>
-                    <th className="py-3 px-4 text-center font-bold tracking-wider">
+                    <th className="py-3 px-4 text-center">
                       {t('common.status')}
                     </th>
-                    <th className="py-3 px-4 text-right font-bold tracking-wider">
+                    <th className="py-3 px-4 text-right">
                       {t('common.actions')}
                     </th>
                   </tr>
@@ -833,34 +827,45 @@ export const RoomMatrixPage: React.FC = () => {
                           key={res.id}
                           className="hover:bg-slate-50/70 transition-colors text-sm text-slate-800"
                         >
-                          <td className="py-3.5 px-4 text-sm font-mono font-medium text-slate-900 tabular-nums tracking-tight">
+                          <td className="py-3.5 px-4 text-sm font-medium text-slate-900 tabular-nums">
                             {res.bookingNumber || res.id.slice(0, 8)}
                           </td>
                           <td className="py-3.5 px-4 font-medium text-sm text-slate-800">
                             {guestDisplayName}
                           </td>
-                          <td className="py-3.5 px-4 text-sm font-mono font-medium text-slate-900 tabular-nums tracking-tight">
+                          <td className="py-3.5 px-4 text-sm font-semibold text-slate-900 tabular-nums">
                             {roomNum}
                           </td>
-                          <td className="text-sm py-3.5 px-4 text-slate-800">
+                          <td className="text-sm py-3.5 px-4 text-slate-700">
                             {roomTypeName}
                           </td>
-                          <td className="py-3.5 px-4 text-sm font-mono font-medium text-slate-900 tabular-nums tracking-tight">
+                          <td className="py-3.5 px-4 text-sm text-slate-600 tabular-nums">
                             {formatDateRange(res.checkInDate, res.checkOutDate, res.totalNights)}
                           </td>
-                          <td className="py-3.5 px-4 text-center font-mono tabular-nums tracking-tight text-slate-800">
+                          <td className="py-3.5 px-4 text-center tabular-nums text-slate-800">
                             {res.totalNights || '1'}
                           </td>
-                          <td className="py-3.5 px-4 text-right text-sm font-mono font-medium text-slate-900 tabular-nums tracking-tight">
+                          <td className="py-3.5 px-4 text-right text-sm font-medium text-slate-900 tabular-nums">
                             {formatCurrency(res.totalAmount || '0')}
                           </td>
-                          <td className="py-3.5 px-4 text-right text-sm font-mono font-medium text-slate-900 tabular-nums tracking-tight">
+                          <td className="py-3.5 px-4 text-right text-sm font-medium text-slate-900 tabular-nums">
                             {formatCurrency(res.depositAmount || '0')}
                           </td>
                           <td className="text-sm py-3.5 px-4 text-center">
-                            <span
-                              className={`inline-block px-2.5 py-0.5 rounded text-xs font-semibold border ${stCfg.bg} ${stCfg.text} ${stCfg.border}`}
-                            >
+                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                              <span
+                                className={`w-2 h-2 rounded-full shrink-0 ${
+                                  res.status === 'checked_in'
+                                    ? 'bg-blue-500'
+                                    : res.status === 'confirmed'
+                                    ? 'bg-emerald-500'
+                                    : res.status === 'checked_out'
+                                    ? 'bg-slate-400'
+                                    : res.status === 'cancelled'
+                                    ? 'bg-rose-500'
+                                    : 'bg-amber-500'
+                                }`}
+                              />
                               {t(`status.${res.status}`)}
                             </span>
                           </td>

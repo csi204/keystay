@@ -443,7 +443,7 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
                 <h2 className="text-xl font-bold text-slate-900 leading-tight">
                   {t('checkout.title')}
                 </h2>
-                <p className="text-xs text-slate-500 font-mono tabular-nums">
+                <p className="text-xs text-slate-500 tabular-nums">
                   {t('checkout.bookingNumber')}: {reservation.bookingNumber || reservation.id.slice(0, 8)}
                 </p>
               </div>
@@ -479,7 +479,7 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
                     {t('checkout.settleSuccess')}
                   </h3>
                   <p className="text-sm text-slate-600">
-                    {t('common.room')} <span className="font-mono font-bold">{reservation.roomNumber}</span> · {guestDisplayName}
+                    {t('common.room')} <span className="font-bold">{reservation.roomNumber}</span> · {guestDisplayName}
                   </p>
                 </div>
 
@@ -494,7 +494,7 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
                           : (locale === 'th' ? 'คืนเงินมัดจำคงเหลือ' : 'Remaining Deposit Refund')
                         : t('checkout.paidStatus')}
                   </div>
-                  <div className="text-3xl font-extrabold font-mono tabular-nums text-emerald-950">
+                  <div className="text-3xl font-extrabold tabular-nums text-emerald-950">
                     {formatCurrency(summary.netDue > 0 ? summary.netDue : summary.refundAmount)}
                   </div>
                   {summary.netDue > 0 && (
@@ -535,7 +535,7 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
                   </div>
                   <div>
                     <span className="text-xs text-slate-500 block">{t('checkout.roomNumber')}</span>
-                    <span className="font-bold font-mono tabular-nums text-slate-900 text-base">
+                    <span className="font-bold tabular-nums text-slate-900 text-base">
                       {reservation.roomNumber || '—'}
                     </span>
                   </div>
@@ -547,7 +547,7 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
                   </div>
                   <div>
                     <span className="text-xs text-slate-500 block">{t('checkout.stayPeriod')}</span>
-                    <span className="font-mono tabular-nums text-slate-700 text-xs block">
+                    <span className="tabular-nums text-slate-700 text-xs block">
                       {formatDateRange(reservation.checkInDate, reservation.checkOutDate, reservation.totalNights)}
                     </span>
                   </div>
@@ -579,8 +579,8 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
                         <tr className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-600 uppercase tracking-wider">
                           <th className="py-2.5 px-3">{t('checkout.roomCharges')}</th>
                           <th className="py-2.5 px-2 text-center w-16">{t('folio.qty')}</th>
-                          <th className="py-2.5 px-3 text-right font-mono tabular-nums w-24">{t('folio.unitPrice')}</th>
-                          <th className="py-2.5 px-3 text-right font-mono tabular-nums w-28">{t('folio.amount')}</th>
+                          <th className="py-2.5 px-3 text-right tabular-nums w-24">{t('folio.unitPrice')}</th>
+                          <th className="py-2.5 px-3 text-right tabular-nums w-28">{t('folio.amount')}</th>
                           <th className="py-2.5 px-2 text-center w-12"></th>
                         </tr>
                       </thead>
@@ -612,26 +612,25 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
                                     <span className="truncate max-w-[200px] sm:max-w-xs">
                                       {localizeFolioDescription(item.description, locale)}
                                     </span>
-                                    <span
-                                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border ${
-                                        itemPaid
-                                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                          : 'bg-amber-50 text-amber-800 border-amber-200'
-                                      }`}
-                                    >
+                                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                                      <span
+                                        className={`w-2 h-2 rounded-full shrink-0 ${
+                                          itemPaid ? 'bg-emerald-500' : 'bg-amber-500'
+                                        }`}
+                                      />
                                       {itemPaid
                                         ? (locale === 'th' ? 'ชำระแล้ว' : 'Paid')
                                         : (locale === 'th' ? 'ค้างชำระ' : 'Unpaid')}
                                     </span>
                                   </div>
                                 </td>
-                                <td className="py-2.5 px-2 text-center font-mono tabular-nums text-slate-700">
+                                <td className="py-2.5 px-2 text-center tabular-nums text-slate-700">
                                   {item.quantity}
                                 </td>
-                                <td className="py-2.5 px-3 text-right font-mono tabular-nums text-slate-600">
+                                <td className="py-2.5 px-3 text-right tabular-nums text-slate-600">
                                   {formatCurrency(itemPrice)}
                                 </td>
-                                <td className="py-2.5 px-3 text-right font-mono font-medium tabular-nums text-slate-900">
+                                <td className="py-2.5 px-3 text-right font-medium tabular-nums text-slate-900">
                                   {formatCurrency(itemTotal)}
                                 </td>
                                 <td className="py-2.5 px-2 text-center">
@@ -655,7 +654,7 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
                   </div>
 
                   {/* Financial Breakdown & Deductions */}
-                  <div className="p-4 bg-slate-50/50 border-t border-slate-200 space-y-2 text-xs sm:text-sm font-mono tabular-nums">
+                  <div className="p-4 bg-slate-50/50 border-t border-slate-200 space-y-2 text-xs sm:text-sm tabular-nums">
                     {summary.paidTotalWithVat > 0 && (
                       <div className="flex justify-between items-center text-emerald-700 pb-1.5 border-b border-slate-200/80">
                         <span className="font-sans flex items-center gap-1.5 font-medium">
@@ -713,14 +712,14 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
                             : t('checkout.keyCardMissingWarning')}
                         </div>
                       </div>
-                      <div className="text-2xl sm:text-3xl font-extrabold font-mono tabular-nums text-white">
+                      <div className="text-2xl sm:text-3xl font-extrabold tabular-nums text-white">
                         {formatCurrency(summary.netDue)}
                       </div>
                     </div>
                   ) : (
-                    <div className="p-4 bg-emerald-50 border-t border-emerald-200 text-emerald-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="p-4 bg-slate-50 border-t border-slate-200 text-slate-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div>
-                        <div className="text-xs uppercase tracking-wider text-emerald-800 font-sans font-bold flex items-center gap-1.5">
+                        <div className="text-xs uppercase tracking-wider text-slate-800 font-sans font-bold flex items-center gap-1.5">
                           <CheckCircle2 className="w-4 h-4 text-emerald-600" aria-hidden="true" />
                           <span>
                             {summary.refundAmount > 0
@@ -742,7 +741,7 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
                             : t('checkout.keyCardMissingWarning')}
                         </div>
                       </div>
-                      <div className="text-2xl sm:text-3xl font-extrabold font-mono tabular-nums text-emerald-800">
+                      <div className="text-2xl sm:text-3xl font-extrabold tabular-nums text-emerald-800">
                         {formatCurrency(summary.refundAmount)}
                       </div>
                     </div>
@@ -773,7 +772,7 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
                         <CheckCircle2 className="w-4 h-4 text-emerald-600" aria-hidden="true" />
                         <span>{t('checkout.keyDepositRefundTitle')}</span>
                       </div>
-                      <p className="text-xs text-emerald-700 font-mono tabular-nums">
+                      <p className="text-xs text-emerald-700 tabular-nums">
                         {t('checkout.keyDepositRefundNotice', { amount: depositFormatted })}
                       </p>
                     </div>
@@ -917,7 +916,7 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
                 {
                   label: locale === 'th' ? 'ยอดชำระสุทธิ' : 'Net Payment Due',
                   value: (
-                    <span className="font-mono font-bold text-emerald-700">
+                    <span className="font-bold text-emerald-700">
                       {formatCurrency(summary.netDue)}
                     </span>
                   ),
@@ -932,7 +931,7 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
                         : (locale === 'th' ? 'คืนเงินมัดจำคงเหลือ' : 'Remaining Deposit Refund')
                       : (locale === 'th' ? 'ยอดชำระสุทธิ' : 'Net Payment Due'),
                   value: (
-                    <span className="font-mono font-bold text-emerald-700">
+                    <span className="font-bold text-emerald-700">
                       {formatCurrency(summary.refundAmount)}
                     </span>
                   ),

@@ -152,11 +152,8 @@ export const QuickEmergencyDrawer: React.FC<QuickEmergencyDrawerProps> = ({
                     <ShieldAlert className="w-5 h-5 text-rose-600 shrink-0" strokeWidth={1.75} aria-hidden="true" />
                     <span>{t('emergency.drawerTitle')}</span>
                   </h2>
-                  {/* 24-Hour Alert Badge */}
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                    <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse" />
-                    <Clock className="w-3 h-3 text-rose-600" />
-                    <span>{t('emergency.badge24h')}</span>
+                  <span className="text-xs font-medium text-slate-500">
+                    • {t('emergency.badge24h')}
                   </span>
                 </div>
                 <p className="text-xs text-slate-500">
@@ -175,22 +172,20 @@ export const QuickEmergencyDrawer: React.FC<QuickEmergencyDrawerProps> = ({
               </button>
             </div>
 
-            {/* Offline Alert & Read-Only Notice Bar */}
-            <div className="flex items-center justify-between text-xs bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5">
-              <div className="flex items-center gap-1.5 text-slate-600">
+            {/* Offline Alert & Read-Only Notice Row */}
+            <div className="flex items-center justify-between text-xs text-slate-500">
+              <div className="flex items-center gap-1.5">
                 {isOffline ? (
                   <>
                     <WifiOff className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                    <span className="text-amber-800 font-medium">
+                    <span className="text-amber-700 font-medium">
                       {t('emergency.offlineNotice')}
                     </span>
                   </>
                 ) : (
                   <>
                     <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <span className="text-slate-600 font-medium">
-                      {t('emergency.readOnly')}
-                    </span>
+                    <span>{t('emergency.readOnly')}</span>
                   </>
                 )}
               </div>
@@ -231,10 +226,10 @@ export const QuickEmergencyDrawer: React.FC<QuickEmergencyDrawerProps> = ({
             </div>
           </div>
 
-          {/* Drawer Body - Contact Cards */}
-          <div className="flex-1 overflow-y-auto p-5 space-y-3.5 bg-slate-50/50">
+          {/* Drawer Body - Flat Contact List */}
+          <div className="flex-1 overflow-y-auto divide-y divide-slate-200 bg-white">
             {filteredContacts.length === 0 ? (
-              <div className="bg-white border border-slate-200 rounded-lg p-8 text-center space-y-2">
+              <div className="p-8 text-center space-y-2">
                 <AlertTriangle className="w-8 h-8 text-slate-400 mx-auto" />
                 <p className="text-sm font-semibold text-slate-800">
                   {t('emergency.empty')}
@@ -255,19 +250,17 @@ export const QuickEmergencyDrawer: React.FC<QuickEmergencyDrawerProps> = ({
                 return (
                   <div
                     key={contact.id}
-                    className="bg-white border border-slate-200 rounded-lg p-4 shadow-xs hover:border-slate-300 transition-all space-y-3"
+                    className="p-5 hover:bg-slate-50/60 transition-colors space-y-3"
                   >
-                    {/* Card Top: Title & Badges */}
+                    {/* Top: Title, Category & Rating */}
                     <div className="flex items-start justify-between gap-2">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="text-sm font-bold text-slate-900 leading-tight">
                             {contact.name}
                           </h3>
-                          <span
-                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border ${catMeta.badgeClass}`}
-                          >
-                            <CatIcon className="w-3 h-3" />
+                          <span className="inline-flex items-center gap-1 text-xs text-slate-500 font-medium">
+                            <CatIcon className="w-3.5 h-3.5 text-slate-400" />
                             <span>{catMeta.label}</span>
                           </span>
                         </div>
@@ -277,54 +270,54 @@ export const QuickEmergencyDrawer: React.FC<QuickEmergencyDrawerProps> = ({
                       </div>
 
                       {contact.rating && (
-                        <span className="shrink-0 text-xs font-mono font-semibold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 inline-flex items-center gap-1">
-                          <Star className="w-3 h-3 fill-amber-500 text-amber-500" strokeWidth={1.5} />
+                        <span className="shrink-0 text-xs font-medium tabular-nums text-slate-700 inline-flex items-center gap-1">
+                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" strokeWidth={1.5} />
                           <span>{contact.rating.toFixed(1)}</span>
                         </span>
                       )}
                     </div>
 
                     {/* Meta Details: Hours, Rates, Notes */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1 border-t border-slate-100">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs">
                       <div className="flex items-center gap-1.5 text-slate-600">
-                        <Clock className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                        <span className="font-medium text-slate-800">
+                        <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span className="font-medium text-slate-700">
                           {contact.availableHours}
                         </span>
                       </div>
 
                       {contact.lineId && (
                         <div className="flex items-center gap-1.5 text-slate-600">
-                          <span className="font-semibold text-emerald-600">LINE:</span>
-                          <span className="font-mono text-slate-800 font-medium">
+                          <span className="font-medium text-slate-500">LINE:</span>
+                          <span className="text-slate-800 font-medium">
                             {contact.lineId}
                           </span>
                         </div>
                       )}
 
                       {contact.priceRateNote && (
-                        <div className="text-slate-500 col-span-1 sm:col-span-2 text-[11px]">
+                        <div className="text-slate-500 col-span-1 sm:col-span-2 text-xs">
                           {t('emergency.priceRate', { rate: contact.priceRateNote })}
                         </div>
                       )}
 
                       {contact.notes && (
-                        <div className="col-span-1 sm:col-span-2 text-[11px] bg-slate-50 border border-slate-200/80 rounded px-2.5 py-1.5 text-slate-600">
+                        <div className="col-span-1 sm:col-span-2 text-xs text-slate-500">
                           {t('emergency.notes', { notes: contact.notes })}
                         </div>
                       )}
                     </div>
 
                     {/* Action Bar: Click-to-Call & Copy LINE */}
-                    <div className="pt-2 flex items-center gap-2 border-t border-slate-100">
+                    <div className="pt-1 flex items-center gap-2">
                       {/* Click-to-Call Primary */}
                       <a
                         href={`tel:${cleanPrimaryPhone}`}
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-colors"
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-colors"
                         title={t('emergency.clickToCall')}
                       >
                         <Phone className="w-3.5 h-3.5" />
-                        <span className="font-mono tracking-tight">
+                        <span className="tabular-nums">
                           {t('emergency.clickToCall')} {contact.phonePrimary}
                         </span>
                       </a>

@@ -241,16 +241,10 @@ export const DailyOperationsPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-50 rounded-lg border border-slate-200/60 shrink-0">
-              <span
-                className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"
-                aria-hidden="true"
-              />
-              <span className="font-mono tabular-nums text-xs text-slate-600 font-medium">
-                {locale === 'th' ? `อัปเดตอัตโนมัติ: ${refreshTimeStr}` : `Auto-refresh: ${refreshTimeStr}`}
-              </span>
-            </div>
+          <div className="flex items-center gap-3">
+            <span className="tabular-nums text-xs text-slate-500 shrink-0">
+              {locale === 'th' ? `อัปเดตอัตโนมัติ: ${refreshTimeStr}` : `Auto-refresh: ${refreshTimeStr}`}
+            </span>
 
             <button
               onClick={() => setIsWalkInOpen(true)}
@@ -270,81 +264,57 @@ export const DailyOperationsPage: React.FC = () => {
           </div>
         )}
 
-        {/* 3 Operational Sub-Tabs: Arrivals, Departures & Cashier, and Billing History */}
-        <div className="flex gap-2 border-b border-slate-200 pb-2 overflow-x-auto no-scrollbar">
+        {/* 3 Operational Sub-Tabs: Clean Owner-style Underline Tabs */}
+        <div className="flex gap-1 border-b border-slate-200 overflow-x-auto no-scrollbar">
           {/* Sub-tab 1: Check-in / Arrivals Today */}
           <button
             onClick={() => setActiveSubTab('arrivals')}
-            className={`flex items-center gap-2 text-sm font-semibold py-2.5 px-4 rounded-lg transition-colors whitespace-nowrap min-h-[44px] font-sans ${
+            className={`flex items-center gap-2 text-sm font-medium py-2.5 px-4 border-b-2 transition-colors whitespace-nowrap min-h-[44px] font-sans ${
               activeSubTab === 'arrivals'
-                ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs'
-                : 'text-slate-600 hover:bg-slate-100 border border-transparent'
+                ? 'border-slate-900 text-slate-900 font-semibold'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
-            <LogIn className="w-4 h-4 text-emerald-600" aria-hidden="true" />
-            <span className="font-sans font-semibold">{t('ops.subtabCheckInToday') || t('ops.arrivalsToday')}</span>
-            <span
-              className={`text-xs font-mono font-bold tabular-nums px-2 py-0.5 rounded-full ${
-                activeSubTab === 'arrivals'
-                  ? 'bg-emerald-200/80 text-emerald-900'
-                  : 'bg-slate-100 text-slate-600'
-              }`}
-            >
-              ({arrivals.length})
-            </span>
+            <LogIn className="w-4 h-4" aria-hidden="true" />
+            <span>{t('ops.subtabCheckInToday') || t('ops.arrivalsToday')}</span>
+            <span className="text-xs tabular-nums text-slate-500">({arrivals.length})</span>
           </button>
 
           {/* Sub-tab 2: Check-out & Cashier / Departures Today */}
           <button
             onClick={() => setActiveSubTab('departures')}
-            className={`flex items-center gap-2 text-sm font-semibold py-2.5 px-4 rounded-lg transition-colors whitespace-nowrap min-h-[44px] font-sans ${
+            className={`flex items-center gap-2 text-sm font-medium py-2.5 px-4 border-b-2 transition-colors whitespace-nowrap min-h-[44px] font-sans ${
               activeSubTab === 'departures'
-                ? 'bg-blue-50 text-blue-800 border border-blue-200 shadow-2xs'
-                : 'text-slate-600 hover:bg-slate-100 border border-transparent'
+                ? 'border-slate-900 text-slate-900 font-semibold'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
-            <LogOut className="w-4 h-4 text-blue-600" aria-hidden="true" />
-            <span className="font-sans font-semibold">{t('ops.subtabCheckOutAndCashier') || t('ops.departuresToday')}</span>
-            <span
-              className={`text-xs font-mono font-bold tabular-nums px-2 py-0.5 rounded-full ${
-                activeSubTab === 'departures'
-                  ? 'bg-blue-200/80 text-blue-900'
-                  : 'bg-slate-100 text-slate-600'
-              }`}
-            >
-              ({departuresCount})
-            </span>
+            <LogOut className="w-4 h-4" aria-hidden="true" />
+            <span>{t('ops.subtabCheckOutAndCashier') || t('ops.departuresToday')}</span>
+            <span className="text-xs tabular-nums text-slate-500">({departuresCount})</span>
           </button>
 
-          {/* Sub-tab 3: Billing & Settlement History with Receipt icon */}
+          {/* Sub-tab 3: Billing & Settlement History */}
           <button
             onClick={() => setActiveSubTab('billing')}
-            className={`flex items-center gap-2 text-sm font-semibold py-2.5 px-4 rounded-lg transition-colors whitespace-nowrap min-h-[44px] font-sans ${
+            className={`flex items-center gap-2 text-sm font-medium py-2.5 px-4 border-b-2 transition-colors whitespace-nowrap min-h-[44px] font-sans ${
               activeSubTab === 'billing'
-                ? 'bg-purple-50 text-purple-800 border border-purple-200 shadow-2xs'
-                : 'text-slate-600 hover:bg-slate-100 border border-transparent'
+                ? 'border-slate-900 text-slate-900 font-semibold'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
-            <Receipt className="w-4 h-4 text-purple-600" aria-hidden="true" />
-            <span className="font-sans font-semibold">{t('ops.subtabBillingHistory')}</span>
-            <span
-              className={`text-xs font-mono font-bold tabular-nums px-2 py-0.5 rounded-full ${
-                activeSubTab === 'billing'
-                  ? 'bg-purple-200/80 text-purple-900'
-                  : 'bg-slate-100 text-slate-600'
-              }`}
-            >
-              ({bills.length})
-            </span>
+            <Receipt className="w-4 h-4" aria-hidden="true" />
+            <span>{t('ops.subtabBillingHistory')}</span>
+            <span className="text-xs tabular-nums text-slate-500">({bills.length})</span>
           </button>
         </div>
 
         {/* Content Section */}
         {activeSubTab === 'arrivals' && (
-          <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-3 bg-emerald-50/50 border-b border-emerald-100 flex items-center justify-between text-sm text-emerald-900 font-medium font-sans">
+          <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+            <div className="px-4 py-3 bg-white border-b border-slate-200 flex items-center justify-between text-sm text-slate-700 font-medium font-sans">
               <span>{t('ops.arrivalsDescription')}</span>
-              <span className="font-sans text-xs text-emerald-700 font-medium">
+              <span className="text-xs text-slate-500 tabular-nums">
                 {t('ops.totalItems', { count: arrivals.length })}
               </span>
             </div>
@@ -379,24 +349,22 @@ export const DailyOperationsPage: React.FC = () => {
 
                       return (
                         <tr key={res.id} className="hover:bg-slate-50 transition-colors">
-                          <td className="py-3.5 px-4 font-mono font-medium tabular-nums text-slate-900 text-sm">
+                          <td className="py-3.5 px-4 font-medium tabular-nums text-slate-900 text-sm">
                             {res.bookingNumber || res.id.slice(0, 8)}
                           </td>
                           <td className="py-3.5 px-4 font-sans text-sm font-medium text-slate-800">
                             {guestDisplayName}
                           </td>
-                          <td className="py-3.5 px-4">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded bg-slate-100 text-slate-800 font-mono font-medium tabular-nums text-xs border border-slate-200">
-                              {roomNum}
-                            </span>
+                          <td className="py-3.5 px-4 font-semibold tabular-nums text-slate-900 text-sm">
+                            {roomNum}
                           </td>
-                          <td className="py-3.5 px-4 font-sans text-sm font-medium text-slate-800">
+                          <td className="py-3.5 px-4 font-sans text-sm text-slate-700">
                             {roomTypeName}
                           </td>
-                          <td className="py-3.5 px-4 font-mono font-medium tabular-nums text-slate-600 text-sm">
+                          <td className="py-3.5 px-4 tabular-nums text-slate-600 text-sm">
                             {formatDateRange(res.checkInDate, res.checkOutDate, res.totalNights)}
                           </td>
-                          <td className="py-3.5 px-4 text-right font-mono tabular-nums font-semibold text-emerald-700 text-sm">
+                          <td className="py-3.5 px-4 text-right tabular-nums font-semibold text-slate-900 text-sm">
                             {formatCurrency(res.depositAmount || '0')}
                           </td>
                           <td className="py-3.5 px-4 text-right">
@@ -420,58 +388,40 @@ export const DailyOperationsPage: React.FC = () => {
 
         {/* Departures & Cashier Sub-tab */}
         {activeSubTab === 'departures' && (
-          <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
             {/* Split Sub-Tabs: Due Today vs Early Checkout / Extended */}
-            <div className="p-3 bg-blue-50/50 border-b border-blue-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="px-4 py-3 bg-white border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setDepartureSubTab('due_today')}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all min-h-[36px] font-sans ${
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors min-h-[36px] font-sans ${
                     departureSubTab === 'due_today'
-                      ? 'bg-white text-blue-900 border border-blue-200 shadow-2xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-blue-100/60'
+                      ? 'bg-slate-900 text-white'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                   }`}
                 >
-                  <LogOut className="w-3.5 h-3.5 text-blue-600" aria-hidden="true" />
                   <span>{locale === 'th' ? 'รอเช็คเอาต์วันนี้' : 'Due Today'}</span>
-                  <span
-                    className={`text-[11px] font-mono font-bold px-1.5 py-0.5 rounded-full ${
-                      departureSubTab === 'due_today'
-                        ? 'bg-blue-100 text-blue-900'
-                        : 'bg-slate-200/70 text-slate-600'
-                    }`}
-                  >
-                    ({dueTodayDepartures.length})
-                  </span>
+                  <span className="text-[11px] tabular-nums opacity-80">({dueTodayDepartures.length})</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setDepartureSubTab('early_or_extended')}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all min-h-[36px] font-sans ${
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors min-h-[36px] font-sans ${
                     departureSubTab === 'early_or_extended'
-                      ? 'bg-white text-blue-900 border border-blue-200 shadow-2xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-blue-100/60'
+                      ? 'bg-slate-900 text-white'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                   }`}
                 >
-                  <CalendarPlus className="w-3.5 h-3.5 text-indigo-600" aria-hidden="true" />
                   <span>{locale === 'th' ? 'เช็คเอาต์ก่อนกำหนด / ขยายเวลา' : 'Early Checkout / Extended'}</span>
-                  <span
-                    className={`text-[11px] font-mono font-bold px-1.5 py-0.5 rounded-full ${
-                      departureSubTab === 'early_or_extended'
-                        ? 'bg-indigo-100 text-indigo-900'
-                        : 'bg-slate-200/70 text-slate-600'
-                    }`}
-                  >
-                    ({earlyOrExtendedDepartures.length})
-                  </span>
+                  <span className="text-[11px] tabular-nums opacity-80">({earlyOrExtendedDepartures.length})</span>
                 </button>
               </div>
 
-              <div className="flex items-center gap-2 text-sm text-blue-900 font-medium font-sans">
+              <div className="flex items-center gap-2 text-xs text-slate-500 font-sans">
                 <span className="hidden sm:inline">{t('ops.departuresDescription')}</span>
-                <span className="font-sans text-xs text-blue-700 font-medium">
+                <span className="tabular-nums">
                   {t('ops.totalItems', {
                     count:
                       departureSubTab === 'due_today'
@@ -516,16 +466,18 @@ export const DailyOperationsPage: React.FC = () => {
 
                       return (
                         <tr key={res.id} className="hover:bg-slate-50 transition-colors">
-                          <td className="py-3.5 px-4 font-mono font-medium tabular-nums text-slate-900 text-sm">
-                            <div className="flex items-center gap-1.5">
+                          <td className="py-3.5 px-4 font-medium tabular-nums text-slate-900 text-sm">
+                            <div className="flex items-center gap-2">
                               <span>{res.bookingNumber || res.id.slice(0, 8)}</span>
                               {res.status === 'extended' && (
-                                <span className="text-[10px] font-sans font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">
+                                <span className="inline-flex items-center gap-1 text-xs text-slate-600">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                                   {locale === 'th' ? 'ขยายเวลา' : 'Extended'}
                                 </span>
                               )}
                               {res.status === 'checked_in' && res.checkOutDate > todayStr && (
-                                <span className="text-[10px] font-sans font-semibold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-200">
+                                <span className="inline-flex items-center gap-1 text-xs text-slate-600">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
                                   {locale === 'th' ? 'พักอยู่' : 'In-House'}
                                 </span>
                               )}
@@ -534,18 +486,16 @@ export const DailyOperationsPage: React.FC = () => {
                           <td className="py-3.5 px-4 font-sans text-sm font-medium text-slate-800">
                             {guestDisplayName}
                           </td>
-                          <td className="py-3.5 px-4">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded bg-slate-100 text-slate-800 font-mono font-medium tabular-nums text-xs border border-slate-200">
-                              {roomNum}
-                            </span>
+                          <td className="py-3.5 px-4 font-semibold tabular-nums text-slate-900 text-sm">
+                            {roomNum}
                           </td>
-                          <td className="py-3.5 px-4 font-sans text-sm font-medium text-slate-800">
+                          <td className="py-3.5 px-4 font-sans text-sm text-slate-700">
                             {roomTypeName}
                           </td>
-                          <td className="py-3.5 px-4 font-mono font-medium tabular-nums text-slate-600 text-sm">
+                          <td className="py-3.5 px-4 tabular-nums text-slate-600 text-sm">
                             {formatDateRange(res.checkInDate, res.checkOutDate, res.totalNights)}
                           </td>
-                          <td className="py-3.5 px-4 text-right font-mono tabular-nums font-semibold text-slate-900 text-sm">
+                          <td className="py-3.5 px-4 text-right tabular-nums font-semibold text-slate-900 text-sm">
                             {formatCurrency(res.totalAmount || '0')}
                           </td>
                           <td className="py-3.5 px-4 text-right">
@@ -650,31 +600,28 @@ export const DailyOperationsPage: React.FC = () => {
 
                         return (
                           <tr key={b.id} className="hover:bg-slate-50 transition-colors">
-                            <td className="py-3.5 px-4 font-mono font-medium tabular-nums text-slate-900 text-sm">
+                            <td className="py-3.5 px-4 font-medium tabular-nums text-slate-900 text-sm">
                               INV-{b.id.slice(0, 8).toUpperCase()}
                             </td>
-                            <td className="py-3.5 px-4">
-                              <span className="inline-flex items-center px-2 py-0.5 rounded bg-slate-100 text-slate-800 font-mono font-medium tabular-nums text-xs border border-slate-200">
-                                {b.roomNumber || '—'}
-                              </span>
+                            <td className="py-3.5 px-4 font-semibold tabular-nums text-slate-900 text-sm">
+                              {b.roomNumber || '—'}
                             </td>
                             <td className="py-3.5 px-4 font-sans text-sm font-medium text-slate-800">
                               {b.guestName || t('common.guest')}
                             </td>
-                            <td className="py-3.5 px-4 font-mono font-medium tabular-nums text-slate-600 text-sm">
+                            <td className="py-3.5 px-4 tabular-nums text-slate-600 text-sm">
                               {formatDate(b.createdAt, 'medium')}
                             </td>
-                            <td className="py-3.5 px-4 text-right font-mono tabular-nums font-semibold text-slate-900 text-sm">
+                            <td className="py-3.5 px-4 text-right tabular-nums font-semibold text-slate-900 text-sm">
                               {formatCurrency(billTotal)}
                             </td>
                             <td className="py-3.5 px-4 text-center">
-                              <span
-                                className={`inline-flex items-center px-2 py-0.5 rounded-full font-sans text-xs font-medium border ${
-                                  isPaid
-                                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                                    : 'bg-amber-50 text-amber-800 border-amber-200'
-                                }`}
-                              >
+                              <span className="inline-flex items-center gap-1.5 font-sans text-xs font-medium text-slate-700">
+                                <span
+                                  className={`w-2 h-2 rounded-full shrink-0 ${
+                                    isPaid ? 'bg-emerald-500' : 'bg-amber-500'
+                                  }`}
+                                />
                                 {isPaid ? t('folio.paid') : t('folio.pending')}
                               </span>
                             </td>

@@ -247,12 +247,12 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
           </div>
 
           {/* Checklist reminder */}
-          <div className="p-3 bg-emerald-50/60 rounded-lg border border-emerald-200 text-sm text-emerald-900 space-y-1.5">
-            <div className="flex items-center gap-1.5 font-semibold text-sm">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" strokeWidth={1.75} aria-hidden="true" />
+          <div className="pl-3 py-1 border-l-2 border-[#F97316] text-sm text-slate-700 space-y-1">
+            <div className="flex items-center gap-1.5 font-semibold text-xs text-slate-900">
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#F97316]" strokeWidth={1.75} aria-hidden="true" />
               <span>{t('checkin.checklistTitle')}</span>
             </div>
-            <ul className="list-disc list-inside text-xs text-emerald-800 space-y-1">
+            <ul className="list-disc list-inside text-xs text-slate-600 space-y-0.5">
               <li>{t('checkin.checklist1')}</li>
               <li>{t('checkin.checklist2')}</li>
               <li>{t('checkin.checklist3')}</li>
