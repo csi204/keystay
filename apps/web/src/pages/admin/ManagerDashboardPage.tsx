@@ -112,6 +112,7 @@ export const ManagerDashboardPage: React.FC = () => {
   // Daily Stats for Statement Table
   const [dailyStatsList, setDailyStatsList] = useState<any[]>([]);
   const [openIssues, setOpenIssues] = useState<any[]>([]);
+  const [showIssueHistory, setShowIssueHistory] = useState(false);
 
   const loadData = async () => {
     setLoading(true);
@@ -121,7 +122,7 @@ export const ManagerDashboardPage: React.FC = () => {
         apiFetch<any[]>('/api/rooms').catch(() => ({ data: null, isOffline: true })),
         apiFetch<any[]>('/api/reservations').catch(() => ({ data: null, isOffline: true })),
         apiFetch<any>('/api/reports/daily-stats?limit=100').catch(() => ({ data: null, isOffline: true })),
-        apiFetch<any[]>('/api/housekeeping/issues?status=open').catch(() => ({ data: null, isOffline: true })),
+        apiFetch<any[]>('/api/housekeeping/issues').catch(() => ({ data: null, isOffline: true })),
       ]);
 
       if (Array.isArray(issuesRes.data)) {
@@ -630,61 +631,85 @@ export const ManagerDashboardPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Open Room Issues & Lost and Found for Owner */}
-        {openIssues.length > 0 && (
-          <Card className="border-rose-200/90 shadow-2xs bg-rose-50/40">
-            <CardHeader className="py-3 px-4 border-b border-rose-200/70 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-bold text-rose-900">
-                {isEn
-                  ? `Room Issues & Lost & Found (${openIssues.length})`
-                  : `รายการแจ้งชำรุด & ของที่ลูกค้าลืมไว้ (${openIssues.length})`}
-              </CardTitle>
-              <Link to="/admin/rooms" className="text-xs font-semibold text-[#F97316] hover:underline">
-                {isEn ? 'Manage Rooms →' : 'จัดการห้องพัก →'}
-              </Link>
-            </CardHeader>
-            <CardContent className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {openIssues.map((iss) => {
-                const roomNum = iss.roomId?.replace(/^rm-/, '') || iss.roomId;
-                return (
-                  <div key={iss.id} className="bg-white rounded-lg border border-rose-200/80 p-3 text-xs space-y-1.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-bold text-slate-900 font-mono">ห้อง {roomNum}</span>
-                      <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
-                          iss.issueType === 'lost_and_found'
-                            ? 'bg-amber-100 text-amber-800'
-                            : 'bg-rose-100 text-rose-800'
-                        }`}
-                      >
-                        {formatIssueTypeLabel(iss.issueType)}
-                      </span>
-                    </div>
-                    <p className="text-slate-700 leading-snug">{iss.description}</p>
-                    {iss.issueType === 'lost_and_found' && (
-                      <p className="text-[11px] text-amber-800">
-                        เก็บที่: {iss.storageLocation || 'Front Desk Counter'} ({iss.retentionDays || 7} วัน)
-                      </p>
-                    )}
-                    <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[11px] text-slate-500">
-                      <span>โดย: {iss.reportedBy?.name || 'Staff'}</span>
-                      {iss.photoR2Key && (
-                        <a
-                          href={assetUrl(iss.photoR2Key)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-blue-600 hover:underline font-medium"
-                        >
-                          ดูรูปหลักฐาน
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </CardContent>
-          </Card>
-        )}
+        {/* Room Issues, Missing Items & Lost and Found for Owner (Active + History Toggle) */}
+        {openIssues.length > 0 && (() => {
+          const activeList = openIssues.filter((iss) => iss.status === 'open' || iss.status === 'acknowledged');
+          const historyList = openIssues.filter((iss) => iss.status === 'resolved' || iss.status === 'expired_claimed');
+          const visibleList = showIssueHistory ? historyList : activeList;
+          return (
+            <Card className="border-rose-200/90 shadow-2xs bg-rose-50/40">
+              <CardHeader className="py-3 px-4 border-b border-rose-200/70 flex flex-row items-center justify-between gap-2">
+                <CardTitle className="text-sm font-bold text-rose-900">
+                  {showIssueHistory
+                    ? (isEn
+                        ? `Resolved Issues History (${historyList.length})`
+                        : `ประวัติแจ้งชำรุด & ของหาย / ของลืมที่ปิดแล้ว (${historyList.length})`)
+                    : (isEn
+                        ? `Room Issues & Lost & Found (${activeList.length})`
+                        : `รายการแจ้งชำรุด & ของหาย / ของที่ลูกค้าลืมไว้ (${activeList.length})`)}
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  {historyList.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowIssueHistory((prev) => !prev)}
+                      className="text-[11px] font-semibold text-slate-700 bg-white px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-slate-50"
+                    >
+                      {showIssueHistory ? `เปิดอยู่ (${activeList.length})` : `ดูประวัติที่ปิดแล้ว (${historyList.length})`}
+                    </button>
+                  )}
+                  <Link to="/admin/rooms" className="text-xs font-semibold text-[#F97316] hover:underline">
+                    {isEn ? 'Manage Rooms →' : 'จัดการห้องพัก →'}
+                  </Link>
+                </div>
+              </CardHeader>
+              <CardContent className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {visibleList.length === 0 ? (
+                  <p className="text-xs text-slate-500 italic col-span-full">ไม่มีรายการ</p>
+                ) : (
+                  visibleList.map((iss) => {
+                    const roomNum = iss.roomId?.replace(/^rm-/, '') || iss.roomId;
+                    return (
+                      <div key={iss.id} className="bg-white rounded-lg border border-rose-200/80 p-3 text-xs space-y-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-bold text-slate-900 font-mono">ห้อง {roomNum}</span>
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                              iss.issueType === 'lost_and_found' || iss.issueType === 'missing_item'
+                                ? 'bg-amber-100 text-amber-800'
+                                : 'bg-rose-100 text-rose-800'
+                            }`}
+                          >
+                            {formatIssueTypeLabel(iss.issueType)}
+                          </span>
+                        </div>
+                        <p className="text-slate-700 leading-snug">{iss.description}</p>
+                        {iss.issueType === 'lost_and_found' && (
+                          <p className="text-[11px] text-amber-800">
+                            เก็บที่: {iss.storageLocation || 'Front Desk Counter'} ({iss.retentionDays || 7} วัน)
+                          </p>
+                        )}
+                        <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[11px] text-slate-500">
+                          <span>โดย: {iss.reportedBy?.name || 'Staff'}</span>
+                          {iss.photoR2Key && (
+                            <a
+                              href={assetUrl(iss.photoR2Key)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-blue-600 hover:underline font-medium"
+                            >
+                              ดูรูปหลักฐาน
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </CardContent>
+            </Card>
+          );
+        })()}
       </div>
     </AdminLayout>
   );
