@@ -5,6 +5,9 @@ export interface Env {
   JWT_SECRET?: string;
   QSTASH_URL?: string;
   QSTASH_TOKEN?: string;
+  ROOM_INVENTORY_URL?: string;
+  HOUSEKEEPING_URL?: string;
+  REPORT_ANALYTICS_URL?: string;
 }
 
 export interface GuestRecord {
