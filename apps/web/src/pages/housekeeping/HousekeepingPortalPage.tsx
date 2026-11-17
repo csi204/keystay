@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Logo } from '../../components/common/Logo';
-import { RoomIssueReportModal } from '../../components/common/RoomIssueReportModal';
+import { RoomIssueReportModal, formatIssueTypeLabel } from '../../components/common/RoomIssueReportModal';
 import { QuickContactModal } from '../../components/housekeeping/QuickContactModal';
 import { clearAuthSession, getAuthToken, getAuthUser, apiUrl, assetUrl } from '../../lib/api';
 import { reconcileLiveRooms } from '../../lib/roomStatusReconciliation';
@@ -446,6 +446,35 @@ export const HousekeepingPortalPage: React.FC = () => {
   const [lostAndFoundLocation, setLostAndFoundLocation] = useState<string>('Front Desk Counter');
   const [lostAndFoundDays, setLostAndFoundDays] = useState<number>(7);
   const [selectedRoomDetail, setSelectedRoomDetail] = useState<RoomStatusItem | null>(null);
+  const [selectedRoomIssues, setSelectedRoomIssues] = useState<any[]>([]);
+  const [showSelectedRoomHistory, setShowSelectedRoomHistory] = useState(false);
+
+  const loadSelectedRoomIssues = async (roomNumber: string) => {
+    const token = getAuthToken();
+    try {
+      const res = await fetch(
+        apiUrl(`/api/housekeeping/issues?roomId=${encodeURIComponent(`rm-${roomNumber}`)}`),
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+      if (res.ok) {
+        const json = await res.json();
+        setSelectedRoomIssues(Array.isArray(json.data) ? json.data : []);
+      } else {
+        setSelectedRoomIssues([]);
+      }
+    } catch {
+      setSelectedRoomIssues([]);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedRoomDetail?.roomNumber) {
+      setShowSelectedRoomHistory(false);
+      loadSelectedRoomIssues(selectedRoomDetail.roomNumber);
+    } else {
+      setSelectedRoomIssues([]);
+    }
+  }, [selectedRoomDetail?.roomNumber]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [, setIsLoadingData] = useState<boolean>(false);
   const [taskTemplates, setTaskTemplates] = useState<any[]>([]);
@@ -4311,6 +4340,74 @@ export const HousekeepingPortalPage: React.FC = () => {
               </button>
             </div>
 
+            {/* Room Issues, Missing Items & Lost and Found (Visible even after room reopens) */}
+            {selectedRoomIssues.length > 0 && (() => {
+              const openList = selectedRoomIssues.filter((iss) => iss.status === 'open' || iss.status === 'acknowledged');
+              const historyList = selectedRoomIssues.filter((iss) => iss.status === 'resolved' || iss.status === 'expired_claimed');
+              const visibleList = showSelectedRoomHistory ? historyList : openList;
+              return (
+                <div className="p-3 rounded-xl bg-amber-50/60 border border-amber-200/80 space-y-2 max-h-48 overflow-y-auto">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-bold text-slate-800">
+                      {showSelectedRoomHistory
+                        ? `ประวัติที่ปิดแล้ว (${historyList.length})`
+                        : `รายการแจ้งชำรุด / ของหาย / ของลืม (${openList.length})`}
+                    </span>
+                    {historyList.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowSelectedRoomHistory((prev) => !prev)}
+                        className="text-[10px] font-semibold text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200"
+                      >
+                        {showSelectedRoomHistory ? `เปิดอยู่ (${openList.length})` : `ดูประวัติ (${historyList.length})`}
+                      </button>
+                    )}
+                  </div>
+                  {visibleList.length === 0 ? (
+                    <p className="text-[11px] text-slate-500 italic">ไม่มีรายการ</p>
+                  ) : (
+                    visibleList.map((iss) => (
+                      <div key={iss.id} className="bg-white rounded-lg border border-slate-200 p-2 text-xs space-y-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800">
+                            {formatIssueTypeLabel(iss.issueType)}
+                          </span>
+                          {iss.status === 'open' || iss.status === 'acknowledged' ? (
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                const token = getAuthToken();
+                                await fetch(apiUrl(`/api/housekeeping/issues/${iss.id}/resolve`), {
+                                  method: 'PUT',
+                                  headers: {
+                                    'Content-Type': 'application/json',
+                                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                                  },
+                                  body: JSON.stringify({ receivedByName: 'Housekeeping' }),
+                                });
+                                await loadSelectedRoomIssues(selectedRoomDetail.roomNumber);
+                              }}
+                              className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200"
+                            >
+                              {iss.issueType === 'lost_and_found' ? 'รับมอบ / คืนแล้ว' : iss.issueType === 'missing_item' ? 'พบ / เติมครบแล้ว' : 'ซ่อมเสร็จแล้ว'}
+                            </button>
+                          ) : (
+                            <span className="text-[10px] text-emerald-700 font-semibold">ปิดงานแล้ว</span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-slate-700">{iss.description}</p>
+                        {iss.photoR2Key && (
+                          <a href={assetUrl(iss.photoR2Key)} target="_blank" rel="noreferrer" className="text-[10px] text-blue-600 hover:underline inline-block">
+                            ดูรูปหลักฐาน
+                          </a>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              );
+            })()}
+
             {/* If room is in maintenance / out_of_order, offer direct call + repair complete button */}
             {(selectedRoomDetail.status === 'maintenance' || (selectedRoomDetail.status as string) === 'out_of_order') && (
               <div className="space-y-2">
@@ -4342,7 +4439,9 @@ export const HousekeepingPortalPage: React.FC = () => {
                         { headers: token ? { Authorization: `Bearer ${token}` } : {} }
                       );
                       const issuesJson = await issuesRes.json().catch(() => null);
-                      const openIssues = Array.isArray(issuesJson?.data) ? issuesJson.data : [];
+                      const openIssues = (Array.isArray(issuesJson?.data) ? issuesJson.data : []).filter(
+                        (iss: any) => iss.issueType !== 'lost_and_found' && iss.issueType !== 'missing_item'
+                      );
                       await Promise.allSettled(
                         openIssues.map((iss: any) =>
                           fetch(apiUrl(`/api/housekeeping/issues/${iss.id}/resolve`), {
@@ -4388,22 +4487,20 @@ export const HousekeepingPortalPage: React.FC = () => {
               </div>
             )}
 
-            {selectedRoomDetail.status !== 'occupied' &&
-              selectedRoomDetail.status !== 'maintenance' &&
-              (selectedRoomDetail.status as string) !== 'out_of_order' && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMaintenanceRoom(selectedRoomDetail.roomNumber);
-                    setSelectedRoomDetail(null);
-                    setIsMaintenanceModalOpen(true);
-                  }}
-                  className="w-full min-h-[44px] rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-xs font-bold flex items-center justify-center gap-1.5"
-                >
-                  <Wrench className="w-4 h-4" />
-                  <span>แจ้งชำรุด / ปิดใช้งานห้องชั่วคราว</span>
-                </button>
-              )}
+            {selectedRoomDetail.status !== 'occupied' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMaintenanceRoom(selectedRoomDetail.roomNumber);
+                  setSelectedRoomDetail(null);
+                  setIsMaintenanceModalOpen(true);
+                }}
+                className="w-full min-h-[44px] rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-xs font-bold flex items-center justify-center gap-1.5"
+              >
+                <Wrench className="w-4 h-4" />
+                <span>แจ้งชำรุด / บันทึกของลืม (Lost &amp; Found)</span>
+              </button>
+            )}
 
             <button
               type="button"

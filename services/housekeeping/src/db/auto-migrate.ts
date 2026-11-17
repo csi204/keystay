@@ -1,7 +1,8 @@
 const migratedHousekeepingDbs = new WeakSet<object>();
 
 /**
- * Ensures recent schema columns on db_housekeeping (such as Lost & Found fields on room_issues)
+ * Ensures recent schema columns and CHECK constraints on db_housekeeping
+ * (such as Lost & Found fields and expanded issue_type / status values on room_issues)
  * exist idempotently across both local D1 and production.
  */
 export async function ensureHousekeepingSchema(db: D1Database): Promise<void> {
@@ -52,7 +53,57 @@ export async function ensureHousekeepingSchema(db: D1Database): Promise<void> {
     try {
       await db.prepare(sql).run();
     } catch {
-      // Column already exists, safe to ignore
+      // Column or table already exists, safe to ignore
     }
+  }
+
+  // Upgrade room_issues CHECK constraint if it predates 'lost_and_found' / 'cleanliness' / 'expired_claimed'
+  try {
+    const tbl: any = await db
+      .prepare(`SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'room_issues'`)
+      .first();
+    const ddl: string = tbl?.sql || '';
+    if (ddl && (!ddl.includes('lost_and_found') || !ddl.includes('cleanliness'))) {
+      await db.prepare(`DROP TABLE IF EXISTS room_issues_new`).run();
+      await db
+        .prepare(
+          `CREATE TABLE room_issues_new (
+            id TEXT PRIMARY KEY,
+            task_id TEXT REFERENCES housekeeping_tasks(id),
+            room_id TEXT NOT NULL,
+            reported_by TEXT NOT NULL REFERENCES housekeeping_staff(id),
+            issue_type TEXT NOT NULL CHECK(issue_type IN ('damage', 'missing_item', 'malfunction', 'hygiene', 'cleanliness', 'lost_and_found')),
+            description TEXT NOT NULL,
+            photo_r2_key TEXT,
+            severity TEXT NOT NULL DEFAULT 'medium' CHECK(severity IN ('low', 'medium', 'high', 'critical')),
+            status TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open', 'acknowledged', 'resolved', 'expired_claimed')),
+            storage_location TEXT DEFAULT 'Front Desk Counter',
+            retention_days INTEGER DEFAULT 7,
+            received_by_name TEXT,
+            resolved_at TEXT,
+            created_at TEXT NOT NULL
+          )`
+        )
+        .run();
+      await db
+        .prepare(
+          `INSERT INTO room_issues_new (
+            id, task_id, room_id, reported_by, issue_type, description, photo_r2_key,
+            severity, status, storage_location, retention_days, received_by_name, resolved_at, created_at
+          )
+          SELECT
+            id, task_id, room_id, reported_by, issue_type, description, photo_r2_key,
+            severity, status,
+            COALESCE(storage_location, 'Front Desk Counter'),
+            COALESCE(retention_days, 7),
+            received_by_name, resolved_at, created_at
+          FROM room_issues`
+        )
+        .run();
+      await db.prepare(`DROP TABLE room_issues`).run();
+      await db.prepare(`ALTER TABLE room_issues_new RENAME TO room_issues`).run();
+    }
+  } catch (err) {
+    console.warn('[Auto-Migrate] room_issues constraint upgrade warning:', err);
   }
 }
