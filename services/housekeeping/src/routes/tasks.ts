@@ -476,37 +476,40 @@ tasksRoute.put('/:id/complete', async (c) => {
     ? 'http://127.0.0.1:8793'
     : 'https://keystay-report-analytics.khetsophon-ain.workers.dev';
 
-  const triggerFallback = () => {
-    for (const url of [
-      `${roomInventoryBase}/webhooks/housekeeping-completed`,
-      `${reportBase}/webhooks/housekeeping-completed`,
-    ]) {
-      fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: eventPayload,
-      }).catch((err) => {
-        console.warn(`[Webhook Fallback] Failed to notify ${url}:`, err?.message || err);
-      });
-    }
+  const triggerFallback = async () => {
+    await Promise.allSettled(
+      [
+        `${roomInventoryBase}/webhooks/housekeeping-completed`,
+        `${reportBase}/webhooks/housekeeping-completed`,
+      ].map((url) =>
+        fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: eventPayload,
+        }).catch((err) => {
+          console.warn(`[Webhook Fallback] Failed to notify ${url}:`, err?.message || err);
+        })
+      )
+    );
   };
 
   if (c.env.QSTASH_URL && c.env.QSTASH_TOKEN) {
     const qstashEndpoint = `${c.env.QSTASH_URL.replace(/\/+$/, '')}/v2/publish/${encodeURIComponent('hotel.housekeeping.completed')}`;
-    fetch(qstashEndpoint, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${c.env.QSTASH_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      body: eventPayload,
-    })
-      .then((res) => {
-        if (!res.ok) triggerFallback();
-      })
-      .catch(() => triggerFallback());
+    try {
+      const res = await fetch(qstashEndpoint, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${c.env.QSTASH_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: eventPayload,
+      });
+      if (!res.ok) await triggerFallback();
+    } catch {
+      await triggerFallback();
+    }
   } else {
-    triggerFallback();
+    await triggerFallback();
   }
 
   return c.json({
