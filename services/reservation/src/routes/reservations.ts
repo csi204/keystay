@@ -636,7 +636,7 @@ reservations.post('/walk-in', async (c) => {
     await c.env.DB.batch(stmts);
 
     // 5. Fire Event to QStash (with direct URL fallback if unconfigured or failed)
-    await publishToQStash(c.env, 'hotel.reservation.checkin', checkinEvent, outboxId, c.req.url);
+    await publishToQStash(c.env, 'hotel.reservation.checkin', checkinEvent, outboxId, c.req.url, c.req.header('x-forwarded-host'));
 
     // 6. Return mapped result
     const createdRow = await c.env.DB.prepare(`
@@ -1470,7 +1470,7 @@ const handleCheckIn = async (c: Context<{ Bindings: Env }>) => {
     await c.env.DB.batch(stmts);
 
     // 5. Fire event to Upstash Topic: hotel.reservation.checkin (with direct URL fallback)
-    await publishToQStash(c.env, 'hotel.reservation.checkin', checkinEvent, outboxId, c.req.url);
+    await publishToQStash(c.env, 'hotel.reservation.checkin', checkinEvent, outboxId, c.req.url, c.req.header('x-forwarded-host'));
 
     // 6. Return response
     const updated = await c.env.DB.prepare(query).bind(existing.id, existing.id).first();
@@ -1607,7 +1607,7 @@ reservations.post('/:id/check-out', async (c) => {
     await c.env.DB.batch([stmtUpdate, stmtFreeBookedDates, stmtHistory, stmtOutbox]);
 
     // 4. Fire QStash Fan-out to Upstash Topic: hotel.reservation.checkout (with direct URL fallback)
-    await publishToQStash(c.env, 'hotel.reservation.checkout', checkoutEvent, outboxId, c.req.url);
+    await publishToQStash(c.env, 'hotel.reservation.checkout', checkoutEvent, outboxId, c.req.url, c.req.header('x-forwarded-host'));
 
     const updated = await c.env.DB.prepare(query).bind(existing.id, existing.id).first();
 
@@ -1740,7 +1740,7 @@ const handleCancelReservation = async (c: any) => {
       .catch(() => {});
 
     // Publish event to QStash / direct URL fallback
-    await publishToQStash(c.env, 'hotel.reservation.cancel', cancelPayload, outboxId, c.req.url);
+    await publishToQStash(c.env, 'hotel.reservation.cancel', cancelPayload, outboxId, c.req.url, c.req.header('x-forwarded-host'));
 
     return c.json({
       success: true,

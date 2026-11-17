@@ -2557,9 +2557,9 @@ export const HousekeepingPortalPage: React.FC = () => {
               </div>
 
               <div className="flex flex-col gap-2">
-                {completedRooms.map((c) => (
+                {completedRooms.map((c, idx) => (
                   <div
-                    key={c.roomNumber}
+                    key={c.id || `${c.roomNumber}-${idx}`}
                     className="bg-white rounded-xl border border-slate-200 shadow-xs p-3 flex items-center justify-between opacity-95 hover:border-slate-300 transition-all"
                   >
                     <div className="flex items-center gap-3">
@@ -3095,9 +3095,9 @@ export const HousekeepingPortalPage: React.FC = () => {
 
                 {/* Scrollable Column Content */}
                 <div className="p-3 overflow-y-auto flex flex-col gap-2.5 flex-1 min-h-0">
-                  {completedRooms.map((c) => (
+                  {completedRooms.map((c, idx) => (
                     <div
-                      key={c.roomNumber}
+                      key={c.id || `${c.roomNumber}-${idx}`}
                       className="bg-white rounded-xl border border-slate-200 shadow-xs p-3 flex flex-col gap-2 hover:border-emerald-300 transition-all"
                     >
                       <div className="flex items-center justify-between">

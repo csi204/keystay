@@ -337,6 +337,7 @@ async function forwardRequest(
 
   // Clone headers and add caller context
   const headers = new Headers(c.req.raw.headers);
+  headers.set('x-forwarded-host', url.host);
   const user = c.get('user');
   if (user) {
     headers.set('x-user-id', user.sub);

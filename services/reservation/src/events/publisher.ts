@@ -8,10 +8,22 @@ export interface PublishResult {
 }
 
 /**
+ * Detects whether the request originated from local development (including via API Gateway service binding).
+ */
+function isLocalRequest(reqUrl?: string, forwardedHost?: string): boolean {
+  const host = (forwardedHost || '').toLowerCase();
+  if (host) {
+    return host.includes('127.0.0.1') || host.includes('localhost');
+  }
+  if (!reqUrl) return true;
+  return reqUrl.includes('127.0.0.1') || reqUrl.includes('localhost') || reqUrl.startsWith('http://internal');
+}
+
+/**
  * Resolves direct webhook URLs for each QStash topic when QStash is unconfigured or fails.
  */
-function getFallbackWebhookUrls(env: Env, topic: string, reqUrl?: string): string[] {
-  const isLocal = reqUrl ? (reqUrl.includes('127.0.0.1') || reqUrl.includes('localhost')) : true;
+function getFallbackWebhookUrls(env: Env, topic: string, reqUrl?: string, forwardedHost?: string): string[] {
+  const isLocal = isLocalRequest(reqUrl, forwardedHost);
   const roomInventoryBase = (
     env.ROOM_INVENTORY_URL ||
     (isLocal ? 'http://127.0.0.1:8789' : 'https://keystay-room-inventory.khetsophon-ain.workers.dev')
@@ -53,9 +65,10 @@ export function dispatchWebhookFallback(
   env: Env,
   topic: string,
   payload: any,
-  reqUrl?: string
+  reqUrl?: string,
+  forwardedHost?: string
 ): boolean {
-  const urls = getFallbackWebhookUrls(env, topic, reqUrl);
+  const urls = getFallbackWebhookUrls(env, topic, reqUrl, forwardedHost);
   if (urls.length === 0) return false;
 
   for (const url of urls) {
@@ -80,14 +93,15 @@ export async function publishToQStash(
   topic: string,
   payload: any,
   outboxEventId?: string,
-  reqUrl?: string
+  reqUrl?: string,
+  forwardedHost?: string
 ): Promise<PublishResult> {
   const qstashUrl = env.QSTASH_URL;
   const qstashToken = env.QSTASH_TOKEN;
 
   if (!qstashUrl || !qstashToken) {
     console.warn(`[QStash] Skipping publish to topic '${topic}': QSTASH_URL or QSTASH_TOKEN not configured`);
-    const fallbackDispatched = dispatchWebhookFallback(env, topic, payload, reqUrl);
+    const fallbackDispatched = dispatchWebhookFallback(env, topic, payload, reqUrl, forwardedHost);
     return { published: false, fallbackDispatched, error: 'QSTASH_NOT_CONFIGURED' };
   }
 
@@ -119,7 +133,7 @@ export async function publishToQStash(
         }
       }
 
-      const fallbackDispatched = dispatchWebhookFallback(env, topic, payload, reqUrl);
+      const fallbackDispatched = dispatchWebhookFallback(env, topic, payload, reqUrl, forwardedHost);
       return { published: false, fallbackDispatched, error: `HTTP ${response.status}: ${errText}` };
     }
 
@@ -154,7 +168,7 @@ export async function publishToQStash(
       }
     }
 
-    const fallbackDispatched = dispatchWebhookFallback(env, topic, payload, reqUrl);
+    const fallbackDispatched = dispatchWebhookFallback(env, topic, payload, reqUrl, forwardedHost);
     return { published: false, fallbackDispatched, error: err.message || 'Unknown error' };
   }
 }

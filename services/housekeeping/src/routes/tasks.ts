@@ -468,7 +468,10 @@ tasksRoute.put('/:id/complete', async (c) => {
 
   // Publish HousekeepingTaskCompleted to QStash, with direct URL fallback
   const reqUrl = c.req.url;
-  const isLocal = reqUrl.includes('127.0.0.1') || reqUrl.includes('localhost');
+  const forwardedHost = (c.req.header('x-forwarded-host') || '').toLowerCase();
+  const isLocal = forwardedHost
+    ? (forwardedHost.includes('127.0.0.1') || forwardedHost.includes('localhost'))
+    : (reqUrl.includes('127.0.0.1') || reqUrl.includes('localhost') || reqUrl.startsWith('http://internal'));
   const roomInventoryBase = isLocal
     ? 'http://127.0.0.1:8789'
     : 'https://keystay-room-inventory.khetsophon-ain.workers.dev';

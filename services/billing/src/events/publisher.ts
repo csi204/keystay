@@ -1,8 +1,11 @@
 import { Client } from '@upstash/qstash';
 import { type Env } from '../types';
 
-function dispatchBillingWebhookFallback(topic: string, payload: any, reqUrl?: string) {
-  const isLocal = reqUrl ? (reqUrl.includes('127.0.0.1') || reqUrl.includes('localhost')) : true;
+function dispatchBillingWebhookFallback(topic: string, payload: any, reqUrl?: string, forwardedHost?: string) {
+  const host = (forwardedHost || '').toLowerCase();
+  const isLocal = host
+    ? (host.includes('127.0.0.1') || host.includes('localhost'))
+    : (!reqUrl || reqUrl.includes('127.0.0.1') || reqUrl.includes('localhost') || reqUrl.startsWith('http://internal'));
   const reportBase = isLocal
     ? 'http://127.0.0.1:8793'
     : 'https://keystay-report-analytics.khetsophon-ain.workers.dev';
