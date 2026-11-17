@@ -38,14 +38,16 @@ export const ForgotPasswordPage: React.FC = () => {
         return;
       }
 
-      const token = data?.devResetToken || data?.resetToken || 'demo-reset-token-' + Math.random().toString(36).substring(2, 9);
+      const token =
+        data?.data?.debugToken ||
+        data?.debugToken ||
+        data?.devResetToken ||
+        data?.resetToken ||
+        '';
       setDevToken(token);
       setIsSuccess(true);
     } catch {
-      // Dev local fallback
-      const token = 'demo-reset-token-' + Math.random().toString(36).substring(2, 9);
-      setDevToken(token);
-      setIsSuccess(true);
+      setErrorMessage('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง');
     } finally {
       setIsLoading(false);
     }

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Logo } from '@/components/common/Logo';
 import { Eye, EyeOff, CheckCircle2, ArrowLeft, Check, X, ShieldCheck } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { apiUrl } from '@/lib/api';
+import { apiUrl, getAuthToken } from '@/lib/api';
 
 interface ResetPasswordPageProps {
   mode?: 'reset' | 'change'; // 'reset' = via forgot password token, 'change' = in-app logged in
@@ -66,7 +66,7 @@ export const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ mode = 're
     try {
       if (isChangeMode) {
         // Change password in-app (logged in user)
-        const authToken = localStorage.getItem('keystay_token');
+        const authToken = getAuthToken();
         const response = await fetch(apiUrl('/api/auth/change-password'), {
           method: 'POST',
           headers: {
@@ -74,14 +74,15 @@ export const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ mode = 're
             ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
           },
           body: JSON.stringify({
-            oldPassword: currentPassword,
+            currentPassword,
             newPassword,
           }),
         });
 
         const data = await response.json().catch(() => null);
         if (!response.ok) {
-          setErrorMessage(data?.error || data?.message || 'รหัสผ่านปัจจุบันไม่ถูกต้อง');
+          const errMsg = typeof data?.error === 'string' ? data.error : data?.message;
+          setErrorMessage(errMsg || 'รหัสผ่านปัจจุบันไม่ถูกต้อง');
           setIsLoading(false);
           return;
         }
@@ -93,14 +94,15 @@ export const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ mode = 're
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            token: token.trim() || 'demo-token',
+            token: token.trim(),
             newPassword,
           }),
         });
 
         const data = await response.json().catch(() => null);
         if (!response.ok) {
-          setErrorMessage(data?.error || data?.message || 'ไม่สามารถตั้งรหัสผ่านใหม่ได้ กรุณาตรวจสอบ Token อีกครั้ง');
+          const errMsg = typeof data?.error === 'string' ? data.error : data?.message;
+          setErrorMessage(errMsg || 'ไม่สามารถตั้งรหัสผ่านใหม่ได้ กรุณาตรวจสอบ Token อีกครั้ง');
           setIsLoading(false);
           return;
         }
@@ -108,8 +110,7 @@ export const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ mode = 're
         setIsSuccess(true);
       }
     } catch {
-      // Dev local fallback
-      setIsSuccess(true);
+      setErrorMessage('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง');
     } finally {
       setIsLoading(false);
     }
