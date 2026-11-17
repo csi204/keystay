@@ -19,6 +19,8 @@ export interface Env {
   DB: D1Database;
   KEYSTAY_ASSETS?: R2Bucket;
   ENVIRONMENT?: string;
+  QSTASH_URL?: string;
+  QSTASH_TOKEN?: string;
 }
 
 export const tasksRoute = new Hono<{ Bindings: Env }>();
@@ -463,6 +465,49 @@ tasksRoute.put('/:id/complete', async (c) => {
       createdAt: now,
     }),
   ]);
+
+  // Publish HousekeepingTaskCompleted to QStash, with direct URL fallback
+  const reqUrl = c.req.url;
+  const isLocal = reqUrl.includes('127.0.0.1') || reqUrl.includes('localhost');
+  const roomInventoryBase = isLocal
+    ? 'http://127.0.0.1:8789'
+    : 'https://keystay-room-inventory.khetsophon-ain.workers.dev';
+  const reportBase = isLocal
+    ? 'http://127.0.0.1:8793'
+    : 'https://keystay-report-analytics.khetsophon-ain.workers.dev';
+
+  const triggerFallback = () => {
+    for (const url of [
+      `${roomInventoryBase}/webhooks/housekeeping-completed`,
+      `${reportBase}/webhooks/housekeeping-completed`,
+    ]) {
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: eventPayload,
+      }).catch((err) => {
+        console.warn(`[Webhook Fallback] Failed to notify ${url}:`, err?.message || err);
+      });
+    }
+  };
+
+  if (c.env.QSTASH_URL && c.env.QSTASH_TOKEN) {
+    const qstashEndpoint = `${c.env.QSTASH_URL.replace(/\/+$/, '')}/v2/publish/${encodeURIComponent('hotel.housekeeping.completed')}`;
+    fetch(qstashEndpoint, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${c.env.QSTASH_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: eventPayload,
+    })
+      .then((res) => {
+        if (!res.ok) triggerFallback();
+      })
+      .catch(() => triggerFallback());
+  } else {
+    triggerFallback();
+  }
 
   return c.json({
     success: true,
