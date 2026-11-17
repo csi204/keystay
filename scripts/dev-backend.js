@@ -1,4 +1,5 @@
-const { spawn } = require('child_process');
+const { spawn, execSync } = require('child_process');
+const fs = require('fs');
 const path = require('path');
 
 const services = [
@@ -15,30 +16,67 @@ console.log('🚀 Starting KEYSTAY Backend Services (Bypassing Turbo for Windows
 
 const isWin = process.platform === 'win32';
 const pnpmCmd = isWin ? 'pnpm.cmd' : 'pnpm';
+const localWrangler = path.join(__dirname, '../node_modules/.bin', isWin ? 'wrangler.cmd' : 'wrangler');
+
+// Clear any zombie workerd/wrangler processes holding ports 8787-8793 before starting
+if (!isWin) {
+  try {
+    execSync('pkill -f workerd 2>/dev/null || true');
+    execSync('lsof -ti:8787,8788,8789,8790,8791,8792,8793,9228,9229,9230,9231,9232,9233,9234 | xargs kill -9 2>/dev/null || true');
+  } catch (_) {}
+}
+
+function resolveWranglerBin() {
+  if (fs.existsSync(localWrangler)) {
+    return localWrangler;
+  }
+  try {
+    const cmd = isWin ? 'where wrangler' : 'which wrangler';
+    const found = execSync(cmd, { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim().split(/\r?\n/)[0];
+    if (found) return found;
+  } catch (_) {}
+  return null;
+}
+
+const wranglerBin = resolveWranglerBin();
+
+if (!wranglerBin) {
+  console.log('⏳ Pre-warming wrangler via pnpm dlx (once before parallel startup)...');
+  try {
+    execSync(
+      `${pnpmCmd} dlx --allow-build=esbuild,workerd,@cloudflare/workerd-darwin-arm64,@cloudflare/workerd-linux-64,@cloudflare/workerd-windows-64 wrangler --version`,
+      { stdio: 'inherit', env: { ...process.env, CI: 'true' } }
+    );
+  } catch (_) {}
+} else {
+  console.log(`✅ Using installed wrangler: ${wranglerBin}`);
+}
 
 const children = [];
 
 services.forEach((srv) => {
-  const args = [
-    'dlx',
-    '--allow-build=esbuild,workerd,@cloudflare/workerd-darwin-arm64,@cloudflare/workerd-linux-64,@cloudflare/workerd-windows-64',
-    'wrangler',
-    'dev',
-    '--port',
-    srv.port.toString(),
-  ];
-
+  const devArgs = ['dev', '--port', srv.port.toString()];
   if (srv.inspectorPort) {
-    args.push('--inspector-port', srv.inspectorPort.toString());
+    devArgs.push('--inspector-port', srv.inspectorPort.toString());
   }
 
+  const spawnCmd = wranglerBin || pnpmCmd;
+  const args = wranglerBin
+    ? devArgs
+    : [
+        'dlx',
+        '--allow-build=esbuild,workerd,@cloudflare/workerd-darwin-arm64,@cloudflare/workerd-linux-64,@cloudflare/workerd-windows-64',
+        'wrangler',
+        ...devArgs,
+      ];
+
   const child = spawn(
-    pnpmCmd,
+    spawnCmd,
     args,
     {
       cwd: srv.cwd,
       stdio: 'inherit',
-      shell: true,
+      shell: !wranglerBin && isWin,
       env: { ...process.env, CI: 'true' },
     }
   );

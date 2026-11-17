@@ -2,27 +2,93 @@ import { type Env } from '../types';
 
 export interface PublishResult {
   published: boolean;
+  fallbackDispatched?: boolean;
   messageId?: string;
   error?: string;
 }
 
 /**
+ * Resolves direct webhook URLs for each QStash topic when QStash is unconfigured or fails.
+ */
+function getFallbackWebhookUrls(env: Env, topic: string, reqUrl?: string): string[] {
+  const isLocal = reqUrl ? (reqUrl.includes('127.0.0.1') || reqUrl.includes('localhost')) : true;
+  const roomInventoryBase = (
+    env.ROOM_INVENTORY_URL ||
+    (isLocal ? 'http://127.0.0.1:8789' : 'https://keystay-room-inventory.khetsophon-ain.workers.dev')
+  ).replace(/\/+$/, '');
+  const housekeepingBase = (
+    env.HOUSEKEEPING_URL ||
+    (isLocal ? 'http://127.0.0.1:8791' : 'https://keystay-housekeeping.khetsophon-ain.workers.dev')
+  ).replace(/\/+$/, '');
+  const billingBase = (
+    isLocal ? 'http://127.0.0.1:8792' : 'https://keystay-billing.khetsophon-ain.workers.dev'
+  );
+  const reportBase = (
+    env.REPORT_ANALYTICS_URL ||
+    (isLocal ? 'http://127.0.0.1:8793' : 'https://keystay-report-analytics.khetsophon-ain.workers.dev')
+  ).replace(/\/+$/, '');
+
+  switch (topic) {
+    case 'hotel.reservation.checkin':
+      return [`${roomInventoryBase}/webhooks/checkin`];
+    case 'hotel.reservation.checkout':
+      return [
+        `${roomInventoryBase}/webhooks/checkout`,
+        `${housekeepingBase}/webhooks/checkout`,
+        `${billingBase}/webhooks/checkout`,
+        `${reportBase}/webhooks/checkout`,
+      ];
+    case 'hotel.reservation.cancel':
+      return [`${roomInventoryBase}/webhooks/cancel`];
+    default:
+      return [];
+  }
+}
+
+/**
+ * Dispatches direct HTTP POST webhooks to subscriber URLs as a fallback.
+ * Fire-and-forget so subscriber downtime never crashes the primary request.
+ */
+export function dispatchWebhookFallback(
+  env: Env,
+  topic: string,
+  payload: any,
+  reqUrl?: string
+): boolean {
+  const urls = getFallbackWebhookUrls(env, topic, reqUrl);
+  if (urls.length === 0) return false;
+
+  for (const url of urls) {
+    fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }).catch((err) => {
+      console.warn(`[Webhook Fallback] Failed to notify ${url} for topic '${topic}':`, err?.message || err);
+    });
+  }
+  return true;
+}
+
+/**
  * Publishes an event to Upstash QStash Topic.
  * Following Outbox Pattern: failures are captured and do not crash the calling request,
- * while updating the status in outbox_events.
+ * while updating the status in outbox_events and falling back to direct subscriber URLs.
  */
 export async function publishToQStash(
   env: Env,
   topic: string,
   payload: any,
-  outboxEventId?: string
+  outboxEventId?: string,
+  reqUrl?: string
 ): Promise<PublishResult> {
   const qstashUrl = env.QSTASH_URL;
   const qstashToken = env.QSTASH_TOKEN;
 
   if (!qstashUrl || !qstashToken) {
     console.warn(`[QStash] Skipping publish to topic '${topic}': QSTASH_URL or QSTASH_TOKEN not configured`);
-    return { published: false, error: 'QSTASH_NOT_CONFIGURED' };
+    const fallbackDispatched = dispatchWebhookFallback(env, topic, payload, reqUrl);
+    return { published: false, fallbackDispatched, error: 'QSTASH_NOT_CONFIGURED' };
   }
 
   try {
@@ -53,7 +119,8 @@ export async function publishToQStash(
         }
       }
 
-      return { published: false, error: `HTTP ${response.status}: ${errText}` };
+      const fallbackDispatched = dispatchWebhookFallback(env, topic, payload, reqUrl);
+      return { published: false, fallbackDispatched, error: `HTTP ${response.status}: ${errText}` };
     }
 
     const resData = (await response.json()) as any;
@@ -87,6 +154,7 @@ export async function publishToQStash(
       }
     }
 
-    return { published: false, error: err.message || 'Unknown error' };
+    const fallbackDispatched = dispatchWebhookFallback(env, topic, payload, reqUrl);
+    return { published: false, fallbackDispatched, error: err.message || 'Unknown error' };
   }
 }
