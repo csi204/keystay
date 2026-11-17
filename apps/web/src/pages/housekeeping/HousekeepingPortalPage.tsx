@@ -176,6 +176,7 @@ interface CleaningTaskItem {
   guestName?: string;
   notes?: string;
   checklist: Record<string, boolean>;
+  startedAt?: string | null;
   beforePhotoUrl?: string | null;
   afterPhotoUrl?: string | null;
 }
@@ -522,6 +523,16 @@ export const HousekeepingPortalPage: React.FC = () => {
                   if (raw) savedChecklist = JSON.parse(raw);
                 } catch {}
               }
+              let savedStartedAt: string | null = t.startedAt || null;
+              if (t.status === 'in_progress') {
+                try {
+                  if (savedStartedAt) {
+                    localStorage.setItem(`keystay_task_started_${t.id}`, savedStartedAt);
+                  } else {
+                    savedStartedAt = localStorage.getItem(`keystay_task_started_${t.id}`);
+                  }
+                } catch {}
+              }
               const num = t.roomNumber || t.roomId?.replace('rm-', '') || '101';
               return {
                 id: t.id,
@@ -539,6 +550,7 @@ export const HousekeepingPortalPage: React.FC = () => {
                 estMinutes: t.taskType === 'checkout_clean' ? 35 : t.taskType === 'deep_clean' ? 120 : 20,
                 notes: t.notes || '',
                 checklist: savedChecklist,
+                startedAt: savedStartedAt,
                 beforePhotoUrl: t.beforePhotoUrl || null,
                 afterPhotoUrl: t.afterPhotoUrl || null,
               };
@@ -718,16 +730,38 @@ export const HousekeepingPortalPage: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Countdown timer tick (เริ่มที่ 30:00 และนับถอยหลัง)
+  // Persistent countdown timer synced to activeTask.startedAt / localStorage
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isTimerRunning) {
-      interval = setInterval(() => {
-        setTimerSeconds((prev) => prev - 1);
-      }, 1000);
+    const active = tasks.find((t) => t.status === 'in_progress');
+    if (!active) return;
+
+    let startIso = active.startedAt || null;
+    if (!startIso) {
+      try {
+        startIso = localStorage.getItem(`keystay_task_started_${active.id}`);
+        if (!startIso) {
+          startIso = new Date().toISOString();
+          localStorage.setItem(`keystay_task_started_${active.id}`, startIso);
+        }
+      } catch {
+        startIso = new Date().toISOString();
+      }
     }
+
+    const startMs = new Date(startIso).getTime();
+    const updateRemaining = () => {
+      if (!Number.isNaN(startMs)) {
+        const elapsed = Math.floor((Date.now() - startMs) / 1000);
+        setTimerSeconds(30 * 60 - elapsed);
+      }
+    };
+
+    updateRemaining();
+    if (!isTimerRunning) return;
+
+    const interval = setInterval(updateRemaining, 1000);
     return () => clearInterval(interval);
-  }, [isTimerRunning]);
+  }, [isTimerRunning, tasks]);
 
   const formatTimer = (totalSec: number) => {
     const isNegative = totalSec < 0;
@@ -855,9 +889,10 @@ export const HousekeepingPortalPage: React.FC = () => {
     const task = targetPhotoTask;
     const afterPhoto = capturedAfterPhoto;
 
-    // ล้างแคช checklist ของงานนี้ออกจาก localStorage ทันทีที่จบงาน
+    // ล้างแคช checklist และเวลาเริ่มของงานนี้ออกจาก localStorage ทันทีที่จบงาน
     try {
       localStorage.removeItem(`keystay_checklist_${taskId}`);
+      localStorage.removeItem(`keystay_task_started_${taskId}`);
     } catch {}
 
     const now = new Date();
@@ -964,10 +999,15 @@ export const HousekeepingPortalPage: React.FC = () => {
       localStorage.removeItem(`keystay_checklist_${taskId}`);
     } catch {}
 
+    const nowIso = new Date().toISOString();
+    try {
+      localStorage.setItem(`keystay_task_started_${taskId}`, nowIso);
+    } catch {}
+
     // Reset งานอื่นที่อาจค้าง in_progress อยู่ ให้กลับเป็น pending และตั้ง checklist เป็น {}
     setTasks((prev) =>
       prev.map((t) => {
-        if (t.id === taskId) return { ...t, status: 'in_progress', checklist: {}, beforePhotoUrl: beforePhoto };
+        if (t.id === taskId) return { ...t, status: 'in_progress', checklist: {}, startedAt: nowIso, beforePhotoUrl: beforePhoto };
         if (t.status === 'in_progress') return { ...t, status: 'pending' };
         return t;
       })
@@ -1001,7 +1041,7 @@ export const HousekeepingPortalPage: React.FC = () => {
         },
         body: JSON.stringify({
           status: 'in_progress',
-          startedAt: new Date().toISOString(),
+          startedAt: nowIso,
           beforePhotoUrl: beforePhoto,
         }),
       });
@@ -2079,7 +2119,11 @@ export const HousekeepingPortalPage: React.FC = () => {
                       กำลังดำเนินการ ({inProgressCount} ห้อง)
                     </h3>
                   </div>
-                  <span className="text-[11px] tabular-nums text-slate-500">เริ่ม 11:15 น.</span>
+                  <span className="text-[11px] tabular-nums text-slate-500">
+                    {activeTask.startedAt
+                      ? `เริ่ม ${new Date(activeTask.startedAt).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.`
+                      : 'กำลังดำเนินการ'}
+                  </span>
                 </div>
 
                 {/* Active Task Card */}
