@@ -21,6 +21,8 @@ export interface Env {
   ENVIRONMENT?: string;
   QSTASH_URL?: string;
   QSTASH_TOKEN?: string;
+  ROOM_INVENTORY_SERVICE?: Fetcher;
+  REPORT_ANALYTICS_SERVICE?: Fetcher;
 }
 
 export const tasksRoute = new Hono<{ Bindings: Env }>();
@@ -477,19 +479,32 @@ tasksRoute.put('/:id/complete', async (c) => {
     : 'https://keystay-report-analytics.khetsophon-ain.workers.dev';
 
   const triggerFallback = async () => {
+    const init: RequestInit = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: eventPayload,
+    };
+    const targets = [
+      {
+        binding: !isLocal ? c.env.ROOM_INVENTORY_SERVICE : undefined,
+        path: '/webhooks/housekeeping-completed',
+        url: `${roomInventoryBase}/webhooks/housekeeping-completed`,
+      },
+      {
+        binding: !isLocal ? c.env.REPORT_ANALYTICS_SERVICE : undefined,
+        path: '/webhooks/housekeeping-completed',
+        url: `${reportBase}/webhooks/housekeeping-completed`,
+      },
+    ];
     await Promise.allSettled(
-      [
-        `${roomInventoryBase}/webhooks/housekeeping-completed`,
-        `${reportBase}/webhooks/housekeeping-completed`,
-      ].map((url) =>
-        fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: eventPayload,
-        }).catch((err) => {
-          console.warn(`[Webhook Fallback] Failed to notify ${url}:`, err?.message || err);
-        })
-      )
+      targets.map((target) => {
+        const reqPromise = target.binding
+          ? target.binding.fetch(`http://internal${target.path}`, init)
+          : fetch(target.url, init);
+        return reqPromise.catch((err) => {
+          console.warn(`[Webhook Fallback] Failed to notify ${target.url}:`, err?.message || err);
+        });
+      })
     );
   };
 

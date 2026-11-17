@@ -27,10 +27,17 @@ webhooksRoute.post('/checkout', async (c) => {
   const rawBody = await c.req.text();
 
   // 1. QStash Signature Verification (if QSTASH_CURRENT_SIGNING_KEY configured)
-  // Strictly verified if signature is provided or when running in production
+  // Strictly verified if signature is provided or when running in production (skip for internal Cloudflare Service Bindings)
+  const isInternalServiceBinding = (() => {
+    try {
+      return new URL(c.req.url).hostname === 'internal';
+    } catch {
+      return false;
+    }
+  })();
   const signingKey = c.env.QSTASH_CURRENT_SIGNING_KEY;
   const isProduction = c.env.ENVIRONMENT === 'production';
-  if (signingKey && (signature || isProduction)) {
+  if (!isInternalServiceBinding && signingKey && (signature || isProduction)) {
     if (!signature) {
       return c.json(
         { success: false, error: 'UNAUTHORIZED', message: 'Missing Upstash signature header' },
@@ -98,14 +105,17 @@ webhooksRoute.post('/checkout', async (c) => {
     .all();
 
   const duplicate = roomTasks.find((t) => {
-    // Check if active task exists
-    const isActive = t.status === 'pending' || t.status === 'assigned' || t.status === 'in_progress';
-    // Check if booking or eventId or messageId already exists in notes
+    // Only treat as duplicate if an active checkout_clean task already exists for the same scheduledDate,
+    // or if this exact booking / event / QStash message was already processed
+    const isSameDayActiveCheckoutClean =
+      t.taskType === 'checkout_clean' &&
+      t.scheduledDate === scheduledDate &&
+      (t.status === 'pending' || t.status === 'assigned' || t.status === 'in_progress');
     const matchesBooking = Boolean(event.bookingNumber && t.notes && t.notes.includes(event.bookingNumber));
     const matchesEvent = Boolean(event.eventId && t.notes && t.notes.includes(event.eventId));
     const matchesMessage = Boolean(messageId && t.notes && t.notes.includes(messageId));
 
-    return isActive || matchesBooking || matchesEvent || matchesMessage;
+    return isSameDayActiveCheckoutClean || matchesBooking || matchesEvent || matchesMessage;
   });
 
   if (duplicate) {

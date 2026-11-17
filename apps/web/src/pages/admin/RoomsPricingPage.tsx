@@ -302,6 +302,13 @@ export const RoomsPricingPage: React.FC = () => {
     };
     await apiFetch(`/api/room-types/${editingType.id}`, { method: 'PUT', body: JSON.stringify(payload) });
     setRoomTypes((prev) => prev.map((tItem) => (tItem.id === editingType.id ? { ...tItem, ...payload } : tItem)));
+    setRooms((prev) =>
+      prev.map((r) =>
+        r.roomTypeId === editingType.id
+          ? { ...r, roomType: { id: editingType.id, name: payload.name, basePrice: payload.basePrice } }
+          : r
+      )
+    );
     setEditingType(null);
   };
 
@@ -372,10 +379,13 @@ export const RoomsPricingPage: React.FC = () => {
     const [roomsRes, floorsRes, typesRes] = await Promise.all([
       apiFetch<RoomUnit[]>('/api/rooms'),
       apiFetch<FloorItem[]>('/api/floors'),
-      roomTypes.length > 0 ? Promise.resolve({ data: roomTypes, isOffline: false }) : apiFetch<RoomTypeItem[]>('/api/room-types'),
+      apiFetch<RoomTypeItem[]>('/api/room-types'),
     ]);
 
-    const currentTypes = (typesRes.data && typesRes.data.length > 0) ? typesRes.data : roomTypes;
+    const currentTypes = (typesRes.data && Array.isArray(typesRes.data) && typesRes.data.length > 0) ? typesRes.data : roomTypes;
+    if (typesRes.data && Array.isArray(typesRes.data) && typesRes.data.length > 0) {
+      setRoomTypes(typesRes.data);
+    }
     const typeMap = new Map<string, RoomTypeItem>();
     currentTypes.forEach((t) => typeMap.set(t.id, t));
 
@@ -916,7 +926,7 @@ export const RoomsPricingPage: React.FC = () => {
                         <tr>
                           <th className="py-2.5 px-4 w-28">{t('field.roomNumber')}</th>
                           <th className="py-2.5 px-3 w-64">{t('field.roomType')}</th>
-                          <th className="py-2.5 px-3  w-36">{t('field.basePrice')}</th>
+                          <th className="py-2.5 px-3 text-center w-36">{t('field.basePrice')}</th>
                           <th className="py-2.5 px-3 text-center w-40">{t('field.status')}</th>
                           <th className="py-2.5 px-3 text-center w-28">{t('field.isActive')}</th>
                           {isOwner && <th className="py-2.5 px-4 text-center w-56">{t('field.actions')}</th>}
@@ -925,14 +935,15 @@ export const RoomsPricingPage: React.FC = () => {
                       <tbody className="divide-y divide-slate-100">
                         {floorRooms.map((room) => {
                           const isOccupiedOrReserved = room.status === 'occupied' || room.status === 'reserved';
+                          const resolvedRoomType = roomTypes.find((rt) => rt.id === room.roomTypeId) ?? room.roomType;
                           return (
                             <tr key={room.id} className={`hover:bg-slate-50/80 transition-colors ${room.isActive === 0 ? 'opacity-50' : ''}`}>
                               <td className="py-3 px-4 font-mono text-slate-700 font-medium text-xs">
                                 {room.roomNumber}
                               </td>
-                              <td className="py-3 px-3 text-slate-700">{localizeRoomType(room.roomType?.name, locale) ?? '—'}</td>
-                              <td className="py-3 px-10  font-mono text-slate-700 font-medium text-xs">
-                                {room.roomType ? `฿${room.roomType.basePrice.toLocaleString()}` : '—'}
+                              <td className="py-3 px-3 text-slate-700">{localizeRoomType(resolvedRoomType?.name, locale) ?? '—'}</td>
+                              <td className="py-3 px-3 text-center font-mono text-slate-700 font-medium text-xs">
+                                {resolvedRoomType ? `฿${Number(resolvedRoomType.basePrice).toLocaleString()}` : '—'}
                               </td>
                               {/* Minimal Enterprise Status Dot (Zero AI Slop) */}
                               <td className="py-3 px-3 text-center">

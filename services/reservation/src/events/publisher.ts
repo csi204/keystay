@@ -7,10 +7,17 @@ export interface PublishResult {
   error?: string;
 }
 
+interface WebhookTarget {
+  binding?: Fetcher;
+  path: string;
+  url: string;
+}
+
 /**
- * Resolves direct webhook URLs for each QStash topic when QStash is unconfigured or fails.
+ * Resolves direct webhook targets (preferring Cloudflare Service Bindings in production)
+ * for each QStash topic when QStash is unconfigured or fails.
  */
-function getFallbackWebhookUrls(env: Env, topic: string, reqUrl?: string): string[] {
+function getFallbackWebhookTargets(env: Env, topic: string, reqUrl?: string): WebhookTarget[] {
   const isLocal = reqUrl ? (reqUrl.includes('127.0.0.1') || reqUrl.includes('localhost')) : true;
   const roomInventoryBase = (
     env.ROOM_INVENTORY_URL ||
@@ -30,23 +37,47 @@ function getFallbackWebhookUrls(env: Env, topic: string, reqUrl?: string): strin
 
   switch (topic) {
     case 'hotel.reservation.checkin':
-      return [`${roomInventoryBase}/webhooks/checkin`];
+      return [{
+        binding: !isLocal ? env.ROOM_INVENTORY_SERVICE : undefined,
+        path: '/webhooks/checkin',
+        url: `${roomInventoryBase}/webhooks/checkin`,
+      }];
     case 'hotel.reservation.checkout':
       return [
-        `${roomInventoryBase}/webhooks/checkout`,
-        `${housekeepingBase}/webhooks/checkout`,
-        `${billingBase}/webhooks/checkout`,
-        `${reportBase}/webhooks/checkout`,
+        {
+          binding: !isLocal ? env.ROOM_INVENTORY_SERVICE : undefined,
+          path: '/webhooks/checkout',
+          url: `${roomInventoryBase}/webhooks/checkout`,
+        },
+        {
+          binding: !isLocal ? env.HOUSEKEEPING_SERVICE : undefined,
+          path: '/webhooks/checkout',
+          url: `${housekeepingBase}/webhooks/checkout`,
+        },
+        {
+          binding: !isLocal ? env.BILLING_SERVICE : undefined,
+          path: '/webhooks/checkout',
+          url: `${billingBase}/webhooks/checkout`,
+        },
+        {
+          binding: !isLocal ? env.REPORT_ANALYTICS_SERVICE : undefined,
+          path: '/webhooks/checkout',
+          url: `${reportBase}/webhooks/checkout`,
+        },
       ];
     case 'hotel.reservation.cancel':
-      return [`${roomInventoryBase}/webhooks/cancel`];
+      return [{
+        binding: !isLocal ? env.ROOM_INVENTORY_SERVICE : undefined,
+        path: '/webhooks/cancel',
+        url: `${roomInventoryBase}/webhooks/cancel`,
+      }];
     default:
       return [];
   }
 }
 
 /**
- * Dispatches direct HTTP POST webhooks to subscriber URLs as a fallback.
+ * Dispatches direct HTTP POST webhooks to subscriber URLs (or Cloudflare Service Bindings) as a fallback.
  * Awaits all requests with Promise.allSettled so Cloudflare Workers never cancels subrequests
  * before delivery completes, while preventing subscriber errors from crashing the primary request.
  */
@@ -56,19 +87,23 @@ export async function dispatchWebhookFallback(
   payload: any,
   reqUrl?: string
 ): Promise<boolean> {
-  const urls = getFallbackWebhookUrls(env, topic, reqUrl);
-  if (urls.length === 0) return false;
+  const targets = getFallbackWebhookTargets(env, topic, reqUrl);
+  if (targets.length === 0) return false;
 
   await Promise.allSettled(
-    urls.map((url) =>
-      fetch(url, {
+    targets.map((target) => {
+      const init: RequestInit = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-      }).catch((err) => {
-        console.warn(`[Webhook Fallback] Failed to notify ${url} for topic '${topic}':`, err?.message || err);
-      })
-    )
+      };
+      const reqPromise = target.binding
+        ? target.binding.fetch(`http://internal${target.path}`, init)
+        : fetch(target.url, init);
+      return reqPromise.catch((err) => {
+        console.warn(`[Webhook Fallback] Failed to notify ${target.url} for topic '${topic}':`, err?.message || err);
+      });
+    })
   );
   return true;
 }

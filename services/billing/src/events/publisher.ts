@@ -1,19 +1,23 @@
 import { Client } from '@upstash/qstash';
 import { type Env } from '../types';
 
-async function dispatchBillingWebhookFallback(topic: string, payload: any, reqUrl?: string) {
+async function dispatchBillingWebhookFallback(env: Env, topic: string, payload: any, reqUrl?: string) {
   const isLocal = reqUrl ? (reqUrl.includes('127.0.0.1') || reqUrl.includes('localhost')) : true;
   const reportBase = isLocal
     ? 'http://127.0.0.1:8793'
     : 'https://keystay-report-analytics.khetsophon-ain.workers.dev';
 
   if (topic === 'hotel.billing.paid') {
+    const init: RequestInit = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    };
+    const reqPromise = !isLocal && env.REPORT_ANALYTICS_SERVICE
+      ? env.REPORT_ANALYTICS_SERVICE.fetch('http://internal/webhooks/bill-paid', init)
+      : fetch(`${reportBase}/webhooks/bill-paid`, init);
     await Promise.allSettled([
-      fetch(`${reportBase}/webhooks/bill-paid`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      }).catch((err) => {
+      reqPromise.catch((err) => {
         console.warn(`[Webhook Fallback] Failed to notify ${reportBase}/webhooks/bill-paid:`, err?.message || err);
       }),
     ]);
@@ -39,7 +43,7 @@ export async function publishToQStash(
     if (outboxId) {
       await updateOutboxStatus(env, outboxId, 'failed');
     }
-    await dispatchBillingWebhookFallback(topic, payload, reqUrl);
+    await dispatchBillingWebhookFallback(env, topic, payload, reqUrl);
     return false;
   }
 
@@ -64,7 +68,7 @@ export async function publishToQStash(
     if (outboxId) {
       await updateOutboxStatus(env, outboxId, 'failed');
     }
-    await dispatchBillingWebhookFallback(topic, payload, reqUrl);
+    await dispatchBillingWebhookFallback(env, topic, payload, reqUrl);
     return false;
   }
 }

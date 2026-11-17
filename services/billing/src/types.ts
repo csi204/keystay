@@ -6,6 +6,7 @@ export interface Env {
   QSTASH_TOKEN?: string;
   QSTASH_CURRENT_SIGNING_KEY?: string;
   QSTASH_NEXT_SIGNING_KEY?: string;
+  REPORT_ANALYTICS_SERVICE?: Fetcher;
 }
 
 export interface BillRecord {

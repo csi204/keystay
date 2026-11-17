@@ -21,6 +21,16 @@
       "bucket_name": "keystay"
     }
   ],
+  "services": [
+    {
+      "binding": "ROOM_INVENTORY_SERVICE",
+      "service": "keystay-room-inventory"
+    },
+    {
+      "binding": "REPORT_ANALYTICS_SERVICE",
+      "service": "keystay-report-analytics"
+    }
+  ],
   "vars": {
     "ENVIRONMENT": "production"
   }

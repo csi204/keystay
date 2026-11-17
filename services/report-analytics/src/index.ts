@@ -542,6 +542,18 @@ app.get('/reports/export/pdf', async (c) => {
  */
 // 16. Webhooks (Upstash QStash & Event Bus)
 app.use('/webhooks/*', async (c, next) => {
+  const isInternalServiceBinding = (() => {
+    try {
+      return new URL(c.req.url).hostname === 'internal';
+    } catch {
+      return false;
+    }
+  })();
+  if (isInternalServiceBinding) {
+    await next();
+    return;
+  }
+
   const signature = c.req.header('upstash-signature');
   const signingKey = c.env.QSTASH_CURRENT_SIGNING_KEY;
 

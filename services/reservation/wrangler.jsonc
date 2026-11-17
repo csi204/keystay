@@ -24,6 +24,24 @@
   "triggers": {
     "crons": ["0 19 * * *"]
   },
+  "services": [
+    {
+      "binding": "ROOM_INVENTORY_SERVICE",
+      "service": "keystay-room-inventory"
+    },
+    {
+      "binding": "HOUSEKEEPING_SERVICE",
+      "service": "keystay-housekeeping"
+    },
+    {
+      "binding": "BILLING_SERVICE",
+      "service": "keystay-billing"
+    },
+    {
+      "binding": "REPORT_ANALYTICS_SERVICE",
+      "service": "keystay-report-analytics"
+    }
+  ],
   "vars": {
     "ENVIRONMENT": "production"
   }
