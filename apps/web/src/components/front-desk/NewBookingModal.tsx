@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Room, RoomType, Reservation } from '@keystay/types';
 import type { ExtendedReservation } from '@/hooks/useReservations';
+import { apiFetch } from '@/lib/api';
 import { getAvailableRoomsForDates } from '@/lib/roomAvailability';
 import { useI18n } from '@/lib/i18n';
 import { localizeRoomType } from '@/lib/localizeMetadata';
@@ -50,6 +51,7 @@ export interface NewBookingModalProps {
     checkInDate: string;
     checkOutDate: string;
     depositAmount: string;
+    nightlyRate?: number;
     paymentMethod?: string;
     bookingSource?: 'walk_in' | 'phone' | 'facebook';
     paymentStatus?: 'unpaid' | 'paid';
@@ -190,11 +192,56 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
     return diff > 0 ? diff : 1;
   }, [checkInDate, checkOutDate]);
 
+  // Dynamic Seasonal Pricing
+  const [dynamicRate, setDynamicRate] = useState<number | null>(null);
+  const [dynamicTotalRoomCharge, setDynamicTotalRoomCharge] = useState<number | null>(null);
+
+  useEffect(() => {
+    const targetRoomTypeId = selectedRoomType?.id;
+    if (!targetRoomTypeId || !checkInDate || !checkOutDate || checkOutDate <= checkInDate) {
+      setDynamicRate(null);
+      setDynamicTotalRoomCharge(null);
+      return;
+    }
+
+    let isCurrent = true;
+    apiFetch<any>('/api/v1/pricing/calculate-rate', {
+      method: 'POST',
+      body: JSON.stringify({
+        room_type_id: targetRoomTypeId,
+        check_in_date: checkInDate,
+        check_out_date: checkOutDate,
+      }),
+    })
+      .then((res) => {
+        if (!isCurrent) return;
+        if (res.data && res.data.success) {
+          setDynamicRate(res.data.averageNightlyRate);
+          setDynamicTotalRoomCharge(res.data.totalRoomCharge);
+        } else {
+          setDynamicRate(null);
+          setDynamicTotalRoomCharge(null);
+        }
+      })
+      .catch(() => {
+        if (!isCurrent) return;
+        setDynamicRate(null);
+        setDynamicTotalRoomCharge(null);
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [selectedRoomType?.id, checkInDate, checkOutDate]);
+
   // Total estimated amount
   const totalAmount = useMemo(() => {
+    if (dynamicTotalRoomCharge !== null) {
+      return dynamicTotalRoomCharge.toFixed(2);
+    }
     const base = parseFloat(selectedRoomType?.basePrice || '1200');
     return (base * totalNights).toFixed(2);
-  }, [selectedRoomType, totalNights]);
+  }, [dynamicTotalRoomCharge, selectedRoomType, totalNights]);
 
   const isDateRangeInvalid = Boolean(checkInDate && checkOutDate && checkOutDate <= checkInDate);
 
@@ -266,6 +313,7 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
       checkInDate,
       checkOutDate,
       depositAmount: depositAmount.trim() || '0',
+      nightlyRate: dynamicRate ?? (selectedRoomType?.basePrice ? parseFloat(selectedRoomType.basePrice) : 1200),
       paymentMethod,
       bookingSource,
       paymentStatus,

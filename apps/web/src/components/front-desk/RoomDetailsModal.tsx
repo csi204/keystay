@@ -99,6 +99,7 @@ export interface FastBookingFormData {
   checkOutDate: string;
   guestsCount: number;
   depositAmount: string;
+  nightlyRate?: number;
   paymentMethod: 'cash' | 'transfer' | 'credit_card' | 'qr_promptpay';
   bookingSource?: 'walk_in' | 'phone' | 'facebook';
   paymentStatus?: 'unpaid' | 'paid';
@@ -392,6 +393,54 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // Dynamic Seasonal Pricing State
+  const [dynamicRate, setDynamicRate] = useState<number | null>(null);
+  const [dynamicTotalRoomCharge, setDynamicTotalRoomCharge] = useState<number | null>(null);
+  const [isCalculatingPricing, setIsCalculatingPricing] = useState(false);
+
+  useEffect(() => {
+    const targetRoomTypeId = room?.roomTypeId || roomType?.id;
+    if (!targetRoomTypeId || !checkInDate || !checkOutDate || checkOutDate <= checkInDate) {
+      setDynamicRate(null);
+      setDynamicTotalRoomCharge(null);
+      return;
+    }
+
+    let isCurrent = true;
+    setIsCalculatingPricing(true);
+
+    apiFetch<any>('/api/v1/pricing/calculate-rate', {
+      method: 'POST',
+      body: JSON.stringify({
+        room_type_id: targetRoomTypeId,
+        check_in_date: checkInDate,
+        check_out_date: checkOutDate,
+      }),
+    })
+      .then((res) => {
+        if (!isCurrent) return;
+        if (res.data && res.data.success) {
+          setDynamicRate(res.data.averageNightlyRate);
+          setDynamicTotalRoomCharge(res.data.totalRoomCharge);
+        } else {
+          setDynamicRate(null);
+          setDynamicTotalRoomCharge(null);
+        }
+      })
+      .catch(() => {
+        if (!isCurrent) return;
+        setDynamicRate(null);
+        setDynamicTotalRoomCharge(null);
+      })
+      .finally(() => {
+        if (isCurrent) setIsCalculatingPricing(false);
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [room?.roomTypeId, roomType?.id, checkInDate, checkOutDate]);
+
   // Nights calculation
   const nightsCount = useMemo(() => {
     const start = new Date(checkInDate);
@@ -488,9 +537,10 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
   const localizedStatus = t(`status.${room.status}`);
   const formattedPrice = roomType?.basePrice ? formatCurrency(roomType.basePrice) : null;
 
-  // Estimated Pricing
-  const nightlyRate = Number(roomType?.basePrice) || 0;
-  const roomCharges = nightsCount * nightlyRate;
+  // Estimated Pricing (Dynamic seasonal rate override with fallback to basePrice)
+  const baseNightlyRate = Number(roomType?.basePrice) || 0;
+  const nightlyRate = dynamicRate !== null ? dynamicRate : baseNightlyRate;
+  const roomCharges = dynamicTotalRoomCharge !== null ? dynamicTotalRoomCharge : nightsCount * baseNightlyRate;
   const depositNum = Number(depositAmount) || 0;
   const estimatedTotal = roomCharges + depositNum;
 
@@ -623,7 +673,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
           checkInDate,
           checkOutDate,
           depositAmount,
-          nightlyRate: roomType?.basePrice ? Number(roomType.basePrice) : undefined,
+          nightlyRate: dynamicRate ?? (roomType?.basePrice ? Number(roomType.basePrice) : undefined),
           paymentMethod,
           bookingSource: 'walk_in',
           paymentSlipUrl: paymentSlipUrl || undefined,
@@ -649,6 +699,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
           checkOutDate,
           guestsCount: Math.min(guestsCount, maxCapacity),
           depositAmount,
+          nightlyRate: dynamicRate ?? (roomType?.basePrice ? Number(roomType.basePrice) : undefined),
           paymentMethod,
           bookingSource,
           paymentStatus,
@@ -688,7 +739,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
       <div
         className={`relative bg-white rounded-2xl shadow-2xl border border-slate-200/80 overflow-hidden w-full transition-all duration-300 ease-out z-10 my-auto ${
           mode === 'booking'
-            ? 'max-w-4xl grid grid-cols-1 md:grid-cols-12 gap-0 max-h-[92vh] overflow-y-auto md:overflow-hidden'
+            ? 'max-w-4xl grid grid-cols-1 md:grid-cols-12 gap-0 max-h-[90vh] md:h-[90vh] overflow-y-auto md:overflow-hidden'
             : 'max-w-lg'
         }`}
       >
@@ -1475,7 +1526,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
         {mode === 'booking' && (
           <>
             {/* Left Pane (5 Columns): Room Summary & Pricing */}
-            <div className="md:col-span-5 bg-slate-50/90 border-b md:border-b-0 md:border-r border-slate-200/80 p-5 sm:p-6 flex flex-col justify-between overflow-y-auto">
+            <div className="md:col-span-5 bg-slate-50/90 border-b md:border-b-0 md:border-r border-slate-200/80 p-5 sm:p-6 flex flex-col justify-between overflow-y-auto min-h-0 md:h-full">
               <div className="space-y-4">
                 {/* Header Badge */}
                 <div>
@@ -1577,7 +1628,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
             </div>
 
             {/* Right Pane (7 Columns): 1-Page Fast Booking Form */}
-            <div className="md:col-span-7 bg-white p-5 sm:p-6 flex flex-col justify-between overflow-y-auto">
+            <div className="md:col-span-7 bg-white p-5 sm:p-6 flex flex-col overflow-y-auto min-h-0 md:h-full">
               <form
                 onSubmit={handleBookingSubmit}
                 onKeyDown={(e) => {
@@ -1586,7 +1637,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                     handleBookingSubmit(e);
                   }
                 }}
-                className="space-y-4"
+                className="space-y-4 pb-2"
               >
                 {/* Right Pane Header */}
                 <div className="flex items-start justify-between pb-3 border-b border-slate-100">
