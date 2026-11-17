@@ -17,6 +17,7 @@ import {
   Camera,
   ChevronRight,
   LogOut,
+  KeyRound,
   User,
   Search,
   Building,
@@ -4135,8 +4136,17 @@ export const HousekeepingPortalPage: React.FC = () => {
 
               <button
                 type="button"
+                onClick={() => navigate('/change-password')}
+                className="w-full min-h-[44px] rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-medium text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              >
+                <KeyRound className="w-4 h-4 text-slate-500" />
+                <span>เปลี่ยนรหัสผ่าน</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={handleLogout}
-                className="w-full min-h-[48px] rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs flex items-center justify-center gap-2 active:scale-95 transition-all shadow-xs cursor-pointer mt-1"
+                className="w-full min-h-[44px] rounded-lg bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 font-semibold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer mt-1"
               >
                 <LogOut className="w-4 h-4 text-rose-600" />
                 <span>ออกจากระบบ (ส่งมอบเวรประจำวัน)</span>
