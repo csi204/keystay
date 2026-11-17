@@ -1153,12 +1153,14 @@ export const HousekeepingPortalPage: React.FC = () => {
 
     let totalAmt = 0;
     const consumedList: string[] = [];
+    const consumedItems: Array<{ name: string; count: number; price: number }> = [];
     if (!isAllIntact) {
       STANDARD_MINIBAR_CATALOG.forEach((item) => {
         const count = quickMinibarCounts[item.id] || 0;
         if (count > 0) {
           totalAmt += count * item.price;
           consumedList.push(`${item.name} x${count} (${count * item.price}บ.)`);
+          consumedItems.push({ name: item.name, count, price: item.price });
         }
       });
     }
@@ -1185,8 +1187,53 @@ export const HousekeepingPortalPage: React.FC = () => {
       showToast(`ส่งยอดมินิบาร์ห้อง ${quickMinibarRoom}: ${totalAmt} บาท แจ้ง Front Desk ขึ้นบิลเรียบร้อย!`);
     }
 
+    const token = getAuthToken();
+
+    // Auto-post consumed minibar items to the room's active folio bill in Billing service
+    if (consumedItems.length > 0) {
+      try {
+        const billsRes = await fetch(
+          apiUrl(`/api/bills?search=${encodeURIComponent(quickMinibarRoom)}&limit=10`),
+          {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          }
+        );
+        if (billsRes.ok) {
+          const billsJson = await billsRes.json();
+          const roomBills: any[] = (billsJson?.data || []).filter(
+            (b: any) =>
+              String(b.roomNumber) === String(quickMinibarRoom) &&
+              b.status !== 'void' &&
+              b.status !== 'refunded'
+          );
+          const targetBill = roomBills.find((b: any) => b.status !== 'paid') || roomBills[0];
+
+          if (targetBill?.id) {
+            await Promise.all(
+              consumedItems.map((item) =>
+                fetch(apiUrl(`/api/bills/${targetBill.id}/items`), {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                  },
+                  body: JSON.stringify({
+                    itemType: 'minibar',
+                    description: `${item.name} (มินิบาร์)`,
+                    quantity: item.count,
+                    unitPrice: item.price,
+                  }),
+                })
+              )
+            );
+          }
+        }
+      } catch (err) {
+        console.warn('Could not post minibar charges to billing folio:', err);
+      }
+    }
+
     if (quickMinibarTaskId) {
-      const token = getAuthToken();
       try {
         await fetch(apiUrl(`/api/housekeeping/tasks/${quickMinibarTaskId}`), {
           method: 'PUT',

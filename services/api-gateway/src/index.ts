@@ -281,6 +281,8 @@ app.use('/api/*', async (c, next) => {
       (path.startsWith('/api/room-types') && c.req.method === 'GET') ||
       (path.startsWith('/api/reservations') && c.req.method === 'GET') ||
       (path.startsWith('/api/rooms/') && path.endsWith('/status') && (c.req.method === 'PATCH' || c.req.method === 'PUT')) ||
+      (path === '/api/bills' && c.req.method === 'GET') ||
+      (path.startsWith('/api/bills/') && path.endsWith('/items') && c.req.method === 'POST') ||
       path.startsWith('/api/auth/logout') ||
       path.startsWith('/api/auth/change-password') ||
       path.startsWith('/api/auth/users/' + user.sub);
