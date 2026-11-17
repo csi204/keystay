@@ -24,6 +24,14 @@ export const webhooksRoute = new Hono<{ Bindings: Env }>();
  * Matches report-analytics pattern: strictly verifies only when QSTASH_CURRENT_SIGNING_KEY is set
  */
 async function verifyQStashSignature(c: any): Promise<boolean> {
+  try {
+    if (new URL(c.req.url).hostname === 'internal') {
+      return true;
+    }
+  } catch {
+    // ignore URL parse error
+  }
+
   const currentKey = c.env.QSTASH_CURRENT_SIGNING_KEY;
   const nextKey = c.env.QSTASH_NEXT_SIGNING_KEY;
   const signature = c.req.header('upstash-signature');

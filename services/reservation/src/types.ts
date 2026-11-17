@@ -8,6 +8,10 @@ export interface Env {
   ROOM_INVENTORY_URL?: string;
   HOUSEKEEPING_URL?: string;
   REPORT_ANALYTICS_URL?: string;
+  ROOM_INVENTORY_SERVICE?: Fetcher;
+  HOUSEKEEPING_SERVICE?: Fetcher;
+  BILLING_SERVICE?: Fetcher;
+  REPORT_ANALYTICS_SERVICE?: Fetcher;
 }
 
 export interface GuestRecord {
