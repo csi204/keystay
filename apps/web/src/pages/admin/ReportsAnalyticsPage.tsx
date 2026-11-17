@@ -3,6 +3,7 @@ import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { apiFetch, getAuthRole } from '@/lib/api';
+import { reconcileLiveRooms } from '@/lib/roomStatusReconciliation';
 import { useTranslation } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import {
@@ -65,17 +66,40 @@ export const ReportsAnalyticsPage: React.FC = () => {
 
   const loadKpiData = async () => {
     setLoading(true);
-    const res = await apiFetch<any>('/api/reports/kpis');
-    if (res.data) {
+    const [res, roomsRes, reservationsRes] = await Promise.all([
+      apiFetch<any>('/api/reports/kpis').catch(() => ({ data: null, isOffline: true })),
+      apiFetch<any[]>('/api/rooms').catch(() => ({ data: null, isOffline: true })),
+      apiFetch<any[]>('/api/reservations').catch(() => ({ data: null, isOffline: true })),
+    ]);
+
+    const todayStr = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Bangkok',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date());
+
+    const rawRooms = Array.isArray(roomsRes.data) ? roomsRes.data : [];
+    const reservationsList = Array.isArray(reservationsRes.data) ? reservationsRes.data : [];
+    const reconciledRooms = rawRooms.length > 0 ? reconcileLiveRooms(rawRooms, reservationsList, todayStr) : [];
+    const liveTotalRooms = reconciledRooms.length;
+    const liveOccupiedRooms = reconciledRooms.filter((r: any) => r.status === 'occupied').length;
+    const liveOccRate = liveTotalRooms > 0 ? (liveOccupiedRooms / liveTotalRooms) * 100 : 0;
+
+    if (res.data || liveTotalRooms > 0) {
       setIsOffline(false);
+      const k = res.data || {};
+      const totalRooms = liveTotalRooms > 0 ? liveTotalRooms : (k.total_rooms ?? 0);
+      const roomsOccupied = liveTotalRooms > 0 ? liveOccupiedRooms : (k.rooms_occupied ?? 0);
+      const occRate = liveTotalRooms > 0 ? liveOccRate : Number(k.occupancy_rate ?? 0);
       setKpis({
-        date: res.data.date || '',
-        totalRevenue: `฿${Number(res.data.total_revenue_today ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
-        occupancyRate: `${Number(res.data.occupancy_rate ?? 0).toFixed(1)}%`,
-        adr: `฿${Number(res.data.adr ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
-        revpar: `฿${Number(res.data.revpar ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
-        roomsOccupied: res.data.rooms_occupied ?? 0,
-        totalRooms: res.data.total_rooms ?? 0,
+        date: k.date || todayStr,
+        totalRevenue: `฿${Number(k.total_revenue_today ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+        occupancyRate: `${occRate.toFixed(1)}%`,
+        adr: `฿${Number(k.adr ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+        revpar: `฿${Number(k.revpar ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+        roomsOccupied,
+        totalRooms,
       });
     } else {
       setIsOffline(res.isOffline);
