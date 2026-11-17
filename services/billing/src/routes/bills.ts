@@ -927,7 +927,7 @@ bills.post('/:id/pay', async (c) => {
     await c.env.DB.batch(stmts);
 
     // 5. Fire Event to QStash Topic hotel.billing.paid
-    await publishToQStash(c.env, 'hotel.billing.paid', billPaidEvent, outboxId);
+    await publishToQStash(c.env, 'hotel.billing.paid', billPaidEvent, outboxId, c.req.url);
 
     const updatedBill: any = await c.env.DB.prepare('SELECT * FROM bills WHERE id = ?').bind(bill.id).first();
     const createdPayment: any = await c.env.DB.prepare('SELECT * FROM payments WHERE id = ?').bind(paymentId).first();

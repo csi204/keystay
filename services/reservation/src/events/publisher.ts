@@ -47,26 +47,29 @@ function getFallbackWebhookUrls(env: Env, topic: string, reqUrl?: string): strin
 
 /**
  * Dispatches direct HTTP POST webhooks to subscriber URLs as a fallback.
- * Fire-and-forget so subscriber downtime never crashes the primary request.
+ * Awaits all requests with Promise.allSettled so Cloudflare Workers never cancels subrequests
+ * before delivery completes, while preventing subscriber errors from crashing the primary request.
  */
-export function dispatchWebhookFallback(
+export async function dispatchWebhookFallback(
   env: Env,
   topic: string,
   payload: any,
   reqUrl?: string
-): boolean {
+): Promise<boolean> {
   const urls = getFallbackWebhookUrls(env, topic, reqUrl);
   if (urls.length === 0) return false;
 
-  for (const url of urls) {
-    fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    }).catch((err) => {
-      console.warn(`[Webhook Fallback] Failed to notify ${url} for topic '${topic}':`, err?.message || err);
-    });
-  }
+  await Promise.allSettled(
+    urls.map((url) =>
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }).catch((err) => {
+        console.warn(`[Webhook Fallback] Failed to notify ${url} for topic '${topic}':`, err?.message || err);
+      })
+    )
+  );
   return true;
 }
 
@@ -87,7 +90,7 @@ export async function publishToQStash(
 
   if (!qstashUrl || !qstashToken) {
     console.warn(`[QStash] Skipping publish to topic '${topic}': QSTASH_URL or QSTASH_TOKEN not configured`);
-    const fallbackDispatched = dispatchWebhookFallback(env, topic, payload, reqUrl);
+    const fallbackDispatched = await dispatchWebhookFallback(env, topic, payload, reqUrl);
     return { published: false, fallbackDispatched, error: 'QSTASH_NOT_CONFIGURED' };
   }
 
@@ -119,7 +122,7 @@ export async function publishToQStash(
         }
       }
 
-      const fallbackDispatched = dispatchWebhookFallback(env, topic, payload, reqUrl);
+      const fallbackDispatched = await dispatchWebhookFallback(env, topic, payload, reqUrl);
       return { published: false, fallbackDispatched, error: `HTTP ${response.status}: ${errText}` };
     }
 
@@ -154,7 +157,7 @@ export async function publishToQStash(
       }
     }
 
-    const fallbackDispatched = dispatchWebhookFallback(env, topic, payload, reqUrl);
+    const fallbackDispatched = await dispatchWebhookFallback(env, topic, payload, reqUrl);
     return { published: false, fallbackDispatched, error: err.message || 'Unknown error' };
   }
 }
