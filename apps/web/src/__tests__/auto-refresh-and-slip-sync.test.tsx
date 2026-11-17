@@ -769,7 +769,7 @@ describe('Task 4: Pause Auto-Refresh, Prevent Modal Input Reset & Fix Walk-In/Sl
 
       assert.match(modalCode, /paymentSlipUrl:\s*paymentSlipUrl\s*\|\|\s*undefined/);
       assert.match(modalCode, /paymentSlipRef:\s*paymentSlipRef\.trim\(\)\s*\|\|\s*undefined/);
-      assert.match(modalCode, /nightlyRate:\s*roomType\?\.basePrice\s*\?\s*Number\(roomType\.basePrice\)\s*:\s*undefined/);
+      assert.match(modalCode, /nightlyRate:\s*(dynamicRate\s*\?\?\s*)?\(?roomType\?\.basePrice\s*\?\s*Number\(roomType\.basePrice\)\s*:\s*undefined/);
       assert.match(modalCode, /setCurrentReservation\(/);
     });
   });

@@ -8,6 +8,7 @@ import { webhooksRoute } from './routes/webhooks';
 import { minibarRoute } from './routes/minibar';
 import { seasonalPricingRoute } from './routes/seasonal-pricing';
 import { amenitiesCatalogRoute } from './routes/amenities-catalog';
+import { ensureRoomInventorySchema } from './db/auto-migrate';
 
 export interface Env {
   DB: D1Database;
@@ -18,6 +19,14 @@ export interface Env {
 }
 
 const app = new Hono<{ Bindings: Env }>();
+
+// Auto-migrate schema middleware for db_room (idempotent table & index creation)
+app.use('*', async (c, next) => {
+  if (c.env?.DB) {
+    await ensureRoomInventorySchema(c.env.DB);
+  }
+  await next();
+});
 
 // Global Health & Info
 app.get('/health', (c) => {

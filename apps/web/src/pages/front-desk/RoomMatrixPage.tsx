@@ -383,7 +383,7 @@ export const RoomMatrixPage: React.FC = () => {
       checkInDate: data.checkInDate,
       checkOutDate: data.checkOutDate,
       depositAmount: data.depositAmount,
-      nightlyRate: Number(selectedRoomType?.basePrice || 1000),
+      nightlyRate: data.nightlyRate ?? Number(selectedRoomType?.basePrice || 1000),
       numGuests: (data as any).guestsCount || 1,
       paymentMethod: data.paymentMethod,
       bookingSource: data.bookingSource,

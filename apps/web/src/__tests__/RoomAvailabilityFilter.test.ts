@@ -256,7 +256,7 @@ describe('Task 4: Smart Date-Range Room Availability Filtering & Overbooking Gua
         [],
         '2026-11-15',
         '2026-11-16',
-        { isWalkInToday: false }
+        { isWalkInToday: false, todayIsoString: '2026-11-12' }
       );
       const futureIds = futureAvailable.map((r) => r.id);
       assert.ok(futureIds.includes('rm-106'), 'Cleaning room 106 should be available for future booking');

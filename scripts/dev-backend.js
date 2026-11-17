@@ -2,13 +2,13 @@ const { spawn } = require('child_process');
 const path = require('path');
 
 const services = [
-  { name: 'api-gateway', port: 8787, cwd: path.join(__dirname, '../services/api-gateway') },
-  { name: 'auth-user', port: 8788, cwd: path.join(__dirname, '../services/auth-user') },
-  { name: 'room-inventory', port: 8789, cwd: path.join(__dirname, '../services/room-inventory') },
-  { name: 'reservation', port: 8790, cwd: path.join(__dirname, '../services/reservation') },
-  { name: 'housekeeping', port: 8791, cwd: path.join(__dirname, '../services/housekeeping') },
-  { name: 'billing', port: 8792, cwd: path.join(__dirname, '../services/billing') },
-  { name: 'report-analytics', port: 8793, cwd: path.join(__dirname, '../services/report-analytics') },
+  { name: 'api-gateway', port: 8787, inspectorPort: 9228, cwd: path.join(__dirname, '../services/api-gateway') },
+  { name: 'auth-user', port: 8788, inspectorPort: 9229, cwd: path.join(__dirname, '../services/auth-user') },
+  { name: 'room-inventory', port: 8789, inspectorPort: 9230, cwd: path.join(__dirname, '../services/room-inventory') },
+  { name: 'reservation', port: 8790, inspectorPort: 9231, cwd: path.join(__dirname, '../services/reservation') },
+  { name: 'housekeeping', port: 8791, inspectorPort: 9232, cwd: path.join(__dirname, '../services/housekeeping') },
+  { name: 'billing', port: 8792, inspectorPort: 9233, cwd: path.join(__dirname, '../services/billing') },
+  { name: 'report-analytics', port: 8793, inspectorPort: 9234, cwd: path.join(__dirname, '../services/report-analytics') },
 ];
 
 console.log('🚀 Starting KEYSTAY Backend Services (Bypassing Turbo for Windows AppLocker)...');
@@ -28,8 +28,8 @@ services.forEach((srv) => {
     srv.port.toString(),
   ];
 
-  if (srv.name === 'api-gateway') {
-    args.push('--inspector-port', '9228');
+  if (srv.inspectorPort) {
+    args.push('--inspector-port', srv.inspectorPort.toString());
   }
 
   const child = spawn(

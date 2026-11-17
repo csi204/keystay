@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Room, RoomType, Reservation } from '@keystay/types';
 import type { ExtendedReservation } from '@/hooks/useReservations';
+import { apiFetch } from '@/lib/api';
 import { getAvailableRoomsForDates } from '@/lib/roomAvailability';
 import { useI18n } from '@/lib/i18n';
 import { localizeRoomType, localizeAmenity } from '@/lib/localizeMetadata';
@@ -254,10 +255,54 @@ export const WalkInModal: React.FC<WalkInModalProps> = ({
 
   const nights = calculateNights(checkInDate, checkOutDate);
   const isDateRangeInvalid = Boolean(checkInDate && checkOutDate && checkOutDate <= checkInDate);
+
+  // Dynamic Seasonal Pricing
+  const [dynamicRate, setDynamicRate] = useState<number | null>(null);
+  const [dynamicTotalRoomCharge, setDynamicTotalRoomCharge] = useState<number | null>(null);
+
+  useEffect(() => {
+    const targetRoomTypeId = selectedRoomType?.id;
+    if (!targetRoomTypeId || !checkInDate || !checkOutDate || checkOutDate <= checkInDate) {
+      setDynamicRate(null);
+      setDynamicTotalRoomCharge(null);
+      return;
+    }
+
+    let isCurrent = true;
+    apiFetch<any>('/api/v1/pricing/calculate-rate', {
+      method: 'POST',
+      body: JSON.stringify({
+        room_type_id: targetRoomTypeId,
+        check_in_date: checkInDate,
+        check_out_date: checkOutDate,
+      }),
+    })
+      .then((res) => {
+        if (!isCurrent) return;
+        if (res.data && res.data.success) {
+          setDynamicRate(res.data.averageNightlyRate);
+          setDynamicTotalRoomCharge(res.data.totalRoomCharge);
+        } else {
+          setDynamicRate(null);
+          setDynamicTotalRoomCharge(null);
+        }
+      })
+      .catch(() => {
+        if (!isCurrent) return;
+        setDynamicRate(null);
+        setDynamicTotalRoomCharge(null);
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [selectedRoomType?.id, checkInDate, checkOutDate]);
+
   const parsedRate = selectedRoomType ? parseFloat(String(selectedRoomType.basePrice ?? '1200')) : 1200;
-  const nightlyRate = Number.isFinite(parsedRate) ? parsedRate : 1200;
+  const baseNightlyRate = Number.isFinite(parsedRate) ? parsedRate : 1200;
+  const nightlyRate = dynamicRate !== null ? dynamicRate : baseNightlyRate;
   const parsedDeposit = parseFloat(depositAmount) || 0;
-  const roomSubtotal = nights * nightlyRate;
+  const roomSubtotal = dynamicTotalRoomCharge !== null ? dynamicTotalRoomCharge : nights * nightlyRate;
   const totalDue = roomSubtotal + parsedDeposit;
 
   // Room specification chips
