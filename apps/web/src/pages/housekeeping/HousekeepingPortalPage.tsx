@@ -443,6 +443,9 @@ export const HousekeepingPortalPage: React.FC = () => {
   const [maintenanceRoom, setMaintenanceRoom] = useState<string>('105');
   const [maintenanceCategory, setMaintenanceCategory] = useState<'broken' | 'electric' | 'missing' | 'sanitary' | 'lost_and_found'>('broken');
   const [maintenanceDesc, setMaintenanceDesc] = useState<string>('');
+  const [maintenancePhotoFile, setMaintenancePhotoFile] = useState<File | null>(null);
+  const [maintenancePhotoPreview, setMaintenancePhotoPreview] = useState<string | null>(null);
+  const [maintenanceAffectsAvailability, setMaintenanceAffectsAvailability] = useState<boolean>(false);
   const [lostAndFoundLocation, setLostAndFoundLocation] = useState<string>('Front Desk Counter');
   const [lostAndFoundDays, setLostAndFoundDays] = useState<number>(7);
   const [selectedRoomDetail, setSelectedRoomDetail] = useState<RoomStatusItem | null>(null);
@@ -1075,49 +1078,78 @@ export const HousekeepingPortalPage: React.FC = () => {
     const token = getAuthToken();
     const roomId = `rm-${maintenanceRoom}`;
 
-    let apiIssueType: 'damage' | 'malfunction' | 'missing_item' | 'cleanliness' | 'lost_and_found' = 'malfunction';
+    let apiIssueType: 'damage' | 'malfunction' | 'missing_item' | 'hygiene' | 'lost_and_found' = 'malfunction';
     if (maintenanceCategory === 'broken') apiIssueType = 'damage';
     else if (maintenanceCategory === 'electric') apiIssueType = 'malfunction';
     else if (maintenanceCategory === 'missing') apiIssueType = 'missing_item';
-    else if (maintenanceCategory === 'sanitary') apiIssueType = 'cleanliness';
+    else if (maintenanceCategory === 'sanitary') apiIssueType = 'hygiene';
     else if (maintenanceCategory === 'lost_and_found') apiIssueType = 'lost_and_found';
 
-    const payload: any = {
-      roomId,
-      roomNumber: maintenanceRoom,
-      reportedBy: 'hk-staff-001',
-      issueType: apiIssueType,
-      severity: 'medium',
-      description: maintenanceDesc.trim() || (apiIssueType === 'lost_and_found' ? 'ของที่ลูกค้าลืมไว้ในห้องพัก' : 'แจ้งตรวจสอบอุปกรณ์'),
-    };
+    const descText =
+      maintenanceDesc.trim() ||
+      (apiIssueType === 'lost_and_found' ? 'ของที่ลูกค้าลืมไว้ในห้องพัก' : 'แจ้งตรวจสอบอุปกรณ์');
+
+    const formData = new FormData();
+    formData.append('roomId', roomId);
+    formData.append('roomNumber', maintenanceRoom);
+    formData.append('reportedBy', 'hk-staff-001');
+    formData.append('issueType', apiIssueType);
+    formData.append('severity', 'medium');
+    formData.append('description', descText);
 
     if (activeTask && activeTask.roomNumber === maintenanceRoom) {
-      payload.taskId = activeTask.id;
+      formData.append('taskId', activeTask.id);
     }
 
     if (apiIssueType === 'lost_and_found') {
-      payload.storageLocation = lostAndFoundLocation || 'Front Desk Counter';
-      payload.retentionDays = lostAndFoundDays || 7;
+      formData.append('storageLocation', lostAndFoundLocation || 'Front Desk Counter');
+      formData.append('retentionDays', String(lostAndFoundDays || 7));
+    }
+
+    const affectsRoom = apiIssueType !== 'lost_and_found' && maintenanceAffectsAvailability;
+    formData.append('affectsAvailability', String(affectsRoom));
+    if (affectsRoom) {
+      formData.set('severity', 'high');
+    }
+
+    if (maintenancePhotoFile) {
+      formData.append('photo', maintenancePhotoFile);
     }
 
     try {
       const res = await fetch(apiUrl('/api/housekeeping/issues'), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(payload),
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
       });
       if (res.ok) {
-        showToast(
-          apiIssueType === 'lost_and_found'
-            ? `บันทึกของลืมห้อง ${maintenanceRoom} ส่งมอบ Front Counter (เก็บ ${lostAndFoundDays} วัน) สำเร็จ`
-            : `บันทึกใบแจ้งปัญหาห้อง ${maintenanceRoom} ส่งต่อไปยังทีมช่างแล้ว`
-        );
+        const resJson = await res.json().catch(() => null);
+        const roomLocked = Boolean(resJson?.data?.roomMaintenanceTriggered);
+        if (apiIssueType === 'lost_and_found') {
+          showToast(
+            `บันทึกของลืมห้อง ${maintenanceRoom} ส่งมอบ Front Counter (เก็บ ${lostAndFoundDays} วัน) สำเร็จ`
+          );
+        } else if (roomLocked) {
+          showToast(
+            `แจ้งชำรุดห้อง ${maintenanceRoom} และเปลี่ยนสถานะห้องเป็น "กำลังซ่อมแซม" แล้ว`
+          );
+          setRoomStatusList((prev) =>
+            prev.map((r) =>
+              r.roomNumber === maintenanceRoom ? { ...r, status: 'maintenance' as any } : r
+            )
+          );
+        } else {
+          showToast(
+            `บันทึกใบแจ้งปัญหาห้อง ${maintenanceRoom} ส่งต่อไปยัง Front Desk แล้ว`
+          );
+        }
       } else {
         const errJson = await res.json().catch(() => null);
-        showToast(`ไม่สามารถบันทึกได้: ${errJson?.message || res.statusText}`);
+        const errDetail =
+          errJson?.message ||
+          (typeof errJson?.error === 'string' ? errJson.error : null) ||
+          res.statusText;
+        showToast(`ไม่สามารถบันทึกได้: ${errDetail}`);
       }
     } catch (err) {
       console.warn('API issue report warning:', err);
@@ -1125,6 +1157,9 @@ export const HousekeepingPortalPage: React.FC = () => {
     } finally {
       setIsMaintenanceModalOpen(false);
       setMaintenanceDesc('');
+      setMaintenancePhotoFile(null);
+      setMaintenancePhotoPreview(null);
+      setMaintenanceAffectsAvailability(false);
     }
   };
 
@@ -4456,24 +4491,79 @@ export const HousekeepingPortalPage: React.FC = () => {
               />
             </div>
 
-            {/* Section 4: Cloudflare R2 Upload Simulation */}
+            {/* Section 4: Cloudflare R2 Photo Upload */}
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-800">แนบรูปถ่ายหลักฐาน</span>
-                <span className="text-[10px] text-blue-600 flex items-center gap-1">
+                <span className="text-[10px] text-slate-500 flex items-center gap-1">
                   <CloudUpload className="w-3 h-3" /> จัดเก็บภาพถ่ายส่วนกลาง
                 </span>
               </div>
-              <div className="p-3 rounded-xl border border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100 transition-colors flex items-center gap-3 cursor-pointer">
-                <div className="w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-500 shrink-0">
-                  <Camera className="w-5 h-5 text-slate-600" />
+              {maintenancePhotoPreview ? (
+                <div className="relative rounded-lg border border-slate-200 overflow-hidden bg-slate-50">
+                  <img
+                    src={maintenancePhotoPreview}
+                    alt="หลักฐานความเสียหาย"
+                    className="w-full h-36 object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMaintenancePhotoFile(null);
+                      setMaintenancePhotoPreview(null);
+                    }}
+                    className="absolute top-2 right-2 px-2 py-1 rounded-md bg-slate-900/80 hover:bg-slate-900 text-white text-[11px] font-medium cursor-pointer"
+                  >
+                    ลบรูป
+                  </button>
                 </div>
-                <div>
-                  <p className="text-xs font-semibold text-slate-800">ถ่ายรูป หรือ แนบไฟล์</p>
-                  <p className="text-[10px] text-slate-400">รองรับภาพถ่าย JPEG, PNG บันทึกอัตโนมัติ</p>
-                </div>
-              </div>
+              ) : (
+                <label className="p-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100 transition-colors flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setMaintenancePhotoFile(file);
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        setMaintenancePhotoPreview(reader.result as string);
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                  <div className="w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-500 shrink-0">
+                    <Camera className="w-5 h-5 text-slate-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-slate-800">ถ่ายรูป หรือ แนบไฟล์</p>
+                    <p className="text-[10px] text-slate-400">รองรับภาพถ่าย JPEG, PNG บันทึกอัตโนมัติ</p>
+                  </div>
+                </label>
+              )}
             </div>
+
+            {maintenanceCategory !== 'lost_and_found' && (
+              <label className="p-3 rounded-xl border border-rose-200 bg-rose-50/70 flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={maintenanceAffectsAvailability}
+                  onChange={(e) => setMaintenanceAffectsAvailability(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-rose-300 text-rose-600 focus:ring-rose-500"
+                />
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-rose-900">
+                    กระทบการเข้าพัก (ปิดห้องซ่อมแซมทันที)
+                  </p>
+                  <p className="text-[11px] text-rose-700 leading-snug mt-0.5">
+                    เมื่อติ๊ก ระบบจะเปลี่ยนสถานะห้องเป็น &quot;กำลังซ่อมแซม&quot; อัตโนมัติ จนกว่า Front Desk จะตรวจสอบและกดอนุมัติซ่อมเสร็จ
+                  </p>
+                </div>
+              </label>
+            )}
 
             {/* Section 5: Outsource Direct Callout (Boon's Integration) */}
             <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between">

@@ -12,10 +12,49 @@ import { ReportIssueSchema } from '../validators/housekeeping.validator';
 export interface Env {
   DB: D1Database;
   KEYSTAY_ASSETS?: R2Bucket;
+  ROOM_INVENTORY_SERVICE?: Fetcher;
   ENVIRONMENT?: string;
 }
 
 export const issuesRoute = new Hono<{ Bindings: Env }>();
+
+async function updateRoomInventoryStatus(
+  c: any,
+  roomId: string,
+  status: 'maintenance' | 'available' | 'cleaning',
+  changeReason: string,
+): Promise<{ ok: boolean; message?: string }> {
+  const reqUrl = c.req.url || '';
+  const isLocal = reqUrl.includes('127.0.0.1') || reqUrl.includes('localhost');
+  const roomInventoryBase = isLocal
+    ? 'http://127.0.0.1:8789'
+    : 'https://keystay-room-inventory.khetsophon-ain.workers.dev';
+  const path = `/rooms/${encodeURIComponent(roomId)}/status`;
+  const init: RequestInit = {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      status,
+      changeReason,
+      eventSource: 'housekeeping_issue',
+    }),
+  };
+
+  try {
+    const res = !isLocal && c.env.ROOM_INVENTORY_SERVICE
+      ? await c.env.ROOM_INVENTORY_SERVICE.fetch(`http://internal${path}`, init)
+      : await fetch(`${roomInventoryBase}${path}`, init);
+    if (!res.ok) {
+      const errBody: any = await res.json().catch(() => ({}));
+      console.warn(`[Housekeeping Issue] Failed to update room ${roomId} to ${status}:`, errBody?.message || res.status);
+      return { ok: false, message: errBody?.message || `HTTP ${res.status}` };
+    }
+    return { ok: true };
+  } catch (err: any) {
+    console.warn(`[Housekeeping Issue] Error calling room-inventory for ${roomId}:`, err?.message || err);
+    return { ok: false, message: err?.message || 'Network error' };
+  }
+}
 
 // ==========================================
 // API #69: POST /tasks/:id/report-issue & POST /issues - แจ้งปัญหา/สิ่งของชำรุดในห้องพัก (Cloudflare R2)
@@ -42,6 +81,9 @@ export const reportIssueHandler = async (c: any) => {
       severity: formData.get('severity') as string,
       notes: formData.get('notes') as string,
       photoR2Key: (formData.get('photoR2Key') as string) || (formData.get('photo_r2_key') as string),
+      affectsAvailability:
+        (formData.get('affectsAvailability') as string) ??
+        (formData.get('affects_availability') as string),
     };
     photoFile = formData.get('photo') as File | null;
   } else {
@@ -202,6 +244,17 @@ export const reportIssueHandler = async (c: any) => {
     }),
   ]);
 
+  let roomMaintenanceTriggered = false;
+  if (parsed.data.affectsAvailability && finalRoomId && parsed.data.issueType !== 'lost_and_found') {
+    const roomUpdate = await updateRoomInventoryStatus(
+      c,
+      finalRoomId,
+      'maintenance',
+      `Auto-maintenance from housekeeping issue ${issueId}: ${parsed.data.description}`,
+    );
+    roomMaintenanceTriggered = roomUpdate.ok;
+  }
+
   return c.json(
     {
       success: true,
@@ -211,6 +264,7 @@ export const reportIssueHandler = async (c: any) => {
         roomNumber: finalRoomNumber,
         reportedByName: `${staff.firstName} ${staff.lastName}`,
         r2Uploaded: Boolean(uploadedR2Key),
+        roomMaintenanceTriggered,
       },
     },
     201,
@@ -220,6 +274,29 @@ export const reportIssueHandler = async (c: any) => {
 issuesRoute.post('/tasks/:id/report-issue', reportIssueHandler);
 issuesRoute.post('/:id/report-issue', reportIssueHandler);
 issuesRoute.post('/', reportIssueHandler);
+
+issuesRoute.get('/assets/*', async (c) => {
+  if (!c.env.KEYSTAY_ASSETS) {
+    return c.json({ success: false, error: 'R2 bucket is not configured' }, 503);
+  }
+  const rawKey = c.req.path.replace(/^\/housekeeping\/issues\/assets\//, '');
+  const key = decodeURIComponent(rawKey).replace(/^\/+/, '');
+  if (!key || key.includes('..')) {
+    return c.json({ success: false, error: 'Invalid asset key' }, 400);
+  }
+  const obj = await c.env.KEYSTAY_ASSETS.get(key);
+  if (!obj) {
+    return c.json({ success: false, error: 'Asset not found' }, 404);
+  }
+  const ext = key.split('.').pop()?.toLowerCase();
+  const fallbackType =
+    ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : ext === 'svg' ? 'image/svg+xml' : 'image/jpeg';
+  const headers = new Headers();
+  headers.set('Content-Type', obj.httpMetadata?.contentType || fallbackType);
+  headers.set('Cache-Control', 'public, max-age=86400');
+  if (obj.httpEtag) headers.set('ETag', obj.httpEtag);
+  return new Response(obj.body, { headers });
+});
 
 // ==========================================
 // Additional Issues Endpoints: GET /issues, GET /issues/:id, PUT /issues/:id/status
@@ -367,7 +444,18 @@ issuesRoute.put('/:id/status', async (c) => {
     .where(eq(roomIssues.id, id))
     .get();
 
-  return c.json({ success: true, data: updated });
+  let roomReleased = false;
+  if (body.releaseRoom === true && existing.roomId) {
+    const releaseResult = await updateRoomInventoryStatus(
+      c,
+      existing.roomId,
+      'available',
+      `Maintenance approved & resolved by Front Desk (issue ${id})`,
+    );
+    roomReleased = releaseResult.ok;
+  }
+
+  return c.json({ success: true, data: updated, roomReleased });
 });
 
 issuesRoute.put('/:id/resolve', async (c) => {
@@ -398,5 +486,16 @@ issuesRoute.put('/:id/resolve', async (c) => {
     .where(eq(roomIssues.id, id))
     .get();
 
-  return c.json({ success: true, data: updated });
+  let roomReleased = false;
+  if (body.releaseRoom === true && existing.roomId) {
+    const releaseResult = await updateRoomInventoryStatus(
+      c,
+      existing.roomId,
+      'available',
+      `Maintenance approved & resolved by Front Desk (issue ${id})`,
+    );
+    roomReleased = releaseResult.ok;
+  }
+
+  return c.json({ success: true, data: updated, roomReleased });
 });
