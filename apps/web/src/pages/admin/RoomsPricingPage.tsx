@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import { apiFetch, getAuthRole } from '@/lib/api';
+import { apiFetch, apiUrl, assetUrl, getAuthRole, getAuthToken } from '@/lib/api';
+import { RoomIssueReportModal, formatIssueTypeLabel } from '@/components/common/RoomIssueReportModal';
 import { useTranslation } from '@/lib/i18n';
 import { localizeRoomDescription, localizeRoomType, localizeAmenity } from '@/lib/localizeMetadata';
 import {
@@ -370,9 +371,23 @@ export const RoomsPricingPage: React.FC = () => {
   // Status Change Modal (API #19)
   const [statusRoom, setStatusRoom] = useState<RoomUnit | null>(null);
   const [newStatus, setNewStatus] = useState<RoomStatus>('available');
+  const [issueModalRoom, setIssueModalRoom] = useState<RoomUnit | null>(null);
+  const [openIssues, setOpenIssues] = useState<any[]>([]);
+  const [showIssueHistory, setShowIssueHistory] = useState(false);
 
   // Delete Room Modal
   const [deletingRoom, setDeletingRoom] = useState<RoomUnit | null>(null);
+
+  const loadOpenIssues = async () => {
+    try {
+      const res = await apiFetch<any[]>('/api/housekeeping/issues');
+      if (Array.isArray(res.data)) {
+        setOpenIssues(res.data);
+      }
+    } catch {
+      // ignore
+    }
+  };
 
   const loadRooms = async () => {
     setUnitsLoading(true);
@@ -381,6 +396,7 @@ export const RoomsPricingPage: React.FC = () => {
       apiFetch<FloorItem[]>('/api/floors'),
       apiFetch<RoomTypeItem[]>('/api/room-types'),
     ]);
+    loadOpenIssues();
 
     const currentTypes = (typesRes.data && Array.isArray(typesRes.data) && typesRes.data.length > 0) ? typesRes.data : roomTypes;
     if (typesRes.data && Array.isArray(typesRes.data) && typesRes.data.length > 0) {
@@ -540,9 +556,46 @@ export const RoomsPricingPage: React.FC = () => {
   // Submit Status Change (API #19)
   const handleStatusChange = async () => {
     if (!statusRoom) return;
-    await apiFetch(`/api/rooms/${statusRoom.id}/status`, { method: 'PUT', body: JSON.stringify({ status: newStatus }) });
+    if (newStatus === 'maintenance' || newStatus === 'out_of_order') {
+      const target = statusRoom;
+      setStatusRoom(null);
+      setIssueModalRoom(target);
+      return;
+    }
+
+    if (newStatus === 'available') {
+      const token = getAuthToken();
+      const matchingIssues = openIssues.filter(
+        (iss) =>
+          iss.roomId === statusRoom.id &&
+          (iss.status === 'open' || iss.status === 'acknowledged') &&
+          iss.issueType !== 'lost_and_found' &&
+          iss.issueType !== 'missing_item'
+      );
+      await Promise.allSettled(
+        matchingIssues.map((iss) =>
+          fetch(apiUrl(`/api/housekeeping/issues/${iss.id}/resolve`), {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify({ receivedByName: 'Owner (ซ่อมเสร็จสิ้น)' }),
+          })
+        )
+      );
+    }
+
+    await apiFetch(`/api/rooms/${statusRoom.id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        status: newStatus,
+        changeReason: newStatus === 'available' ? 'Owner เปิดใช้งานห้อง (ซ่อมเสร็จสิ้น)' : undefined,
+      }),
+    });
     setRooms((prev) => prev.map((r) => (r.id === statusRoom.id ? { ...r, status: newStatus } : r)));
     setStatusRoom(null);
+    loadOpenIssues();
   };
 
   // Delete Room (Soft delete)
@@ -1466,6 +1519,124 @@ export const RoomsPricingPage: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+      {/* Issues, Missing Items & Lost & Found Summary for Owner (Active + History Toggle) */}
+      {openIssues.length > 0 && (() => {
+        const activeList = openIssues.filter((iss) => iss.status === 'open' || iss.status === 'acknowledged');
+        const historyList = openIssues.filter((iss) => iss.status === 'resolved' || iss.status === 'expired_claimed');
+        const visibleList = showIssueHistory ? historyList : activeList;
+        return (
+          <div className="mx-4 mt-4 mb-2 bg-rose-50/70 border border-rose-200 rounded-xl p-4 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-xs font-bold text-rose-900 flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4 text-rose-600" />
+                <span>
+                  {showIssueHistory
+                    ? `ประวัติแจ้งชำรุด & ของหาย / ของลืมที่ปิดแล้ว (${historyList.length})`
+                    : `รายการแจ้งชำรุด & ของหาย / ของที่ลูกค้าลืมไว้ (${activeList.length})`}
+                </span>
+              </h3>
+              {historyList.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowIssueHistory((prev) => !prev)}
+                  className="text-[11px] font-semibold text-slate-700 bg-white px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-slate-50"
+                >
+                  {showIssueHistory ? `ดูรายการที่เปิดอยู่ (${activeList.length})` : `ดูประวัติที่ปิดแล้ว (${historyList.length})`}
+                </button>
+              )}
+            </div>
+            {visibleList.length === 0 ? (
+              <p className="text-xs text-slate-500 italic">ไม่มีรายการ</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                {visibleList.map((iss) => {
+                  const roomNum = iss.roomId?.replace(/^rm-/, '') || iss.roomId;
+                  const isResolved = iss.status === 'resolved' || iss.status === 'expired_claimed';
+                  return (
+                    <div key={iss.id} className="bg-white rounded-lg border border-rose-200/80 p-3 text-xs space-y-1.5 shadow-2xs">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-bold text-slate-900 font-mono">ห้อง {roomNum}</span>
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                            iss.issueType === 'lost_and_found' || iss.issueType === 'missing_item'
+                              ? 'bg-amber-100 text-amber-800'
+                              : 'bg-rose-100 text-rose-800'
+                          }`}
+                        >
+                          {formatIssueTypeLabel(iss.issueType)}
+                        </span>
+                      </div>
+                      <p className="text-slate-700 leading-snug">{iss.description}</p>
+                      {iss.issueType === 'lost_and_found' && (
+                        <p className="text-[11px] text-amber-800">
+                          เก็บที่: {iss.storageLocation || 'Front Desk Counter'} ({iss.retentionDays || 7} วัน)
+                        </p>
+                      )}
+                      <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+                        {iss.photoR2Key ? (
+                          <a
+                            href={assetUrl(iss.photoR2Key)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[11px] text-blue-600 hover:underline font-medium"
+                          >
+                            ดูรูปหลักฐาน
+                          </a>
+                        ) : (
+                          <span className="text-[10px] text-slate-400">ไม่มีรูปแนบ</span>
+                        )}
+                        {!isResolved ? (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              await apiFetch(`/api/housekeeping/issues/${iss.id}/resolve`, {
+                                method: 'PUT',
+                                body: JSON.stringify({ receivedByName: 'Owner' }),
+                              });
+                              loadOpenIssues();
+                            }}
+                            className="text-[11px] font-semibold text-emerald-700 hover:bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200"
+                          >
+                            {iss.issueType === 'lost_and_found'
+                              ? 'รับมอบ / คืนแล้ว'
+                              : iss.issueType === 'missing_item'
+                                ? 'พบ / เติมครบแล้ว'
+                                : 'ซ่อมเสร็จแล้ว'}
+                          </button>
+                        ) : (
+                          <span className="text-[10px] text-emerald-700 font-semibold">ปิดงานแล้ว</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* Room Issue / Maintenance / Lost & Found Modal for Owner */}
+      {issueModalRoom && (
+        <RoomIssueReportModal
+          isOpen={Boolean(issueModalRoom)}
+          roomId={issueModalRoom.id}
+          roomNumber={issueModalRoom.roomNumber}
+          roomTypeName={localizeRoomType(issueModalRoom.roomType?.name, locale)}
+          reportedBy="hk-staff-001"
+          defaultLockRoom={true}
+          onClose={() => setIssueModalRoom(null)}
+          onSuccess={({ lockedRoom }) => {
+            if (lockedRoom) {
+              setRooms((prev) =>
+                prev.map((r) => (r.id === issueModalRoom.id ? { ...r, status: 'out_of_order' } : r))
+              );
+            }
+            loadOpenIssues();
+            loadRooms();
+          }}
+        />
       )}
     </AdminLayout>
   );

@@ -8,6 +8,7 @@ import { webhooksRoute } from './routes/webhooks';
 import { outsourceRoute } from './routes/outsource';
 import { taskTemplatesRoute } from './routes/task-templates';
 import { amenityRequestsRoute } from './routes/amenity-requests';
+import { ensureHousekeepingSchema } from './db/auto-migrate';
 
 export interface Env {
   DB: D1Database;
@@ -21,6 +22,13 @@ export interface Env {
 }
 
 const app = new Hono<{ Bindings: Env }>();
+
+app.use('*', async (c, next) => {
+  if (c.env?.DB) {
+    await ensureHousekeepingSchema(c.env.DB);
+  }
+  await next();
+});
 
 // Global Health & Metadata
 app.get('/health', (c) => {

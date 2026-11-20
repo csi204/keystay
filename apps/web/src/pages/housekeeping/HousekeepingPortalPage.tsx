@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Logo } from '../../components/common/Logo';
+import { RoomIssueReportModal, formatIssueTypeLabel } from '../../components/common/RoomIssueReportModal';
 import { QuickContactModal } from '../../components/housekeeping/QuickContactModal';
 import { clearAuthSession, getAuthToken, getAuthUser, apiUrl, assetUrl } from '../../lib/api';
 import { reconcileLiveRooms } from '../../lib/roomStatusReconciliation';
@@ -443,12 +444,38 @@ export const HousekeepingPortalPage: React.FC = () => {
   const [maintenanceRoom, setMaintenanceRoom] = useState<string>('105');
   const [maintenanceCategory, setMaintenanceCategory] = useState<'broken' | 'electric' | 'missing' | 'sanitary' | 'lost_and_found'>('broken');
   const [maintenanceDesc, setMaintenanceDesc] = useState<string>('');
-  const [maintenancePhotoFile, setMaintenancePhotoFile] = useState<File | null>(null);
-  const [maintenancePhotoPreview, setMaintenancePhotoPreview] = useState<string | null>(null);
-  const [maintenanceAffectsAvailability, setMaintenanceAffectsAvailability] = useState<boolean>(false);
   const [lostAndFoundLocation, setLostAndFoundLocation] = useState<string>('Front Desk Counter');
   const [lostAndFoundDays, setLostAndFoundDays] = useState<number>(7);
   const [selectedRoomDetail, setSelectedRoomDetail] = useState<RoomStatusItem | null>(null);
+  const [selectedRoomIssues, setSelectedRoomIssues] = useState<any[]>([]);
+  const [showSelectedRoomHistory, setShowSelectedRoomHistory] = useState(false);
+
+  const loadSelectedRoomIssues = async (roomNumber: string) => {
+    const token = getAuthToken();
+    try {
+      const res = await fetch(
+        apiUrl(`/api/housekeeping/issues?roomId=${encodeURIComponent(`rm-${roomNumber}`)}`),
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+      if (res.ok) {
+        const json = await res.json();
+        setSelectedRoomIssues(Array.isArray(json.data) ? json.data : []);
+      } else {
+        setSelectedRoomIssues([]);
+      }
+    } catch {
+      setSelectedRoomIssues([]);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedRoomDetail?.roomNumber) {
+      setShowSelectedRoomHistory(false);
+      loadSelectedRoomIssues(selectedRoomDetail.roomNumber);
+    } else {
+      setSelectedRoomIssues([]);
+    }
+  }, [selectedRoomDetail?.roomNumber]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [, setIsLoadingData] = useState<boolean>(false);
   const [taskTemplates, setTaskTemplates] = useState<any[]>([]);
@@ -919,26 +946,36 @@ export const HousekeepingPortalPage: React.FC = () => {
       ...prev,
     ]);
 
-    // 3. อัปเดตสถานะห้องใน Room Matrix เป็น "พร้อมขาย" (available)
-    setRoomStatusList((prev) =>
-      prev.map((r) =>
-        r.roomNumber === task.roomNumber
-          ? {
-              ...r,
-              status: 'available',
-              guestInfo: 'ห้องว่างพร้อมเปิดขาย',
-              notes: `ทำความสะอาดและตรวจรับเรียบร้อยเมื่อ ${timeStr}`,
-            }
-          : r
-      )
-    );
+    const currentRoomObj = roomStatusList.find((r) => r.roomNumber === task.roomNumber);
+    const isRoomLockedOut =
+      currentRoomObj?.status === 'out_of_order' || currentRoomObj?.status === 'maintenance';
+
+    // 3. อัปเดตสถานะห้องใน Room Matrix เป็น "พร้อมขาย" (available) เฉพาะกรณีที่ห้องไม่ได้ถูกปิดงดใช้งาน (out_of_order/maintenance)
+    if (!isRoomLockedOut) {
+      setRoomStatusList((prev) =>
+        prev.map((r) =>
+          r.roomNumber === task.roomNumber
+            ? {
+                ...r,
+                status: 'available',
+                guestInfo: 'ห้องว่างพร้อมเปิดขาย',
+                notes: `ทำความสะอาดและตรวจรับเรียบร้อยเมื่อ ${timeStr}`,
+              }
+            : r
+        )
+      );
+    }
 
     setIsAfterPhotoModalOpen(false);
     setTargetPhotoTask(null);
     setCapturedAfterPhoto(null);
     setIsTimerRunning(false);
     setIsFocusModeOpen(false);
-    showToast(`บันทึกภาพหลังทำห้อง ${task.roomNumber} เรียบร้อย! ปล่อยห้องพร้อมขายทันที`);
+    showToast(
+      isRoomLockedOut
+        ? `ปิดงานทำความสะอาดห้อง ${task.roomNumber} เรียบร้อย (ห้องยังคงสถานะงดใช้งานจนกว่าช่างซ่อมเสร็จ)`
+        : `บันทึกภาพหลังทำห้อง ${task.roomNumber} เรียบร้อย! ปล่อยห้องพร้อมขายทันที`
+    );
 
     // เชื่อมต่อ Backend API สด (Service #4: complete task with afterPhotoUrl & Service #2: room status available)
     try {
@@ -951,22 +988,26 @@ export const HousekeepingPortalPage: React.FC = () => {
         body: JSON.stringify({
           inspectionStatus: 'passed',
           afterPhotoUrl: afterPhoto,
-          notes: 'ทำความสะอาดครบ 12 ข้อตามมาตรฐาน บันทึกภาพถ่ายยืนยันความสะอาดเรียบร้อยแล้วพร้อมปล่อยขาย',
+          notes: isRoomLockedOut
+            ? 'ทำความสะอาดครบ 12 ข้อตามมาตรฐานแล้ว (ห้องยังคงสถานะงดใช้งานเพื่อรอซ่อมบำรุง)'
+            : 'ทำความสะอาดครบ 12 ข้อตามมาตรฐาน บันทึกภาพถ่ายยืนยันความสะอาดเรียบร้อยแล้วพร้อมปล่อยขาย',
         }),
       });
 
-      const roomId = `rm-${task.roomNumber}`;
-      await fetch(apiUrl(`/api/rooms/${roomId}/status`), {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          status: 'available',
-          changeReason: 'Housekeeping cleaning inspection completed with photo evidence',
-        }),
-      });
+      if (!isRoomLockedOut) {
+        const roomId = `rm-${task.roomNumber}`;
+        await fetch(apiUrl(`/api/rooms/${roomId}/status`), {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            status: 'available',
+            changeReason: 'Housekeeping cleaning inspection completed with photo evidence',
+          }),
+        });
+      }
 
       // ดึง tasks และสถานะห้องสดใหม่จาก backend ให้ sync 100%
       await Promise.all([fetchLiveTasks(), fetchLiveRooms()]);
@@ -1017,14 +1058,20 @@ export const HousekeepingPortalPage: React.FC = () => {
       })
     );
 
-    // อัปเดตสถานะห้องใน Room Matrix ให้เป็น cleaning
-    setRoomStatusList((prev) =>
-      prev.map((r) =>
-        r.roomNumber === targetTask.roomNumber
-          ? { ...r, status: 'cleaning', notes: `กำลังทำความสะอาด (${staffName})` }
-          : r
-      )
-    );
+    const currentRoomObj = roomStatusList.find((r) => r.roomNumber === targetTask.roomNumber);
+    const isRoomLockedOut =
+      currentRoomObj?.status === 'out_of_order' || currentRoomObj?.status === 'maintenance';
+
+    // อัปเดตสถานะห้องใน Room Matrix ให้เป็น cleaning (ยกเว้นห้องที่งดใช้งาน)
+    if (!isRoomLockedOut) {
+      setRoomStatusList((prev) =>
+        prev.map((r) =>
+          r.roomNumber === targetTask.roomNumber
+            ? { ...r, status: 'cleaning', notes: `กำลังทำความสะอาด (${staffName})` }
+            : r
+        )
+      );
+    }
 
     setIsBeforePhotoModalOpen(false);
     setTargetPhotoTask(null);
@@ -1050,18 +1097,20 @@ export const HousekeepingPortalPage: React.FC = () => {
         }),
       });
 
-      const roomId = `rm-${targetTask.roomNumber}`;
-      await fetch(apiUrl(`/api/rooms/${roomId}/status`), {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          status: 'cleaning',
-          changeReason: 'Housekeeping cleaning in progress with before photo evidence',
-        }),
-      });
+      if (!isRoomLockedOut) {
+        const roomId = `rm-${targetTask.roomNumber}`;
+        await fetch(apiUrl(`/api/rooms/${roomId}/status`), {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            status: 'cleaning',
+            changeReason: 'Housekeeping cleaning in progress with before photo evidence',
+          }),
+        });
+      }
     } catch (err) {
       console.warn('API sync warning:', err);
     }
@@ -1078,78 +1127,49 @@ export const HousekeepingPortalPage: React.FC = () => {
     const token = getAuthToken();
     const roomId = `rm-${maintenanceRoom}`;
 
-    let apiIssueType: 'damage' | 'malfunction' | 'missing_item' | 'hygiene' | 'lost_and_found' = 'malfunction';
+    let apiIssueType: 'damage' | 'malfunction' | 'missing_item' | 'cleanliness' | 'lost_and_found' = 'malfunction';
     if (maintenanceCategory === 'broken') apiIssueType = 'damage';
     else if (maintenanceCategory === 'electric') apiIssueType = 'malfunction';
     else if (maintenanceCategory === 'missing') apiIssueType = 'missing_item';
-    else if (maintenanceCategory === 'sanitary') apiIssueType = 'hygiene';
+    else if (maintenanceCategory === 'sanitary') apiIssueType = 'cleanliness';
     else if (maintenanceCategory === 'lost_and_found') apiIssueType = 'lost_and_found';
 
-    const descText =
-      maintenanceDesc.trim() ||
-      (apiIssueType === 'lost_and_found' ? 'ของที่ลูกค้าลืมไว้ในห้องพัก' : 'แจ้งตรวจสอบอุปกรณ์');
-
-    const formData = new FormData();
-    formData.append('roomId', roomId);
-    formData.append('roomNumber', maintenanceRoom);
-    formData.append('reportedBy', 'hk-staff-001');
-    formData.append('issueType', apiIssueType);
-    formData.append('severity', 'medium');
-    formData.append('description', descText);
+    const payload: any = {
+      roomId,
+      roomNumber: maintenanceRoom,
+      reportedBy: 'hk-staff-001',
+      issueType: apiIssueType,
+      severity: 'medium',
+      description: maintenanceDesc.trim() || (apiIssueType === 'lost_and_found' ? 'ของที่ลูกค้าลืมไว้ในห้องพัก' : 'แจ้งตรวจสอบอุปกรณ์'),
+    };
 
     if (activeTask && activeTask.roomNumber === maintenanceRoom) {
-      formData.append('taskId', activeTask.id);
+      payload.taskId = activeTask.id;
     }
 
     if (apiIssueType === 'lost_and_found') {
-      formData.append('storageLocation', lostAndFoundLocation || 'Front Desk Counter');
-      formData.append('retentionDays', String(lostAndFoundDays || 7));
-    }
-
-    const affectsRoom = apiIssueType !== 'lost_and_found' && maintenanceAffectsAvailability;
-    formData.append('affectsAvailability', String(affectsRoom));
-    if (affectsRoom) {
-      formData.set('severity', 'high');
-    }
-
-    if (maintenancePhotoFile) {
-      formData.append('photo', maintenancePhotoFile);
+      payload.storageLocation = lostAndFoundLocation || 'Front Desk Counter';
+      payload.retentionDays = lostAndFoundDays || 7;
     }
 
     try {
       const res = await fetch(apiUrl('/api/housekeeping/issues'), {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
-        const resJson = await res.json().catch(() => null);
-        const roomLocked = Boolean(resJson?.data?.roomMaintenanceTriggered);
-        if (apiIssueType === 'lost_and_found') {
-          showToast(
-            `บันทึกของลืมห้อง ${maintenanceRoom} ส่งมอบ Front Counter (เก็บ ${lostAndFoundDays} วัน) สำเร็จ`
-          );
-        } else if (roomLocked) {
-          showToast(
-            `แจ้งชำรุดห้อง ${maintenanceRoom} และเปลี่ยนสถานะห้องเป็น "กำลังซ่อมแซม" แล้ว`
-          );
-          setRoomStatusList((prev) =>
-            prev.map((r) =>
-              r.roomNumber === maintenanceRoom ? { ...r, status: 'maintenance' as any } : r
-            )
-          );
-        } else {
-          showToast(
-            `บันทึกใบแจ้งปัญหาห้อง ${maintenanceRoom} ส่งต่อไปยัง Front Desk แล้ว`
-          );
-        }
+        showToast(
+          apiIssueType === 'lost_and_found'
+            ? `บันทึกของลืมห้อง ${maintenanceRoom} ส่งมอบ Front Counter (เก็บ ${lostAndFoundDays} วัน) สำเร็จ`
+            : `บันทึกใบแจ้งปัญหาห้อง ${maintenanceRoom} ส่งต่อไปยังทีมช่างแล้ว`
+        );
       } else {
         const errJson = await res.json().catch(() => null);
-        const errDetail =
-          errJson?.message ||
-          (typeof errJson?.error === 'string' ? errJson.error : null) ||
-          res.statusText;
-        showToast(`ไม่สามารถบันทึกได้: ${errDetail}`);
+        showToast(`ไม่สามารถบันทึกได้: ${errJson?.message || res.statusText}`);
       }
     } catch (err) {
       console.warn('API issue report warning:', err);
@@ -1157,9 +1177,6 @@ export const HousekeepingPortalPage: React.FC = () => {
     } finally {
       setIsMaintenanceModalOpen(false);
       setMaintenanceDesc('');
-      setMaintenancePhotoFile(null);
-      setMaintenancePhotoPreview(null);
-      setMaintenanceAffectsAvailability(false);
     }
   };
 
@@ -4322,292 +4339,36 @@ export const HousekeepingPortalPage: React.FC = () => {
           Matches stitch_keystay_housekeeping_portal 2/report_maintenance_modal
           ======================================================== */}
       {isMaintenanceModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 backdrop-blur-xs">
-          <div className="w-full max-w-md bg-white rounded-t-2xl shadow-2xl max-h-[88vh] overflow-y-auto p-4 flex flex-col gap-4 animate-in slide-in-from-bottom duration-200 border-t border-slate-200">
-            {/* Drawer Handle */}
-            <div className="w-10 h-1 bg-slate-300 rounded-full mx-auto shrink-0" />
-
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className={`w-8 h-8 rounded-full border flex items-center justify-center ${
-                  maintenanceCategory === 'lost_and_found'
-                    ? 'bg-amber-50 border-amber-200 text-amber-700'
-                    : 'bg-rose-50 border-rose-200 text-rose-700'
-                }`}>
-                  {maintenanceCategory === 'lost_and_found' ? <Briefcase className="w-4 h-4" /> : <Wrench className="w-4 h-4" />}
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900">
-                    {maintenanceCategory === 'lost_and_found' ? 'บันทึกของที่ลูกค้าลืมไว้ (Lost & Found)' : 'แจ้งปัญหา / ส่งซ่อมบำรุง'}
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    ห้อง {maintenanceRoom} • {roomStatusList.find((r) => r.roomNumber === maintenanceRoom)?.type || 'ห้องพัก'}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsMaintenanceModalOpen(false)}
-                className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Section 1: Issue Type Grid */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-slate-800">ประเภทปัญหา</label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setMaintenanceCategory('broken')}
-                  className={`p-2.5 rounded-xl text-left border flex flex-col gap-1 transition-all ${
-                    maintenanceCategory === 'broken'
-                      ? 'bg-slate-900 text-white border-slate-900'
-                      : 'bg-slate-50 text-slate-800 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  <Wrench className="w-4 h-4 text-rose-500" />
-                  <span className="text-xs font-bold">ชำรุด/แตกหัก</span>
-                  <span className="text-[10px] opacity-75">เฟอร์นิเจอร์, ผนัง, สุขภัณฑ์</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setMaintenanceCategory('electric')}
-                  className={`p-2.5 rounded-xl text-left border flex flex-col gap-1 transition-all ${
-                    maintenanceCategory === 'electric'
-                      ? 'bg-slate-900 text-white border-slate-900'
-                      : 'bg-slate-50 text-slate-800 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  <Sparkles className="w-4 h-4 text-blue-500" />
-                  <span className="text-xs font-bold">เครื่องใช้ไฟฟ้า</span>
-                  <span className="text-[10px] opacity-75">แอร์, ทีวี, ตู้เย็น, โคมไฟ</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setMaintenanceCategory('missing')}
-                  className={`p-2.5 rounded-xl text-left border flex flex-col gap-1 transition-all ${
-                    maintenanceCategory === 'missing'
-                      ? 'bg-slate-900 text-white border-slate-900'
-                      : 'bg-slate-50 text-slate-800 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  <Bed className="w-4 h-4 text-amber-500" />
-                  <span className="text-xs font-bold">ของหาย/ไม่ครบ</span>
-                  <span className="text-[10px] opacity-75">รีโมท, แก้ว, ผ้าเช็ดตัว</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setMaintenanceCategory('sanitary')}
-                  className={`p-2.5 rounded-xl text-left border flex flex-col gap-1 transition-all ${
-                    maintenanceCategory === 'sanitary'
-                      ? 'bg-slate-900 text-white border-slate-900'
-                      : 'bg-slate-50 text-slate-800 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  <AlertCircle className="w-4 h-4 text-emerald-500" />
-                  <span className="text-xs font-bold">สุขอนามัย/กลิ่น</span>
-                  <span className="text-[10px] opacity-75">คราบหนัก, กลิ่นไม่พึงประสงค์</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setMaintenanceCategory('lost_and_found')}
-                  className={`col-span-2 p-2.5 rounded-xl text-left border flex items-center justify-between transition-all ${
-                    maintenanceCategory === 'lost_and_found'
-                      ? 'bg-amber-900 text-white border-amber-900'
-                      : 'bg-amber-50 text-amber-900 border-amber-200 hover:bg-amber-100'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <Briefcase className="w-4 h-4 text-amber-500" />
-                    <div>
-                      <span className="text-xs font-bold block">ของที่ลูกค้าลืมไว้ (Lost & Found)</span>
-                      <span className="text-[10px] opacity-75">ส่งมอบ Front Counter • นับถอยหลัง 7 วัน</span>
-                    </div>
-                  </div>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-amber-200/50 text-amber-800 font-bold">บันทึกป้องกันทุจริต</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Lost & Found Extra Fields */}
-            {maintenanceCategory === 'lost_and_found' && (
-              <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 flex flex-col gap-2">
-                <div>
-                  <label className="text-[11px] font-bold text-amber-900 block mb-1">สถานที่จัดเก็บของ (Storage Location)</label>
-                  <input
-                    type="text"
-                    value={lostAndFoundLocation}
-                    onChange={(e) => setLostAndFoundLocation(e.target.value)}
-                    placeholder="เช่น ตู้เซฟ Front Counter, ห้องเก็บของชั้น 1"
-                    className="w-full p-2 rounded-lg bg-white border border-amber-200 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-amber-500"
-                  />
-                </div>
-                <div>
-                  <label className="text-[11px] font-bold text-amber-900 block mb-1">ระยะเวลานับถอยหลังเก็บรักษา (วัน)</label>
-                  <div className="flex gap-2">
-                    {[7, 14, 30].map((d) => (
-                      <button
-                        key={d}
-                        type="button"
-                        onClick={() => setLostAndFoundDays(d)}
-                        className={`flex-1 py-1 text-xs font-bold rounded-lg border transition-all ${
-                          lostAndFoundDays === d
-                            ? 'bg-amber-800 text-white border-amber-800'
-                            : 'bg-white text-amber-800 border-amber-200 hover:bg-amber-100'
-                        }`}
-                      >
-                        {d} วัน {d === 7 ? '(ทั่วไป)' : d === 30 ? '(ของมีค่า)' : ''}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-
-            
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-slate-800">
-                {maintenanceCategory === 'lost_and_found' ? 'คำอธิบายของที่ลืมไว้ (Lost & Found)' : 'คำอธิบายอาการชำรุด'}
-              </label>
-              <textarea
-                rows={3}
-                value={maintenanceDesc}
-                onChange={(e) => setMaintenanceDesc(e.target.value)}
-                placeholder={
-                  maintenanceCategory === 'lost_and_found'
-                    ? 'พิมพ์ระบุของที่ลืม เช่น หูฟังบลูทูธสีดำ, กระเป๋าสตางค์, สายชาร์จ...'
-                    : 'พิมพ์ระบุอาการชำรุด เช่น แอร์มีน้ำหยด, ปลั๊กไฟหลวม, ลูกบิดประตูชำรุด...'
-                }
-                className="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 resize-none"
-              />
-            </div>
-
-            {/* Section 4: Cloudflare R2 Photo Upload */}
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-800">แนบรูปถ่ายหลักฐาน</span>
-                <span className="text-[10px] text-slate-500 flex items-center gap-1">
-                  <CloudUpload className="w-3 h-3" /> จัดเก็บภาพถ่ายส่วนกลาง
-                </span>
-              </div>
-              {maintenancePhotoPreview ? (
-                <div className="relative rounded-lg border border-slate-200 overflow-hidden bg-slate-50">
-                  <img
-                    src={maintenancePhotoPreview}
-                    alt="หลักฐานความเสียหาย"
-                    className="w-full h-36 object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMaintenancePhotoFile(null);
-                      setMaintenancePhotoPreview(null);
-                    }}
-                    className="absolute top-2 right-2 px-2 py-1 rounded-md bg-slate-900/80 hover:bg-slate-900 text-white text-[11px] font-medium cursor-pointer"
-                  >
-                    ลบรูป
-                  </button>
-                </div>
-              ) : (
-                <label className="p-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100 transition-colors flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      setMaintenancePhotoFile(file);
-                      const reader = new FileReader();
-                      reader.onloadend = () => {
-                        setMaintenancePhotoPreview(reader.result as string);
-                      };
-                      reader.readAsDataURL(file);
-                    }}
-                  />
-                  <div className="w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-500 shrink-0">
-                    <Camera className="w-5 h-5 text-slate-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-slate-800">ถ่ายรูป หรือ แนบไฟล์</p>
-                    <p className="text-[10px] text-slate-400">รองรับภาพถ่าย JPEG, PNG บันทึกอัตโนมัติ</p>
-                  </div>
-                </label>
-              )}
-            </div>
-
-            {maintenanceCategory !== 'lost_and_found' && (
-              <label className="p-3 rounded-xl border border-rose-200 bg-rose-50/70 flex items-start gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={maintenanceAffectsAvailability}
-                  onChange={(e) => setMaintenanceAffectsAvailability(e.target.checked)}
-                  className="mt-0.5 w-4 h-4 rounded border-rose-300 text-rose-600 focus:ring-rose-500"
-                />
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-rose-900">
-                    กระทบการเข้าพัก (ปิดห้องซ่อมแซมทันที)
-                  </p>
-                  <p className="text-[11px] text-rose-700 leading-snug mt-0.5">
-                    เมื่อติ๊ก ระบบจะเปลี่ยนสถานะห้องเป็น &quot;กำลังซ่อมแซม&quot; อัตโนมัติ จนกว่า Front Desk จะตรวจสอบและกดอนุมัติซ่อมเสร็จ
-                  </p>
-                </div>
-              </label>
-            )}
-
-            {/* Section 5: Outsource Direct Callout (Boon's Integration) */}
-            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <PhoneCall className="w-4 h-4 text-amber-700" />
-                <div>
-                  <p className="text-xs font-bold text-amber-900">ต้องการช่างภายนอกด่วน?</p>
-                  <p className="text-[10px] text-amber-700">ดูเบอร์ช่างแอร์ ประปา ไฟฟ้า 24 ชม.</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsMaintenanceModalOpen(false);
-                  setIsContactModalOpen(true);
-                }}
-                className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-xs flex items-center gap-1 active:scale-95"
-              >
-                <span>โทรหาช่าง</span>
-                <ExternalLink className="w-3 h-3" />
-              </button>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="grid grid-cols-2 gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setIsMaintenanceModalOpen(false)}
-                className="min-h-[44px] px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold"
-              >
-                ยกเลิก
-              </button>
-              <button
-                type="button"
-                onClick={handleSubmitMaintenance}
-                className="min-h-[44px] px-4 rounded-xl bg-[#0F172A] hover:bg-slate-800 text-white text-xs font-bold shadow-sm cursor-pointer"
-              >
-                บันทึกลงระบบทันที
-              </button>
-            </div>
-          </div>
-        </div>
+        <RoomIssueReportModal
+          isOpen={isMaintenanceModalOpen}
+          roomId={`rm-${maintenanceRoom}`}
+          roomNumber={maintenanceRoom}
+          roomTypeName={roomStatusList.find((r) => r.roomNumber === maintenanceRoom)?.type || "ห้องพัก"}
+          taskId={activeTask && activeTask.roomNumber === maintenanceRoom ? activeTask.id : undefined}
+          reportedBy="hk-staff-001"
+          defaultLockRoom={true}
+          onClose={() => setIsMaintenanceModalOpen(false)}
+          onSuccess={({ lockedRoom, apiIssueType, description }) => {
+            if (lockedRoom) {
+              setRoomStatusList((prev) =>
+                prev.map((r) =>
+                  r.roomNumber === maintenanceRoom
+                    ? { ...r, status: "out_of_order" as any, notes: `งดใช้งาน: ${description}` }
+                    : r
+                )
+              );
+            }
+            fetchLiveRooms();
+            showToast(
+              apiIssueType === "lost_and_found"
+                ? `บันทึกของลืมห้อง ${maintenanceRoom} แจ้ง Front & Owner เรียบร้อย`
+                : lockedRoom
+                  ? `บันทึกใบแจ้งปัญหาห้อง ${maintenanceRoom} และเปลี่ยนสถานะเป็นงดใช้งานแล้ว`
+                  : `บันทึกใบแจ้งปัญหาห้อง ${maintenanceRoom} ส่งต่อไปยังทีมช่างและ Front แล้ว`
+            );
+          }}
+        />
       )}
-
       {/* ========================================================
           MODAL 2: ROOM STATUS DETAIL DRAWER
           ======================================================== */}
@@ -4636,24 +4397,166 @@ export const HousekeepingPortalPage: React.FC = () => {
               </button>
             </div>
 
-            {/* If room is in maintenance, offer direct call button */}
-            {selectedRoomDetail.status === 'maintenance' && (
-              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-bold text-rose-900">สถานะ: ชำรุด/งดใช้งาน</p>
-                  <p className="text-[10px] text-rose-700">มีเบอร์ช่างแอร์ภายนอกสแตนด์บาย 24 ชม.</p>
+            {/* Room Issues, Missing Items & Lost and Found (Visible even after room reopens) */}
+            {selectedRoomIssues.length > 0 && (() => {
+              const openList = selectedRoomIssues.filter((iss) => iss.status === 'open' || iss.status === 'acknowledged');
+              const historyList = selectedRoomIssues.filter((iss) => iss.status === 'resolved' || iss.status === 'expired_claimed');
+              const visibleList = showSelectedRoomHistory ? historyList : openList;
+              return (
+                <div className="p-3 rounded-xl bg-amber-50/60 border border-amber-200/80 space-y-2 max-h-48 overflow-y-auto">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-bold text-slate-800">
+                      {showSelectedRoomHistory
+                        ? `ประวัติที่ปิดแล้ว (${historyList.length})`
+                        : `รายการแจ้งชำรุด / ของหาย / ของลืม (${openList.length})`}
+                    </span>
+                    {historyList.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowSelectedRoomHistory((prev) => !prev)}
+                        className="text-[10px] font-semibold text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200"
+                      >
+                        {showSelectedRoomHistory ? `เปิดอยู่ (${openList.length})` : `ดูประวัติ (${historyList.length})`}
+                      </button>
+                    )}
+                  </div>
+                  {visibleList.length === 0 ? (
+                    <p className="text-[11px] text-slate-500 italic">ไม่มีรายการ</p>
+                  ) : (
+                    visibleList.map((iss) => (
+                      <div key={iss.id} className="bg-white rounded-lg border border-slate-200 p-2 text-xs space-y-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800">
+                            {formatIssueTypeLabel(iss.issueType)}
+                          </span>
+                          {iss.status === 'open' || iss.status === 'acknowledged' ? (
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                const token = getAuthToken();
+                                await fetch(apiUrl(`/api/housekeeping/issues/${iss.id}/resolve`), {
+                                  method: 'PUT',
+                                  headers: {
+                                    'Content-Type': 'application/json',
+                                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                                  },
+                                  body: JSON.stringify({ receivedByName: 'Housekeeping' }),
+                                });
+                                await loadSelectedRoomIssues(selectedRoomDetail.roomNumber);
+                              }}
+                              className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200"
+                            >
+                              {iss.issueType === 'lost_and_found' ? 'รับมอบ / คืนแล้ว' : iss.issueType === 'missing_item' ? 'พบ / เติมครบแล้ว' : 'ซ่อมเสร็จแล้ว'}
+                            </button>
+                          ) : (
+                            <span className="text-[10px] text-emerald-700 font-semibold">ปิดงานแล้ว</span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-slate-700">{iss.description}</p>
+                        {iss.photoR2Key && (
+                          <a href={assetUrl(iss.photoR2Key)} target="_blank" rel="noreferrer" className="text-[10px] text-blue-600 hover:underline inline-block">
+                            ดูรูปหลักฐาน
+                          </a>
+                        )}
+                      </div>
+                    ))
+                  )}
                 </div>
+              );
+            })()}
+
+            {/* If room is in maintenance / out_of_order, offer direct call + repair complete button */}
+            {(selectedRoomDetail.status === 'maintenance' || (selectedRoomDetail.status as string) === 'out_of_order') && (
+              <div className="space-y-2">
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-bold text-rose-900">สถานะ: ชำรุด/งดใช้งาน</p>
+                    <p className="text-[10px] text-rose-700">มีเบอร์ช่างแอร์ภายนอกสแตนด์บาย 24 ชม.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedRoomDetail(null);
+                      setIsContactModalOpen(true);
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center gap-1 shadow-xs"
+                  >
+                    <span>โทรหาช่าง</span>
+                  </button>
+                </div>
+
                 <button
                   type="button"
-                  onClick={() => {
-                    setSelectedRoomDetail(null);
-                    setIsContactModalOpen(true);
+                  onClick={async () => {
+                    const token = getAuthToken();
+                    const roomId = `rm-${selectedRoomDetail.roomNumber}`;
+                    try {
+                      const issuesRes = await fetch(
+                        apiUrl(`/api/housekeeping/issues?roomId=${encodeURIComponent(roomId)}&status=open`),
+                        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+                      );
+                      const issuesJson = await issuesRes.json().catch(() => null);
+                      const openIssues = (Array.isArray(issuesJson?.data) ? issuesJson.data : []).filter(
+                        (iss: any) => iss.issueType !== 'lost_and_found' && iss.issueType !== 'missing_item'
+                      );
+                      await Promise.allSettled(
+                        openIssues.map((iss: any) =>
+                          fetch(apiUrl(`/api/housekeeping/issues/${iss.id}/resolve`), {
+                            method: 'PUT',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                            },
+                            body: JSON.stringify({ receivedByName: 'Housekeeping (ซ่อมเสร็จสิ้น)' }),
+                          })
+                        )
+                      );
+                      await fetch(apiUrl(`/api/rooms/${roomId}/status`), {
+                        method: 'PUT',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                        },
+                        body: JSON.stringify({
+                          status: 'available',
+                          changeReason: 'ช่างซ่อมบำรุงเสร็จสิ้น คืนสถานะห้องพร้อมใช้งาน',
+                        }),
+                      });
+                      setRoomStatusList((prev) =>
+                        prev.map((r) =>
+                          r.roomNumber === selectedRoomDetail.roomNumber
+                            ? { ...r, status: 'available', notes: 'ซ่อมแซมเสร็จสิ้น พร้อมเปิดขาย' }
+                            : r
+                        )
+                      );
+                      setSelectedRoomDetail(null);
+                      fetchLiveRooms();
+                      showToast(`คืนสถานะห้อง ${selectedRoomDetail.roomNumber} เป็นพร้อมขายเรียบร้อย`);
+                    } catch {
+                      showToast('เกิดข้อผิดพลาดในการคืนสถานะห้อง');
+                    }
                   }}
-                  className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center gap-1 shadow-xs"
+                  className="w-full min-h-[44px] rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs flex items-center justify-center gap-1.5"
                 >
-                  <span>โทรหาช่างแอร์</span>
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>ช่างซ่อมเสร็จ / คืนสถานะห้องพร้อมใช้ (Available)</span>
                 </button>
               </div>
+            )}
+
+            {selectedRoomDetail.status !== 'occupied' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMaintenanceRoom(selectedRoomDetail.roomNumber);
+                  setSelectedRoomDetail(null);
+                  setIsMaintenanceModalOpen(true);
+                }}
+                className="w-full min-h-[44px] rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-xs font-bold flex items-center justify-center gap-1.5"
+              >
+                <Wrench className="w-4 h-4" />
+                <span>แจ้งชำรุด / บันทึกของลืม (Lost &amp; Found)</span>
+              </button>
             )}
 
             <button
