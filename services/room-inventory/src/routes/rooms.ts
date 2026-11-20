@@ -305,7 +305,7 @@ const ALLOWED_TRANSITIONS: Record<string, string[]> = {
   available: ['reserved', 'occupied', 'cleaning', 'maintenance', 'out_of_order'],
   reserved: ['occupied', 'available'],
   occupied: ['checked_out', 'occupied'],
-  checked_out: ['cleaning', 'available'],
+  checked_out: ['cleaning', 'available', 'maintenance'],
   cleaning: ['available', 'maintenance'],
   maintenance: ['cleaning', 'available', 'out_of_order'],
   out_of_order: ['maintenance', 'available'],

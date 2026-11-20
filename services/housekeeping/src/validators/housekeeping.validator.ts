@@ -119,6 +119,16 @@ export const ReportIssueSchema = z.object({
   storageLocation: z.string().optional().default('Front Desk Counter'),
   retentionDays: z.coerce.number().int().positive().optional().default(7),
   receivedByName: z.string().optional().nullable(),
+  affectsAvailability: z
+    .union([z.boolean(), z.string(), z.number()])
+    .transform((v) => {
+      if (typeof v === 'boolean') return v;
+      if (typeof v === 'number') return v > 0;
+      const normalized = v.trim().toLowerCase();
+      return normalized === 'true' || normalized === '1' || normalized === 'yes';
+    })
+    .optional()
+    .default(false),
 });
 
 // ==========================================

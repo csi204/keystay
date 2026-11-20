@@ -19,6 +19,7 @@ import { useReservations, ExtendedReservation, resolveGuestName } from '@/hooks/
 import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { reconcileLiveRooms, getRoomGuestMapping } from '@/lib/roomStatusReconciliation';
 import { useI18n } from '@/lib/i18n';
+import { apiFetch } from '@/lib/api';
 import { localizeRoomType } from '@/lib/localizeMetadata';
 import { Room, ReservationStatus } from '@keystay/types';
 import {
@@ -34,6 +35,7 @@ import {
   ChevronDown,
   Check,
   Ban,
+  Wrench,
 } from 'lucide-react';
 
 export const RoomMatrixPage: React.FC = () => {
@@ -87,6 +89,25 @@ export const RoomMatrixPage: React.FC = () => {
   const [reservationPage, setReservationPage] = useState<number>(1);
   const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
   const filterPopoverRef = useRef<HTMLDivElement>(null);
+  const [openIssues, setOpenIssues] = useState<any[]>([]);
+
+  const refreshOpenIssues = async () => {
+    try {
+      const res = await apiFetch<any[]>('/api/housekeeping/issues');
+      const list = Array.isArray(res.data)
+        ? res.data
+        : Array.isArray((res.data as any)?.data)
+        ? (res.data as any).data
+        : [];
+      setOpenIssues(list.filter((i: any) => i.status === 'open' || i.status === 'acknowledged'));
+    } catch {
+      // silent
+    }
+  };
+
+  useEffect(() => {
+    refreshOpenIssues();
+  }, []);
 
   // Combined offline / error / loading states
   const isOffline = roomsOffline || reservationsOffline;
@@ -117,6 +138,7 @@ export const RoomMatrixPage: React.FC = () => {
     onRefresh: () => {
       refreshRooms();
       refreshReservations();
+      refreshOpenIssues();
     },
     intervalMs: 60000,
     paused: isAnyModalOpen,
@@ -289,8 +311,12 @@ export const RoomMatrixPage: React.FC = () => {
     room: Room
   ) => {
     if (action === 'refresh') {
+      if (room?.id && selectedRoom?.id === room.id) {
+        setSelectedRoom(room);
+      }
       refreshReservations();
       refreshRooms();
+      refreshOpenIssues();
       return;
     }
     if (action === 'cancel') {
@@ -678,6 +704,41 @@ export const RoomMatrixPage: React.FC = () => {
           <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-xs text-red-800">
             <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" aria-hidden="true" />
             <span>{error}</span>
+          </div>
+        )}
+
+        {openIssues.length > 0 && (
+          <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg flex flex-wrap items-center justify-between gap-2 text-xs text-rose-900">
+            <div className="flex items-center gap-2">
+              <Wrench className="w-4 h-4 text-rose-600 flex-shrink-0" aria-hidden="true" />
+              <span className="font-semibold">
+                {locale === 'th'
+                  ? `มีรายการแจ้งชำรุด/ปัญหาจากแม่บ้านรอตรวจสอบ (${openIssues.length} รายการ)`
+                  : `${openIssues.length} housekeeping issue(s) pending inspection`}
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {openIssues.slice(0, 6).map((issue) => {
+                const matchedRoom = liveRooms.find(
+                  (r) =>
+                    r.id === issue.roomId ||
+                    `rm-${r.roomNumber}` === issue.roomId ||
+                    r.roomNumber === issue.roomId
+                );
+                const labelNum = matchedRoom?.roomNumber || String(issue.roomId || '').replace(/^rm-/, '');
+                return (
+                  <button
+                    key={issue.id}
+                    type="button"
+                    onClick={() => matchedRoom && handleSelectRoom(matchedRoom)}
+                    disabled={!matchedRoom}
+                    className="px-2.5 py-1 rounded-md bg-white border border-rose-300 text-rose-800 font-semibold hover:bg-rose-100 transition-colors disabled:opacity-50"
+                  >
+                    ห้อง {labelNum}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
 

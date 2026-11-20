@@ -1563,6 +1563,7 @@ export const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({
                                             body: JSON.stringify({ receivedByName: 'Front Desk' }),
                                           });
                                           await fetchRoomIssues(room.id);
+                                          onAction?.('refresh', room);
                                           toast.showSuccess(
                                             locale === 'th' ? 'อัปเดตสถานะเรียบร้อย' : 'Issue resolved',
                                             iss.issueType === 'lost_and_found'

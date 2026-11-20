@@ -372,6 +372,24 @@ app.get('/api/assets/*', async (c) => {
   }
   const obj = await c.env.KEYSTAY_ASSETS.get(key);
   if (!obj) {
+    // In local wrangler dev, each worker keeps its own R2 state; fallback to housekeeping worker for issue photos
+    if (key.startsWith('photos/issues/')) {
+      const targetPath = `/housekeeping/issues/assets/${encodeURIComponent(key).replace(/%2F/g, '/')}`;
+      const isLocal = c.req.url.includes('127.0.0.1') || c.req.url.includes('localhost');
+      try {
+        const hkRes = !isLocal && c.env.HOUSEKEEPING_SERVICE
+          ? await c.env.HOUSEKEEPING_SERVICE.fetch(`http://internal${targetPath}`)
+          : await fetch(`http://127.0.0.1:8791${targetPath}`);
+        if (hkRes.ok) {
+          return new Response(hkRes.body, {
+            status: hkRes.status,
+            headers: hkRes.headers,
+          });
+        }
+      } catch {
+        // fall through to 404
+      }
+    }
     return c.json({ success: false, error: { message: 'Asset not found' } }, 404);
   }
   const ext = key.split('.').pop()?.toLowerCase();
